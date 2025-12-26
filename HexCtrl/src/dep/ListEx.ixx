@@ -4,7 +4,6 @@ module;
 * Official git repository: https://github.com/jovibor/ListEx/       *
 * This code is available under the "MIT License".                   *
 ********************************************************************/
-#include <SDKDDKVer.h>
 #include <shlwapi.h>
 #include <uxtheme.h>
 #include <commctrl.h>
@@ -12,12 +11,11 @@ module;
 #include <cassert>
 #include <chrono>
 #include <limits>
-#include <memory>
 #include <optional>
 #include <random>
 #include <string>
 #include <vector>
-export module ListEx;
+export module HexCtrl_ListEx;
 
 #pragma comment(lib, "Comctl32.lib")
 #pragma comment(lib, "Shlwapi.lib") //StrToInt64ExW().
@@ -1584,12 +1582,13 @@ void CListEx::DrawItem(LPDRAWITEMSTRUCT pDIS)
 		//Draw the focus rect (marquee), for the whole item.
 		//It's not drawn if the LVS_EX_FULLROWSELECT style is set and the item is selected.
 		if ((pDIS->itemState & ODS_FOCUS) && (!fFullRowSelect || !(pDIS->itemState & ODS_SELECTED))) {
-			const auto rcItem = GetItemRect(iItem, LVIR_BOUNDS);
-			cdc.SetTextColor(RGB(0, 0, 0));
-			cdc.SetBkColor(RGB(250, 250, 250));
 			//This is a Boolean XOR (^) function, calling this function a second time 
 			//with the same rectangle removes the rectangle from the display.
 			//Foreground and background colors must be set to the black and white respectively.
+			//When the LVS_EX_GRIDLINES style is set, the bottom focus line becomes hidden for some reason.
+			cdc.SetTextColor(RGB(0, 0, 0));
+			cdc.SetBkColor(RGB(250, 250, 250));
+			const auto rcItem = GetItemRect(iItem, LVIR_BOUNDS);
 			cdc.DrawFocusRect(&rcItem);
 		}
 	}

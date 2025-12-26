@@ -166,18 +166,18 @@
 ### [](#)Integrate Sources
 To build **HexCtrl** from the sources:
 1. Add all files from the `HexCtrl` folder into your project
-1. Make sure to disable **Precompiled Header** usage for all `*.ixx` files in the project
+1. Make sure to disable the **Precompiled Header** usage for all `*.ixx` files in the project
 1. Add `#include "HexCtrl.h"`
 1. Declare **HexCtrl** object: `auto myHex { HEXCTRL::CreateHexCtrl() };`
 1. [Create](#creating) control instance
 
 > [!NOTE]
-> You can skip adding *rapidjson-amalgam.h* into your project, to avoid polluting project's global namespace.
+> You can skip adding *dep/rapidjson-amalgam.h* into your project, to avoid polluting project's global namespace in the IDE.
 
 ### [](#)Dynamic Link Library
 To build and use **HexCtrl** as a DLL:
 1. Build **HexCtrl{x86/x64/ARM64}.dll** and **HexCtrl{x86/x64/ARM64}.lib** with the **HexCtrl DLL.vcxproj**  project
-1. Include `HexCtrl.h` into your project
+1. Add `HexCtrl.h` header into your project
 1. Add `/DHEXCTRL_DYNAMIC_LIB` compiler option, or alternatively `#define` it before including `HexCtrl.h`:
     ```cpp
     #define HEXCTRL_DYNAMIC_LIB

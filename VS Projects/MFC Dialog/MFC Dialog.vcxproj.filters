@@ -19,17 +19,11 @@
     <Filter Include="HexCtrl\src">
       <UniqueIdentifier>{22979420-660f-47db-aa4b-2e70d4d11598}</UniqueIdentifier>
     </Filter>
-    <Filter Include="HexCtrl\res">
+    <Filter Include="HexCtrl\src\res">
       <UniqueIdentifier>{5939ca0d-077d-4e58-9022-87ae277af5be}</UniqueIdentifier>
     </Filter>
-    <Filter Include="HexCtrl\dep">
-      <UniqueIdentifier>{ec2e9c83-a8cc-4167-ade4-dbba26d39f9b}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="HexCtrl\dep\ListEx">
-      <UniqueIdentifier>{9752f1bb-669f-4114-8ef1-196b3553a7a9}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="HexCtrl\dep\StrToNum">
-      <UniqueIdentifier>{baa40ccd-0457-40e2-a00f-9c8944425f30}</UniqueIdentifier>
+    <Filter Include="HexCtrl\src\dep">
+      <UniqueIdentifier>{7db9d793-a7d0-4f96-ac1f-b2309c9b360a}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -48,8 +42,8 @@
     <ClInclude Include="..\..\HexCtrl\HexCtrl.h">
       <Filter>HexCtrl</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\HexCtrl\res\HexCtrlRes.h">
-      <Filter>HexCtrl\res</Filter>
+    <ClInclude Include="..\..\HexCtrl\src\res\HexCtrlRes.h">
+      <Filter>HexCtrl\src\res</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -73,12 +67,6 @@
     </ClCompile>
     <ClCompile Include="stdafx.cpp">
       <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\HexCtrl\dep\StrToNum\StrToNum.ixx">
-      <Filter>HexCtrl\dep\StrToNum</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\HexCtrl\dep\ListEx\ListEx.ixx">
-      <Filter>HexCtrl\dep\ListEx</Filter>
     </ClCompile>
     <ClCompile Include="..\..\HexCtrl\src\CHexDlgBkmMgr.ixx">
       <Filter>HexCtrl\src</Filter>
@@ -104,56 +92,59 @@
     <ClCompile Include="..\..\HexCtrl\src\CHexDlgTemplMgr.ixx">
       <Filter>HexCtrl\src</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\HexCtrl\src\dep\ListEx.ixx">
+      <Filter>HexCtrl\src\dep</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\HexCtrl\src\dep\StrToNum.ixx">
+      <Filter>HexCtrl\src\dep</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="MFCDialog.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>
-    <ResourceCompile Include="..\..\HexCtrl\res\HexCtrl.rc">
-      <Filter>HexCtrl\res</Filter>
+    <ResourceCompile Include="..\..\HexCtrl\src\res\HexCtrl.rc">
+      <Filter>HexCtrl\src\res</Filter>
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="res\MFCDialog.rc2">
       <Filter>Resource Files</Filter>
     </None>
-    <None Include="..\..\HexCtrl\res\IDJ_HEXCTRL_KEYBIND.json">
-      <Filter>HexCtrl\res</Filter>
+    <None Include="..\..\HexCtrl\src\res\IDJ_HEXCTRL_KEYBIND.json">
+      <Filter>HexCtrl\src\res</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
     <Image Include="res\MFCDialog.ico">
       <Filter>Resource Files</Filter>
     </Image>
-    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_BKMS.bmp">
-      <Filter>HexCtrl\res</Filter>
+    <Image Include="..\..\HexCtrl\src\res\IDB_HEXCTRL_BKMS.bmp">
+      <Filter>HexCtrl\src\res</Filter>
     </Image>
-    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_CLPBRD_COPYHEX.bmp">
-      <Filter>HexCtrl\res</Filter>
+    <Image Include="..\..\HexCtrl\src\res\IDB_HEXCTRL_CLPBRD_COPYHEX.bmp">
+      <Filter>HexCtrl\src\res</Filter>
     </Image>
-    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_CLPBRD_PASTEHEX.bmp">
-      <Filter>HexCtrl\res</Filter>
+    <Image Include="..\..\HexCtrl\src\res\IDB_HEXCTRL_CLPBRD_PASTEHEX.bmp">
+      <Filter>HexCtrl\src\res</Filter>
     </Image>
-    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_DATAINTERP.bmp">
-      <Filter>HexCtrl\res</Filter>
+    <Image Include="..\..\HexCtrl\src\res\IDB_HEXCTRL_FONTCHOOSE.bmp">
+      <Filter>HexCtrl\src\res</Filter>
     </Image>
-    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_GROUP.bmp">
-      <Filter>HexCtrl\res</Filter>
+    <Image Include="..\..\HexCtrl\src\res\IDB_HEXCTRL_GROUP.bmp">
+      <Filter>HexCtrl\src\res</Filter>
     </Image>
-    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_LOGO.bmp">
-      <Filter>HexCtrl\res</Filter>
+    <Image Include="..\..\HexCtrl\src\res\IDB_HEXCTRL_LOGO.bmp">
+      <Filter>HexCtrl\src\res</Filter>
     </Image>
-    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_MODIFY_FILLZEROS.bmp">
-      <Filter>HexCtrl\res</Filter>
+    <Image Include="..\..\HexCtrl\src\res\IDB_HEXCTRL_MODIFY.bmp">
+      <Filter>HexCtrl\src\res</Filter>
     </Image>
-    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_SEARCH.bmp">
-      <Filter>HexCtrl\res</Filter>
+    <Image Include="..\..\HexCtrl\src\res\IDB_HEXCTRL_MODIFY_FILLZEROS.bmp">
+      <Filter>HexCtrl\src\res</Filter>
     </Image>
-    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_MODIFY.bmp">
-      <Filter>HexCtrl\res</Filter>
-    </Image>
-    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_FONTCHOOSE.bmp">
-      <Filter>HexCtrl\res</Filter>
+    <Image Include="..\..\HexCtrl\src\res\IDB_HEXCTRL_SEARCH.bmp">
+      <Filter>HexCtrl\src\res</Filter>
     </Image>
   </ItemGroup>
 </Project>

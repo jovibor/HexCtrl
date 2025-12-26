@@ -21,7 +21,7 @@ module;
 #define STN_RETURN_TYPE(NumT, CharT) std::optional<NumT>
 #define STN_RETURN_NULL(x) std::nullopt
 #endif
-export module StrToNum;
+export module HexCtrl_StrToNum;
 
 export namespace HEXCTRL::stn {
 	enum class errc { // names for generic error codes

@@ -6,9 +6,9 @@
 ****************************************************************************************/
 module;
 #include <SDKDDKVer.h>
-#include "../dep/rapidjson/rapidjson-amalgam.h"
-#include "../res/HexCtrlRes.h"
 #include "../HexCtrl.h"
+#include "dep/rapidjson-amalgam.h"
+#include "res/HexCtrlRes.h"
 #include <Windows.h>
 #include <commctrl.h>
 #include <intrin.h>

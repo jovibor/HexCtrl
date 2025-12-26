@@ -6,7 +6,7 @@
 ****************************************************************************************/
 module;
 #include <SDKDDKVer.h>
-#include "../res/HexCtrlRes.h"
+#include "res/HexCtrlRes.h"
 #include <Windows.h>
 #include <cassert>
 #include <format>

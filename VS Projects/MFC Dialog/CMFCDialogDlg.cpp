@@ -3,7 +3,7 @@
 #include "Resource.h"
 #include <filesystem>
 #include <random>
-import StrToNum;
+import HexCtrl_StrToNum;
 
 namespace stn = HEXCTRL::stn;
 

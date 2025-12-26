@@ -23,8 +23,8 @@ module;
 #include <vector>
 export module HEXCTRL:HexUtility;
 
-export import StrToNum;
-export import ListEx;
+export import HexCtrl_StrToNum;
+export import HexCtrl_ListEx;
 
 namespace HEXCTRL::INTERNAL::ut { //Utility methods and stuff.
 	//Time calculation constants and structs.
