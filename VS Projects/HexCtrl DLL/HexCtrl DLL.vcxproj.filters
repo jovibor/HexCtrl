@@ -14,16 +14,16 @@
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
     <Filter Include="HexCtrl">
-      <UniqueIdentifier>{de44c756-4f61-486c-ab47-5a030d410d94}</UniqueIdentifier>
+      <UniqueIdentifier>{8b40e28d-bd97-4bad-803e-f4604deaba66}</UniqueIdentifier>
     </Filter>
     <Filter Include="HexCtrl\src">
-      <UniqueIdentifier>{866e06eb-ac98-4d20-be89-65fa4e313419}</UniqueIdentifier>
+      <UniqueIdentifier>{c2907191-ce39-42ab-b27e-00e4ffd253ef}</UniqueIdentifier>
     </Filter>
     <Filter Include="HexCtrl\src\res">
-      <UniqueIdentifier>{85f822c8-a419-4334-960a-7ccffd4d30b9}</UniqueIdentifier>
+      <UniqueIdentifier>{4747f142-8bad-4738-9011-a3d157770b0b}</UniqueIdentifier>
     </Filter>
     <Filter Include="HexCtrl\src\dep">
-      <UniqueIdentifier>{e0146440-1e17-4b2f-9643-8454ba6f3d32}</UniqueIdentifier>
+      <UniqueIdentifier>{68e80a74-60c8-464e-9d6d-caeb596e6991}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -71,10 +71,10 @@
     <ClCompile Include="..\..\HexCtrl\src\CHexCtrl.ixx">
       <Filter>HexCtrl\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\HexCtrl\src\dep\ListEx.ixx">
+    <ClCompile Include="..\..\HexCtrl\src\dep\HexCtrl_ListEx.ixx">
       <Filter>HexCtrl\src\dep</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\HexCtrl\src\dep\StrToNum.ixx">
+    <ClCompile Include="..\..\HexCtrl\src\dep\HexCtrl_StrToNum.ixx">
       <Filter>HexCtrl\src\dep</Filter>
     </ClCompile>
   </ItemGroup>

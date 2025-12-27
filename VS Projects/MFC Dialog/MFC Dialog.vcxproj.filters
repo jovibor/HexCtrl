@@ -92,10 +92,10 @@
     <ClCompile Include="..\..\HexCtrl\src\CHexDlgTemplMgr.ixx">
       <Filter>HexCtrl\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\HexCtrl\src\dep\ListEx.ixx">
+    <ClCompile Include="..\..\HexCtrl\src\dep\HexCtrl_ListEx.ixx">
       <Filter>HexCtrl\src\dep</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\HexCtrl\src\dep\StrToNum.ixx">
+    <ClCompile Include="..\..\HexCtrl\src\dep\HexCtrl_StrToNum.ixx">
       <Filter>HexCtrl\src\dep</Filter>
     </ClCompile>
   </ItemGroup>

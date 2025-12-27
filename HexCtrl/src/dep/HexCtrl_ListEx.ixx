@@ -1,9 +1,9 @@
-module;
 /********************************************************************
 * Copyright © 2018-present Jovibor https://github.com/jovibor/      *
 * Official git repository: https://github.com/jovibor/ListEx/       *
 * This code is available under the "MIT License".                   *
 ********************************************************************/
+module;
 #include <shlwapi.h>
 #include <uxtheme.h>
 #include <commctrl.h>
