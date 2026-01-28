@@ -631,7 +631,7 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 	class CDynLayout final {
 	public:
 		//Ratio settings, for how much to move or resize an item when parent is resized.
-		struct ItemRatio { float m_flXRatio { }; float m_flYRatio { }; };
+		struct ItemRatio { float flXRatio { }; float flYRatio { }; };
 		struct MoveRatio : public ItemRatio { }; //To differentiate move from size in the AddItem.
 		struct SizeRatio : public ItemRatio { };
 
@@ -644,25 +644,25 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 		//Static helper methods to use in the AddItem.
 		[[nodiscard]] static MoveRatio MoveNone() { return { }; }
 		[[nodiscard]] static MoveRatio MoveHorz(int iXRatio) {
-			iXRatio = std::clamp(iXRatio, 0, 100); return { { .m_flXRatio { iXRatio / 100.F } } };
+			iXRatio = std::clamp(iXRatio, 0, 100); return { { .flXRatio { iXRatio / 100.F } } };
 		}
 		[[nodiscard]] static MoveRatio MoveVert(int iYRatio) {
-			iYRatio = std::clamp(iYRatio, 0, 100); return { { .m_flYRatio { iYRatio / 100.F } } };
+			iYRatio = std::clamp(iYRatio, 0, 100); return { { .flYRatio { iYRatio / 100.F } } };
 		}
 		[[nodiscard]] static MoveRatio MoveHorzAndVert(int iXRatio, int iYRatio) {
 			iXRatio = std::clamp(iXRatio, 0, 100); iYRatio = std::clamp(iYRatio, 0, 100);
-			return { { .m_flXRatio { iXRatio / 100.F }, .m_flYRatio { iYRatio / 100.F } } };
+			return { { .flXRatio { iXRatio / 100.F }, .flYRatio { iYRatio / 100.F } } };
 		}
 		[[nodiscard]] static SizeRatio SizeNone() { return { }; }
 		[[nodiscard]] static SizeRatio SizeHorz(int iXRatio) {
-			iXRatio = std::clamp(iXRatio, 0, 100); return { { .m_flXRatio { iXRatio / 100.F } } };
+			iXRatio = std::clamp(iXRatio, 0, 100); return { { .flXRatio { iXRatio / 100.F } } };
 		}
 		[[nodiscard]] static SizeRatio SizeVert(int iYRatio) {
-			iYRatio = std::clamp(iYRatio, 0, 100); return { { .m_flYRatio { iYRatio / 100.F } } };
+			iYRatio = std::clamp(iYRatio, 0, 100); return { { .flYRatio { iYRatio / 100.F } } };
 		}
 		[[nodiscard]] static SizeRatio SizeHorzAndVert(int iXRatio, int iYRatio) {
 			iXRatio = std::clamp(iXRatio, 0, 100); iYRatio = std::clamp(iYRatio, 0, 100);
-			return { { .m_flXRatio { iXRatio / 100.F }, .m_flYRatio { iYRatio / 100.F } } };
+			return { { .flXRatio { iXRatio / 100.F }, .flYRatio { iYRatio / 100.F } } };
 		}
 	private:
 		struct ItemData {
@@ -708,12 +708,12 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 
 		const auto hDWP = ::BeginDeferWindowPos(static_cast<int>(m_vecItems.size()));
 		for (const auto& [hWnd, rc, move, size] : m_vecItems) {
-			const auto iNewLeft = static_cast<int>(rc.left + (iDeltaX * move.m_flXRatio));
-			const auto iNewTop = static_cast<int>(rc.top + (iDeltaY * move.m_flYRatio));
+			const auto iNewLeft = static_cast<int>(rc.left + (iDeltaX * move.flXRatio));
+			const auto iNewTop = static_cast<int>(rc.top + (iDeltaY * move.flYRatio));
 			const auto iOrigWidth = rc.right - rc.left;
 			const auto iOrigHeight = rc.bottom - rc.top;
-			const auto iNewWidth = static_cast<int>(iOrigWidth + (iDeltaX * size.m_flXRatio));
-			const auto iNewHeight = static_cast<int>(iOrigHeight + (iDeltaY * size.m_flYRatio));
+			const auto iNewWidth = static_cast<int>(iOrigWidth + (iDeltaX * size.flXRatio));
+			const auto iNewHeight = static_cast<int>(iOrigHeight + (iDeltaY * size.flYRatio));
 			::DeferWindowPos(hDWP, hWnd, nullptr, iNewLeft, iNewTop, iNewWidth, iNewHeight, SWP_NOZORDER | SWP_NOACTIVATE);
 		}
 		::EndDeferWindowPos(hDWP);
@@ -849,7 +849,7 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 		auto SetTextColor(COLORREF clr)const -> COLORREF { return ::SetTextColor(m_hDC, clr); }
 		auto SetViewportOrg(int iX, int iY)const -> POINT { POINT pt; ::SetViewportOrgEx(m_hDC, iX, iY, &pt); return pt; }
 		auto SelectObject(HGDIOBJ hObj)const -> HGDIOBJ { return ::SelectObject(m_hDC, hObj); }
-		int StartDocW(const DOCINFO* pDI)const { return ::StartDocW(m_hDC, pDI); }
+		int StartDocW(const DOCINFOW* pDI)const { return ::StartDocW(m_hDC, pDI); }
 		int StartPage()const { return ::StartPage(m_hDC); }
 		void TextOutW(int iX, int iY, LPCWSTR pwszText, int iSize)const { ::TextOutW(m_hDC, iX, iY, pwszText, iSize); }
 		void TextOutW(int iX, int iY, std::wstring_view wsv)const {

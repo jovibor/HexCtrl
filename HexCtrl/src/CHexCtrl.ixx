@@ -392,6 +392,7 @@ namespace HEXCTRL::INTERNAL {
 		auto OnLButtonDblClk(const MSG& msg) -> LRESULT;
 		auto OnLButtonDown(const MSG& msg) -> LRESULT;
 		auto OnLButtonUp(const MSG& msg) -> LRESULT;
+		auto OnMButtonDown(const MSG& msg) -> LRESULT;
 		auto OnMouseMove(const MSG& msg) -> LRESULT;
 		auto OnMouseWheel(const MSG& msg) -> LRESULT;
 		auto OnNCActivate(const MSG& msg) -> LRESULT;
@@ -411,6 +412,7 @@ namespace HEXCTRL::INTERNAL {
 		static constexpr auto m_iFirstVertLinePx { 0 };               //First vertical line indent.
 		static constexpr auto m_dwVKMouseWheelUp { 0x0100UL };        //Artificial Virtual Key for a Mouse-Wheel Up event.
 		static constexpr auto m_dwVKMouseWheelDown { 0x0101UL };      //Artificial Virtual Key for a Mouse-Wheel Down event.
+		static constexpr auto m_dwVKMiddleButtonDown { 0x0102UL };    //Artificial Virtual Key for a Middle Button Down event.
 		CHexDlgBkmMgr m_DlgBkmMgr;            //"Bookmark manager" dialog.
 		CHexDlgCodepage m_DlgCodepage;        //"Codepage" dialog.
 		CHexDlgDataInterp m_DlgDataInterp;    //"Data interpreter" dialog.
@@ -1323,12 +1325,12 @@ bool CHexCtrl::IsCmdAvail(EHexCmd eCmd)const
 	using enum EHexCmd;
 	switch (eCmd) {
 	case CMD_BKM_REMOVE:
-		fAvail = m_DlgBkmMgr.HasBookmark(GetCaretPos());
+		fAvail = fDataSet && m_DlgBkmMgr.HasBookmark(GetCaretPos());
 		break;
 	case CMD_BKM_NEXT:
 	case CMD_BKM_PREV:
 	case CMD_BKM_REMOVEALL:
-		fAvail = m_DlgBkmMgr.HasBookmarks();
+		fAvail = fDataSet && m_DlgBkmMgr.HasBookmarks();
 		break;
 	case CMD_CLPBRD_COPY_HEX:
 	case CMD_CLPBRD_COPY_HEXLE:
@@ -1733,6 +1735,7 @@ auto CHexCtrl::ProcessMsg(const MSG& msg)->LRESULT
 	case WM_LBUTTONDBLCLK: return OnLButtonDblClk(msg);
 	case WM_LBUTTONDOWN: return OnLButtonDown(msg);
 	case WM_LBUTTONUP: return OnLButtonUp(msg);
+	case WM_MBUTTONDOWN: return OnMButtonDown(msg);
 	case WM_MOUSEMOVE: return OnMouseMove(msg);
 	case WM_MOUSEWHEEL: return OnMouseWheel(msg);
 	case WM_NCACTIVATE: return OnNCActivate(msg);
@@ -2000,7 +2003,8 @@ bool CHexCtrl::SetConfig(std::wstring_view wsvPath)
 		{ { "num_plus" }, { VK_ADD, L"Num Plus" } },
 		{ { "num_minus" }, { VK_SUBTRACT, L"Num Minus" } },
 		{ { "mouse_wheel_up" }, { m_dwVKMouseWheelUp, L"Mouse-Wheel Up" } },
-		{ { "mouse_wheel_down" }, { m_dwVKMouseWheelDown, L"Mouse-Wheel Down" } }
+		{ { "mouse_wheel_down" }, { m_dwVKMouseWheelDown, L"Mouse-Wheel Down" } },
+		{ { "middle_button_down" }, { m_dwVKMiddleButtonDown, L"Middle Button Down" } }
 	};
 
 	//Filling m_vecKeyBind with ALL available commands/menus.
@@ -7411,6 +7415,18 @@ auto CHexCtrl::OnLButtonUp([[maybe_unused]] const MSG& msg)->LRESULT
 	::ReleaseCapture();
 	m_ScrollV.OnLButtonUp();
 	m_ScrollH.OnLButtonUp();
+
+	return 0;
+}
+
+auto CHexCtrl::OnMButtonDown(const MSG& msg)->LRESULT
+{
+	const auto nFlags = GET_KEYSTATE_WPARAM(msg.wParam);
+
+	if (const auto opt = GetCommandFromKey(m_dwVKMiddleButtonDown,
+		nFlags & MK_CONTROL, nFlags & MK_SHIFT, false); opt) {
+		ExecuteCmd(*opt);
+	}
 
 	return 0;
 }
