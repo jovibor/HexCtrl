@@ -59,6 +59,7 @@
   "CMD_CARET_RIGHT": [ "right" ],
   "CMD_CARET_UP": [ "up" ],
   "CMD_CARET_DOWN": [ "down" ],
+  "CMD_SCROLL_CURSOR": [ "middle_button_down" ],
   "CMD_SCROLL_PAGEUP": [ "pageup", "mouse_wheel_up" ],
   "CMD_SCROLL_PAGEDOWN": [ "pagedown", "mouse_wheel_down" ],
   "CMD_TEMPL_APPLYCURR": [ "ctrl+alt+c" ],

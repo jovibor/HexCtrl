@@ -360,6 +360,7 @@ namespace HEXCTRL::INTERNAL {
 		void RecalcClientArea(int iWidth, int iHeight);
 		void Redo();
 		void ReplaceUnprintable(std::wstring& wstr, bool fASCII, bool fCRLF)const; //Substitute all unprintable wchar symbols with specified wchar.
+		void SetScrollCursor();
 		void ScrollOffsetH(ULONGLONG ullOffset); //Scroll horizontally to given offset.
 		void SelAll();      //Select all.
 		void SelAddDown();  //Down Key pressed with the Shift.
@@ -399,6 +400,7 @@ namespace HEXCTRL::INTERNAL {
 		auto OnNCCalcSize(const MSG& msg) -> LRESULT;
 		auto OnNCPaint(const MSG& msg) -> LRESULT;
 		auto OnPaint() -> LRESULT;
+		auto OnRButtonDown(const MSG& msg) -> LRESULT;
 		auto OnSetCursor(const MSG& msg) -> LRESULT;
 		auto OnSize(const MSG& msg) -> LRESULT;
 		auto OnTimer(const MSG& msg) -> LRESULT;
@@ -408,6 +410,7 @@ namespace HEXCTRL::INTERNAL {
 	private:
 		static constexpr auto m_pwszClassName { L"HexCtrl_MainWnd" }; //HexCtrl unique Window Class name.
 		static constexpr auto m_uIDTTTMain { 0x01UL };                //Timer ID for default tooltip.
+		static constexpr auto m_uIDTScrolCursor { 0x02UL };           //Timer ID for the scroll cursor.
 		static constexpr auto m_iFirstHorzLinePx { 0 };               //First horizontal line indent.
 		static constexpr auto m_iFirstVertLinePx { 0 };               //First vertical line indent.
 		static constexpr auto m_dwVKMouseWheelUp { 0x0100UL };        //Artificial Virtual Key for a Mouse-Wheel Up event.
@@ -428,6 +431,7 @@ namespace HEXCTRL::INTERNAL {
 		GDIUT::CWnd m_wndTTMain;              //Main tooltip window.
 		GDIUT::CWnd m_wndTTOffset;            //Tooltip window for Offset in m_fHighLatency mode.
 		GDIUT::CMenu m_MenuMain;              //Main popup menu.
+		GDIUT::CPoint m_ptScrollCursorClick;  //Scroll cursor click coordinates.
 		std::wstring m_wstrCapacity;          //Top Capacity string.
 		std::wstring m_wstrInfoBar;           //Info bar text.
 		std::wstring m_wstrPageName;          //Name of the sector/page.
@@ -507,6 +511,7 @@ namespace HEXCTRL::INTERNAL {
 		bool m_fRedraw { true };              //Should WM_PAINT be handled or not.
 		bool m_fScrollLines { false };        //Page scroll in "Screen * m_flScrollRatio" or in lines.
 		bool m_fHexCharsUpper { true };       //Hex chars printed in UPPER or lower case.
+		bool m_fScrollCursor { false };       //Is scroll cursor active atm?
 	};
 }
 
@@ -972,6 +977,9 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 		break;
 	case CMD_CARET_DOWN:
 		CaretMoveDown();
+		break;
+	case CMD_SCROLL_CURSOR:
+		SetScrollCursor();
 		break;
 	case CMD_SCROLL_PAGEUP:
 		m_ScrollV.ScrollPageUp();
@@ -1742,6 +1750,7 @@ auto CHexCtrl::ProcessMsg(const MSG& msg)->LRESULT
 	case WM_NCCALCSIZE: return OnNCCalcSize(msg);
 	case WM_NCPAINT: return OnNCPaint(msg);
 	case WM_PAINT: return OnPaint();
+	case WM_RBUTTONDOWN: return OnRButtonDown(msg);
 	case WM_SETCURSOR: return OnSetCursor(msg);
 	case WM_SIZE: return OnSize(msg);
 	case WM_TIMER: return OnTimer(msg);
@@ -1960,6 +1969,7 @@ bool CHexCtrl::SetConfig(std::wstring_view wsvPath)
 		{ "CMD_CARET_RIGHT", { CMD_CARET_RIGHT, 0 } },
 		{ "CMD_CARET_UP", { CMD_CARET_UP, 0 } },
 		{ "CMD_CARET_DOWN", { CMD_CARET_DOWN, 0 } },
+		{ "CMD_SCROLL_CURSOR", { CMD_SCROLL_CURSOR, 0 } },
 		{ "CMD_SCROLL_PAGEUP", { CMD_SCROLL_PAGEUP, 0 } },
 		{ "CMD_SCROLL_PAGEDOWN", { CMD_SCROLL_PAGEDOWN, 0 } },
 		{ "CMD_TEMPL_APPLYCURR", { CMD_TEMPL_APPLYCURR, IDM_HEXCTRL_TEMPL_APPLYCURR } },
@@ -4982,6 +4992,19 @@ void CHexCtrl::SetFontSize(long lSize)
 	SetFont(lf);
 }
 
+void CHexCtrl::SetScrollCursor()
+{
+	m_fScrollCursor = !m_fScrollCursor;
+
+	if (m_fScrollCursor) {
+		::GetCursorPos(m_ptScrollCursorClick);
+		m_Wnd.SetTimer(m_uIDTScrolCursor, 20, nullptr);
+	}
+	else {
+		m_Wnd.KillTimer(m_uIDTScrolCursor);
+	}
+}
+
 void CHexCtrl::SnapshotUndo(const VecSpan& vecSpan)
 {
 	constexpr auto dwUndoMax { 512U }; //Undo's max limit.
@@ -7365,6 +7388,12 @@ auto CHexCtrl::OnLButtonDown(const MSG& msg)->LRESULT
 	const POINT pt { .x { ut::GetXLPARAM(msg.lParam) }, .y { ut::GetYLPARAM(msg.lParam) } };
 
 	m_Wnd.SetFocus(); //SetFocus is vital to give proper keyboard input to the main HexCtrl window.
+
+	if (m_fScrollCursor) {
+		SetScrollCursor();
+		return 0;
+	}
+
 	const auto optHit = HitTest(pt);
 	if (!optHit)
 		return 0;
@@ -7421,6 +7450,7 @@ auto CHexCtrl::OnLButtonUp([[maybe_unused]] const MSG& msg)->LRESULT
 
 auto CHexCtrl::OnMButtonDown(const MSG& msg)->LRESULT
 {
+	m_Wnd.SetFocus();
 	const auto nFlags = GET_KEYSTATE_WPARAM(msg.wParam);
 
 	if (const auto opt = GetCommandFromKey(m_dwVKMiddleButtonDown,
@@ -7659,8 +7689,25 @@ auto CHexCtrl::OnPaint()->LRESULT
 	return 0;
 }
 
+auto CHexCtrl::OnRButtonDown([[maybe_unused]] const MSG& msg)->LRESULT
+{
+	if (m_fScrollCursor) {
+		SetScrollCursor();
+		return 0;
+	}
+
+	return 0;
+}
+
 auto CHexCtrl::OnSetCursor(const MSG& msg)->LRESULT
 {
+	if (m_fScrollCursor) {
+		static const auto hCurScroll = static_cast<HCURSOR>(::LoadImageW(nullptr, MAKEINTRESOURCEW(32654),
+			IMAGE_CURSOR, 0, 0, LR_DEFAULTSIZE | LR_SHARED)); //Standard Windows scrolling cursor.
+		::SetCursor(hCurScroll);
+		return 0;
+	}
+
 	const auto wHitTest = LOWORD(msg.lParam);
 	const auto wMessage = HIWORD(msg.lParam);
 	m_ScrollV.OnSetCursor(wHitTest, wMessage);
@@ -7684,25 +7731,44 @@ auto CHexCtrl::OnSize(const MSG& msg)->LRESULT
 
 auto CHexCtrl::OnTimer(const MSG& msg)->LRESULT
 {
-	if (msg.wParam != m_uIDTTTMain)
-		return GDIUT::DefWndProc(msg);
+	const auto uIDTimer = msg.wParam;
 
-	constexpr auto dbSecToShow { 5000.0 }; //How many ms to show tooltips.
-	auto rcClient = m_Wnd.GetClientRect();
-	m_Wnd.ClientToScreen(rcClient);
-	GDIUT::CPoint ptCur;
-	::GetCursorPos(ptCur);
+	if (uIDTimer == m_uIDTTTMain) {
+		constexpr auto dbSecToShow { 5000.0 }; //How many ms to show tooltips.
+		auto rcClient = m_Wnd.GetClientRect();
+		m_Wnd.ClientToScreen(rcClient);
+		GDIUT::CPoint ptCur;
+		::GetCursorPos(ptCur);
 
-	if (!rcClient.PtInRect(ptCur)) { //Check if cursor has left client rect,
-		TTMainShow(false);
+		if (!rcClient.PtInRect(ptCur)) { //Check if cursor has left client rect,
+			TTMainShow(false);
+		}
+		else if (const auto msElapsed = std::chrono::duration<double, std::milli>
+			(std::chrono::high_resolution_clock::now() - m_tmTT).count();
+			msElapsed >= dbSecToShow) { //or more than dbSecToShow ms have passed since toolip was shown.
+			TTMainShow(false, true);
+		}
+
+		return 0;
 	}
-	else if (const auto msElapsed = std::chrono::duration<double, std::milli>
-		(std::chrono::high_resolution_clock::now() - m_tmTT).count();
-		msElapsed >= dbSecToShow) { //or more than dbSecToShow ms have passed since toolip was shown.
-		TTMainShow(false, true);
+
+	if (uIDTimer == m_uIDTScrolCursor) {
+		GDIUT::CPoint ptCur;
+		::GetCursorPos(ptCur);
+		const auto iSegmentPx = static_cast<int>(40 * m_flDPIScale); //Segment size in pixels, to accelerate against.
+		const auto iSegmentsY = (ptCur.y - m_ptScrollCursorClick.y) / iSegmentPx; //How many vertical segments away from click.
+		const auto i64NewScrollY = static_cast<std::int64_t>(m_ScrollV.GetScrollPos()
+			+ m_ScrollV.GetScrollLineSize() / 4.F * iSegmentsY);
+		m_ScrollV.SetScrollPos(i64NewScrollY < 0 ? 0ULL : i64NewScrollY);
+		const auto iSegmentsX = (ptCur.x - m_ptScrollCursorClick.x) / iSegmentPx; //How many horizontal segments away from click.
+		const auto i64NewScrollX = static_cast<std::int64_t>(m_ScrollH.GetScrollPos()
+			+ m_ScrollH.GetScrollLineSize() / 4.F * iSegmentsX);
+		m_ScrollH.SetScrollPos(i64NewScrollX < 0 ? 0ULL : i64NewScrollX);
+
+		return 0;
 	}
 
-	return 0;
+	return GDIUT::DefWndProc(msg);
 }
 
 auto CHexCtrl::OnVScroll([[maybe_unused]] const MSG& msg)->LRESULT
