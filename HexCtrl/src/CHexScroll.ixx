@@ -11,7 +11,6 @@ module;
 #include <cassert>
 #include <cmath>
 #include <limits>
-#include <memory>
 export module HEXCTRL:CHexScroll;
 
 import :HexUtility;
@@ -47,6 +46,8 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] auto ProcessMsg(const MSG& msg) -> LRESULT;
 		void SetColors(COLORREF clrBar, COLORREF clrThumb, COLORREF clrArrow);
 		auto SetScrollPos(ULONGLONG ullNewPos) -> ULONGLONG;
+		auto SetScrollPos(std::int64_t i64NewPos) -> ULONGLONG;
+		auto SetScrollPos(std::int32_t iNewPos) -> ULONGLONG;
 		void SetScrollSizes(ULONGLONG ullLine, ULONGLONG ullPage, ULONGLONG ullSizeMax);
 		void ScrollEnd();
 		void ScrollLineUp();
@@ -127,9 +128,7 @@ enum class CHexScroll::ETimer : std::uint16_t {
 void CHexScroll::AddSibling(CHexScroll* pSibling)
 {
 	assert(m_fCreated);
-	if (!m_fCreated) {
-		return;
-	}
+	if (!m_fCreated) { return; }
 
 	m_pSibling = pSibling;
 }
@@ -139,9 +138,7 @@ bool CHexScroll::Create(HWND hWndParent, bool fVert, COLORREF clrBar, COLORREF c
 {
 	assert(!m_fCreated);
 	assert(hWndParent != nullptr);
-	if (m_fCreated || hWndParent == nullptr) {
-		return false;
-	}
+	if (m_fCreated || hWndParent == nullptr) { return false; }
 
 	constexpr auto pwszScrollClassName { L"HexCtrl_ScrollBarWnd" };
 	if (WNDCLASSEXW wc { }; ::GetClassInfoExW(nullptr, pwszScrollClassName, &wc) == FALSE) {
@@ -183,9 +180,7 @@ void CHexScroll::DestroyWindow()
 auto CHexScroll::GetScrollPos()const->ULONGLONG
 {
 	assert(m_fCreated);
-	if (!m_fCreated) {
-		return { };
-	}
+	if (!m_fCreated) { return { }; }
 
 	return m_ullPosCurr;
 }
@@ -193,9 +188,7 @@ auto CHexScroll::GetScrollPos()const->ULONGLONG
 auto CHexScroll::GetScrollPosDelta()const->LONGLONG
 {
 	assert(m_fCreated);
-	if (!m_fCreated) {
-		return { };
-	}
+	if (!m_fCreated) { return { }; }
 
 	return static_cast<LONGLONG>(m_ullPosCurr - m_ullPosPrev);
 }
@@ -203,9 +196,7 @@ auto CHexScroll::GetScrollPosDelta()const->LONGLONG
 auto CHexScroll::GetScrollLineSize()const->ULONGLONG
 {
 	assert(m_fCreated);
-	if (!m_fCreated) {
-		return { };
-	}
+	if (!m_fCreated) { return { }; }
 
 	return m_ullLine;
 }
@@ -213,9 +204,7 @@ auto CHexScroll::GetScrollLineSize()const->ULONGLONG
 auto CHexScroll::GetScrollPageSize()const->ULONGLONG
 {
 	assert(m_fCreated);
-	if (!m_fCreated) {
-		return { };
-	}
+	if (!m_fCreated) { return { }; }
 
 	return m_ullPage;
 }
@@ -223,18 +212,14 @@ auto CHexScroll::GetScrollPageSize()const->ULONGLONG
 auto CHexScroll::IsThumbReleased()const->bool
 {
 	assert(m_fCreated);
-	if (!m_fCreated) {
-		return false;
-	}
+	if (!m_fCreated) { return false; }
 
 	return m_eState != EState::THUMB_CLICK;
 }
 
 auto CHexScroll::IsVisible()const->bool
 {
-	if (!m_fCreated) {
-		return false;
-	}
+	if (!m_fCreated) { return false; }
 
 	return m_fVisible;
 }
@@ -242,9 +227,7 @@ auto CHexScroll::IsVisible()const->bool
 void CHexScroll::OnLButtonUp()
 {
 	assert(m_fCreated);
-	if (!m_fCreated || m_eState == EState::STATE_DEFAULT) {
-		return;
-	}
+	if (!m_fCreated || m_eState == EState::STATE_DEFAULT) { return; }
 
 	m_eState = EState::STATE_DEFAULT;
 	SendParentScrollMsg(); //For parent to check IsThumbReleased.
@@ -257,9 +240,7 @@ void CHexScroll::OnLButtonUp()
 void CHexScroll::OnMouseMove(POINT pt)
 {
 	assert(m_fCreated);
-	if (!m_fCreated || !IsThumbDragging()) {
-		return;
-	}
+	if (!m_fCreated || !IsThumbDragging()) { return; }
 
 	const auto rc = GetScrollWorkAreaRect(true);
 	const auto iCurrPos = GetThumbPos();
@@ -301,18 +282,14 @@ void CHexScroll::OnMouseMove(POINT pt)
 
 void CHexScroll::OnNCActivate()const
 {
-	if (!m_fCreated) {
-		return;
-	}
+	if (!m_fCreated) { return; }
 
 	RedrawNC(); //To repaint NC area.
 }
 
 void CHexScroll::OnNCCalcSize(NCCALCSIZE_PARAMS* pCSP)
 {
-	if (!m_fCreated) {
-		return;
-	}
+	if (!m_fCreated) { return; }
 
 	const GDIUT::CRect rc = pCSP->rgrc[0];
 	const auto ullCurPos = GetScrollPos();
@@ -329,7 +306,7 @@ void CHexScroll::OnNCCalcSize(NCCALCSIZE_PARAMS* pCSP)
 			pCSP->rgrc[0].right -= m_dwBarSizeWH;
 		}
 		else {
-			SetScrollPos(0);
+			SetScrollPos(0ULL);
 			m_fVisible = false;
 		}
 	}
@@ -346,7 +323,7 @@ void CHexScroll::OnNCCalcSize(NCCALCSIZE_PARAMS* pCSP)
 			pCSP->rgrc[0].bottom -= m_dwBarSizeWH;
 		}
 		else {
-			SetScrollPos(0);
+			SetScrollPos(0ULL);
 			m_fVisible = false;
 		}
 	}
@@ -354,9 +331,7 @@ void CHexScroll::OnNCCalcSize(NCCALCSIZE_PARAMS* pCSP)
 
 void CHexScroll::OnNCPaint()const
 {
-	if (!m_fCreated) {
-		return;
-	}
+	if (!m_fCreated) { return; }
 
 	DrawScrollBar();
 }
@@ -364,9 +339,7 @@ void CHexScroll::OnNCPaint()const
 void CHexScroll::OnSetCursor(UINT uHitTest, UINT uMsg)
 {
 	assert(m_fCreated);
-	if (!m_fCreated) {
-		return;
-	}
+	if (!m_fCreated) { return; }
 
 	if (uHitTest == HTTOPLEFT || uHitTest == HTLEFT || uHitTest == HTBOTTOMLEFT
 		|| uHitTest == HTTOPRIGHT || uHitTest == HTRIGHT || uHitTest == HTBOTTOMRIGHT
@@ -433,9 +406,7 @@ auto CHexScroll::ProcessMsg(const MSG& msg)->LRESULT
 void CHexScroll::SetColors(COLORREF clrBar, COLORREF clrThumb, COLORREF clrArrow)
 {
 	assert(m_fCreated);
-	if (!m_fCreated) {
-		return;
-	}
+	if (!m_fCreated) { return; }
 
 	m_clrBar = clrBar;
 	m_clrThumb = clrThumb;
@@ -447,9 +418,7 @@ void CHexScroll::SetColors(COLORREF clrBar, COLORREF clrThumb, COLORREF clrArrow
 auto CHexScroll::SetScrollPos(ULONGLONG ullNewPos)->ULONGLONG
 {
 	assert(m_fCreated);
-	if (!m_fCreated) {
-		return { };
-	}
+	if (!m_fCreated) { return { }; }
 
 	m_ullPosPrev = m_ullPosCurr;
 	if (m_ullPosCurr == ullNewPos) {
@@ -466,12 +435,20 @@ auto CHexScroll::SetScrollPos(ULONGLONG ullNewPos)->ULONGLONG
 	return m_ullPosPrev;
 }
 
+auto CHexScroll::SetScrollPos(std::int64_t i64NewPos)->ULONGLONG
+{
+	return SetScrollPos(i64NewPos < 0 ? 0ULL : i64NewPos);
+}
+
+auto CHexScroll::SetScrollPos(std::int32_t iNewPos)->ULONGLONG
+{
+	return SetScrollPos(iNewPos < 0 ? 0ULL : iNewPos);
+}
+
 void CHexScroll::SetScrollSizes(ULONGLONG ullLine, ULONGLONG ullPage, ULONGLONG ullSizeMax)
 {
 	assert(m_fCreated);
-	if (!m_fCreated) {
-		return;
-	}
+	if (!m_fCreated) { return; }
 
 	m_ullLine = ullLine;
 	m_ullPage = ullPage;
@@ -483,9 +460,7 @@ void CHexScroll::SetScrollSizes(ULONGLONG ullLine, ULONGLONG ullPage, ULONGLONG 
 void CHexScroll::ScrollEnd()
 {
 	assert(m_fCreated);
-	if (!m_fCreated) {
-		return;
-	}
+	if (!m_fCreated) { return; }
 
 	SetScrollPos(m_ullSizeMax);
 }
@@ -493,9 +468,7 @@ void CHexScroll::ScrollEnd()
 void CHexScroll::ScrollLineUp()
 {
 	assert(m_fCreated);
-	if (!m_fCreated) {
-		return;
-	}
+	if (!m_fCreated) { return; }
 
 	const auto ullCur = GetScrollPos();
 	SetScrollPos(m_ullLine > ullCur ? 0 : ullCur - m_ullLine);
@@ -504,12 +477,10 @@ void CHexScroll::ScrollLineUp()
 void CHexScroll::ScrollLineDown()
 {
 	assert(m_fCreated);
-	if (!m_fCreated) {
-		return;
-	}
+	if (!m_fCreated) { return; }
 
+	constexpr auto ullMax = (std::numeric_limits<ULONGLONG>::max)();
 	const auto ullCur = GetScrollPos();
-	const auto ullMax = (std::numeric_limits<ULONGLONG>::max)();
 	const auto ullNew { ullMax - ullCur < m_ullLine ? ullMax : ullCur + m_ullLine };
 	SetScrollPos(ullNew);
 }
@@ -517,9 +488,7 @@ void CHexScroll::ScrollLineDown()
 void CHexScroll::ScrollLineLeft()
 {
 	assert(m_fCreated);
-	if (!m_fCreated) {
-		return;
-	}
+	if (!m_fCreated) { return; }
 
 	ScrollLineUp();
 }
@@ -527,9 +496,7 @@ void CHexScroll::ScrollLineLeft()
 void CHexScroll::ScrollLineRight()
 {
 	assert(m_fCreated);
-	if (!m_fCreated) {
-		return;
-	}
+	if (!m_fCreated) { return; }
 
 	ScrollLineDown();
 }
@@ -537,9 +504,7 @@ void CHexScroll::ScrollLineRight()
 void CHexScroll::ScrollPageUp()
 {
 	assert(m_fCreated);
-	if (!m_fCreated) {
-		return;
-	}
+	if (!m_fCreated) { return; }
 
 	const auto ullCur = GetScrollPos();
 	SetScrollPos(m_ullPage > ullCur ? 0 : ullCur - m_ullPage);
@@ -548,9 +513,7 @@ void CHexScroll::ScrollPageUp()
 void CHexScroll::ScrollPageDown()
 {
 	assert(m_fCreated);
-	if (!m_fCreated) {
-		return;
-	}
+	if (!m_fCreated) { return; }
 
 	const auto ullCur = GetScrollPos();
 	const auto ullMax = (std::numeric_limits<ULONGLONG>::max)();
@@ -560,9 +523,7 @@ void CHexScroll::ScrollPageDown()
 void CHexScroll::ScrollPageLeft()
 {
 	assert(m_fCreated);
-	if (!m_fCreated) {
-		return;
-	}
+	if (!m_fCreated) { return; }
 
 	ScrollPageUp();
 }
@@ -570,9 +531,7 @@ void CHexScroll::ScrollPageLeft()
 void CHexScroll::ScrollPageRight()
 {
 	assert(m_fCreated);
-	if (!m_fCreated) {
-		return;
-	}
+	if (!m_fCreated) { return; }
 
 	ScrollPageDown();
 }
@@ -580,19 +539,15 @@ void CHexScroll::ScrollPageRight()
 void CHexScroll::ScrollHome()
 {
 	assert(m_fCreated);
-	if (!m_fCreated) {
-		return;
-	}
+	if (!m_fCreated) { return; }
 
-	SetScrollPos(0);
+	SetScrollPos(0ULL);
 }
 
 void CHexScroll::SetScrollPageSize(ULONGLONG ullSize)
 {
 	assert(m_fCreated);
-	if (!m_fCreated) {
-		return;
-	}
+	if (!m_fCreated) { return; }
 
 	m_ullPage = ullSize;
 }

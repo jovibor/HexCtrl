@@ -7759,11 +7759,11 @@ auto CHexCtrl::OnTimer(const MSG& msg)->LRESULT
 		const auto iSegmentsY = (ptCur.y - m_ptScrollCursorClick.y) / iSegmentPx; //How many vertical segments away from click.
 		const auto i64NewScrollY = static_cast<std::int64_t>(m_ScrollV.GetScrollPos()
 			+ m_ScrollV.GetScrollLineSize() / 4.F * iSegmentsY);
-		m_ScrollV.SetScrollPos(i64NewScrollY < 0 ? 0ULL : i64NewScrollY);
+		m_ScrollV.SetScrollPos(i64NewScrollY);
 		const auto iSegmentsX = (ptCur.x - m_ptScrollCursorClick.x) / iSegmentPx; //How many horizontal segments away from click.
 		const auto i64NewScrollX = static_cast<std::int64_t>(m_ScrollH.GetScrollPos()
 			+ m_ScrollH.GetScrollLineSize() / 4.F * iSegmentsX);
-		m_ScrollH.SetScrollPos(i64NewScrollX < 0 ? 0ULL : i64NewScrollX);
+		m_ScrollH.SetScrollPos(i64NewScrollX);
 
 		return 0;
 	}
