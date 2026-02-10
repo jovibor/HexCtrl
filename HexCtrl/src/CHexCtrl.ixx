@@ -493,7 +493,6 @@ namespace HEXCTRL::INTERNAL {
 		int m_iThirdVertLinePx { };           //Third vert line indent.
 		int m_iFourthVertLinePx { };          //Fourth vert line indent.
 		int m_iCodePage { };                  //Current code-page for Text area. -1 for default.
-		int m_iLOGPIXELSY { };                //GetDeviceCaps(LOGPIXELSY) constant.
 		float m_flScrollRatio { };            //Ratio for how much to scroll with mouse-wheel.
 		float m_flDPIScale { 1.F };           //DPI scale factor for window.
 		wchar_t m_wchUnprintable { };         //Replacement char for unprintable characters.
@@ -647,10 +646,6 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	m_dwDigitsOffsetDec = 10UL;
 	m_dwDigitsOffsetHex = 8UL;
 	m_flDPIScale = GDIUT::GetDPIScaleForHWND(m_Wnd);
-
-	const auto hDC = m_Wnd.GetDC();
-	m_iLOGPIXELSY = ::GetDeviceCaps(hDC, LOGPIXELSY);
-	m_Wnd.ReleaseDC(hDC);
 
 	//Menu related.
 	if (!m_MenuMain.LoadMenuW(m_hInstRes, IDR_HEXCTRL_MENU)) {
@@ -4450,7 +4445,10 @@ void CHexCtrl::Print()
 	const GDIUT::CRect rcPrint(POINT(0, 0), SIZE(::GetDeviceCaps(dcPrint, HORZRES) - (iMarginX * 2),
 		::GetDeviceCaps(dcPrint, VERTRES) - (iMarginY * 2)));
 	const SIZE sizePrintDpi { ::GetDeviceCaps(dcPrint, LOGPIXELSX), ::GetDeviceCaps(dcPrint, LOGPIXELSY) };
-	const auto iFontSizeRatio { sizePrintDpi.cy / m_iLOGPIXELSY };
+	const auto hDCWnd = m_Wnd.GetDC();
+	const auto iLOGPIXELSY = ::GetDeviceCaps(hDCWnd, LOGPIXELSY);
+	m_Wnd.ReleaseDC(hDCWnd);
+	const auto iFontSizeRatio { sizePrintDpi.cy / iLOGPIXELSY };
 	const auto dwCapacity = GetCapacity();
 
 	//Setting scaled fonts for printing, and temporarily disabling redraw.
@@ -7755,7 +7753,7 @@ auto CHexCtrl::OnTimer(const MSG& msg)->LRESULT
 	if (uIDTimer == m_uIDTScrolCursor) {
 		GDIUT::CPoint ptCur;
 		::GetCursorPos(ptCur);
-		const auto iSegmentPx = static_cast<int>(40 * m_flDPIScale); //Segment size in pixels, to accelerate against.
+		const auto iSegmentPx = static_cast<int>(40 * GetDPIScale()); //Segment size in pixels, to accelerate against.
 		const auto iSegmentsY = (ptCur.y - m_ptScrollCursorClick.y) / iSegmentPx; //How many vertical segments away from click.
 		const auto i64NewScrollY = static_cast<std::int64_t>(m_ScrollV.GetScrollPos()
 			+ m_ScrollV.GetScrollLineSize() / 4.F * iSegmentsY);
