@@ -308,6 +308,7 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] auto CopyOffset()const -> std::wstring;
 		[[nodiscard]] auto CopyPrintScreen()const -> std::wstring;
 		[[nodiscard]] auto CopyTextCP()const -> std::wstring;
+		void CreateMenuIcons();
 		void CreatePens();
 		void DrawWindow(HDC hDC)const;
 		void DrawInfoBar(HDC hDC)const;
@@ -322,10 +323,10 @@ namespace HEXCTRL::INTERNAL {
 		void DrawPageLines(HDC hDC, ULONGLONG ullStartLine, int iLines)const;
 		void FillCapacityString(); //Fill m_wstrCapacity according to current m_dwCapacity.
 		void FillWithZeros();      //Fill selection with zeros.
-		[[nodiscard]] auto FontPointsFromPixelsScaled(float flSizeDIP) -> float; //Get font points size from the size in scaled pixels.
-		[[nodiscard]] auto FontPointsFromPixelsScaled(long iSizeDIP) -> long;
-		[[nodiscard]] auto FontPixelsScaledFromPoints(float flSizePoint) -> float; //Get font size in Device Independent Pixels from point size.
-		[[nodiscard]] auto FontPixelsScaledFromPoints(long iSizePoint) -> long;
+		[[nodiscard]] auto FontPointsFromScaledPixels(float flSizePixels) -> float; //Get font size in points from size in scaled pixels.
+		[[nodiscard]] auto FontPointsFromScaledPixels(long iSizePixels) -> long;
+		[[nodiscard]] auto FontScaledPixelsFromPoints(float flSizePoints) -> float; //Get font size in scaled pixels from size in points.
+		[[nodiscard]] auto FontScaledPixelsFromPoints(long iSizePoints) -> long;
 		void FontSizeIncDec(bool fInc = true); //Increase os decrease font size by minimum amount.
 		[[nodiscard]] auto GetBottomLine()const -> ULONGLONG; //Returns current bottom line number in view.
 		[[nodiscard]] auto GetCharsWidthArray()const -> int*;
@@ -335,7 +336,7 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] auto GetCommandFromMenu(WORD wMenuID)const -> std::optional<EHexCmd>; //Get command from menuID.
 		[[nodiscard]] auto GetDigitsOffset()const -> DWORD;
 		[[nodiscard]] auto GetDPIScale()const -> float;
-		[[nodiscard]] long GetFontSize()const;
+		[[nodiscard]] long GetFontSize(bool fMain)const;
 		[[nodiscard]] auto GetHexChars()const -> const wchar_t*;
 		[[nodiscard]] auto GetRectTextCaption()const -> GDIUT::CRect; //Returns rect of the text caption area.
 		[[nodiscard]] auto GetSelectedLines()const -> ULONGLONG;  //Get amount of selected lines.
@@ -368,7 +369,8 @@ namespace HEXCTRL::INTERNAL {
 		void SelAddRight(); //Right Key pressed with the Shift.
 		void SelAddUp();    //Up Key pressed with the Shift.
 		void SetDataVirtual(SpanByte spnData, const HEXSPAN& hss)const; //Sets data (notifies back) in VirtualData mode.
-		void SetFontSize(long lSize); //Set current font size.
+		void SetDPIScale(); //Set new DPI scale factor according to current DPI.
+		void SetFontSizeInPoints(long iSizePoints, bool fMain); //Set font size in points.
 		void SnapshotUndo(const VecSpan& vecSpan); //Takes currently modifiable data snapshot.
 		void TextChunkPoint(ULONGLONG ullOffset, int& iCx, int& iCy)const; //Point of the text chunk.
 		void TTMainShow(bool fShow, bool fTimer = false); //Main tooltip show/hide.
@@ -383,6 +385,7 @@ namespace HEXCTRL::INTERNAL {
 		auto OnCommand(const MSG& msg) -> LRESULT;
 		auto OnContextMenu(const MSG& msg) -> LRESULT;
 		auto OnDestroy() -> LRESULT;
+		auto OnDPIChangedAfterParent() -> LRESULT;
 		auto OnEraseBkgnd(const MSG& msg) -> LRESULT;
 		auto OnGetDlgCode(const MSG& msg) -> LRESULT;
 		auto OnHelp(const MSG& msg) -> LRESULT;
@@ -464,8 +467,8 @@ namespace HEXCTRL::INTERNAL {
 		DWORD m_dwGroupSize { };              //Current data grouping size.
 		DWORD m_dwCapacity { };               //How many bytes are displayed in one row.
 		DWORD m_dwCapacityBlockSize { };      //Size of the block before a space delimiter.
-		DWORD m_dwDigitsOffsetDec { };        //Amount of digits for "Offset" in Decimal mode, 10 is max for 32bit number.
-		DWORD m_dwDigitsOffsetHex { };        //Amount of digits for "Offset" in Hex mode, 8 is max for 32bit number.
+		DWORD m_dwDigitsOffsetDec { 10UL };   //Amount of digits for "Offset" in Decimal mode, 10 is max for 32bit number.
+		DWORD m_dwDigitsOffsetHex { 8UL };    //Amount of digits for "Offset" in Hex mode, 8 is max for 32bit number.
 		DWORD m_dwPageSize { };               //Size of a page to print additional lines between.
 		DWORD m_dwCacheSize { };              //Data cache size for VirtualData mode.
 		DWORD m_dwDateFormat { };             //Current date format. See https://docs.microsoft.com/en-gb/windows/win32/intl/locale-idate
@@ -643,81 +646,24 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	m_fScrollLines = hcs.fScrollLines;
 	m_fInfoBar = hcs.fInfoBar;
 	m_fOffsetHex = hcs.fOffsetHex;
-	m_dwDigitsOffsetDec = 10UL;
-	m_dwDigitsOffsetHex = 8UL;
-	m_flDPIScale = GDIUT::GetDPIScaleForHWND(m_Wnd);
+	SetDPIScale();
 
-	//Menu related.
 	if (!m_MenuMain.LoadMenuW(m_hInstRes, IDR_HEXCTRL_MENU)) {
 		ut::DBG_REPORT(L"LoadMenuW failed.");
 		return false;
 	}
 
-	const auto iSizeIcon = static_cast<int>(16 * GetDPIScale());
-	const auto menuTop = m_MenuMain.GetSubMenu(0); //Context sub-menu handle.
-	//"Search" menu icon.
-	auto hBmp = static_cast<HBITMAP>(::LoadImageW(m_hInstRes, MAKEINTRESOURCEW(IDB_HEXCTRL_SEARCH), IMAGE_BITMAP,
-		iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
-	menuTop.SetItemBitmap(0, hBmp, false); //"Search" parent menu icon.
-	m_MenuMain.SetItemBitmap(IDM_HEXCTRL_SEARCH_DLGSEARCH, hBmp);
-	m_vecHBITMAP.emplace_back(hBmp);
+	CreateMenuIcons();
 
-	//"Group Data" menu icon.
-	hBmp = static_cast<HBITMAP>(::LoadImageW(m_hInstRes, MAKEINTRESOURCEW(IDB_HEXCTRL_GROUP), IMAGE_BITMAP,
-		iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
-	menuTop.SetItemBitmap(2, hBmp, false); //"Group Data" parent menu icon.
-	m_vecHBITMAP.emplace_back(hBmp);
-
-	//"Bookmarks->Add" menu icon.
-	hBmp = static_cast<HBITMAP>(::LoadImageW(m_hInstRes, MAKEINTRESOURCEW(IDB_HEXCTRL_BKMS), IMAGE_BITMAP,
-		iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
-	menuTop.SetItemBitmap(4, hBmp, false); //"Bookmarks" parent menu icon.
-	m_MenuMain.SetItemBitmap(IDM_HEXCTRL_BKM_ADD, hBmp);
-	m_vecHBITMAP.emplace_back(hBmp);
-
-	//"Clipboard->Copy as Hex" menu icon.
-	hBmp = static_cast<HBITMAP>(::LoadImageW(m_hInstRes, MAKEINTRESOURCEW(IDB_HEXCTRL_CLPBRD_COPYHEX), IMAGE_BITMAP,
-		iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
-	menuTop.SetItemBitmap(5, hBmp, false); //"Clipboard" parent menu icon.
-	m_MenuMain.SetItemBitmap(IDM_HEXCTRL_CLPBRD_COPYHEX, hBmp);
-	m_vecHBITMAP.emplace_back(hBmp);
-
-	//"Clipboard->Paste as Hex" menu icon.
-	hBmp = static_cast<HBITMAP>(::LoadImageW(m_hInstRes, MAKEINTRESOURCEW(IDB_HEXCTRL_CLPBRD_PASTEHEX), IMAGE_BITMAP,
-		iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
-	m_MenuMain.SetItemBitmap(IDM_HEXCTRL_CLPBRD_PASTEHEX, hBmp);
-	m_vecHBITMAP.emplace_back(hBmp);
-
-	//"Modify" parent menu icon.
-	hBmp = static_cast<HBITMAP>(::LoadImageW(m_hInstRes, MAKEINTRESOURCEW(IDB_HEXCTRL_MODIFY), IMAGE_BITMAP,
-		iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
-	menuTop.SetItemBitmap(6, hBmp, false);
-	m_vecHBITMAP.emplace_back(hBmp);
-
-	//"Modify->Fill with Zeros" menu icon.
-	hBmp = static_cast<HBITMAP>(::LoadImageW(m_hInstRes, MAKEINTRESOURCEW(IDB_HEXCTRL_MODIFY_FILLZEROS), IMAGE_BITMAP,
-		iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
-	m_MenuMain.SetItemBitmap(IDM_HEXCTRL_MODIFY_FILLZEROS, hBmp);
-	m_vecHBITMAP.emplace_back(hBmp);
-
-	//"Appearance->Choose Font" menu icon.
-	hBmp = static_cast<HBITMAP>(::LoadImageW(m_hInstRes, MAKEINTRESOURCEW(IDB_HEXCTRL_FONTCHOOSE), IMAGE_BITMAP,
-		iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
-	m_MenuMain.SetItemBitmap(IDM_HEXCTRL_APPEAR_DLGFONT, hBmp);
-	m_vecHBITMAP.emplace_back(hBmp);
-	//End of menu related.
-
-	//Font related.
 	//Default main logfont.
-	const LOGFONTW lfMain { .lfHeight { -FontPixelsScaledFromPoints(11L) }, .lfWeight { FW_NORMAL },
+	const LOGFONTW lfMain { .lfHeight { -FontScaledPixelsFromPoints(11L) }, .lfWeight { FW_NORMAL },
 		.lfQuality { CLEARTYPE_QUALITY }, .lfPitchAndFamily { FIXED_PITCH }, .lfFaceName { L"Consolas" } };
 	m_hFntMain = ::CreateFontIndirectW(hcs.pLogFont != nullptr ? hcs.pLogFont : &lfMain);
 
 	//Info area font, independent from the main font, its size is a bit smaller than the default main font.
-	const LOGFONTW lfInfo { .lfHeight { -FontPixelsScaledFromPoints(11L) + 1 }, .lfWeight { FW_NORMAL },
+	const LOGFONTW lfInfo { .lfHeight { -FontScaledPixelsFromPoints(11L) + 1 }, .lfWeight { FW_NORMAL },
 		.lfQuality { CLEARTYPE_QUALITY }, .lfPitchAndFamily { FIXED_PITCH }, .lfFaceName { L"Consolas" } };
 	m_hFntInfoBar = ::CreateFontIndirectW(&lfInfo);
-	//End of font related.
 
 	CreatePens();
 
@@ -1727,6 +1673,7 @@ auto CHexCtrl::ProcessMsg(const MSG& msg)->LRESULT
 	case WM_COMMAND: return OnCommand(msg);
 	case WM_CONTEXTMENU: return OnContextMenu(msg);
 	case WM_DESTROY: return OnDestroy();
+	case WM_DPICHANGED_AFTERPARENT: return OnDPIChangedAfterParent();
 	case WM_ERASEBKGND: return OnEraseBkgnd(msg);
 	case WM_GETDLGCODE: return OnGetDlgCode(msg);
 	case WM_HELP: return OnHelp(msg);
@@ -2180,24 +2127,24 @@ void CHexCtrl::SetData(const HEXDATA& hds, bool fAdjust)
 	const auto ullDataSize = hds.pHexVirtData ? (std::max)(hds.ullMaxVirtOffset,
 		static_cast<ULONGLONG>(hds.spnData.size())) : hds.spnData.size();
 	if (ullDataSize <= 0xFFFFFFFFUL) {
-		m_dwDigitsOffsetDec = 10;
-		m_dwDigitsOffsetHex = 8;
+		m_dwDigitsOffsetDec = 10UL;
+		m_dwDigitsOffsetHex = 8UL;
 	}
 	else if (ullDataSize <= 0xFFFFFFFFFFUL) {
-		m_dwDigitsOffsetDec = 13;
-		m_dwDigitsOffsetHex = 10;
+		m_dwDigitsOffsetDec = 13UL;
+		m_dwDigitsOffsetHex = 10UL;
 	}
 	else if (ullDataSize <= 0xFFFFFFFFFFFFUL) {
-		m_dwDigitsOffsetDec = 15;
-		m_dwDigitsOffsetHex = 12;
+		m_dwDigitsOffsetDec = 15UL;
+		m_dwDigitsOffsetHex = 12UL;
 	}
 	else if (ullDataSize <= 0xFFFFFFFFFFFFFFUL) {
-		m_dwDigitsOffsetDec = 17;
-		m_dwDigitsOffsetHex = 14;
+		m_dwDigitsOffsetDec = 17UL;
+		m_dwDigitsOffsetHex = 14UL;
 	}
 	else {
-		m_dwDigitsOffsetDec = 19;
-		m_dwDigitsOffsetHex = 16;
+		m_dwDigitsOffsetDec = 19UL;
+		m_dwDigitsOffsetHex = 16UL;
 	}
 
 	m_fDataSet = true;
@@ -3084,6 +3031,69 @@ auto CHexCtrl::CopyTextCP()const->std::wstring
 	ReplaceUnprintable(wstrText, iCodepage == -1, false);
 
 	return wstrText;
+}
+
+void CHexCtrl::CreateMenuIcons()
+{
+	if (!m_MenuMain.IsMenu()) {
+		return;
+	}
+
+	m_vecHBITMAP.clear();
+	const auto iSizeIcon = static_cast<int>(16 * GetDPIScale());
+	const auto menuTop = m_MenuMain.GetSubMenu(0); //Context sub-menu handle.
+
+	//"Search" menu icon.
+	auto hBmp = static_cast<HBITMAP>(::LoadImageW(m_hInstRes, MAKEINTRESOURCEW(IDB_HEXCTRL_SEARCH), IMAGE_BITMAP,
+		iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
+
+	menuTop.SetItemBitmap(0, hBmp, false); //"Search" parent menu icon.
+	m_MenuMain.SetItemBitmap(IDM_HEXCTRL_SEARCH_DLGSEARCH, hBmp);
+	m_vecHBITMAP.emplace_back(hBmp);
+
+	//"Group Data" menu icon.
+	hBmp = static_cast<HBITMAP>(::LoadImageW(m_hInstRes, MAKEINTRESOURCEW(IDB_HEXCTRL_GROUP), IMAGE_BITMAP,
+		iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
+	menuTop.SetItemBitmap(2, hBmp, false); //"Group Data" parent menu icon.
+	m_vecHBITMAP.emplace_back(hBmp);
+
+	//"Bookmarks->Add" menu icon.
+	hBmp = static_cast<HBITMAP>(::LoadImageW(m_hInstRes, MAKEINTRESOURCEW(IDB_HEXCTRL_BKMS), IMAGE_BITMAP,
+		iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
+	menuTop.SetItemBitmap(4, hBmp, false); //"Bookmarks" parent menu icon.
+	m_MenuMain.SetItemBitmap(IDM_HEXCTRL_BKM_ADD, hBmp);
+	m_vecHBITMAP.emplace_back(hBmp);
+
+	//"Clipboard->Copy as Hex" menu icon.
+	hBmp = static_cast<HBITMAP>(::LoadImageW(m_hInstRes, MAKEINTRESOURCEW(IDB_HEXCTRL_CLPBRD_COPYHEX), IMAGE_BITMAP,
+		iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
+	menuTop.SetItemBitmap(5, hBmp, false); //"Clipboard" parent menu icon.
+	m_MenuMain.SetItemBitmap(IDM_HEXCTRL_CLPBRD_COPYHEX, hBmp);
+	m_vecHBITMAP.emplace_back(hBmp);
+
+	//"Clipboard->Paste as Hex" menu icon.
+	hBmp = static_cast<HBITMAP>(::LoadImageW(m_hInstRes, MAKEINTRESOURCEW(IDB_HEXCTRL_CLPBRD_PASTEHEX), IMAGE_BITMAP,
+		iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
+	m_MenuMain.SetItemBitmap(IDM_HEXCTRL_CLPBRD_PASTEHEX, hBmp);
+	m_vecHBITMAP.emplace_back(hBmp);
+
+	//"Modify" parent menu icon.
+	hBmp = static_cast<HBITMAP>(::LoadImageW(m_hInstRes, MAKEINTRESOURCEW(IDB_HEXCTRL_MODIFY), IMAGE_BITMAP,
+		iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
+	menuTop.SetItemBitmap(6, hBmp, false);
+	m_vecHBITMAP.emplace_back(hBmp);
+
+	//"Modify->Fill with Zeros" menu icon.
+	hBmp = static_cast<HBITMAP>(::LoadImageW(m_hInstRes, MAKEINTRESOURCEW(IDB_HEXCTRL_MODIFY_FILLZEROS), IMAGE_BITMAP,
+		iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
+	m_MenuMain.SetItemBitmap(IDM_HEXCTRL_MODIFY_FILLZEROS, hBmp);
+	m_vecHBITMAP.emplace_back(hBmp);
+
+	//"Appearance->Choose Font" menu icon.
+	hBmp = static_cast<HBITMAP>(::LoadImageW(m_hInstRes, MAKEINTRESOURCEW(IDB_HEXCTRL_FONTCHOOSE), IMAGE_BITMAP,
+		iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
+	m_MenuMain.SetItemBitmap(IDM_HEXCTRL_APPEAR_DLGFONT, hBmp);
+	m_vecHBITMAP.emplace_back(hBmp);
 }
 
 void CHexCtrl::CreatePens()
@@ -4006,26 +4016,26 @@ void CHexCtrl::FillWithZeros()
 	Redraw();
 }
 
-auto CHexCtrl::FontPointsFromPixelsScaled(float flSizeDIP) -> float {
-	return ut::FontPointsFromPixels(flSizeDIP) / GetDPIScale();
+auto CHexCtrl::FontPointsFromScaledPixels(float flSizePixels) -> float {
+	return ut::FontPointsFromPixels(flSizePixels) / GetDPIScale();
 }
 
-auto CHexCtrl::FontPointsFromPixelsScaled(long iSizeDIP) -> long {
-	return std::lround(FontPointsFromPixelsScaled(static_cast<float>(iSizeDIP)));
+auto CHexCtrl::FontPointsFromScaledPixels(long lSizePixels) -> long {
+	return std::lround(FontPointsFromScaledPixels(static_cast<float>(lSizePixels)));
 }
 
-auto CHexCtrl::FontPixelsScaledFromPoints(float flSizePoint) -> float {
-	return ut::FontPixelsFromPoints(flSizePoint) * GetDPIScale();
+auto CHexCtrl::FontScaledPixelsFromPoints(float flSizePoints) -> float {
+	return ut::FontPixelsFromPoints(flSizePoints) * GetDPIScale();
 }
 
-auto CHexCtrl::FontPixelsScaledFromPoints(long iSizePoint) -> long {
-	return std::lround(FontPixelsScaledFromPoints(static_cast<float>(iSizePoint)));
+auto CHexCtrl::FontScaledPixelsFromPoints(long iSizePoints) -> long {
+	return std::lround(FontScaledPixelsFromPoints(static_cast<float>(iSizePoints)));
 }
 
 void CHexCtrl::FontSizeIncDec(bool fInc)
 {
-	const auto lFontSize = FontPointsFromPixelsScaled(-GetFontSize()) + (fInc ? 1 : -1);
-	SetFontSize(lFontSize);
+	const auto lFontSize = FontPointsFromScaledPixels(-GetFontSize(true)) + (fInc ? 1 : -1);
+	SetFontSizeInPoints(lFontSize, true);
 }
 
 auto CHexCtrl::GetBottomLine()const->ULONGLONG
@@ -4095,9 +4105,9 @@ auto CHexCtrl::GetDPIScale()const->float
 	return m_flDPIScale;
 }
 
-long CHexCtrl::GetFontSize()const
+long CHexCtrl::GetFontSize(bool fMain)const
 {
-	return GetFont().lfHeight;
+	return GetFont(fMain).lfHeight;
 }
 
 auto CHexCtrl::GetHexChars()const->const wchar_t*
@@ -4445,10 +4455,7 @@ void CHexCtrl::Print()
 	const GDIUT::CRect rcPrint(POINT(0, 0), SIZE(::GetDeviceCaps(dcPrint, HORZRES) - (iMarginX * 2),
 		::GetDeviceCaps(dcPrint, VERTRES) - (iMarginY * 2)));
 	const SIZE sizePrintDpi { ::GetDeviceCaps(dcPrint, LOGPIXELSX), ::GetDeviceCaps(dcPrint, LOGPIXELSY) };
-	const auto hDCWnd = m_Wnd.GetDC();
-	const auto iLOGPIXELSY = ::GetDeviceCaps(hDCWnd, LOGPIXELSY);
-	m_Wnd.ReleaseDC(hDCWnd);
-	const auto iFontSizeRatio { sizePrintDpi.cy / iLOGPIXELSY };
+	const auto iFontSizeRatio { sizePrintDpi.cy / GDIUT::GetDPIForHWND(m_Wnd) };
 	const auto dwCapacity = GetCapacity();
 
 	//Setting scaled fonts for printing, and temporarily disabling redraw.
@@ -4980,14 +4987,19 @@ void CHexCtrl::SetDataVirtual(SpanByte spnData, const HEXSPAN& hss)const
 		.stHexSpan { hss }, .spnData { spnData } });
 }
 
-void CHexCtrl::SetFontSize(long lSize)
+void CHexCtrl::SetDPIScale()
 {
-	if (lSize < 4 || lSize > 64) //Prevent font size from being too small or too big.
+	m_flDPIScale = GDIUT::GetDPIScaleForHWND(m_Wnd);
+}
+
+void CHexCtrl::SetFontSizeInPoints(long iSizePoints, bool fMain)
+{
+	if (iSizePoints < 4 || iSizePoints > 64) //Prevent font size from being too small or too big.
 		return;
 
-	auto lf = GetFont();
-	lf.lfHeight = -FontPixelsScaledFromPoints(lSize);
-	SetFont(lf);
+	auto lf = GetFont(fMain);
+	lf.lfHeight = -FontScaledPixelsFromPoints(iSizePoints);
+	SetFont(lf, fMain);
 }
 
 void CHexCtrl::SetScrollCursor()
@@ -7197,6 +7209,24 @@ auto CHexCtrl::OnDestroy()->LRESULT
 	m_ScrollH.DestroyWindow(); //Not a child of the IHexCtrl.
 	ParentNotify(HEXCTRL_MSG_DESTROY);
 	m_fCreated = false;
+
+	return 0;
+}
+
+auto CHexCtrl::OnDPIChangedAfterParent()->LRESULT
+{
+	//Take the current font size, in points, with the old DPI.
+	const auto lFontPointsMain = FontPointsFromScaledPixels(-GetFontSize(true));
+	const auto lFontPointsInfo = FontPointsFromScaledPixels(-GetFontSize(false));
+
+	SetDPIScale(); //Set new DPI scale.
+
+	//Invoke all DPI dependent routines, with the new DPI.
+	SetFontSizeInPoints(lFontPointsMain, true);
+	SetFontSizeInPoints(lFontPointsInfo, false);
+	CreateMenuIcons();
+	m_ScrollV.OnDPIChangedAfterParent();
+	m_ScrollH.OnDPIChangedAfterParent();
 
 	return 0;
 }

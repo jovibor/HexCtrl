@@ -307,6 +307,9 @@
   <ItemGroup>
     <None Include="..\..\HexCtrl\src\res\IDJ_HEXCTRL_KEYBIND.json" />
   </ItemGroup>
+  <ItemGroup>
+    <Manifest Include=".manifest" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

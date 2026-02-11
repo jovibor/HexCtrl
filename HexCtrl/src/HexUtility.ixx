@@ -531,11 +531,16 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 		return 0;
 	}
 
+	[[nodiscard]] auto GetDPIForHWND(HWND hWnd) -> UINT {
+		//const auto hDC = ::GetDC(hWnd);
+		//const auto iLOGPIXELSY = ::GetDeviceCaps(hDC, LOGPIXELSY);
+		//::ReleaseDC(hWnd, hDC);
+		const auto iLOGPIXELSY = ::GetDpiForWindow(hWnd); //Available only since "Windows 10, version 1607".
+		return iLOGPIXELSY;
+	}
+
 	[[nodiscard]] auto GetDPIScaleForHWND(HWND hWnd) -> float {
-		const auto hDC = ::GetDC(hWnd);
-		const auto iLOGPIXELSY = ::GetDeviceCaps(hDC, LOGPIXELSY);
-		::ReleaseDC(hWnd, hDC);
-		return static_cast<float>(iLOGPIXELSY) / USER_DEFAULT_SCREEN_DPI; //High-DPI scale factor for window.
+		return static_cast<float>(GetDPIForHWND(hWnd)) / USER_DEFAULT_SCREEN_DPI; //High-DPI scale factor for window.
 	}
 
 	//iDirection: -2:LEFT, 1:UP, 2:RIGHT, -1:DOWN.

@@ -33,6 +33,7 @@ namespace HEXCTRL::INTERNAL {
 		* CALLBACK METHODS:                                                                 *
 		* These methods must be called from the corresponding methods of the parent window. *
 		************************************************************************************/
+		void OnDPIChangedAfterParent(); //Handler of the WM_DPICHANGED_AFTERPARENT message.
 		void OnLButtonUp();
 		void OnMouseMove(POINT pt);
 		void OnNCActivate()const;
@@ -73,7 +74,6 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] auto GetThumbRect(bool fClientCoord = false)const -> GDIUT::CRect;
 		[[nodiscard]] auto GetThumbSizeWH()const -> UINT;
 		[[nodiscard]] int GetThumbPos()const; //Current Thumb pos.
-		void SetThumbPos(int iPos);
 		[[nodiscard]] auto GetThumbScrollingSize()const -> double;
 		[[nodiscard]] auto GetFirstArrowRect(bool fClientCoord = false)const -> GDIUT::CRect;
 		[[nodiscard]] auto GetLastArrowRect(bool fClientCoord = false)const -> GDIUT::CRect;
@@ -89,6 +89,8 @@ namespace HEXCTRL::INTERNAL {
 		auto OnTimer(const MSG& msg) -> LRESULT;
 		void RedrawNC()const;
 		void SendParentScrollMsg()const;            //Sends the WM_(V/H)SCROLL to the parent window.
+		void SetScrollBarSizeForDPI();
+		void SetThumbPos(int iPos);
 	private:
 		enum class EState : std::uint8_t;
 		enum class ETimer : std::uint16_t;
@@ -160,10 +162,10 @@ bool CHexScroll::Create(HWND hWndParent, bool fVert, COLORREF clrBar, COLORREF c
 
 	m_fVert = fVert;
 	m_WndParent.Attach(hWndParent);
-	m_dwBarSizeWH = ::GetSystemMetrics(fVert ? SM_CXVSCROLL : SM_CXHSCROLL);
 	m_clrBar = clrBar;
 	m_clrThumb = clrThumb;
 	m_clrArrow = clrArrow;
+	SetScrollBarSizeForDPI();
 	CreateArrows();
 
 	m_fCreated = true;
@@ -222,6 +224,14 @@ auto CHexScroll::IsVisible()const->bool
 	if (!m_fCreated) { return false; }
 
 	return m_fVisible;
+}
+
+void CHexScroll::OnDPIChangedAfterParent()
+{
+	SetScrollBarSizeForDPI();
+	CreateArrows();
+	DrawScrollBar();
+	RedrawNC();
 }
 
 void CHexScroll::OnLButtonUp()
@@ -938,6 +948,11 @@ void CHexScroll::RedrawNC()const
 void CHexScroll::SendParentScrollMsg()const
 {
 	GetParent().SendMsg(IsVert() ? WM_VSCROLL : WM_HSCROLL);
+}
+
+void CHexScroll::SetScrollBarSizeForDPI()
+{
+	m_dwBarSizeWH = ::GetSystemMetricsForDpi(IsVert() ? SM_CXVSCROLL : SM_CXHSCROLL, GDIUT::GetDPIForHWND(m_Wnd));
 }
 
 void CHexScroll::SetThumbPos(int iPos)
