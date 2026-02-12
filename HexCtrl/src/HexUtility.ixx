@@ -902,8 +902,8 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 		CWnd() = default;
 		CWnd(HWND hWnd) { Attach(hWnd); }
 		~CWnd() = default;
+		CWnd& operator=(HWND hWnd) { Attach(hWnd); return *this; };
 		CWnd& operator=(CWnd) = delete;
-		CWnd& operator=(HWND) = delete;
 		operator HWND()const { return m_hWnd; }
 		[[nodiscard]] bool operator==(const CWnd& rhs)const { return m_hWnd == rhs.m_hWnd; }
 		[[nodiscard]] bool operator==(HWND hWnd)const { return m_hWnd == hWnd; }
