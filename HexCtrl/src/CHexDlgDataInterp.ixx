@@ -51,7 +51,9 @@ namespace HEXCTRL::INTERNAL {
 		auto OnClose() -> INT_PTR;
 		auto OnCommand(const MSG& msg) -> INT_PTR;
 		auto OnDestroy() -> INT_PTR;
+		auto OnDPIChanged(const MSG& msg) -> INT_PTR;
 		auto OnDrawItem(const MSG& msg) -> INT_PTR;
+		auto OnGetDPIScaledSize(const MSG& msg) -> INT_PTR;
 		auto OnInitDialog(const MSG& msg) -> INT_PTR;
 		auto OnMeasureItem(const MSG& msg) -> INT_PTR;
 		auto OnNotify(const MSG& msg) -> INT_PTR;
@@ -252,7 +254,9 @@ auto CHexDlgDataInterp::ProcessMsg(const MSG& msg)->INT_PTR
 	case WM_COMMAND: return OnCommand(msg);
 	case WM_CLOSE: return OnClose();
 	case WM_DESTROY: return OnDestroy();
+	case WM_DPICHANGED: return OnDPIChanged(msg);
 	case WM_DRAWITEM: return OnDrawItem(msg);
+	case WM_GETDPISCALEDSIZE: return OnGetDPIScaledSize(msg);
 	case WM_INITDIALOG: return OnInitDialog(msg);
 	case WM_MEASUREITEM: return OnMeasureItem(msg);
 	case WM_NOTIFY: return OnNotify(msg);
@@ -443,6 +447,12 @@ auto CHexDlgDataInterp::OnDestroy()->INT_PTR
 	return TRUE;
 }
 
+auto CHexDlgDataInterp::OnDPIChanged([[maybe_unused]] const MSG& msg)->INT_PTR
+{
+	m_DynLayout.Enable(true);
+	return 0;
+}
+
 auto CHexDlgDataInterp::OnDrawItem(const MSG& msg)->INT_PTR
 {
 	const auto pDIS = reinterpret_cast<LPDRAWITEMSTRUCT>(msg.lParam);
@@ -451,6 +461,17 @@ auto CHexDlgDataInterp::OnDrawItem(const MSG& msg)->INT_PTR
 	}
 
 	return TRUE;
+}
+
+auto CHexDlgDataInterp::OnGetDPIScaledSize([[maybe_unused]] const MSG& msg)->INT_PTR
+{
+	//This message is sent to top-level windows with a DPI_AWARENESS_CONTEXT
+	//of Per Monitor v2 before a WM_DPICHANGED message is sent.
+	//We use it to temporarily disable all dynamic layout resizes,
+	//to re-enable it later in the WM_DPICHANGED handler.
+
+	m_DynLayout.Enable(false);
+	return 0;
 }
 
 auto CHexDlgDataInterp::OnInitDialog(const MSG& msg)->INT_PTR

@@ -91,7 +91,9 @@ namespace HEXCTRL::INTERNAL {
 		void OnCheckMin();
 		auto OnClose() -> INT_PTR;
 		auto OnDestroy() -> INT_PTR;
+		auto OnDPIChanged(const MSG& msg) -> INT_PTR;
 		auto OnDrawItem(const MSG& msg) -> INT_PTR;
+		auto OnGetDPIScaledSize(const MSG& msg) -> INT_PTR;
 		auto OnInitDialog(const MSG& msg) -> INT_PTR;
 		auto OnLButtonDown(const MSG& msg) -> INT_PTR;
 		auto OnLButtonUp(const MSG& msg) -> INT_PTR;
@@ -170,7 +172,6 @@ namespace HEXCTRL::INTERNAL {
 		HBITMAP m_hBmpMax { };             //Bitmap for the max checkbox.
 		std::uint64_t m_u64Flags { };      //Data from SetDlgProperties.
 		DWORD m_dwDateFormat { };          //Date format.
-		int m_iDynLayoutMinY { };          //For DynamicLayout::SetMinSize.
 		wchar_t m_wchDateSepar { };        //Date separator.
 		bool m_fCurInSplitter { };         //Indicates that mouse cursor is in the splitter area.
 		bool m_fLMDownResize { };          //Left mouse pressed in splitter area to resize.
@@ -442,7 +443,9 @@ auto CHexDlgTemplMgr::ProcessMsg(const MSG& msg)->INT_PTR
 	case WM_COMMAND: return OnCommand(msg);
 	case WM_CTLCOLORSTATIC: return OnCtlClrStatic(msg);
 	case WM_DESTROY: return OnDestroy();
+	case WM_DPICHANGED: return OnDPIChanged(msg);
 	case WM_DRAWITEM: return OnDrawItem(msg);
+	case WM_GETDPISCALEDSIZE: return OnGetDPIScaledSize(msg);
 	case WM_INITDIALOG: return OnInitDialog(msg);
 	case WM_LBUTTONDOWN: return OnLButtonDown(msg);
 	case WM_LBUTTONUP: return OnLButtonUp(msg);
@@ -826,6 +829,12 @@ auto CHexDlgTemplMgr::OnDestroy()->INT_PTR
 	return TRUE;
 }
 
+auto CHexDlgTemplMgr::OnDPIChanged([[maybe_unused]] const MSG& msg)->INT_PTR
+{
+	m_DynLayout.Enable(true);
+	return 0;
+}
+
 auto CHexDlgTemplMgr::OnDrawItem(const MSG& msg)->INT_PTR
 {
 	const auto pDIS = reinterpret_cast<LPDRAWITEMSTRUCT>(msg.lParam);
@@ -834,6 +843,17 @@ auto CHexDlgTemplMgr::OnDrawItem(const MSG& msg)->INT_PTR
 	}
 
 	return TRUE;
+}
+
+auto CHexDlgTemplMgr::OnGetDPIScaledSize([[maybe_unused]] const MSG& msg)->INT_PTR
+{
+	//This message is sent to top-level windows with a DPI_AWARENESS_CONTEXT
+	//of Per Monitor v2 before a WM_DPICHANGED message is sent.
+	//We use it to temporarily disable all dynamic layout resizes,
+	//to re-enable it later in the WM_DPICHANGED handler.
+
+	m_DynLayout.Enable(false);
+	return 0;
 }
 
 auto CHexDlgTemplMgr::OnInitDialog(const MSG& msg)->INT_PTR
@@ -889,10 +909,6 @@ auto CHexDlgTemplMgr::OnInitDialog(const MSG& msg)->INT_PTR
 	m_WndBtnShowTT.SetCheck(IsTooltips());
 	m_WndBtnHglSel.SetCheck(IsHglSel());
 	m_WndBtnHex.SetCheck(IsShowAsHex());
-
-	auto rcTree = m_WndTree.GetWindowRect();
-	m_Wnd.ScreenToClient(rcTree);
-	m_iDynLayoutMinY = rcTree.top + 5;
 
 	m_DynLayout.SetHost(m_Wnd);
 	m_DynLayout.AddItem(IDC_HEXCTRL_TEMPLMGR_LIST, GDIUT::CDynLayout::MoveNone(), GDIUT::CDynLayout::SizeHorzAndVert(100, 100));
