@@ -56,6 +56,7 @@ namespace HEXCTRL::INTERNAL {
 		auto OnLButtonDown(const MSG& msg) -> INT_PTR;
 		auto OnLButtonUp(const MSG& msg) -> INT_PTR;
 		auto OnMouseMove(const MSG& msg) -> INT_PTR;
+		auto OnSetCursor(const MSG& msg) -> INT_PTR;
 	private:
 		HINSTANCE m_hInstRes { };
 		GDIUT::CWnd m_Wnd;      //Main window.
@@ -63,7 +64,7 @@ namespace HEXCTRL::INTERNAL {
 		HBITMAP m_hBmpLogo { }; //Logo bitmap.
 		HFONT m_hFontDef { };
 		HFONT m_hFontUnderline { };
-		bool m_fLinkUnderline { };
+		bool m_fHandCursor { }; //Is cursor a hand cursor atm?
 		bool m_fLBDownLink { }; //Left button was pressed on the link static control.
 	};
 }
@@ -82,6 +83,7 @@ auto CHexDlgAbout::ProcessMsg(const MSG& msg)->INT_PTR {
 	case WM_LBUTTONDOWN: return OnLButtonDown(msg);
 	case WM_LBUTTONUP: return OnLButtonUp(msg);
 	case WM_MOUSEMOVE: return OnMouseMove(msg);
+	case WM_SETCURSOR: return OnSetCursor(msg);
 	default:
 		return 0;
 	}
@@ -106,7 +108,7 @@ auto CHexDlgAbout::OnCtlClrStatic(const MSG& msg)->INT_PTR
 		const auto hDC = reinterpret_cast<HDC>(msg.wParam);
 		::SetTextColor(hDC, RGB(0, 50, 250));
 		::SetBkColor(hDC, ::GetSysColor(COLOR_3DFACE));
-		::SelectObject(hDC, m_fLinkUnderline ? m_hFontUnderline : m_hFontDef);
+		::SelectObject(hDC, m_fHandCursor ? m_hFontUnderline : m_hFontDef);
 		return reinterpret_cast<INT_PTR>(::GetSysColorBrush(COLOR_3DFACE));
 	}
 
@@ -124,7 +126,6 @@ auto CHexDlgAbout::OnDestroy()->INT_PTR {
 auto CHexDlgAbout::OnInitDialog(const MSG& msg)->INT_PTR
 {
 	m_Wnd.Attach(msg.hwnd);
-	m_Wnd.SetWndClassLong(GCLP_HCURSOR, 0); //To prevent cursor blinking.
 	m_WndLink.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_ABOUT_STAT_LINKGH));
 
 	if (const auto hFont = m_WndLink.GetHFont(); hFont != nullptr) {
@@ -191,16 +192,24 @@ auto CHexDlgAbout::OnMouseMove(const MSG& msg)->INT_PTR
 	if (hWnd == nullptr)
 		return FALSE;
 
-	const auto curHand = reinterpret_cast<HCURSOR>(::LoadImageW(nullptr, IDC_HAND, IMAGE_CURSOR, 0, 0, LR_SHARED));
-	const auto curArrow = reinterpret_cast<HCURSOR>(::LoadImageW(nullptr, IDC_ARROW, IMAGE_CURSOR, 0, 0, LR_SHARED));
-
-	if (m_fLinkUnderline != (m_WndLink == hWnd)) {
-		m_fLinkUnderline = m_WndLink == hWnd;
+	if (m_fHandCursor != (m_WndLink == hWnd)) {
+		m_fHandCursor = m_WndLink == hWnd;
 		m_WndLink.Invalidate(false);
-		::SetCursor(m_fLinkUnderline ? curHand : curArrow);
 	}
 
 	return TRUE;
+}
+
+auto CHexDlgAbout::OnSetCursor([[maybe_unused]] const MSG& msg)->INT_PTR
+{
+	if (m_fHandCursor) {
+		const auto hCurHand = static_cast<HCURSOR>(::LoadImageW(nullptr, IDC_HAND, IMAGE_CURSOR, 0, 0,
+			LR_DEFAULTSIZE | LR_SHARED));
+		::SetCursor(hCurHand);
+		return TRUE;
+	}
+
+	return 0; //Default cursor.
 }
 
 
@@ -323,10 +332,10 @@ namespace HEXCTRL::INTERNAL {
 		void DrawPageLines(HDC hDC, ULONGLONG ullStartLine, int iLines)const;
 		void FillCapacityString(); //Fill m_wstrCapacity according to current m_dwCapacity.
 		void FillWithZeros();      //Fill selection with zeros.
-		[[nodiscard]] auto FontPointsFromScaledPixels(float flSizePixels) -> float; //Get font size in points from size in scaled pixels.
-		[[nodiscard]] auto FontPointsFromScaledPixels(long iSizePixels) -> long;
-		[[nodiscard]] auto FontScaledPixelsFromPoints(float flSizePoints) -> float; //Get font size in scaled pixels from size in points.
-		[[nodiscard]] auto FontScaledPixelsFromPoints(long iSizePoints) -> long;
+		[[nodiscard]] auto FontPointsFromScaledPixels(float flSizePixels)const -> float; //Get font size in points from size in scaled pixels.
+		[[nodiscard]] auto FontPointsFromScaledPixels(long iSizePixels)const -> long;
+		[[nodiscard]] auto FontScaledPixelsFromPoints(float flSizePoints)const -> float; //Get font size in scaled pixels from size in points.
+		[[nodiscard]] auto FontScaledPixelsFromPoints(long iSizePoints)const -> long;
 		void FontSizeIncDec(bool fInc = true); //Increase os decrease font size by minimum amount.
 		[[nodiscard]] auto GetBottomLine()const -> ULONGLONG; //Returns current bottom line number in view.
 		[[nodiscard]] auto GetCaretPosImpl()const -> std::uint64_t;
@@ -3613,19 +3622,19 @@ void CHexCtrl::FillWithZeros()
 	RedrawImpl();
 }
 
-auto CHexCtrl::FontPointsFromScaledPixels(float flSizePixels) -> float {
-	return ut::FontPointsFromPixels(flSizePixels) / GetDPIScale();
+auto CHexCtrl::FontPointsFromScaledPixels(float flSizePixels)const->float {
+	return GDIUT::FontPointsFromPixels(flSizePixels) / GetDPIScale();
 }
 
-auto CHexCtrl::FontPointsFromScaledPixels(long lSizePixels) -> long {
+auto CHexCtrl::FontPointsFromScaledPixels(long lSizePixels)const->long {
 	return std::lround(FontPointsFromScaledPixels(static_cast<float>(lSizePixels)));
 }
 
-auto CHexCtrl::FontScaledPixelsFromPoints(float flSizePoints) -> float {
-	return ut::FontPixelsFromPoints(flSizePoints) * GetDPIScale();
+auto CHexCtrl::FontScaledPixelsFromPoints(float flSizePoints)const->float {
+	return GDIUT::FontPixelsFromPoints(flSizePoints) * GetDPIScale();
 }
 
-auto CHexCtrl::FontScaledPixelsFromPoints(long iSizePoints) -> long {
+auto CHexCtrl::FontScaledPixelsFromPoints(long iSizePoints)const->long {
 	return std::lround(FontScaledPixelsFromPoints(static_cast<float>(iSizePoints)));
 }
 
@@ -4675,7 +4684,7 @@ auto CHexCtrl::OnSetCursor(const MSG& msg)->LRESULT
 		static const auto hCurScroll = static_cast<HCURSOR>(::LoadImageW(nullptr, MAKEINTRESOURCEW(32654),
 			IMAGE_CURSOR, 0, 0, LR_DEFAULTSIZE | LR_SHARED)); //Standard Windows scrolling cursor.
 		::SetCursor(hCurScroll);
-		return 0;
+		return TRUE;
 	}
 
 	const auto wHitTest = LOWORD(msg.lParam);

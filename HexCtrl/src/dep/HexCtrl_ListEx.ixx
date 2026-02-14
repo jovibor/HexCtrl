@@ -191,6 +191,22 @@ namespace HEXCTRL::LISTEX::GDIUT {
 		return GetXLPARAM(lParam >> 16);
 	}
 
+	[[nodiscard]] auto GetDPIScaleForHWND(HWND hWnd) -> float {
+		return static_cast<float>(::GetDpiForWindow(hWnd)) / USER_DEFAULT_SCREEN_DPI; //High-DPI scale factor for window.
+	}
+
+	//Get font points size from the size in pixels.
+	[[nodiscard]] constexpr auto FontPointsFromPixels(float flSizePixels) -> float {
+		constexpr auto flPointsInPixel = 72.F / USER_DEFAULT_SCREEN_DPI;
+		return flSizePixels * flPointsInPixel;
+	}
+
+	//Get font pixels size from the size in points.
+	[[nodiscard]] constexpr auto FontPixelsFromPoints(float flSizePoints) -> float {
+		constexpr auto flPixelsInPoint = USER_DEFAULT_SCREEN_DPI / 72.F;
+		return flSizePoints * flPixelsInPoint;
+	}
+
 	class CPoint final : public POINT {
 	public:
 		CPoint() : POINT { } { }
@@ -371,28 +387,31 @@ namespace HEXCTRL::LISTEX {
 		void DeleteColumn(int iIndex);
 		[[nodiscard]] auto GetClientRect()const -> RECT;
 		[[nodiscard]] int GetColumnDataAlign(int iIndex)const;
+		[[nodiscard]] auto GetHeight()const -> DWORD;
 		[[nodiscard]] auto GetHiddenCount()const -> UINT;
 		[[nodiscard]] auto GetImageList(int iList = HDSIL_NORMAL)const -> HIMAGELIST;
-		bool GetItem(int iPos, HDITEMW* pHDI)const;
+		bool GetItem(int iIndex, HDITEMW* pHDI)const;
 		[[nodiscard]] int GetItemCount()const;
 		[[nodiscard]] auto GetItemRect(int iIndex)const -> RECT;
+		[[nodiscard]] int GetItemWidth(int iIndex)const;
 		void HideColumn(int iIndex, bool fHide);
 		[[nodiscard]] bool IsColumnHidden(int iIndex)const; //Column index.
 		[[nodiscard]] bool IsColumnSortable(int iIndex)const;
 		[[nodiscard]] bool IsColumnEditable(int iIndex)const;
 		auto ProcessMsg(const MSG& msg) -> LRESULT;
 		void RedrawWindow()const;
-		void SetDPIScale(float flScale);
-		void SetHeight(DWORD dwHeight);
-		void SetFont(const LOGFONTW& lf);
 		void SetColor(const LISTEXCOLORS& lcs);
 		void SetColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText);
 		void SetColumnDataAlign(int iColumn, int iAlign);
 		void SetColumnIcon(int iColumn, const LISTEXHDRICON& stIcon);
 		void SetColumnSortable(int iColumn, bool fSortable);
 		void SetColumnEditable(int iColumn, bool fEditable);
+		void SetDPIScale();
+		void SetFont(const LOGFONTW& lf);
+		void SetHeight(DWORD dwHeight);
 		void SetImageList(HIMAGELIST pList, int iList = HDSIL_NORMAL);
-		void SetItem(int nPos, const HDITEMW& item);
+		void SetItem(int iIndex, const HDITEMW& hdi)const;
+		void SetItemWidth(int iIndex, int iWidth)const;
 		void SetSortable(bool fSortable);
 		void SetSortArrow(int iColumn, bool fAscending);
 		void SubclassHeader(HWND hWndHeader);
@@ -413,6 +432,12 @@ namespace HEXCTRL::LISTEX {
 		void AddColumnData(const COLUMNDATA& data);
 		[[nodiscard]] UINT ColumnIndexToID(int iIndex)const; //Returns unique column ID. Must be > 0.
 		[[nodiscard]] int ColumnIDToIndex(UINT uID)const;
+		[[nodiscard]] auto FontPointsFromScaledPixels(float flSizePixels)const -> float;
+		[[nodiscard]] auto FontPointsFromScaledPixels(long iSizePixels)const -> long;
+		[[nodiscard]] auto FontScaledPixelsFromPoints(float flSizePoints)const -> float;
+		[[nodiscard]] auto FontScaledPixelsFromPoints(long iSizePoints)const -> long;
+		[[nodiscard]] auto GetDPIScale()const -> float;
+		[[nodiscard]] long GetFontSize()const;
 		[[nodiscard]] auto GetParent() -> HWND;
 		[[nodiscard]] auto GetHdrColor(UINT ID)const -> PLISTEXCOLOR;
 		[[nodiscard]] auto GetColumnData(UINT uID) -> COLUMNDATA*;
@@ -425,6 +450,7 @@ namespace HEXCTRL::LISTEX {
 		[[nodiscard]] bool IsSortable(UINT ID)const;
 		[[nodiscard]] bool IsWindow()const;
 		auto OnDestroy() -> LRESULT;
+		auto OnDPIChangedAfterParent() -> LRESULT;
 		void OnDrawItem(HDC hDC, int iItem, RECT rc, bool fPressed, bool fHighl);
 		auto OnLayout(const MSG& msg) -> LRESULT;
 		auto OnLButtonDown(const MSG& msg) -> LRESULT;
@@ -432,6 +458,7 @@ namespace HEXCTRL::LISTEX {
 		auto OnPaint() -> LRESULT;
 		auto OnRButtonUp(const MSG& msg) -> LRESULT;
 		auto OnRButtonDown(const MSG& msg) -> LRESULT;
+		void SetFontSize(long iSizePoints);
 		static auto CALLBACK SubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
 			UINT_PTR uIDSubclass, DWORD_PTR dwRefData)->LRESULT;
 	private:
@@ -444,7 +471,7 @@ namespace HEXCTRL::LISTEX {
 		COLORREF m_clrBk { };
 		COLORREF m_clrHglInactive { };
 		COLORREF m_clrHglActive { };
-		DWORD m_dwHeaderHeight { 19 }; //Standard (default) height.
+		DWORD m_dwHdrHeight { 19 }; //Standard (default) height.
 		UINT m_uSortColumn { 0 };   //ColumnID to draw sorting triangle at. 0 is to avoid triangle before first clicking.
 		float m_flDPIScale { 1.0F };
 		bool m_fSortable { false }; //List-is-sortable global flog. Need to draw sortable triangle or not?
@@ -489,10 +516,10 @@ auto CListExHdr::GetImageList(int iList)const->HIMAGELIST
 	return reinterpret_cast<HIMAGELIST>(::SendMessageW(m_hWnd, HDM_GETIMAGELIST, iList, 0L));
 }
 
-bool CListExHdr::GetItem(int iPos, HDITEMW* pHDI)const
+bool CListExHdr::GetItem(int iIndex, HDITEMW* pHDI)const
 {
 	assert(IsWindow());
-	return ::SendMessageW(m_hWnd, HDM_GETITEMW, iPos, reinterpret_cast<LPARAM>(pHDI));
+	return ::SendMessageW(m_hWnd, HDM_GETITEMW, iIndex, reinterpret_cast<LPARAM>(pHDI));
 }
 
 int CListExHdr::GetItemCount()const
@@ -508,6 +535,13 @@ auto CListExHdr::GetItemRect(int iIndex)const->RECT
 	return rc;
 }
 
+int CListExHdr::GetItemWidth(int iIndex)const
+{
+	HDITEMW hdi { .mask { HDI_WIDTH } };
+	GetItem(iIndex, &hdi);
+	return hdi.cxy;
+}
+
 int CListExHdr::GetColumnDataAlign(int iIndex)const
 {
 	if (const auto pData = GetColumnData(ColumnIndexToID(iIndex)); pData != nullptr) {
@@ -515,6 +549,11 @@ int CListExHdr::GetColumnDataAlign(int iIndex)const
 	}
 
 	return -1;
+}
+
+auto CListExHdr::GetHeight()const->DWORD
+{
+	return m_dwHdrHeight;
 }
 
 void CListExHdr::HideColumn(int iIndex, bool fHide)
@@ -591,6 +630,7 @@ auto CListExHdr::ProcessMsg(const MSG& msg)->LRESULT
 	switch (msg.message) {
 	case HDM_LAYOUT: return OnLayout(msg);
 	case WM_DESTROY: return OnDestroy();
+	case WM_DPICHANGED_AFTERPARENT: return OnDPIChangedAfterParent();
 	case WM_LBUTTONDOWN: return OnLButtonDown(msg);
 	case WM_LBUTTONUP: return OnLButtonUp(msg);
 	case WM_PAINT: return OnPaint();
@@ -604,34 +644,6 @@ void CListExHdr::RedrawWindow()const
 {
 	assert(IsWindow());
 	::RedrawWindow(m_hWnd, nullptr, nullptr, RDW_INVALIDATE | RDW_UPDATENOW | RDW_ERASE);
-}
-
-void CListExHdr::SetDPIScale(float flScale)
-{
-	m_flDPIScale = flScale;
-	RedrawWindow();
-}
-
-void CListExHdr::SetFont(const LOGFONTW& lf)
-{
-	::DeleteObject(m_hFntHdr);
-	m_hFntHdr = ::CreateFontIndirectW(&lf);
-
-	//If new font's height is higher than current height (m_dwHeaderHeight), we adjust current height as well.
-	TEXTMETRICW tm;
-	const auto hDC = ::GetDC(m_hWnd);
-	::SelectObject(hDC, m_hFntHdr);
-	::GetTextMetricsW(hDC, &tm);
-	::ReleaseDC(m_hWnd, hDC);
-	const DWORD dwHeightFont = tm.tmHeight + tm.tmExternalLeading + 4;
-	if (dwHeightFont > m_dwHeaderHeight) {
-		SetHeight(dwHeightFont);
-	}
-}
-
-void CListExHdr::SetHeight(DWORD dwHeight)
-{
-	m_dwHeaderHeight = dwHeight;
 }
 
 void CListExHdr::SetColor(const LISTEXCOLORS& lcs)
@@ -731,9 +743,45 @@ void CListExHdr::SetColumnEditable(int iColumn, bool fEditable)
 	}
 }
 
+void CListExHdr::SetFont(const LOGFONTW& lf)
+{
+	::DeleteObject(m_hFntHdr);
+	m_hFntHdr = ::CreateFontIndirectW(&lf);
+
+	//If new font's height is higher than current height, we adjust current height as well.
+	TEXTMETRICW tm;
+	const auto hDC = ::GetDC(m_hWnd);
+	::SelectObject(hDC, m_hFntHdr);
+	::GetTextMetricsW(hDC, &tm);
+	::ReleaseDC(m_hWnd, hDC);
+	const DWORD dwHeightFont = tm.tmHeight + tm.tmExternalLeading + 4;
+	if (dwHeightFont > m_dwHdrHeight) {
+		SetHeight(dwHeightFont);
+	}
+}
+
+void CListExHdr::SetHeight(DWORD dwHeight)
+{
+	m_dwHdrHeight = dwHeight;
+	::SendMessageW(GetParent(), LVM_UPDATE, 0L, 0L); //To update header's layout.
+	RedrawWindow();
+}
+
 void CListExHdr::SetImageList(HIMAGELIST pList, int iList)
 {
 	::SendMessageW(m_hWnd, HDM_SETIMAGELIST, iList, reinterpret_cast<LPARAM>(pList));
+}
+
+void CListExHdr::SetItem(int iIndex, const HDITEMW& hdi)const
+{
+	assert(IsWindow());
+	::SendMessageW(m_hWnd, HDM_SETITEMW, iIndex, reinterpret_cast<LPARAM>(&hdi));
+}
+
+void CListExHdr::SetItemWidth(int iIndex, int iWidth)const
+{
+	const HDITEMW hdi { .mask { HDI_WIDTH }, .cxy { iWidth } };
+	SetItem(iIndex, hdi);
 }
 
 void CListExHdr::SetSortable(bool fSortable)
@@ -763,6 +811,7 @@ void CListExHdr::SubclassHeader(HWND hWndHeader)
 	assert(hWndHeader != nullptr);
 	::SetWindowSubclass(hWndHeader, SubclassProc, reinterpret_cast<UINT_PTR>(this), 0);
 	m_hWnd = hWndHeader;
+	SetDPIScale();
 }
 
 
@@ -793,6 +842,38 @@ int CListExHdr::ColumnIDToIndex(UINT uID)const
 	}
 
 	return -1;
+}
+
+auto CListExHdr::FontPointsFromScaledPixels(float flSizePixels)const->float
+{
+	return GDIUT::FontPointsFromPixels(flSizePixels) / GetDPIScale();
+}
+
+auto CListExHdr::FontPointsFromScaledPixels(long iSizePixels)const->long
+{
+	return std::lround(FontPointsFromScaledPixels(static_cast<float>(iSizePixels)));
+}
+
+auto CListExHdr::FontScaledPixelsFromPoints(float flSizePoints)const->float
+{
+	return GDIUT::FontPixelsFromPoints(flSizePoints) * GetDPIScale();
+}
+
+auto CListExHdr::FontScaledPixelsFromPoints(long iSizePoints)const->long
+{
+	return std::lround(FontScaledPixelsFromPoints(static_cast<float>(iSizePoints)));
+}
+
+auto CListExHdr::GetDPIScale()const->float
+{
+	return m_flDPIScale;
+}
+
+long CListExHdr::GetFontSize() const
+{
+	LOGFONTW lf { };
+	::GetObjectW(m_hFntHdr, sizeof(lf), &lf);
+	return lf.lfHeight;
 }
 
 auto CListExHdr::GetParent()->HWND
@@ -831,12 +912,6 @@ auto CListExHdr::GetHdrIcon(UINT ID)->CListExHdr::HDRICON*
 
 	const auto pData = GetColumnData(ID);
 	return pData != nullptr && pData->icon.stIcon.iIndex != -1 ? &pData->icon : nullptr;
-}
-
-void CListExHdr::SetItem(int nPos, const HDITEMW& item)
-{
-	assert(IsWindow());
-	::SendMessageW(m_hWnd, HDM_SETITEMW, nPos, reinterpret_cast<LPARAM>(&item));
 }
 
 auto CListExHdr::GetListParent()->HWND
@@ -879,6 +954,27 @@ auto CListExHdr::OnDestroy()->LRESULT
 {
 	m_vecHidden.clear();
 	m_vecColumnData.clear();
+
+	return 0;
+}
+
+auto CListExHdr::OnDPIChangedAfterParent()->LRESULT
+{
+	const auto flScaleOld = GetDPIScale();
+	//Take the current font size, in points, with the old DPI.
+	const auto lFontSizePoints = FontPointsFromScaledPixels(-GetFontSize());
+
+	SetDPIScale(); //Set new DPI scale.
+	const auto flScaleNew = GetDPIScale();
+	const auto flRatio = flScaleNew / flScaleOld;
+
+	SetFontSize(lFontSizePoints);
+	SetHeight(std::lround(GetHeight() * flRatio));
+
+	//Adjust columns width.
+	for (int iItem = 0; iItem < GetItemCount(); ++iItem) {
+		SetItemWidth(iItem, std::lround(GetItemWidth(iItem) * flRatio));
+	}
 
 	return 0;
 }
@@ -993,8 +1089,8 @@ auto CListExHdr::OnLayout(const MSG& msg)->LRESULT
 {
 	GDIUT::DefSubclassProc(msg);
 	const auto pHDL = reinterpret_cast<LPHDLAYOUT>(msg.lParam);
-	pHDL->pwpos->cy = m_dwHeaderHeight;	//New header height.
-	pHDL->prc->top = m_dwHeaderHeight;  //Decreasing list's height begining by the new header's height.
+	pHDL->pwpos->cy = GetHeight(); //New header height.
+	pHDL->prc->top = GetHeight();  //Decreasing list's height begining by the new header's height.
 
 	return TRUE;
 }
@@ -1128,6 +1224,24 @@ auto CListExHdr::OnRButtonUp(const MSG& msg)->LRESULT
 	return GDIUT::DefSubclassProc(msg);
 }
 
+void CListExHdr::SetDPIScale()
+{
+	m_flDPIScale = GDIUT::GetDPIScaleForHWND(m_hWnd);
+}
+
+void CListExHdr::SetFontSize(long iSizePoints)
+{
+	//Prevent font size from being too small or too big.
+	if (iSizePoints < 4 || iSizePoints > 64) {
+		return;
+	}
+
+	LOGFONTW lf { };
+	::GetObjectW(m_hFntHdr, sizeof(lf), &lf);
+	lf.lfHeight = -FontScaledPixelsFromPoints(iSizePoints);
+	SetFont(lf);
+}
+
 auto CListExHdr::SubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
 	UINT_PTR uIDSubclass, DWORD_PTR /*dwRefData*/) -> LRESULT {
 	if (uMsg == WM_NCDESTROY) {
@@ -1197,6 +1311,7 @@ namespace HEXCTRL::LISTEX {
 		void SetColumn(int iColumn, const LVCOLUMNW* pColumn)const;
 		void SetColumnEditable(int iColumn, bool fEditable);
 		void SetColumnSortMode(int iColumn, bool fSortable, EListExSortMode eSortMode = EListExSortMode::SORT_LEX);
+		bool SetColumnWidth(int iCol, int iWidth);
 		auto SetExtendedStyle(DWORD dwExStyle)const -> DWORD;
 		void SetFont(const LOGFONTW& lf);
 		void SetHdrColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText = -1);
@@ -1223,13 +1338,19 @@ namespace HEXCTRL::LISTEX {
 		struct ITEMDATA;
 		bool EditInPlaceShow(bool fShow = true);
 		[[nodiscard]] long GetFontSize()const;
+		[[nodiscard]] auto FontPointsFromScaledPixels(float flSizePixels)const -> float;
+		[[nodiscard]] auto FontPointsFromScaledPixels(long iSizePixels)const -> long;
+		[[nodiscard]] auto FontScaledPixelsFromPoints(float flSizePoints)const -> float;
+		[[nodiscard]] auto FontScaledPixelsFromPoints(long iSizePoints)const -> long;
 		void FontSizeIncDec(bool fInc);
 		[[nodiscard]] auto GetCustomColor(int iItem, int iSubItem)const -> std::optional<LISTEXCOLOR>;
+		[[nodiscard]] auto GetDPIScale()const -> float;
 		[[nodiscard]] int GetIcon(int iItem, int iSubItem)const; //Does cell have an icon associated.
 		[[nodiscard]] auto GetTooltip(int iItem, int iSubItem)const -> std::optional<LISTEXTTDATA>;
 		[[nodiscard]] bool IsWindow()const;
 		auto OnCommand(const MSG& msg) -> LRESULT;
 		auto OnDestroy() -> LRESULT;
+		auto OnDPIChangedAfterParent() -> LRESULT;
 		void OnEditInPlaceEnterPressed();
 		void OnEditInPlaceKillFocus();
 		auto OnEraseBkgnd() -> LRESULT;
@@ -1242,11 +1363,13 @@ namespace HEXCTRL::LISTEX {
 		auto OnNotify(const MSG& msg) -> LRESULT;
 		void OnNotifyEditInPlace(NMHDR* pNMHDR);
 		auto OnPaint() -> LRESULT;
+		auto OnSetCursor(const MSG& msg) -> LRESULT;
 		auto OnTimer(const MSG& msg) -> LRESULT;
 		auto OnVScroll(const MSG& msg) -> LRESULT;
 		auto ParseItemData(int iItem, int iSubitem) -> std::vector<ITEMDATA>;
 		void RecalcMeasure()const;
-		void SetFontSize(long lSize);
+		void SetDPIScale(); //Set new DPI scale factor according to current DPI.
+		void SetFontSize(long iSizePoints);
 		void TTCellShow(bool fShow, bool fTimer = false);
 		void TTLinkShow(bool fShow, bool fTimer = false);
 		void TTHLShow(bool fShow, UINT uRow); //Tooltips for high latency mode.
@@ -1289,7 +1412,7 @@ namespace HEXCTRL::LISTEX {
 		POINT m_ptTTOffset { };            //Tooltip offset from the cursor point.
 		UINT m_uHLItem { };                //High latency Vscroll item.
 		int m_iSortColumn { -1 };          //Currently clicked header column.
-		int m_iLOGPIXELSY { };             //GetDeviceCaps(LOGPIXELSY) constant.
+		float m_flDPIScale { 1.F };        //DPI scale factor for window.
 		EListExSortMode m_eDefSortMode { EListExSortMode::SORT_LEX }; //Default sorting mode.
 		bool m_fCreated { false };         //Is created.
 		bool m_fHighLatency { false };     //High latency flag.
@@ -1304,6 +1427,7 @@ namespace HEXCTRL::LISTEX {
 		bool m_fLinkTTActive { false };    //Is link's tool-tip shown atm.
 		bool m_fLDownAtLink { false };     //Left mouse down on link.
 		bool m_fHLFlag { false };          //High latency Vscroll flag.
+		bool m_fHandCursor { false };      //Is currently a hand cursor.
 	};
 
 	//Text and links in the cell.
@@ -1422,30 +1546,32 @@ bool CListEx::Create(const LISTEXCREATE& lcs)
 		::SendMessageW(m_hWndRowTT, TTM_ADDTOOLW, 0, reinterpret_cast<LPARAM>(&ttiHL));
 	}
 
-	const auto hDC = ::GetDC(m_hWnd);
-	m_iLOGPIXELSY = ::GetDeviceCaps(hDC, LOGPIXELSY);
+	SetDPIScale();
+
 	NONCLIENTMETRICSW ncm { .cbSize { sizeof(NONCLIENTMETRICSW) } };
 	::SystemParametersInfoW(SPI_GETNONCLIENTMETRICS, ncm.cbSize, &ncm, 0); //Get System Default UI Font.
-	ncm.lfMessageFont.lfHeight = -::MulDiv(lcs.dwSizeFontList, m_iLOGPIXELSY, 72);
+
+	//List font.
+	ncm.lfMessageFont.lfHeight = -FontScaledPixelsFromPoints(static_cast<long>(lcs.dwSizeFontList));
 	LOGFONTW lfList { lcs.pLFList != nullptr ? *lcs.pLFList : ncm.lfMessageFont };
 	m_hFntList = ::CreateFontIndirectW(&lfList);
 	lfList.lfUnderline = TRUE;
 	m_hFntListUnderline = ::CreateFontIndirectW(&lfList);
-	ncm.lfMessageFont.lfHeight = -::MulDiv(lcs.dwSizeFontHdr, m_iLOGPIXELSY, 72);
-	const LOGFONTW lfHdr { lcs.pLFHdr != nullptr ? *lcs.pLFHdr : ncm.lfMessageFont };
-	const auto fntDefault = ::CreateFontIndirectW(&lfHdr);
-	TEXTMETRICW tm;
-	::SelectObject(hDC, fntDefault);
-	::GetTextMetricsW(hDC, &tm);
-	const DWORD dwHdrHeight = lcs.dwHdrHeight == 0 ?
-		tm.tmHeight + tm.tmExternalLeading + ::MulDiv(5, m_iLOGPIXELSY, 72) : lcs.dwHdrHeight; //Header is a bit higher than list rows.
-	::ReleaseDC(m_hWnd, hDC);
+
+	//Header font.
+	ncm.lfMessageFont.lfHeight = -FontScaledPixelsFromPoints(static_cast<long>(lcs.dwSizeFontHdr));
+	const auto lfHdr { lcs.pLFHdr != nullptr ? *lcs.pLFHdr : ncm.lfMessageFont };
+
+	//Header height.
+	const auto dwHdrHeightDef = std::lround(19UL * GetDPIScale());
+	const DWORD dwHdrHeight = lcs.dwHdrHeight > 0 ?
+		std::lround(lcs.dwHdrHeight * GetDPIScale()) :
+		std::lround(dwHdrHeightDef + FontScaledPixelsFromPoints(5 * GetDPIScale())); //Header is a bit higher than list rows.
+
 	m_hPenGrid = ::CreatePen(PS_SOLID, m_dwGridWidth, m_stColors.clrListGrid);
-	::SetClassLongPtrW(m_hWnd, GCLP_HCURSOR, 0); //To prevent cursor from blinking.
 
 	m_fCreated = true;
 
-	GetHeaderCtrl().SetDPIScale(static_cast<float>(m_iLOGPIXELSY) / USER_DEFAULT_SCREEN_DPI);
 	GetHeaderCtrl().SetColor(m_stColors);
 	GetHeaderCtrl().SetSortable(lcs.fSortable);
 	SetHdrHeight(dwHdrHeight);
@@ -1961,6 +2087,7 @@ auto CListEx::ProcessMsg(const MSG& msg)->LRESULT
 	switch (msg.message) {
 	case WM_COMMAND: return OnCommand(msg);
 	case WM_DESTROY: return OnDestroy();
+	case WM_DPICHANGED_AFTERPARENT: return OnDPIChangedAfterParent();
 	case WM_ERASEBKGND: return OnEraseBkgnd();
 	case WM_HSCROLL: return OnHScroll(msg);
 	case WM_LBUTTONDBLCLK: return OnLButtonDblClk(msg);
@@ -1970,6 +2097,7 @@ auto CListEx::ProcessMsg(const MSG& msg)->LRESULT
 	case WM_MOUSEWHEEL: return OnMouseWheel(msg);
 	case WM_NOTIFY: return OnNotify(msg);
 	case WM_PAINT: return OnPaint();
+	case WM_SETCURSOR: return OnSetCursor(msg);
 	case WM_TIMER: return OnTimer(msg);
 	case WM_VSCROLL: return OnVScroll(msg);
 	default: return GDIUT::DefSubclassProc(msg);
@@ -2033,6 +2161,14 @@ void CListEx::SetColumnSortMode(int iColumn, bool fSortable, EListExSortMode eSo
 	GetHeaderCtrl().SetColumnSortable(iColumn, fSortable);
 }
 
+bool CListEx::SetColumnWidth(int iCol, int iWidth)
+{
+	assert(IsCreated());
+	if (!IsCreated()) { return false; }
+
+	return static_cast<bool>(::SendMessageW(m_hWnd, LVM_SETCOLUMNWIDTH, iCol, MAKELPARAM(iWidth, 0)));
+}
+
 auto CListEx::SetExtendedStyle(DWORD dwExStyle)const->DWORD
 {
 	assert(IsCreated());
@@ -2073,8 +2209,6 @@ void CListEx::SetHdrHeight(DWORD dwHeight)
 	if (!IsCreated()) { return; }
 
 	GetHeaderCtrl().SetHeight(dwHeight);
-	Update(0);
-	GetHeaderCtrl().RedrawWindow();
 }
 
 void CListEx::SetHdrImageList(HIMAGELIST pList)
@@ -2318,9 +2452,29 @@ bool CListEx::EditInPlaceShow(bool fShow)
 	return true;
 }
 
+auto CListEx::FontPointsFromScaledPixels(float flSizePixels)const->float
+{
+	return GDIUT::FontPointsFromPixels(flSizePixels) / GetDPIScale();
+}
+
+auto CListEx::FontPointsFromScaledPixels(long iSizePixels)const->long
+{
+	return std::lround(FontPointsFromScaledPixels(static_cast<float>(iSizePixels)));
+}
+
+auto CListEx::FontScaledPixelsFromPoints(float flSizePoints)const->float
+{
+	return GDIUT::FontPixelsFromPoints(flSizePoints) * GetDPIScale();
+}
+
+auto CListEx::FontScaledPixelsFromPoints(long iSizePoints)const->long
+{
+	return std::lround(FontScaledPixelsFromPoints(static_cast<float>(iSizePoints)));
+}
+
 void CListEx::FontSizeIncDec(bool fInc)
 {
-	const auto lFontSize = ::MulDiv(-GetFontSize(), 72, m_iLOGPIXELSY) + (fInc ? 1 : -1);
+	const auto lFontSize = FontPointsFromScaledPixels(-GetFontSize()) + (fInc ? 1 : -1);
 	SetFontSize(lFontSize);
 }
 
@@ -2341,6 +2495,11 @@ auto CListEx::GetCustomColor(int iItem, int iSubItem)const->std::optional<LISTEX
 	}
 
 	return std::nullopt;
+}
+
+auto CListEx::GetDPIScale()const->float
+{
+	return m_flDPIScale;
 }
 
 int CListEx::GetIcon(int iItem, int iSubItem)const
@@ -2403,6 +2562,16 @@ auto CListEx::OnDestroy()->LRESULT
 	::DeleteObject(m_hPenGrid);
 	m_vecColumnData.clear();
 	m_fCreated = false;
+
+	return 0;
+}
+
+auto CListEx::OnDPIChangedAfterParent()->LRESULT
+{
+	//Take the current font size, in points, with the old DPI.
+	const auto lFontSizePoints = FontPointsFromScaledPixels(-GetFontSize());
+	SetDPIScale(); //Set new DPI scale.
+	SetFontSize(lFontSizePoints);
 
 	return 0;
 }
@@ -2534,21 +2703,17 @@ auto CListEx::OnMouseWheel(const MSG& msg)->LRESULT
 
 auto CListEx::OnMouseMove(const MSG& msg)->LRESULT
 {
-	static const auto hCurArrow = static_cast<HCURSOR>(::LoadImageW(nullptr, IDC_ARROW, IMAGE_CURSOR, 0, 0,
-		LR_DEFAULTSIZE | LR_SHARED));
-	static const auto hCurHand = static_cast<HCURSOR>(::LoadImageW(nullptr, IDC_HAND, IMAGE_CURSOR, 0, 0,
-		LR_DEFAULTSIZE | LR_SHARED));
 	const POINT pt { .x { GDIUT::GetXLPARAM(msg.lParam) }, .y { GDIUT::GetYLPARAM(msg.lParam) } };
 
 	LVHITTESTINFO hti { .pt { pt } };
 	HitTest(&hti);
-	bool fLinkRect { false }; //Cursor at link's rect area?
+	bool fCurLinkRc { false }; //Cursor at a link's rect area?
 	if (hti.iItem >= 0 && hti.iSubItem >= 0) {
 		auto vecText = ParseItemData(hti.iItem, hti.iSubItem);     //Non const to allow std::move(itLink->wstrLink).
 		auto itLink = std::find_if(vecText.begin(), vecText.end(), //Non const to allow std::move(itLink->wstrLink).
 			[&](const ITEMDATA& item) {	return item.fLink && item.rc.PtInRect(pt); });
 		if (itLink != vecText.end()) {
-			fLinkRect = true;
+			fCurLinkRc = true;
 			if (m_fLinkTooltip && !m_fLDownAtLink && m_rcLinkCurr != itLink->rc) {
 				TTLinkShow(false);
 				m_fLinkTTActive = true;
@@ -2564,9 +2729,9 @@ auto CListEx::OnMouseMove(const MSG& msg)->LRESULT
 		}
 	}
 
-	::SetCursor(fLinkRect ? hCurHand : hCurArrow);
+	m_fHandCursor = fCurLinkRc;
 
-	if (fLinkRect) { //Link's rect is under the cursor.
+	if (fCurLinkRc) { //Link's rect is under the cursor.
 		if (m_fCellTTActive) { //If there is a cell's tooltip atm, hide it.
 			TTCellShow(false);
 		}
@@ -2695,6 +2860,18 @@ auto CListEx::OnPaint()->LRESULT
 	dcMem.FillSolidRect(rcClient, m_stColors.clrNWABk);
 
 	return ::DefSubclassProc(m_hWnd, WM_PAINT, reinterpret_cast<WPARAM>(dcMem.GetHDC()), 0);
+}
+
+auto CListEx::OnSetCursor(const MSG& msg)->LRESULT
+{
+	if (m_fHandCursor) {
+		static const auto hCurHand = static_cast<HCURSOR>(::LoadImageW(nullptr, IDC_HAND, IMAGE_CURSOR, 0, 0,
+			LR_DEFAULTSIZE | LR_SHARED));
+		::SetCursor(hCurHand);
+		return TRUE;
+	}
+
+	return GDIUT::DefSubclassProc(msg); //To set appropriate cursor.
 }
 
 auto CListEx::OnTimer(const MSG& msg)->LRESULT
@@ -2971,7 +3148,12 @@ void CListEx::RecalcMeasure()const
 	::SendMessageW(m_hWnd, WM_WINDOWPOSCHANGED, 0, reinterpret_cast<LPARAM>(&wp));
 }
 
-void CListEx::SetFontSize(long lSize)
+void CListEx::SetDPIScale()
+{
+	m_flDPIScale = GDIUT::GetDPIScaleForHWND(m_hWnd);
+}
+
+void CListEx::SetFontSize(long iSizePoints)
 {
 	assert(IsCreated());
 	if (!IsCreated()) {
@@ -2979,13 +3161,13 @@ void CListEx::SetFontSize(long lSize)
 	}
 
 	//Prevent font size from being too small or too big.
-	if (lSize < 4 || lSize > 64) {
+	if (iSizePoints < 4 || iSizePoints > 64) {
 		return;
 	}
 
 	LOGFONTW lf { };
 	::GetObjectW(m_hFntList, sizeof(lf), &lf);
-	lf.lfHeight = -::MulDiv(lSize, m_iLOGPIXELSY, 72);
+	lf.lfHeight = -FontScaledPixelsFromPoints(iSizePoints);
 	SetFont(lf);
 }
 

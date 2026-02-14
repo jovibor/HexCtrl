@@ -446,18 +446,6 @@ namespace HEXCTRL::INTERNAL::ut { //Utility methods and stuff.
 		return hInst;
 	};
 
-	//Get font points size from the size in pixels.
-	[[nodiscard]] constexpr auto FontPointsFromPixels(float flSizePixels) -> float {
-		constexpr auto flPointsInPixel = 72.F / USER_DEFAULT_SCREEN_DPI;
-		return flSizePixels * flPointsInPixel;
-	}
-
-	//Get font pixels size from the size in points.
-	[[nodiscard]] constexpr auto FontPixelsFromPoints(float flSizePoints) -> float {
-		constexpr auto flPixelsInPoint = USER_DEFAULT_SCREEN_DPI / 72.F;
-		return flSizePoints * flPixelsInPoint;
-	}
-
 	//Replicates GET_X_LPARAM macro from windowsx.h.
 	[[nodiscard]] constexpr int GetXLPARAM(LPARAM lParam) {
 		return (static_cast<int>(static_cast<short>(static_cast<WORD>((static_cast<DWORD_PTR>(lParam)) & 0xFFFFU))));
@@ -541,6 +529,18 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 
 	[[nodiscard]] auto GetDPIScaleForHWND(HWND hWnd) -> float {
 		return static_cast<float>(GetDPIForHWND(hWnd)) / USER_DEFAULT_SCREEN_DPI; //High-DPI scale factor for window.
+	}
+
+	//Get font points size from the size in pixels.
+	[[nodiscard]] constexpr auto FontPointsFromPixels(float flSizePixels) -> float {
+		constexpr auto flPointsInPixel = 72.F / USER_DEFAULT_SCREEN_DPI;
+		return flSizePixels * flPointsInPixel;
+	}
+
+	//Get font pixels size from the size in points.
+	[[nodiscard]] constexpr auto FontPixelsFromPoints(float flSizePoints) -> float {
+		constexpr auto flPixelsInPoint = USER_DEFAULT_SCREEN_DPI / 72.F;
+		return flSizePoints * flPixelsInPoint;
 	}
 
 	//iDirection: -2:LEFT, 1:UP, 2:RIGHT, -1:DOWN.
