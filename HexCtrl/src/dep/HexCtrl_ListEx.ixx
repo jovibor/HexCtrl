@@ -4,6 +4,7 @@
 * This code is available under the "MIT License".                   *
 ********************************************************************/
 module;
+#include <SDKDDKVer.h>
 #include <shlwapi.h>
 #include <uxtheme.h>
 #include <commctrl.h>
