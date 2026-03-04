@@ -24,15 +24,9 @@ BEGIN_MESSAGE_MAP(CMFCDialogDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_HEXPOPUP, &CMFCDialogDlg::OnBnPopup)
 	ON_BN_CLICKED(IDC_CHK_RW, &CMFCDialogDlg::OnChkRW)
 	ON_WM_DROPFILES()
-	ON_WM_PAINT()
-	ON_WM_QUERYDRAGICON()
 END_MESSAGE_MAP()
 
-CMFCDialogDlg::CMFCDialogDlg(CWnd* pParent /*=nullptr*/)
-	: CDialogEx(IDD_HEXCTRL_SAMPLE, pParent)
-{
-	m_hIcon = AfxGetApp()->LoadIconW(IDR_MAINFRAME);
-}
+CMFCDialogDlg::CMFCDialogDlg(CWnd* pParent) : CDialogEx(IDD_HEXCTRL_SAMPLE, pParent) { }
 
 void CMFCDialogDlg::DoDataExchange(CDataExchange* pDX)
 {
@@ -48,8 +42,9 @@ BOOL CMFCDialogDlg::OnInitDialog()
 
 	CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
 
-	SetIcon(m_hIcon, TRUE);	 //Set big icon
-	SetIcon(m_hIcon, FALSE); //Set small icon
+	const auto hIcon = AfxGetApp()->LoadIconW(IDR_MAINFRAME);
+	SetIcon(hIcon, TRUE);  //Set big icon
+	SetIcon(hIcon, FALSE); //Set small icon
 	m_editDataSize.SetWindowTextW(L"0x4000");
 	m_chkRW.SetCheck(BST_CHECKED);
 
@@ -79,39 +74,9 @@ BOOL CMFCDialogDlg::OnInitDialog()
 		FileOpen(m_wstrStartupFile, IsLnk());
 	}
 
-	if (const auto pDL = GetDynamicLayout(); pDL != nullptr) {
-		pDL->SetMinSize({ 0, 0 });
-	}
+	GetDynamicLayout()->SetMinSize({ 0, 0 });
 
 	return TRUE;
-}
-
-void CMFCDialogDlg::OnPaint()
-{
-	if (IsIconic()) {
-		CPaintDC dc(this);
-
-		SendMessageW(WM_ICONERASEBKGND, reinterpret_cast<WPARAM>(dc.GetSafeHdc()), 0);
-
-		// Center icon in client rectangle
-		const auto cxIcon = GetSystemMetrics(SM_CXICON);
-		const auto cyIcon = GetSystemMetrics(SM_CYICON);
-		CRect rect;
-		GetClientRect(&rect);
-		const auto x = (rect.Width() - cxIcon + 1) / 2;
-		const auto y = (rect.Height() - cyIcon + 1) / 2;
-
-		// Draw the icon
-		dc.DrawIcon(x, y, m_hIcon);
-	}
-	else {
-		CDialogEx::OnPaint();
-	}
-}
-
-HCURSOR CMFCDialogDlg::OnQueryDragIcon()
-{
-	return static_cast<HCURSOR>(m_hIcon);
 }
 
 void CMFCDialogDlg::OnBnClearData()
@@ -211,7 +176,12 @@ void CMFCDialogDlg::OnClose()
 
 auto CMFCDialogDlg::OnDPIChanged(WPARAM /*wParam*/, LPARAM /*lParam*/)->LRESULT
 {
-	return 0;
+	const auto ret = CDialogEx::Default();
+	EnableDynamicLayout(TRUE);
+	LoadDynamicLayoutResource(MAKEINTRESOURCEW(IDD_HEXCTRL_SAMPLE));
+	GetDynamicLayout()->SetMinSize({ 0, 0 });
+
+	return ret;
 }
 
 void CMFCDialogDlg::OnDropFiles(HDROP hDropInfo)
@@ -234,13 +204,9 @@ void CMFCDialogDlg::OnDropFiles(HDROP hDropInfo)
 
 auto CMFCDialogDlg::OnGetDPIScaledSize(WPARAM /*wParam*/, LPARAM /*lParam*/)->LRESULT
 {
-	//Returning FALSE indicates that the message will not be handled,
-	//and the default linear DPI scaling will apply to the window.
+	EnableDynamicLayout(FALSE);
 
-	//It seems that it's just enough for all MFC dynamic layout controls to move/resize correctly.
-	//No manual disabling/enabling of the dynamic layout is needed, looks like MFC handles it by itself.
-	//At least in Windows 11 it works fine.
-	return FALSE;
+	return CDialogEx::Default();
 }
 
 BOOL CMFCDialogDlg::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)

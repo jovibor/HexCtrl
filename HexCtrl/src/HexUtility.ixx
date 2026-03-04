@@ -543,7 +543,7 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 		return std::lround(flSizePoints * flPixelsInPoint);
 	}
 
-	//iDirection: -2:LEFT, 1:UP, 2:RIGHT, -1:DOWN.
+	//iDirection: 1:UP, -1:DOWN, -2:LEFT, 2:RIGHT.
 	[[nodiscard]] auto CreateArrowBitmap(HDC hDC, DWORD dwWidth, DWORD dwHeight, int iDirection, COLORREF clrBk, COLORREF clrArrow) -> HBITMAP {
 		//Make the width and height even numbers, to make it easier drawing an isosceles triangle.
 		const int iWidth = dwWidth - (dwWidth % 2);
@@ -635,14 +635,14 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 
 	class CDynLayout final {
 	public:
-		//Ratio settings, for how much to move or resize an item when parent is resized.
+		//Ratio settings, for how much to move or to resize child item when parent is resized.
 		struct ItemRatio { float flXRatio { }; float flYRatio { }; };
 		struct MoveRatio : public ItemRatio { }; //To differentiate move from size in the AddItem.
 		struct SizeRatio : public ItemRatio { };
 
 		void AddItem(int iIDItem, MoveRatio move, SizeRatio size);
 		void Enable(bool fTrack);
-		void OnSize(int iWidth, int iHeight)const; //Should be hooked into the host window WM_SIZE handler.
+		void OnSize(int iWidth, int iHeight)const; //Should be hooked into the host window's WM_SIZE handler.
 		void RemoveAll() { m_vecItems.clear(); }
 		void SetHost(HWND hWnd) { assert(hWnd != nullptr); m_hWndHost = hWnd; }
 
@@ -672,7 +672,7 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 	private:
 		struct ItemData {
 			HWND hWnd { };   //Item window.
-			RECT rcOrig { }; //Item original client area rect after EnableTrack(true).
+			RECT rcOrig { }; //Item original window rect after EnableTrack(true).
 			MoveRatio move;  //How much to move the item.
 			SizeRatio size;  //How much to resize the item.
 		};
@@ -1154,7 +1154,7 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 		}
 	};
 
-	class CMenu {
+	class CMenu final {
 	public:
 		CMenu() = default;
 		CMenu(HMENU hMenu) { Attach(hMenu); }
