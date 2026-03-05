@@ -636,12 +636,20 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 	class CDynLayout final {
 	public:
 		//Ratio settings, for how much to move or to resize child item when parent is resized.
-		struct ItemRatio { float flXRatio { }; float flYRatio { }; };
+		struct ItemRatio {
+			bool IsNull()const { return flXRatio == 0.F && flYRatio == 0.F; };
+			float flXRatio { }; float flYRatio { };
+		};
 		struct MoveRatio : public ItemRatio { }; //To differentiate move from size in the AddItem.
 		struct SizeRatio : public ItemRatio { };
 
+		CDynLayout() = default;
+		CDynLayout(HWND hWndHost) : m_hWndHost(hWndHost) { }
 		void AddItem(int iIDItem, MoveRatio move, SizeRatio size);
+		void AddItem(HWND hWndItem, MoveRatio move, SizeRatio size);
 		void Enable(bool fTrack);
+		bool LoadFromResource(HINSTANCE hInstRes, const wchar_t* pwszNameResource);
+		bool LoadFromResource(HINSTANCE hInstRes, UINT uNameResource);
 		void OnSize(int iWidth, int iHeight)const; //Should be hooked into the host window's WM_SIZE handler.
 		void RemoveAll() { m_vecItems.clear(); }
 		void SetHost(HWND hWnd) { assert(hWnd != nullptr); m_hWndHost = hWnd; }
@@ -649,27 +657,28 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 		//Static helper methods to use in the AddItem.
 		[[nodiscard]] static MoveRatio MoveNone() { return { }; }
 		[[nodiscard]] static MoveRatio MoveHorz(int iXRatio) {
-			iXRatio = std::clamp(iXRatio, 0, 100); return { { .flXRatio { iXRatio / 100.F } } };
+			return { { .flXRatio { ToFlRatio(iXRatio) } } };
 		}
 		[[nodiscard]] static MoveRatio MoveVert(int iYRatio) {
-			iYRatio = std::clamp(iYRatio, 0, 100); return { { .flYRatio { iYRatio / 100.F } } };
+			return { { .flYRatio { ToFlRatio(iYRatio) } } };
 		}
 		[[nodiscard]] static MoveRatio MoveHorzAndVert(int iXRatio, int iYRatio) {
-			iXRatio = std::clamp(iXRatio, 0, 100); iYRatio = std::clamp(iYRatio, 0, 100);
-			return { { .flXRatio { iXRatio / 100.F }, .flYRatio { iYRatio / 100.F } } };
+			return { { .flXRatio { ToFlRatio(iXRatio) }, .flYRatio { ToFlRatio(iYRatio) } } };
 		}
 		[[nodiscard]] static SizeRatio SizeNone() { return { }; }
 		[[nodiscard]] static SizeRatio SizeHorz(int iXRatio) {
-			iXRatio = std::clamp(iXRatio, 0, 100); return { { .flXRatio { iXRatio / 100.F } } };
+			return { { .flXRatio { ToFlRatio(iXRatio) } } };
 		}
 		[[nodiscard]] static SizeRatio SizeVert(int iYRatio) {
-			iYRatio = std::clamp(iYRatio, 0, 100); return { { .flYRatio { iYRatio / 100.F } } };
+			return { { .flYRatio { ToFlRatio(iYRatio) } } };
 		}
 		[[nodiscard]] static SizeRatio SizeHorzAndVert(int iXRatio, int iYRatio) {
-			iXRatio = std::clamp(iXRatio, 0, 100); iYRatio = std::clamp(iYRatio, 0, 100);
-			return { { .flXRatio { iXRatio / 100.F }, .flYRatio { iYRatio / 100.F } } };
+			return { { .flXRatio { ToFlRatio(iXRatio) }, .flYRatio { ToFlRatio(iYRatio) } } };
 		}
 	private:
+		[[nodiscard]] static auto ToFlRatio(int iRatio) -> float {
+			return std::clamp(iRatio, 0, 100) / 100.F;
+		}
 		struct ItemData {
 			HWND hWnd { };   //Item window.
 			RECT rcOrig { }; //Item original window rect after EnableTrack(true).
@@ -683,11 +692,19 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 	};
 
 	void CDynLayout::AddItem(int iIDItem, MoveRatio move, SizeRatio size) {
-		const auto hWnd = ::GetDlgItem(m_hWndHost, iIDItem);
-		assert(hWnd != nullptr);
-		if (hWnd != nullptr) {
-			m_vecItems.emplace_back(ItemData { .hWnd { hWnd }, .move { move }, .size { size } });
-		}
+		AddItem(::GetDlgItem(m_hWndHost, iIDItem), move, size);
+	}
+
+	void CDynLayout::AddItem(HWND hWndItem, MoveRatio move, SizeRatio size)
+	{
+		assert(hWndItem != nullptr);
+		if (hWndItem == nullptr)
+			return;
+
+		if (move.IsNull() && size.IsNull())
+			return;
+
+		m_vecItems.emplace_back(ItemData { .hWnd { hWndItem }, .move { move }, .size { size } });
 	}
 
 	void CDynLayout::Enable(bool fTrack) {
@@ -700,6 +717,62 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 				::ScreenToClient(m_hWndHost, reinterpret_cast<LPPOINT>(&rc) + 1);
 			}
 		}
+	}
+
+	bool CDynLayout::LoadFromResource(HINSTANCE hInstRes, const wchar_t* pwszNameResource)
+	{
+		assert(pwszNameResource != nullptr);
+		if (pwszNameResource == nullptr)
+			return false;
+
+		assert(m_hWndHost != nullptr);
+		if (m_hWndHost == nullptr)
+			return false;
+
+		const auto hDlgLayout = ::FindResourceW(hInstRes, pwszNameResource, L"AFX_DIALOG_LAYOUT");
+		assert(hDlgLayout != nullptr);
+		if (hDlgLayout == nullptr) {
+			return false;
+		}
+
+		const auto hResData = ::LoadResource(hInstRes, hDlgLayout);
+		assert(hResData != nullptr);
+		if (hResData == nullptr)
+			return false;
+
+		const auto pResData = ::LockResource(hResData);
+		assert(pResData != nullptr);
+		if (pResData == nullptr)
+			return false;
+
+		const auto dwSizeRes = ::SizeofResource(hInstRes, hDlgLayout);
+		const auto* pDataBegin = reinterpret_cast<WORD*>(pResData);
+		const auto* const pDataEnd = reinterpret_cast<WORD*>(reinterpret_cast<std::byte*>(pResData) + dwSizeRes);
+
+		assert(*pDataBegin == 0);
+		if (*pDataBegin != 0) //First WORD must be zero, it's a header (version number).
+			return false;
+
+		++pDataBegin; //Past first WORD is the actual data.
+		auto hWndChild = ::GetWindow(m_hWndHost, GW_CHILD); //First child window in the host window.
+		while (pDataBegin + 4 <= pDataEnd) { //Actual AFX_DIALOG_LAYOUT data.
+			if (hWndChild == nullptr)
+				break;
+
+			const auto wXMoveRatio = *pDataBegin++;
+			const auto wYMoveRatio = *pDataBegin++;
+			const auto wXSizeRatio = *pDataBegin++;
+			const auto wYSizeRatio = *pDataBegin++;
+			AddItem(hWndChild, MoveHorzAndVert(wXMoveRatio, wYMoveRatio), SizeHorzAndVert(wXSizeRatio, wYSizeRatio));
+			hWndChild = ::GetWindow(hWndChild, GW_HWNDNEXT);
+		}
+
+		return true;
+	}
+
+	bool CDynLayout::LoadFromResource(HINSTANCE hInstRes, UINT uNameResource)
+	{
+		return LoadFromResource(hInstRes, MAKEINTRESOURCEW(uNameResource));
 	}
 
 	void CDynLayout::OnSize(int iWidth, int iHeight)const {
