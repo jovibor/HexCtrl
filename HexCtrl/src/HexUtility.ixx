@@ -448,12 +448,12 @@ namespace HEXCTRL::INTERNAL::ut { //Utility methods and stuff.
 
 	//Replicates GET_X_LPARAM macro from windowsx.h.
 	[[nodiscard]] constexpr int GetXLPARAM(LPARAM lParam) {
-		return (static_cast<int>(static_cast<short>(static_cast<WORD>((static_cast<DWORD_PTR>(lParam)) & 0xFFFFU))));
+		return static_cast<int>(static_cast<short>(static_cast<DWORD_PTR>(lParam) & 0xFFFFU));
 	}
 
 	//Replicates GET_Y_LPARAM macro from windowsx.h.
 	[[nodiscard]] constexpr int GetYLPARAM(LPARAM lParam) {
-		return GetXLPARAM(lParam >> 16);
+		return GetXLPARAM(static_cast<DWORD_PTR>(lParam) >> 16);
 	}
 }
 
@@ -637,7 +637,7 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 	public:
 		//Ratio settings, for how much to move or to resize child item when parent is resized.
 		struct ItemRatio {
-			bool IsNull()const { return flXRatio == 0.F && flYRatio == 0.F; };
+			[[nodiscard]] bool IsNull()const { return flXRatio == 0.F && flYRatio == 0.F; };
 			float flXRatio { }; float flYRatio { };
 		};
 		struct MoveRatio : public ItemRatio { }; //To differentiate move from size in the AddItem.
@@ -695,8 +695,7 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 		AddItem(::GetDlgItem(m_hWndHost, iIDItem), move, size);
 	}
 
-	void CDynLayout::AddItem(HWND hWndItem, MoveRatio move, SizeRatio size)
-	{
+	void CDynLayout::AddItem(HWND hWndItem, MoveRatio move, SizeRatio size) {
 		assert(hWndItem != nullptr);
 		if (hWndItem == nullptr)
 			return;
@@ -719,8 +718,7 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 		}
 	}
 
-	bool CDynLayout::LoadFromResource(HINSTANCE hInstRes, const wchar_t* pwszNameResource)
-	{
+	bool CDynLayout::LoadFromResource(HINSTANCE hInstRes, const wchar_t* pwszNameResource) {
 		assert(pwszNameResource != nullptr);
 		if (pwszNameResource == nullptr)
 			return false;
@@ -730,8 +728,7 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 			return false;
 
 		const auto hDlgLayout = ::FindResourceW(hInstRes, pwszNameResource, L"AFX_DIALOG_LAYOUT");
-		assert(hDlgLayout != nullptr);
-		if (hDlgLayout == nullptr) {
+		if (hDlgLayout == nullptr) { //No such resource found in the hInstRes.
 			return false;
 		}
 
@@ -770,8 +767,7 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 		return true;
 	}
 
-	bool CDynLayout::LoadFromResource(HINSTANCE hInstRes, UINT uNameResource)
-	{
+	bool CDynLayout::LoadFromResource(HINSTANCE hInstRes, UINT uNameResource) {
 		return LoadFromResource(hInstRes, MAKEINTRESOURCEW(uNameResource));
 	}
 
