@@ -23,6 +23,8 @@ module;
 #include <vector>
 export module HEXCTRL:HexUtility;
 
+#pragma comment(lib, "MSImg32") //AlphaBlend.
+
 export import HexCtrl_StrToNum;
 export import HexCtrl_ListEx;
 
@@ -593,46 +595,6 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 		return hBMPArrow;
 	}
 
-	//Get 32bit ARGB bitmap with premultiplied alpha from HICON.
-	[[nodiscard]] auto BitmapFromIcon(HICON hIcon) -> HBITMAP {
-		ICONINFO ii;
-		if (::GetIconInfo(hIcon, &ii) == FALSE)
-			return { };
-
-		::DeleteObject(ii.hbmMask); //Deleting icon's BW mask bitmap.
-		BITMAP bmIconClr;
-		::GetObjectW(ii.hbmColor, sizeof(BITMAP), &bmIconClr);
-		const auto iBmpHeight = std::abs(bmIconClr.bmHeight);
-		const auto iBmpWidth = std::abs(bmIconClr.bmWidth);
-		BITMAPINFO bi { .bmiHeader { .biSize { sizeof(BITMAPINFOHEADER) }, .biWidth { iBmpWidth },
-			.biHeight { iBmpHeight }, .biPlanes { 1 }, .biBitCount { 32 }, .biCompression { BI_RGB } } };
-		RGBQUAD* pARGB { }; //Newly created DI bitmap's data pointer.
-		const auto hDCMem = ::CreateCompatibleDC(nullptr);
-		const auto hBmp32 = ::CreateDIBSection(hDCMem, &bi, DIB_RGB_COLORS, reinterpret_cast<void**>(&pARGB), nullptr, 0);
-		::GetDIBits(hDCMem, ii.hbmColor, 0, iBmpHeight, pARGB, &bi, DIB_RGB_COLORS);
-		::DeleteDC(hDCMem);
-		::DeleteObject(ii.hbmColor);
-
-		if (hBmp32 == nullptr || pARGB == nullptr)
-			return { };
-
-		const auto dwSizePx = static_cast<DWORD>(iBmpHeight * iBmpWidth);
-		if (bmIconClr.bmBitsPixel == 32) { //Premultiply alpha for all channels.
-			for (auto i = 0U; i < dwSizePx; ++i) {
-				pARGB[i].rgbBlue = static_cast<BYTE>(static_cast<DWORD>(pARGB[i].rgbBlue) * pARGB[i].rgbReserved / 255);
-				pARGB[i].rgbGreen = static_cast<BYTE>(static_cast<DWORD>(pARGB[i].rgbGreen) * pARGB[i].rgbReserved / 255);
-				pARGB[i].rgbRed = static_cast<BYTE>(static_cast<DWORD>(pARGB[i].rgbRed) * pARGB[i].rgbReserved / 255);
-			}
-		}
-		else { //If the icon is not 32bit, merely set bitmap alpha channel to fully opaque.
-			for (auto i = 0U; i < dwSizePx; ++i) {
-				pARGB[i].rgbReserved = 255;
-			}
-		}
-
-		return hBmp32;
-	}
-
 	class CDynLayout final {
 	public:
 		//Ratio settings, for how much to move or to resize child item when parent is resized.
@@ -814,16 +776,13 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 	public:
 		CRect() : RECT { } { }
 		CRect(int iLeft, int iTop, int iRight, int iBottom) : RECT { .left { iLeft }, .top { iTop },
-			.right { iRight }, .bottom { iBottom } } {
-		}
+			.right { iRight }, .bottom { iBottom } } { }
 		CRect(RECT rc) { ::CopyRect(this, &rc); }
 		CRect(LPCRECT pRC) { ::CopyRect(this, pRC); }
 		CRect(POINT pt, SIZE size) : RECT { .left { pt.x }, .top { pt.y }, .right { pt.x + size.cx },
-			.bottom { pt.y + size.cy } } {
-		}
+			.bottom { pt.y + size.cy } } { }
 		CRect(POINT topLeft, POINT botRight) : RECT { .left { topLeft.x }, .top { topLeft.y },
-			.right { botRight.x }, .bottom { botRight.y } } {
-		}
+			.right { botRight.x }, .bottom { botRight.y } } { }
 		~CRect() = default;
 		operator LPRECT() { return this; }
 		operator LPCRECT()const { return this; }

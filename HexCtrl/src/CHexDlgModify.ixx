@@ -575,7 +575,7 @@ namespace HEXCTRL::INTERNAL {
 		auto OnDestroy() -> INT_PTR;
 		auto OnInitDialog(const MSG& msg) -> INT_PTR;
 		void OnOK();
-		void SetControlsState();
+		void UpdateControlsState();
 	private:
 		GDIUT::CWnd m_Wnd;
 		GDIUT::CWndBtn m_WndBtnOk;
@@ -689,12 +689,12 @@ void CHexDlgFillData::OnCancel()
 
 void CHexDlgFillData::OnComboDataEditChange()
 {
-	SetControlsState();
+	UpdateControlsState();
 }
 
 void CHexDlgFillData::OnComboTypeSelChange()
 {
-	SetControlsState();
+	UpdateControlsState();
 }
 
 auto CHexDlgFillData::OnCommand(const MSG& msg)->INT_PTR
@@ -745,7 +745,7 @@ auto CHexDlgFillData::OnInitDialog(const MSG& msg)->INT_PTR
 
 	m_Wnd.CheckRadioButton(IDC_HEXCTRL_FILLDATA_RAD_ALL, IDC_HEXCTRL_FILLDATA_RAD_SEL, IDC_HEXCTRL_FILLDATA_RAD_ALL);
 	m_WndCmbData.LimitText(256); //Max characters of the combo-box.
-	SetControlsState();
+	UpdateControlsState();
 
 	return TRUE;
 }
@@ -833,7 +833,7 @@ void CHexDlgFillData::OnOK()
 	m_pHexCtrl->Redraw();
 }
 
-void CHexDlgFillData::SetControlsState()
+void CHexDlgFillData::UpdateControlsState()
 {
 	using enum EFillType;
 	const auto eFillType = GetFillType();
