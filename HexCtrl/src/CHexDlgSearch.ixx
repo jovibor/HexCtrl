@@ -92,7 +92,6 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] bool IsSelection()const;
 		[[nodiscard]] bool IsSmallSearch()const;
 		[[nodiscard]] bool IsWildcard()const;
-		auto OnActivate(const MSG& msg) -> INT_PTR;
 		void OnButtonSearchF();
 		void OnButtonSearchB();
 		void OnButtonFindAll();
@@ -113,6 +112,7 @@ namespace HEXCTRL::INTERNAL {
 		auto OnDrawItem(const MSG& msg) -> INT_PTR;
 		auto OnInitDialog(const MSG& msg) -> INT_PTR;
 		auto OnMeasureItem(const MSG& msg) -> INT_PTR;
+		auto OnMouseActivate(const MSG& msg) -> INT_PTR;
 		auto OnNotify(const MSG& msg) -> INT_PTR;
 		void OnNotifyListGetDispInfo(NMHDR *pNMHDR);
 		void OnNotifyListItemChanged(NMHDR *pNMHDR);
@@ -344,7 +344,6 @@ bool CHexDlgSearch::PreTranslateMsg(MSG* pMsg)
 auto CHexDlgSearch::ProcessMsg(const MSG& msg)->INT_PTR
 {
 	switch (msg.message) {
-	case WM_ACTIVATE: return OnActivate(msg);
 	case WM_CLOSE: return OnClose();
 	case WM_COMMAND: return OnCommand(msg);
 	case WM_CTLCOLORSTATIC: return OnCtlClrStatic(msg);
@@ -352,6 +351,7 @@ auto CHexDlgSearch::ProcessMsg(const MSG& msg)->INT_PTR
 	case WM_DRAWITEM: return OnDrawItem(msg);
 	case WM_INITDIALOG: return OnInitDialog(msg);
 	case WM_MEASUREITEM: return OnMeasureItem(msg);
+	case WM_MOUSEACTIVATE: return OnMouseActivate(msg);
 	case WM_NOTIFY: return OnNotify(msg);
 	default:
 		return 0;
@@ -974,19 +974,6 @@ bool CHexDlgSearch::IsWildcard()const
 	return m_WndBtnWC.IsWindowEnabled() && m_WndBtnWC.IsChecked();
 }
 
-auto CHexDlgSearch::OnActivate(const MSG& msg)->INT_PTR
-{
-	if (m_pHexCtrl == nullptr || !m_pHexCtrl->IsCreated())
-		return FALSE;
-
-	const auto wState = LOWORD(msg.wParam);
-	if (wState == WA_ACTIVE || wState == WA_CLICKACTIVE) {
-		UpdateControlsState();
-	}
-
-	return FALSE;
-}
-
 void CHexDlgSearch::OnButtonSearchF()
 {
 	m_fForward = true;
@@ -1352,6 +1339,18 @@ auto CHexDlgSearch::OnMeasureItem(const MSG& msg)->INT_PTR
 	}
 
 	return TRUE;
+}
+
+auto CHexDlgSearch::OnMouseActivate([[maybe_unused]] const MSG& msg)->INT_PTR
+{
+	const auto pHex = GetHexCtrl();
+	if (pHex == nullptr || !pHex->IsCreated() || !pHex->IsDataSet()) {
+		return MA_ACTIVATE;
+	}
+
+	UpdateControlsState();
+
+	return MA_ACTIVATE;
 }
 
 auto CHexDlgSearch::OnNotify(const MSG& msg)->INT_PTR

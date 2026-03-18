@@ -29,8 +29,8 @@ namespace HEXCTRL::INTERNAL {
 		void SetDlgProperties(std::uint64_t u64Flags);
 		void ShowWindow(int iCmdShow);
 	private:
+		[[nodiscard]] auto GetHexCtrl()const -> IHexCtrl*;
 		[[nodiscard]] bool IsNoEsc()const;
-		auto OnActivate(const MSG& msg) -> INT_PTR;
 		void OnCancel();
 		auto OnClose() -> INT_PTR;
 		auto OnCommand(const MSG& msg) -> INT_PTR;
@@ -40,6 +40,7 @@ namespace HEXCTRL::INTERNAL {
 		auto OnGetDPIScaledSize(const MSG& msg) -> INT_PTR;
 		auto OnInitDialog(const MSG& msg) -> INT_PTR;
 		auto OnMeasureItem(const MSG& msg) -> INT_PTR;
+		auto OnMouseActivate(const MSG& msg) -> INT_PTR;
 		auto OnNotify(const MSG& msg) -> INT_PTR;
 		void OnNotifyListColumnClick();
 		void OnNotifyListGetColor(NMHDR* pNMHDR);
@@ -47,6 +48,7 @@ namespace HEXCTRL::INTERNAL {
 		void OnNotifyListItemChanged(NMHDR* pNMHDR);
 		void OnNotifyListLinkClick(NMHDR* pNMHDR);
 		auto OnSize(const MSG& msg) -> INT_PTR;
+		void UpdateListSelection();
 		static BOOL CALLBACK EnumCodePagesProc(LPWSTR pwszCP);
 	private:
 		struct CODEPAGE {
@@ -80,7 +82,7 @@ void CHexDlgCodepage::CreateDlg()const
 {
 	//m_Wnd is set in the OnInitDialog().
 	if (const auto hWnd = ::CreateDialogParamW(m_hInstRes, MAKEINTRESOURCEW(IDD_HEXCTRL_CODEPAGE),
-		m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN), GDIUT::DlgProc<CHexDlgCodepage>, reinterpret_cast<LPARAM>(this));
+		GetHexCtrl()->GetWndHandle(EHexWnd::WND_MAIN), GDIUT::DlgProc<CHexDlgCodepage>, reinterpret_cast<LPARAM>(this));
 		hWnd == nullptr) {
 		ut::DBG_REPORT(L"CreateDialogParamW failed.");
 	}
@@ -117,7 +119,6 @@ bool CHexDlgCodepage::PreTranslateMsg(MSG* pMsg)
 auto CHexDlgCodepage::ProcessMsg(const MSG& msg)->INT_PTR
 {
 	switch (msg.message) {
-	case WM_ACTIVATE: return OnActivate(msg);
 	case WM_CLOSE: return OnClose();
 	case WM_COMMAND: return OnCommand(msg);
 	case WM_DESTROY: return OnDestroy();
@@ -126,6 +127,7 @@ auto CHexDlgCodepage::ProcessMsg(const MSG& msg)->INT_PTR
 	case WM_GETDPISCALEDSIZE: return OnGetDPIScaledSize(msg);
 	case WM_INITDIALOG: return OnInitDialog(msg);
 	case WM_MEASUREITEM: return OnMeasureItem(msg);
+	case WM_MOUSEACTIVATE: return OnMouseActivate(msg);
 	case WM_NOTIFY: return OnNotify(msg);
 	case WM_SIZE: return OnSize(msg);
 	default:
@@ -150,29 +152,14 @@ void CHexDlgCodepage::ShowWindow(int iCmdShow)
 
 //Private methods.
 
+auto CHexDlgCodepage::GetHexCtrl()const->IHexCtrl*
+{
+	return m_pHexCtrl;
+}
+
 bool CHexDlgCodepage::IsNoEsc()const
 {
 	return m_u64Flags & HEXCTRL_FLAG_DLG_NOESC;
-}
-
-auto CHexDlgCodepage::OnActivate(const MSG& msg)->INT_PTR
-{
-	if (m_pHexCtrl == nullptr || !m_pHexCtrl->IsCreated())
-		return FALSE;
-
-	const auto wState = LOWORD(msg.wParam);
-	if (wState == WA_ACTIVE || wState == WA_CLICKACTIVE) {
-		m_ListEx.SetItemState(-1, 0, LVIS_SELECTED);
-		if (const auto it = std::find_if(m_vecCodePage.begin(), m_vecCodePage.end(),
-			[this](const CODEPAGE& cp) { return cp.iCPID == m_pHexCtrl->GetCodepage(); });
-			it != m_vecCodePage.end()) {
-			const auto iItem = static_cast<int>(it - m_vecCodePage.begin());
-			m_ListEx.SetItemState(iItem, LVIS_SELECTED, LVIS_SELECTED);
-			m_ListEx.EnsureVisible(iItem, FALSE);
-		}
-	}
-
-	return FALSE; //Default handler.
 }
 
 void CHexDlgCodepage::OnCancel()
@@ -258,6 +245,8 @@ auto CHexDlgCodepage::OnInitDialog(const MSG& msg)->INT_PTR
 	m_DynLayout.AddItem(IDC_HEXCTRL_CODEPAGE_LIST, GDIUT::CDynLayout::MoveNone(), GDIUT::CDynLayout::SizeHorzAndVert(100, 100));
 	m_DynLayout.Enable(true);
 
+	UpdateListSelection();
+
 	return TRUE;
 }
 
@@ -269,6 +258,18 @@ auto CHexDlgCodepage::OnMeasureItem(const MSG& msg)->INT_PTR
 	}
 
 	return TRUE;
+}
+
+auto CHexDlgCodepage::OnMouseActivate([[maybe_unused]] const MSG& msg)->INT_PTR
+{
+	const auto pHex = GetHexCtrl();
+	if (pHex == nullptr || !pHex->IsCreated() || !pHex->IsDataSet()) {
+		return MA_ACTIVATE;
+	}
+
+	UpdateListSelection();
+
+	return MA_ACTIVATE;
 }
 
 auto CHexDlgCodepage::OnNotify(const MSG& msg)->INT_PTR
@@ -324,7 +325,7 @@ void CHexDlgCodepage::OnNotifyListItemChanged(NMHDR* pNMHDR)
 {
 	if (const auto* const pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
 		pNMI->iItem != -1 && pNMI->iSubItem != -1 && (pNMI->uNewState & LVIS_SELECTED)) {
-		m_pHexCtrl->SetCodepage(m_vecCodePage[static_cast<std::size_t>(pNMI->iItem)].iCPID);
+		GetHexCtrl()->SetCodepage(m_vecCodePage[static_cast<std::size_t>(pNMI->iItem)].iCPID);
 	}
 }
 
@@ -332,14 +333,6 @@ void CHexDlgCodepage::OnNotifyListLinkClick(NMHDR* pNMHDR)
 {
 	const auto* const pLLI = reinterpret_cast<LISTEX::PLISTEXLINKINFO>(pNMHDR);
 	::ShellExecuteW(nullptr, L"open", pLLI->pwszText, nullptr, nullptr, SW_SHOWNORMAL);
-}
-
-auto CHexDlgCodepage::OnSize(const MSG& msg)->INT_PTR
-{
-	const auto wWidth = LOWORD(msg.lParam);
-	const auto wHeight = HIWORD(msg.lParam);
-	m_DynLayout.OnSize(wWidth, wHeight);
-	return TRUE;
 }
 
 void CHexDlgCodepage::OnNotifyListColumnClick()
@@ -368,6 +361,26 @@ void CHexDlgCodepage::OnNotifyListColumnClick()
 
 	if (::IsWindow(m_ListEx.GetHWND())) {
 		m_ListEx.RedrawWindow();
+	}
+}
+
+auto CHexDlgCodepage::OnSize(const MSG& msg)->INT_PTR
+{
+	const auto wWidth = LOWORD(msg.lParam);
+	const auto wHeight = HIWORD(msg.lParam);
+	m_DynLayout.OnSize(wWidth, wHeight);
+	return TRUE;
+}
+
+void CHexDlgCodepage::UpdateListSelection()
+{
+	m_ListEx.SetItemState(-1, 0, LVIS_SELECTED);
+	if (const auto it = std::find_if(m_vecCodePage.begin(), m_vecCodePage.end(),
+		[this](const CODEPAGE& cp) { return cp.iCPID == GetHexCtrl()->GetCodepage(); });
+		it != m_vecCodePage.end()) {
+		const auto iItem = static_cast<int>(it - m_vecCodePage.begin());
+		m_ListEx.SetItemState(iItem, LVIS_SELECTED, LVIS_SELECTED);
+		m_ListEx.EnsureVisible(iItem, FALSE);
 	}
 }
 

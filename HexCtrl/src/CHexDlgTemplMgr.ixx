@@ -78,7 +78,6 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] bool IsNoEsc()const;
 		[[nodiscard]] bool IsShowAsHex()const;
 		[[nodiscard]] bool IsSwapEndian()const;
-		auto OnActivate(const MSG& msg) -> INT_PTR;
 		void OnBnLoadTemplate();
 		void OnBnUnloadTemplate();
 		void OnBnRandomizeColors();
@@ -99,6 +98,7 @@ namespace HEXCTRL::INTERNAL {
 		auto OnLButtonDown(const MSG& msg) -> INT_PTR;
 		auto OnLButtonUp(const MSG& msg) -> INT_PTR;
 		auto OnMeasureItem(const MSG& msg) -> INT_PTR;
+		auto OnMouseActivate(const MSG& msg) -> INT_PTR;
 		auto OnMouseMove(const MSG& msg) -> INT_PTR;
 		auto OnNotify(const MSG& msg) -> INT_PTR;
 		void OnNotifyListDblClick(NMHDR* pNMHDR);
@@ -141,6 +141,7 @@ namespace HEXCTRL::INTERNAL {
 		void ShowListDataGUID(LPWSTR pwsz, GUID stGUID, bool fShouldSwap)const;
 		[[nodiscard]] auto TreeItemFromListItem(int iListItem)const -> HTREEITEM;
 		void UnloadTemplate(int iTemplateID)override; //Unload/remove loaded template from memory.
+		void UpdateDateTimeFormat();
 		void UpdateStaticText();
 	private:
 		enum EListColumns : std::int8_t {
@@ -439,7 +440,6 @@ bool CHexDlgTemplMgr::PreTranslateMsg(MSG* pMsg)
 auto CHexDlgTemplMgr::ProcessMsg(const MSG& msg)->INT_PTR
 {
 	switch (msg.message) {
-	case WM_ACTIVATE: return OnActivate(msg);
 	case WM_CLOSE: return OnClose();
 	case WM_COMMAND: return OnCommand(msg);
 	case WM_CTLCOLORSTATIC: return OnCtlClrStatic(msg);
@@ -451,6 +451,7 @@ auto CHexDlgTemplMgr::ProcessMsg(const MSG& msg)->INT_PTR
 	case WM_LBUTTONDOWN: return OnLButtonDown(msg);
 	case WM_LBUTTONUP: return OnLButtonUp(msg);
 	case WM_MEASUREITEM: return OnMeasureItem(msg);
+	case WM_MOUSEACTIVATE: return OnMouseActivate(msg);
 	case WM_MOUSEMOVE: return OnMouseMove(msg);
 	case WM_NOTIFY: return OnNotify(msg);
 	case WM_SIZE: return OnSize(msg);
@@ -574,21 +575,6 @@ bool CHexDlgTemplMgr::IsShowAsHex()const
 bool CHexDlgTemplMgr::IsSwapEndian()const
 {
 	return m_WndBtnEndian.IsChecked();
-}
-
-auto CHexDlgTemplMgr::OnActivate(const MSG& msg)->INT_PTR
-{
-	if (m_pHexCtrl == nullptr || !m_pHexCtrl->IsCreated())
-		return FALSE;
-
-	const auto wState = LOWORD(msg.wParam);
-	if (wState == WA_ACTIVE || wState == WA_CLICKACTIVE) {
-		const auto [dwFormat, wchSepar] = m_pHexCtrl->GetDateInfo();
-		m_dwDateFormat = dwFormat;
-		m_wchDateSepar = wchSepar;
-	}
-
-	return FALSE; //Default handler.
 }
 
 void CHexDlgTemplMgr::OnBnLoadTemplate()
@@ -942,6 +928,7 @@ auto CHexDlgTemplMgr::OnInitDialog(const MSG& msg)->INT_PTR
 	}
 
 	CreateArrows();
+	UpdateDateTimeFormat();
 
 	return TRUE;
 }
@@ -974,6 +961,18 @@ auto CHexDlgTemplMgr::OnMeasureItem(const MSG& msg)->INT_PTR
 	}
 
 	return TRUE;
+}
+
+auto CHexDlgTemplMgr::OnMouseActivate([[maybe_unused]] const MSG& msg)->INT_PTR
+{
+	const auto pHex = GetHexCtrl();
+	if (pHex == nullptr || !pHex->IsCreated() || !pHex->IsDataSet()) {
+		return MA_ACTIVATE;
+	}
+
+	UpdateDateTimeFormat();
+
+	return MA_ACTIVATE;
 }
 
 auto CHexDlgTemplMgr::OnMouseMove(const MSG& msg)->INT_PTR
@@ -1328,8 +1327,7 @@ void CHexDlgTemplMgr::OnNotifyListItemChanged(NMHDR* pNMHDR)
 }
 
 void CHexDlgTemplMgr::OnNotifyListRClick([[maybe_unused]] NMHDR* pNMHDR)
-{
-}
+{ }
 
 void CHexDlgTemplMgr::OnNotifyListSetData(NMHDR* pNMHDR)
 {
@@ -2093,6 +2091,14 @@ void CHexDlgTemplMgr::UnloadTemplate(int iTemplateID)
 	//This needed because SetDlgButtonsState checks m_vecTemplates.empty(), which was erased just line above.
 	//OnTemplateLoadUnload at the beginning doesn't know yet that it's empty (when all templates are unloaded).
 	SetDlgButtonsState();
+}
+
+void CHexDlgTemplMgr::UpdateDateTimeFormat()
+{
+	const auto [dwFormat, wchSepar] = GetHexCtrl()->GetDateInfo();
+	m_dwDateFormat = dwFormat;
+	m_wchDateSepar = wchSepar;
+	m_ListEx.RedrawWindow();
 }
 
 void CHexDlgTemplMgr::UpdateStaticText()

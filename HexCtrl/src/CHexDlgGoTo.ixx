@@ -34,12 +34,12 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] auto GetGoMode()const -> EGoMode;
 		void GoTo(bool fForward);
 		[[nodiscard]] bool IsNoEsc()const;
-		auto OnActivate(const MSG& msg) -> INT_PTR;
 		void OnCancel();
 		auto OnClose() -> INT_PTR;
 		auto OnCommand(const MSG& msg) -> INT_PTR;
 		auto OnDestroy() -> INT_PTR;
 		auto OnInitDialog(const MSG& msg) -> INT_PTR;
+		auto OnMouseActivate(const MSG& msg) -> INT_PTR;
 		void OnOK();
 		void UpdateComboMode();
 	private:
@@ -105,11 +105,11 @@ bool CHexDlgGoTo::PreTranslateMsg(MSG* pMsg)
 auto CHexDlgGoTo::ProcessMsg(const MSG& msg)->INT_PTR
 {
 	switch (msg.message) {
-	case WM_ACTIVATE: return OnActivate(msg);
 	case WM_CLOSE: return OnClose();
 	case WM_COMMAND: return OnCommand(msg);
 	case WM_DESTROY: return OnDestroy();
 	case WM_INITDIALOG: return OnInitDialog(msg);
+	case WM_MOUSEACTIVATE: return OnMouseActivate(msg);
 	default:
 		return 0;
 	}
@@ -228,20 +228,6 @@ bool CHexDlgGoTo::IsNoEsc()const
 	return m_u64Flags & HEXCTRL_FLAG_DLG_NOESC;
 }
 
-auto CHexDlgGoTo::OnActivate(const MSG& msg)->INT_PTR
-{
-	const auto pHexCtrl = GetHexCtrl();
-	if (pHexCtrl == nullptr || !pHexCtrl->IsCreated() || !pHexCtrl->IsDataSet())
-		return FALSE;
-
-	const auto wState = LOWORD(msg.wParam);
-	if (wState == WA_ACTIVE || wState == WA_CLICKACTIVE) {
-		UpdateComboMode();
-	}
-
-	return FALSE; //Default handler.
-}
-
 void CHexDlgGoTo::OnCancel()
 {
 	if (IsNoEsc()) //Not closing Dialog on Escape key.
@@ -298,6 +284,18 @@ auto CHexDlgGoTo::OnInitDialog(const MSG& msg)->INT_PTR
 	UpdateComboMode();
 
 	return TRUE;
+}
+
+auto CHexDlgGoTo::OnMouseActivate([[maybe_unused]] const MSG& msg)->INT_PTR
+{
+	const auto pHex = GetHexCtrl();
+	if (pHex == nullptr || !pHex->IsCreated() || !pHex->IsDataSet()) {
+		return MA_ACTIVATE;
+	}
+
+	UpdateComboMode();
+
+	return MA_ACTIVATE;
 }
 
 void CHexDlgGoTo::OnOK()
