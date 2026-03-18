@@ -284,9 +284,9 @@ namespace HEXCTRL::INTERNAL::ut { //Utility methods and stuff.
 
 			//Extract two current wchars and pass it to StringToNum as wstring.
 			const std::size_t nOffsetCurr = it - wsv.begin();
-			const auto nSize = nOffsetCurr + 2 <= wsv.size() ? 2 : 1;
-			if (const auto optNumber = stn::StrToUInt8(wsv.substr(nOffsetCurr, nSize), 16); optNumber) {
-				it += nSize;
+			const auto iSize = nOffsetCurr + 2 <= wsv.size() ? 2 : 1;
+			if (const auto optNumber = stn::StrToUInt8(wsv.substr(nOffsetCurr, iSize), 16); optNumber) {
+				it += iSize;
 				strHexTmp += *optNumber;
 			}
 			else

@@ -23,6 +23,7 @@ namespace HEXCTRL::INTERNAL {
 		void ClearData();
 		void CreateDlg()const;
 		void DestroyDlg();
+		void DisableHighlight();
 		[[nodiscard]] auto GetDlgItemHandle(EHexDlgItem eItem)const -> HWND;
 		[[nodiscard]] auto GetHighlightSize()const -> DWORD;
 		[[nodiscard]] auto GetHWND()const -> HWND;
@@ -196,6 +197,14 @@ void CHexDlgDataInterp::DestroyDlg()
 {
 	if (m_Wnd.IsWindow()) {
 		m_Wnd.DestroyWindow();
+	}
+}
+
+void CHexDlgDataInterp::DisableHighlight()
+{
+	if (HasHighlight()) {
+		SetHighlightSize(0);
+		RedrawHexCtrl();
 	}
 }
 
@@ -378,18 +387,14 @@ auto CHexDlgDataInterp::OnActivate(const MSG& msg)->INT_PTR
 	if (m_pHexCtrl == nullptr || !m_pHexCtrl->IsCreated())
 		return FALSE;
 
-	const auto nState = LOWORD(msg.wParam);
-	if (nState == WA_ACTIVE || nState == WA_CLICKACTIVE) {
+	const auto wState = LOWORD(msg.wParam);
+	if (wState == WA_ACTIVE || wState == WA_CLICKACTIVE) {
 		const auto [dwFormat, wchSepar] = m_pHexCtrl->GetDateInfo();
 		m_dwDateFormat = dwFormat;
 		m_wchDateSepar = wchSepar;
 		const auto wstrTitle = L"Date/Time format is: " + ut::GetDateFormatString(m_dwDateFormat, m_wchDateSepar);
 		m_Wnd.SetWndText(wstrTitle); //Update dialog title to reflect current date format.
 		UpdateData();
-	}
-	else {
-		SetHighlightSize(0); //Remove data highlighting when dialog window is inactive.
-		RedrawHexCtrl();
 	}
 
 	return FALSE; //Default handler.

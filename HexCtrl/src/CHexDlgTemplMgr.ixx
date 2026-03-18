@@ -581,8 +581,8 @@ auto CHexDlgTemplMgr::OnActivate(const MSG& msg)->INT_PTR
 	if (m_pHexCtrl == nullptr || !m_pHexCtrl->IsCreated())
 		return FALSE;
 
-	const auto nState = LOWORD(msg.wParam);
-	if (nState == WA_ACTIVE || nState == WA_CLICKACTIVE) {
+	const auto wState = LOWORD(msg.wParam);
+	if (wState == WA_ACTIVE || wState == WA_CLICKACTIVE) {
 		const auto [dwFormat, wchSepar] = m_pHexCtrl->GetDateInfo();
 		m_dwDateFormat = dwFormat;
 		m_wchDateSepar = wchSepar;

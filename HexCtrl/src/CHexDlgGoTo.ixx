@@ -234,8 +234,8 @@ auto CHexDlgGoTo::OnActivate(const MSG& msg)->INT_PTR
 	if (pHexCtrl == nullptr || !pHexCtrl->IsCreated() || !pHexCtrl->IsDataSet())
 		return FALSE;
 
-	const auto nState = LOWORD(msg.wParam);
-	if (nState == WA_ACTIVE || nState == WA_CLICKACTIVE) {
+	const auto wState = LOWORD(msg.wParam);
+	if (wState == WA_ACTIVE || wState == WA_CLICKACTIVE) {
 		UpdateComboMode();
 	}
 
@@ -314,7 +314,7 @@ void CHexDlgGoTo::UpdateComboMode()
 	using enum EGoMode;
 
 	if (fShouldHavePages != fHasPages) {
-		m_WndCmbMode.SetRedraw(FALSE);
+		m_WndCmbMode.SetRedraw(false);
 		if (fShouldHavePages) {
 			auto iIndex = m_WndCmbMode.AddString(L"Page");
 			m_WndCmbMode.SetItemData(iIndex, static_cast<DWORD_PTR>(MODE_PAGE));
@@ -336,7 +336,7 @@ void CHexDlgGoTo::UpdateComboMode()
 				m_fRepeat = false;
 			}
 		}
-		m_WndCmbMode.SetRedraw(TRUE);
+		m_WndCmbMode.SetRedraw(true);
 		m_WndCmbMode.RedrawWindow();
 	}
 }

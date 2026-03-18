@@ -93,8 +93,8 @@ auto CHexDlgOpers::OnActivate(const MSG& msg)->INT_PTR
 	if (m_pHexCtrl == nullptr || !m_pHexCtrl->IsCreated() || !m_pHexCtrl->IsDataSet())
 		return FALSE;
 
-	const auto nState = LOWORD(msg.wParam);
-	if (nState == WA_ACTIVE || nState == WA_CLICKACTIVE) {
+	const auto wState = LOWORD(msg.wParam);
+	if (wState == WA_ACTIVE || wState == WA_CLICKACTIVE) {
 		const auto fSel { m_pHexCtrl->HasSelection() };
 		m_Wnd.CheckRadioButton(IDC_HEXCTRL_OPERS_RAD_ALL, IDC_HEXCTRL_OPERS_RAD_SEL,
 			fSel ? IDC_HEXCTRL_OPERS_RAD_SEL : IDC_HEXCTRL_OPERS_RAD_ALL);
@@ -237,7 +237,7 @@ void CHexDlgOpers::OnComboOperSelChange()
 	}
 
 	if (fShouldHaveFloats != fHasFloats) {
-		m_WndCmbType.SetRedraw(FALSE);
+		m_WndCmbType.SetRedraw(false);
 		if (fShouldHaveFloats) {
 			auto iIndex = m_WndCmbType.AddString(L"Float");
 			m_WndCmbType.SetItemData(iIndex, static_cast<DWORD_PTR>(DATA_FLOAT));
@@ -256,7 +256,7 @@ void CHexDlgOpers::OnComboOperSelChange()
 				m_WndCmbType.SetCurSel(iIntegralTotal - 1);
 			}
 		}
-		m_WndCmbType.SetRedraw(TRUE);
+		m_WndCmbType.SetRedraw(true);
 		m_WndCmbType.RedrawWindow();
 	}
 
@@ -628,8 +628,8 @@ auto CHexDlgFillData::OnActivate(const MSG& msg)->INT_PTR
 	if (m_pHexCtrl == nullptr || !m_pHexCtrl->IsCreated() || !m_pHexCtrl->IsDataSet())
 		return FALSE;
 
-	const auto nState = LOWORD(msg.wParam);
-	if (nState == WA_ACTIVE || nState == WA_CLICKACTIVE) {
+	const auto wState = LOWORD(msg.wParam);
+	if (wState == WA_ACTIVE || wState == WA_CLICKACTIVE) {
 		const auto fSelection { m_pHexCtrl->HasSelection() };
 		m_Wnd.CheckRadioButton(IDC_HEXCTRL_FILLDATA_RAD_ALL, IDC_HEXCTRL_FILLDATA_RAD_SEL,
 			fSelection ? IDC_HEXCTRL_FILLDATA_RAD_SEL : IDC_HEXCTRL_FILLDATA_RAD_ALL);

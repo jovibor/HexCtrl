@@ -409,6 +409,7 @@ namespace HEXCTRL::INTERNAL {
 		auto OnPaint() -> LRESULT;
 		auto OnRButtonDown(const MSG& msg) -> LRESULT;
 		auto OnSetCursor(const MSG& msg) -> LRESULT;
+		auto OnSetFocus(const MSG& msg) -> LRESULT;
 		auto OnSize(const MSG& msg) -> LRESULT;
 		auto OnTimer(const MSG& msg) -> LRESULT;
 		auto OnVScroll(const MSG& msg) -> LRESULT;
@@ -1713,6 +1714,7 @@ auto CHexCtrl::ProcessMsg(const MSG& msg)->LRESULT
 	case WM_PAINT: return OnPaint();
 	case WM_RBUTTONDOWN: return OnRButtonDown(msg);
 	case WM_SETCURSOR: return OnSetCursor(msg);
+	case WM_SETFOCUS: return OnSetFocus(msg);
 	case WM_SIZE: return OnSize(msg);
 	case WM_TIMER: return OnTimer(msg);
 	case WM_VSCROLL: return OnVScroll(msg);
@@ -4427,10 +4429,10 @@ auto CHexCtrl::OnLButtonUp([[maybe_unused]] const MSG& msg)->LRESULT
 auto CHexCtrl::OnMButtonDown(const MSG& msg)->LRESULT
 {
 	m_Wnd.SetFocus();
-	const auto nFlags = GET_KEYSTATE_WPARAM(msg.wParam);
+	const auto wFlags = GET_KEYSTATE_WPARAM(msg.wParam);
 
 	if (const auto opt = GetCommandFromKey(m_dwVKMiddleButtonDown,
-		nFlags & MK_CONTROL, nFlags & MK_SHIFT, false); opt) {
+		wFlags & MK_CONTROL, wFlags & MK_SHIFT, false); opt) {
 		ExecuteCmd(*opt);
 	}
 
@@ -4576,11 +4578,11 @@ auto CHexCtrl::OnMouseMove(const MSG& msg)->LRESULT
 
 auto CHexCtrl::OnMouseWheel(const MSG& msg)->LRESULT
 {
-	const auto zDelta = GET_WHEEL_DELTA_WPARAM(msg.wParam);
-	const auto nFlags = GET_KEYSTATE_WPARAM(msg.wParam);
+	const auto uwDelta = GET_WHEEL_DELTA_WPARAM(msg.wParam);
+	const auto wFlags = GET_KEYSTATE_WPARAM(msg.wParam);
 
-	if (const auto opt = GetCommandFromKey(zDelta > 0 ? m_dwVKMouseWheelUp : m_dwVKMouseWheelDown,
-		nFlags & MK_CONTROL, nFlags & MK_SHIFT, false); opt) {
+	if (const auto opt = GetCommandFromKey(uwDelta > 0 ? m_dwVKMouseWheelUp : m_dwVKMouseWheelDown,
+		wFlags & MK_CONTROL, wFlags & MK_SHIFT, false); opt) {
 		ExecuteCmd(*opt);
 	}
 
@@ -4697,6 +4699,13 @@ auto CHexCtrl::OnSetCursor(const MSG& msg)->LRESULT
 	m_ScrollH.OnSetCursor(wHitTest, wMessage);
 
 	return GDIUT::DefWndProc(msg); //To set appropriate cursor.
+}
+
+auto CHexCtrl::OnSetFocus([[maybe_unused]] const MSG& msg)->LRESULT
+{
+	m_DlgDataInterp.DisableHighlight();
+
+	return 0;
 }
 
 auto CHexCtrl::OnSize(const MSG& msg)->LRESULT
