@@ -33,7 +33,7 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] auto ProcessMsg(const MSG& msg) -> INT_PTR;
 		void SetDlgProperties(std::uint64_t u64Flags);
 		void ShowWindow(int iCmdShow);
-		void UpdateData();
+		void UpdateData(); //Public method with window visibility check.
 	private:
 		struct LISTDATA; union UMSDOSDateTime; union UDTTM; enum class EName : std::uint8_t;
 		[[nodiscard]] auto GetCurrFieldName()const -> EName;
@@ -109,6 +109,7 @@ namespace HEXCTRL::INTERNAL {
 		void ShowValueUTF8(SpanCByte spn);
 		void ShowValueUTF16(SpanCByte spn);
 		void UpdateDateTimeFormat();
+		void UpdateListData(); //Internal method without any window checks.
 	private:
 		HINSTANCE m_hInstRes { };
 		GDIUT::CWnd m_Wnd;
@@ -298,43 +299,7 @@ void CHexDlgDataInterp::UpdateData()
 		return;
 	}
 
-	const auto pHex = GetHexCtrl();
-	if (!pHex->IsDataSet()) {
-		ClearData();
-		return;
-	}
-
-	const auto ullOffset = m_ullOffset = pHex->GetCaretPos();
-	const auto ullDataSize = pHex->GetDataSize();
-	const auto dwlGetSize = ullOffset + 16 <= ullDataSize ? 16U : (ullOffset + 8 <= ullDataSize ?
-		8U : (ullOffset + 4 <= ullDataSize ? 4U : (ullOffset + 3 <= ullDataSize ?
-			3U : (ullOffset + 2 <= ullDataSize ? 2U : (ullOffset + 1 <= ullDataSize ? 1U : 0U)))));
-	const auto spnData = pHex->GetData({ .ullOffset { ullOffset }, .ullSize { dwlGetSize } });
-	ShowValueInt8(spnData);
-	ShowValueUInt8(spnData);
-	ShowValueInt16(spnData);
-	ShowValueUInt16(spnData);
-	ShowValueInt32(spnData);
-	ShowValueUInt32(spnData);
-	ShowValueFloat(spnData);
-	ShowValueTime32(spnData);
-	ShowValueMSDOSTIME(spnData);
-	ShowValueMSDTTMTIME(spnData);
-	ShowValueInt64(spnData);
-	ShowValueUInt64(spnData);
-	ShowValueDouble(spnData);
-	ShowValueTime64(spnData);
-	ShowValueFILETIME(spnData);
-	ShowValueOLEDATETIME(spnData);
-	ShowValueJAVATIME(spnData);
-	ShowValueSYSTEMTIME(spnData);
-	ShowValueGUID(spnData);
-	ShowValueGUIDTIME(spnData);
-	ShowValueASCII(spnData);
-	ShowValueUTF8(spnData);
-	ShowValueUTF16(spnData);
-	ShowValueBinary();
-	m_ListEx.RedrawWindow();
+	UpdateListData();
 }
 
 
@@ -400,7 +365,7 @@ void CHexDlgDataInterp::OnCancel()
 
 void CHexDlgDataInterp::OnCheckHex()
 {
-	UpdateData();
+	UpdateListData();
 
 	//To ensure that data is highlighted in the HexCtrl, even if check-box was clicked on inactive dialog.
 	SetHighlightSize(GetCurrFieldSize());
@@ -409,7 +374,7 @@ void CHexDlgDataInterp::OnCheckHex()
 
 void CHexDlgDataInterp::OnCheckBigEndian()
 {
-	UpdateData();
+	UpdateListData();
 
 	//To ensure that data is highlighted in the HexCtrl, even if check-box was clicked on inactive dialog.
 	SetHighlightSize(GetCurrFieldSize());
@@ -516,6 +481,7 @@ auto CHexDlgDataInterp::OnInitDialog(const MSG& msg)->INT_PTR
 	m_DynLayout.Enable(true);
 
 	UpdateDateTimeFormat();
+	UpdateListData();
 
 	return TRUE;
 }
@@ -734,7 +700,7 @@ void CHexDlgDataInterp::OnNotifyListSetData(NMHDR* pNMHDR)
 		::MessageBoxW(m_Wnd, L"Wrong data format or out of range.", L"Data error...", MB_ICONERROR);
 	}
 
-	UpdateData();
+	UpdateListData();
 	SetHighlightSize(GetCurrFieldSize());
 	RedrawHexCtrl();
 }
@@ -1805,5 +1771,46 @@ void CHexDlgDataInterp::UpdateDateTimeFormat()
 	m_wchDateSepar = wchSepar;
 	const auto wstrTitle = L"Date/Time format is: " + ut::GetDateFormatString(m_dwDateFormat, m_wchDateSepar);
 	m_Wnd.SetWndText(wstrTitle); //Update dialog title to reflect current date format.
+	m_ListEx.RedrawWindow();
+}
+
+void CHexDlgDataInterp::UpdateListData()
+{
+	const auto pHex = GetHexCtrl();
+	if (!pHex->IsDataSet()) {
+		ClearData();
+		return;
+	}
+
+	const auto ullOffset = m_ullOffset = pHex->GetCaretPos();
+	const auto ullDataSize = pHex->GetDataSize();
+	const auto dwlGetSize = ullOffset + 16 <= ullDataSize ? 16U : (ullOffset + 8 <= ullDataSize ?
+		8U : (ullOffset + 4 <= ullDataSize ? 4U : (ullOffset + 3 <= ullDataSize ?
+			3U : (ullOffset + 2 <= ullDataSize ? 2U : (ullOffset + 1 <= ullDataSize ? 1U : 0U)))));
+	const auto spnData = pHex->GetData({ .ullOffset { ullOffset }, .ullSize { dwlGetSize } });
+	ShowValueInt8(spnData);
+	ShowValueUInt8(spnData);
+	ShowValueInt16(spnData);
+	ShowValueUInt16(spnData);
+	ShowValueInt32(spnData);
+	ShowValueUInt32(spnData);
+	ShowValueFloat(spnData);
+	ShowValueTime32(spnData);
+	ShowValueMSDOSTIME(spnData);
+	ShowValueMSDTTMTIME(spnData);
+	ShowValueInt64(spnData);
+	ShowValueUInt64(spnData);
+	ShowValueDouble(spnData);
+	ShowValueTime64(spnData);
+	ShowValueFILETIME(spnData);
+	ShowValueOLEDATETIME(spnData);
+	ShowValueJAVATIME(spnData);
+	ShowValueSYSTEMTIME(spnData);
+	ShowValueGUID(spnData);
+	ShowValueGUIDTIME(spnData);
+	ShowValueASCII(spnData);
+	ShowValueUTF8(spnData);
+	ShowValueUTF16(spnData);
+	ShowValueBinary();
 	m_ListEx.RedrawWindow();
 }
