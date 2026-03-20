@@ -1,0 +1,20 @@
+<Solution>
+  <Configurations>
+    <Platform Name="ARM64" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="HexCtrl DLL/HexCtrl DLL.vcxproj" Id="557b0abe-e81a-4bd1-ad98-dc68f44d9a0d">
+    <Build Project="false" />
+  </Project>
+  <Project Path="HexCtrl Test/HexCtrl Test.vcxproj" Id="337eec2c-b9b1-49d6-a526-59f01742af51">
+    <Build Project="false" />
+  </Project>
+  <Project Path="MFC Dialog DLL/MFC Dialog DLL.vcxproj" Id="c76e6c72-c970-47d1-91b1-f2b9eacbbe93">
+    <Build Project="false" />
+  </Project>
+  <Project Path="MFC Dialog/MFC Dialog.vcxproj" Id="780c336d-23d1-4a79-a0da-e6296e63c8a0" />
+  <Project Path="Win32 App/Win32 App.vcxproj" Id="8e6233be-8438-429b-ace4-bd317ff3b75d">
+    <Build Project="false" />
+  </Project>
+</Solution>
