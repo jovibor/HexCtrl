@@ -34,6 +34,7 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] auto GetGoMode()const -> EGoMode;
 		void GoTo(bool fForward);
 		[[nodiscard]] bool IsNoEsc()const;
+		auto OnActivate(const MSG& msg) -> INT_PTR;
 		void OnCancel();
 		auto OnClose() -> INT_PTR;
 		auto OnCommand(const MSG& msg) -> INT_PTR;
@@ -105,6 +106,7 @@ bool CHexDlgGoTo::PreTranslateMsg(MSG* pMsg)
 auto CHexDlgGoTo::ProcessMsg(const MSG& msg)->INT_PTR
 {
 	switch (msg.message) {
+	case WM_ACTIVATE: return OnActivate(msg);
 	case WM_CLOSE: return OnClose();
 	case WM_COMMAND: return OnCommand(msg);
 	case WM_DESTROY: return OnDestroy();
@@ -228,6 +230,16 @@ bool CHexDlgGoTo::IsNoEsc()const
 	return m_u64Flags & HEXCTRL_FLAG_DLG_NOESC;
 }
 
+auto CHexDlgGoTo::OnActivate(const MSG& msg)->INT_PTR
+{
+	if (const auto pHex = GetHexCtrl();
+		pHex != nullptr && pHex->IsCreated() && pHex->IsDataSet() && LOWORD(msg.wParam) == WA_ACTIVE) {
+		UpdateComboMode();
+	}
+
+	return 0;
+}
+
 void CHexDlgGoTo::OnCancel()
 {
 	if (IsNoEsc()) //Not closing Dialog on Escape key.
@@ -288,12 +300,9 @@ auto CHexDlgGoTo::OnInitDialog(const MSG& msg)->INT_PTR
 
 auto CHexDlgGoTo::OnMouseActivate([[maybe_unused]] const MSG& msg)->INT_PTR
 {
-	const auto pHex = GetHexCtrl();
-	if (pHex == nullptr || !pHex->IsCreated() || !pHex->IsDataSet()) {
-		return MA_ACTIVATE;
+	if (const auto pHex = GetHexCtrl(); pHex != nullptr && pHex->IsCreated() && pHex->IsDataSet()) {
+		UpdateComboMode();
 	}
-
-	UpdateComboMode();
 
 	return MA_ACTIVATE;
 }

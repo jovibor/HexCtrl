@@ -31,6 +31,7 @@ namespace HEXCTRL::INTERNAL {
 	private:
 		[[nodiscard]] auto GetHexCtrl()const -> IHexCtrl*;
 		[[nodiscard]] bool IsNoEsc()const;
+		auto OnActivate(const MSG& msg) -> INT_PTR;
 		void OnCancel();
 		auto OnClose() -> INT_PTR;
 		auto OnCommand(const MSG& msg) -> INT_PTR;
@@ -119,6 +120,7 @@ bool CHexDlgCodepage::PreTranslateMsg(MSG* pMsg)
 auto CHexDlgCodepage::ProcessMsg(const MSG& msg)->INT_PTR
 {
 	switch (msg.message) {
+	case WM_ACTIVATE: return OnActivate(msg);
 	case WM_CLOSE: return OnClose();
 	case WM_COMMAND: return OnCommand(msg);
 	case WM_DESTROY: return OnDestroy();
@@ -160,6 +162,16 @@ auto CHexDlgCodepage::GetHexCtrl()const->IHexCtrl*
 bool CHexDlgCodepage::IsNoEsc()const
 {
 	return m_u64Flags & HEXCTRL_FLAG_DLG_NOESC;
+}
+
+auto CHexDlgCodepage::OnActivate(const MSG& msg)->INT_PTR
+{
+	if (const auto pHex = GetHexCtrl();
+		pHex != nullptr && pHex->IsCreated() && pHex->IsDataSet() && LOWORD(msg.wParam) == WA_ACTIVE) {
+		UpdateListSelection();
+	}
+
+	return 0;
 }
 
 void CHexDlgCodepage::OnCancel()
@@ -262,12 +274,9 @@ auto CHexDlgCodepage::OnMeasureItem(const MSG& msg)->INT_PTR
 
 auto CHexDlgCodepage::OnMouseActivate([[maybe_unused]] const MSG& msg)->INT_PTR
 {
-	const auto pHex = GetHexCtrl();
-	if (pHex == nullptr || !pHex->IsCreated() || !pHex->IsDataSet()) {
-		return MA_ACTIVATE;
+	if (const auto pHex = GetHexCtrl(); pHex != nullptr && pHex->IsCreated() && pHex->IsDataSet()) {
+		UpdateListSelection();
 	}
-
-	UpdateListSelection();
 
 	return MA_ACTIVATE;
 }

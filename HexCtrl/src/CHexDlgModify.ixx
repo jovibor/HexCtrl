@@ -23,6 +23,7 @@ namespace HEXCTRL::INTERNAL {
 	public:
 		void CreateDlg(HWND hWndParent, IHexCtrl* pHexCtrl, HINSTANCE hInstRes);
 		[[nodiscard]] auto GetHWND()const -> HWND;
+		auto OnActivate(const MSG& msg) -> INT_PTR;
 		auto OnMouseActivate(const MSG& msg) -> INT_PTR;
 		[[nodiscard]] bool PreTranslateMsg(MSG* pMsg);
 		[[nodiscard]] auto ProcessMsg(const MSG& msg) -> INT_PTR;
@@ -90,14 +91,21 @@ auto CHexDlgOpers::GetHWND()const->HWND
 	return m_Wnd;
 }
 
-auto CHexDlgOpers::OnMouseActivate([[maybe_unused]] const MSG& msg)->INT_PTR
+auto CHexDlgOpers::OnActivate(const MSG& msg)->INT_PTR
 {
-	const auto pHex = GetHexCtrl();
-	if (pHex == nullptr || !pHex->IsCreated() || !pHex->IsDataSet()) {
-		return MA_ACTIVATE;
+	if (const auto pHex = GetHexCtrl();
+		pHex != nullptr && pHex->IsCreated() && pHex->IsDataSet() && LOWORD(msg.wParam) == WA_ACTIVE) {
+		UpdateRadioButtons();
 	}
 
-	UpdateRadioButtons();
+	return 0;
+}
+
+auto CHexDlgOpers::OnMouseActivate([[maybe_unused]] const MSG& msg)->INT_PTR
+{
+	if (const auto pHex = GetHexCtrl(); pHex != nullptr && pHex->IsCreated() && pHex->IsDataSet()) {
+		UpdateRadioButtons();
+	}
 
 	return MA_ACTIVATE;
 }
@@ -571,6 +579,7 @@ namespace HEXCTRL::INTERNAL {
 		void CreateDlg(HWND hWndParent, IHexCtrl* pHexCtrl, HINSTANCE hInstRes);
 		[[nodiscard]] auto GetDlgItemHandle(EHexDlgItem eItem)const -> HWND;
 		[[nodiscard]] auto GetHWND()const -> HWND;
+		auto OnActivate(const MSG& msg) -> INT_PTR;
 		auto OnMouseActivate(const MSG& msg) -> INT_PTR;
 		[[nodiscard]] bool PreTranslateMsg(MSG* pMsg);
 		[[nodiscard]] auto ProcessMsg(const MSG& msg) -> INT_PTR;
@@ -637,14 +646,21 @@ auto CHexDlgFillData::GetHWND()const->HWND
 	return m_Wnd;
 }
 
-auto CHexDlgFillData::OnMouseActivate([[maybe_unused]] const MSG& msg)->INT_PTR
+auto CHexDlgFillData::OnActivate(const MSG& msg)->INT_PTR
 {
-	const auto pHex = GetHexCtrl();
-	if (pHex == nullptr || !pHex->IsCreated() || !pHex->IsDataSet()) {
-		return MA_ACTIVATE;
+	if (const auto pHex = GetHexCtrl();
+		pHex != nullptr && pHex->IsCreated() && pHex->IsDataSet() && LOWORD(msg.wParam) == WA_ACTIVE) {
+		UpdateRadioButtons();
 	}
 
-	UpdateRadioButtons();
+	return 0;
+}
+
+auto CHexDlgFillData::OnMouseActivate([[maybe_unused]] const MSG& msg)->INT_PTR
+{
+	if (const auto pHex = GetHexCtrl(); pHex != nullptr && pHex->IsCreated() && pHex->IsDataSet()) {
+		UpdateRadioButtons();
+	}
 
 	return MA_ACTIVATE;
 }
@@ -881,6 +897,7 @@ namespace HEXCTRL::INTERNAL {
 		void SetDlgProperties(std::uint64_t u64Flags);
 		void ShowWindow(int iCmdShow, int iTab = -1);
 	private:
+		auto OnActivate(const MSG& msg) -> INT_PTR;
 		auto OnClose() -> INT_PTR;
 		auto OnDestroy() -> INT_PTR;
 		auto OnInitDialog(const MSG& msg) -> INT_PTR;
@@ -958,6 +975,7 @@ bool CHexDlgModify::PreTranslateMsg(MSG* pMsg)
 auto CHexDlgModify::ProcessMsg(const MSG& msg)->INT_PTR
 {
 	switch (msg.message) {
+	case WM_ACTIVATE: return OnActivate(msg);
 	case WM_CLOSE: return OnClose();
 	case WM_DESTROY: return OnDestroy();
 	case WM_INITDIALOG: return OnInitDialog(msg);
@@ -982,12 +1000,19 @@ void CHexDlgModify::ShowWindow(int iCmdShow, int iTab)
 	}
 
 	SetCurrentTab(iTab);
-
 	m_Wnd.ShowWindow(iCmdShow);
 }
 
 
 //CHexDlgModify private methods.
+
+auto CHexDlgModify::OnActivate(const MSG& msg)->INT_PTR
+{
+	m_dlgOpers.OnActivate(msg);
+	m_dlgFillData.OnActivate(msg);
+
+	return 0;
+}
 
 auto CHexDlgModify::OnClose()->INT_PTR
 {

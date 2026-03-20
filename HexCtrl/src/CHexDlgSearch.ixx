@@ -92,6 +92,7 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] bool IsSelection()const;
 		[[nodiscard]] bool IsSmallSearch()const;
 		[[nodiscard]] bool IsWildcard()const;
+		auto OnActivate(const MSG& msg) -> INT_PTR;
 		void OnButtonSearchF();
 		void OnButtonSearchB();
 		void OnButtonFindAll();
@@ -344,6 +345,7 @@ bool CHexDlgSearch::PreTranslateMsg(MSG* pMsg)
 auto CHexDlgSearch::ProcessMsg(const MSG& msg)->INT_PTR
 {
 	switch (msg.message) {
+	case WM_ACTIVATE: return OnActivate(msg);
 	case WM_CLOSE: return OnClose();
 	case WM_COMMAND: return OnCommand(msg);
 	case WM_CTLCOLORSTATIC: return OnCtlClrStatic(msg);
@@ -974,6 +976,16 @@ bool CHexDlgSearch::IsWildcard()const
 	return m_WndBtnWC.IsWindowEnabled() && m_WndBtnWC.IsChecked();
 }
 
+auto CHexDlgSearch::OnActivate(const MSG& msg)->INT_PTR
+{
+	if (const auto pHex = GetHexCtrl();
+		pHex != nullptr && pHex->IsCreated() && pHex->IsDataSet() && LOWORD(msg.wParam) == WA_ACTIVE) {
+		UpdateControlsState();
+	}
+
+	return 0;
+}
+
 void CHexDlgSearch::OnButtonSearchF()
 {
 	m_fForward = true;
@@ -1343,12 +1355,9 @@ auto CHexDlgSearch::OnMeasureItem(const MSG& msg)->INT_PTR
 
 auto CHexDlgSearch::OnMouseActivate([[maybe_unused]] const MSG& msg)->INT_PTR
 {
-	const auto pHex = GetHexCtrl();
-	if (pHex == nullptr || !pHex->IsCreated() || !pHex->IsDataSet()) {
-		return MA_ACTIVATE;
+	if (const auto pHex = GetHexCtrl(); pHex != nullptr && pHex->IsCreated() && pHex->IsDataSet()) {
+		UpdateControlsState();
 	}
-
-	UpdateControlsState();
 
 	return MA_ACTIVATE;
 }

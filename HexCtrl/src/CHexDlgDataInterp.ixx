@@ -46,6 +46,7 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] bool IsBigEndian()const;
 		[[nodiscard]] bool IsNoEsc()const;
 		[[nodiscard]] bool IsShowAsHex()const;
+		auto OnActivate(const MSG& msg) -> INT_PTR;
 		void OnCancel();
 		void OnCheckHex();
 		void OnCheckBigEndian();
@@ -262,6 +263,7 @@ bool CHexDlgDataInterp::PreTranslateMsg(MSG* pMsg)
 auto CHexDlgDataInterp::ProcessMsg(const MSG& msg)->INT_PTR
 {
 	switch (msg.message) {
+	case WM_ACTIVATE: return OnActivate(msg);
 	case WM_COMMAND: return OnCommand(msg);
 	case WM_CLOSE: return OnClose();
 	case WM_DESTROY: return OnDestroy();
@@ -290,7 +292,6 @@ void CHexDlgDataInterp::ShowWindow(int iCmdShow)
 	}
 
 	m_Wnd.ShowWindow(iCmdShow);
-	UpdateData();
 }
 
 void CHexDlgDataInterp::UpdateData()
@@ -353,6 +354,17 @@ bool CHexDlgDataInterp::IsNoEsc()const
 bool CHexDlgDataInterp::IsShowAsHex()const
 {
 	return m_WndBtnHex.IsChecked();
+}
+
+auto CHexDlgDataInterp::OnActivate(const MSG& msg)->INT_PTR
+{
+	if (const auto pHex = GetHexCtrl();
+		pHex != nullptr && pHex->IsCreated() && pHex->IsDataSet() && LOWORD(msg.wParam) == WA_ACTIVE) {
+		UpdateDateTimeFormat();
+		UpdateListData();
+	}
+
+	return 0;
 }
 
 void CHexDlgDataInterp::OnCancel()
@@ -498,12 +510,10 @@ auto CHexDlgDataInterp::OnMeasureItem(const MSG& msg)->INT_PTR
 
 auto CHexDlgDataInterp::OnMouseActivate([[maybe_unused]] const MSG& msg)->INT_PTR
 {
-	const auto pHex = GetHexCtrl();
-	if (pHex == nullptr || !pHex->IsCreated() || !pHex->IsDataSet()) {
-		return MA_ACTIVATE;
+	if (const auto pHex = GetHexCtrl(); pHex != nullptr && pHex->IsCreated() && pHex->IsDataSet()) {
+		UpdateDateTimeFormat();
+		UpdateListData();
 	}
-
-	UpdateDateTimeFormat();
 
 	return MA_ACTIVATE;
 }

@@ -78,6 +78,7 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] bool IsNoEsc()const;
 		[[nodiscard]] bool IsShowAsHex()const;
 		[[nodiscard]] bool IsSwapEndian()const;
+		auto OnActivate(const MSG& msg) -> INT_PTR;
 		void OnBnLoadTemplate();
 		void OnBnUnloadTemplate();
 		void OnBnRandomizeColors();
@@ -440,6 +441,7 @@ bool CHexDlgTemplMgr::PreTranslateMsg(MSG* pMsg)
 auto CHexDlgTemplMgr::ProcessMsg(const MSG& msg)->INT_PTR
 {
 	switch (msg.message) {
+	case WM_ACTIVATE: return OnActivate(msg);
 	case WM_CLOSE: return OnClose();
 	case WM_COMMAND: return OnCommand(msg);
 	case WM_CTLCOLORSTATIC: return OnCtlClrStatic(msg);
@@ -575,6 +577,16 @@ bool CHexDlgTemplMgr::IsShowAsHex()const
 bool CHexDlgTemplMgr::IsSwapEndian()const
 {
 	return m_WndBtnEndian.IsChecked();
+}
+
+auto CHexDlgTemplMgr::OnActivate(const MSG& msg)->INT_PTR
+{
+	if (const auto pHex = GetHexCtrl();
+		pHex != nullptr && pHex->IsCreated() && pHex->IsDataSet() && LOWORD(msg.wParam) == WA_ACTIVE) {
+		UpdateDateTimeFormat();
+	}
+
+	return 0;
 }
 
 void CHexDlgTemplMgr::OnBnLoadTemplate()
@@ -965,12 +977,9 @@ auto CHexDlgTemplMgr::OnMeasureItem(const MSG& msg)->INT_PTR
 
 auto CHexDlgTemplMgr::OnMouseActivate([[maybe_unused]] const MSG& msg)->INT_PTR
 {
-	const auto pHex = GetHexCtrl();
-	if (pHex == nullptr || !pHex->IsCreated() || !pHex->IsDataSet()) {
-		return MA_ACTIVATE;
+	if (const auto pHex = GetHexCtrl(); pHex != nullptr && pHex->IsCreated() && pHex->IsDataSet()) {
+		UpdateDateTimeFormat();
 	}
-
-	UpdateDateTimeFormat();
 
 	return MA_ACTIVATE;
 }
