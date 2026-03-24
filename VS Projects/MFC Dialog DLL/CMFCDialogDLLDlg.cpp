@@ -45,8 +45,8 @@ void CMFCDialogDLLDlg::LoadTemplates(IHexCtrl* pHexCtrl)
 		const auto pTempl = pHexCtrl->GetTemplates();
 		for (const auto& entry : std::filesystem::directory_iterator { pathTemplates }) {
 			const std::wstring_view wsvFile = entry.path().c_str();
-			if (const auto npos = wsvFile.find_last_of(L'.'); npos != std::wstring_view::npos) {
-				if (wsvFile.substr(npos + 1) == L"json") { //Check json extension of templates.
+			if (const auto uzPos = wsvFile.find_last_of(L'.'); uzPos != std::wstring_view::npos) {
+				if (wsvFile.substr(uzPos + 1) == L"json") { //Check json extension of templates.
 					//Using exported LoadTemplateFromFile function here.
 					//To test its work within the DLL.
 					const auto p = HEXCTRL::IHexTemplates::LoadFromFile(wsvFile.data());

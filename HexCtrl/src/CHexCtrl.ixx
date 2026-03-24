@@ -1502,12 +1502,12 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 			std::copy_n(spnDataFrom.data(), spnDataFrom.size(), pData);
 			};
 
-		const auto& refHexSpan = hms.vecSpan.back();
-		if (hms.eModifyMode == MODIFY_RAND_MT19937 && hms.vecSpan.size() == 1 && refHexSpan.ullSize >= sizeof(std::uint64_t)) {
+		const auto& hs = hms.vecSpan.back();
+		if (hms.eModifyMode == MODIFY_RAND_MT19937 && hms.vecSpan.size() == 1 && hs.ullSize >= sizeof(std::uint64_t)) {
 			ModifyWorker(hms, lmbRandUInt64, { static_cast<std::byte*>(nullptr), sizeof(std::uint64_t) });
 
-			if (const auto dwRem = refHexSpan.ullSize % sizeof(std::uint64_t); dwRem > 0) { //Remainder.
-				const auto ullOffset = refHexSpan.ullOffset + refHexSpan.ullSize - dwRem;
+			if (const auto dwRem = hs.ullSize % sizeof(std::uint64_t); dwRem > 0) { //Remainder.
+				const auto ullOffset = hs.ullOffset + hs.ullSize - dwRem;
 				const auto spnData = GetData({ .ullOffset { ullOffset }, .ullSize { dwRem } });
 				for (std::size_t itRem = 0; itRem < dwRem; ++itRem) {
 					spnData.data()[itRem] = static_cast<std::byte>(distUInt64(gen));
@@ -1515,7 +1515,7 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 				SetDataVirtual(spnData, { .ullOffset { ullOffset }, .ullSize { dwRem } });
 			}
 		}
-		else if (hms.eModifyMode == MODIFY_RAND_FAST && hms.vecSpan.size() == 1 && refHexSpan.ullSize >= GetCacheSize()) {
+		else if (hms.eModifyMode == MODIFY_RAND_FAST && hms.vecSpan.size() == 1 && hs.ullSize >= GetCacheSize()) {
 			//Fill the uptrRandData buffer with true random data of ulSizeRandBuff size.
 			//Then clone this buffer to the destination data.
 			//Buffer is allocated with alignment for maximum performance.
@@ -1529,9 +1529,9 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 			ModifyWorker(hms, lmbRandFast, { uptrRandData.get(), ulSizeRandBuff });
 
 			//Filling the remainder data.
-			if (const auto ullRem = refHexSpan.ullSize % ulSizeRandBuff; ullRem > 0) { //Remainder.
+			if (const auto ullRem = hs.ullSize % ulSizeRandBuff; ullRem > 0) { //Remainder.
 				if (ullRem <= GetCacheSize()) {
-					const auto ullOffsetCurr = refHexSpan.ullOffset + refHexSpan.ullSize - ullRem;
+					const auto ullOffsetCurr = hs.ullOffset + hs.ullSize - ullRem;
 					const auto spnData = GetData({ .ullOffset { ullOffsetCurr }, .ullSize { ullRem } });
 					assert(!spnData.empty());
 					std::copy_n(uptrRandData.get(), ullRem, spnData.data());
@@ -1541,7 +1541,7 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 					const auto ullSizeCache = GetCacheSize();
 					const auto dwModCache = ullRem % ullSizeCache;
 					auto ullChunks = (ullRem / ullSizeCache) + (dwModCache > 0 ? 1 : 0);
-					auto ullOffsetCurr = refHexSpan.ullOffset + refHexSpan.ullSize - ullRem;
+					auto ullOffsetCurr = hs.ullOffset + hs.ullSize - ullRem;
 					auto ullOffsetRandCurr = 0ULL;
 					while (ullChunks-- > 0) {
 						const auto ullSizeToModify = (ullChunks == 1 && dwModCache > 0) ? dwModCache : ullSizeCache;
@@ -2270,9 +2270,9 @@ void CHexCtrl::ClipboardCopy(EClipboard eType)const
 		break;
 	}
 
-	constexpr auto sCharSize { sizeof(wchar_t) };
-	const std::size_t sMemSize = (wstrData.size() * sCharSize) + sCharSize;
-	const auto hMem = ::GlobalAlloc(GMEM_MOVEABLE, sMemSize);
+	constexpr auto uzCharSize { sizeof(wchar_t) };
+	const std::size_t uzMemSize = (wstrData.size() * uzCharSize) + uzCharSize;
+	const auto hMem = ::GlobalAlloc(GMEM_MOVEABLE, uzMemSize);
 	if (!hMem) {
 		ut::DBG_REPORT(L"GlobalAlloc error.");
 		return;
@@ -2284,7 +2284,7 @@ void CHexCtrl::ClipboardCopy(EClipboard eType)const
 		return;
 	}
 
-	std::memcpy(lpMemLock, wstrData.data(), sMemSize);
+	std::memcpy(lpMemLock, wstrData.data(), uzMemSize);
 	::GlobalUnlock(hMem);
 	::OpenClipboard(m_Wnd);
 	::EmptyClipboard();
@@ -2582,18 +2582,18 @@ auto CHexCtrl::CopyPrintScreen()const->std::wstring
 	const auto dwStartOffset = dwModStart; //Offset from the line start in the wstrHex.
 	const auto& [wstrHex, wstrText] = BuildDataToDraw(ullStartLine, static_cast<int>(ullLines));
 	std::wstring wstrDataText;
-	std::size_t sIndexToPrint { 0 };
+	std::size_t uzIndexToPrint { 0 };
 
 	for (auto itLine { 0U }; itLine < ullLines; ++itLine) {
 		wstrRet += OffsetToWstr(ullStartLine * dwCapacity + dwCapacity * itLine);
 		wstrRet.insert(wstrRet.size(), 3, ' ');
 
 		for (auto itChunk { 0U }; itChunk < dwCapacity; ++itChunk) {
-			if (dwModStart == 0 && sIndexToPrint < ullSelSize) {
-				wstrRet += wstrHex[(sIndexToPrint + dwStartOffset) * 2];
-				wstrRet += wstrHex[(sIndexToPrint + dwStartOffset) * 2 + 1];
-				wstrDataText += wstrText[sIndexToPrint + dwStartOffset];
-				++sIndexToPrint;
+			if (dwModStart == 0 && uzIndexToPrint < ullSelSize) {
+				wstrRet += wstrHex[(uzIndexToPrint + dwStartOffset) * 2];
+				wstrRet += wstrHex[(uzIndexToPrint + dwStartOffset) * 2 + 1];
+				wstrDataText += wstrText[uzIndexToPrint + dwStartOffset];
+				++uzIndexToPrint;
 			}
 			else {
 				wstrRet += L"  ";
@@ -2816,9 +2816,9 @@ void CHexCtrl::DrawInfoBar(HDC hDC)const
 	rcInfoBarText.left = m_iFirstVertLinePx + 5; //Draw the text beginning with little indent.
 	rcInfoBarText.right = m_iFirstVertLinePx + m_iWidthClientAreaPx; //Draw text to the end of the client area, even if it passes iFourthHorizLine.
 
-	std::size_t sCurrPosBegin { };
+	std::size_t uzCurrPosBegin { };
 	while (true) {
-		const auto sParamPosBegin = m_wstrInfoBar.find_first_of('^', sCurrPosBegin);
+		const auto sParamPosBegin = m_wstrInfoBar.find_first_of('^', uzCurrPosBegin);
 		if (sParamPosBegin == std::wstring::npos)
 			break;
 
@@ -2830,9 +2830,9 @@ void CHexCtrl::DrawInfoBar(HDC hDC)const
 		vecInfoData.emplace_back(POLYTEXTW { .n { iParamSize }, .lpstr { m_wstrInfoBar.data() + sParamPosBegin + 1 },
 			.rcl { rcInfoBarText } }, m_stColors.clrFontInfoParam);
 		rcInfoBarText.left += iParamSize * m_sizeFontInfo.cx; //Increase rect left offset by string size.
-		sCurrPosBegin = sParamPosEnd + 1;
+		uzCurrPosBegin = sParamPosEnd + 1;
 
-		if (const auto sDataPosBegin = m_wstrInfoBar.find_first_of('`', sCurrPosBegin);
+		if (const auto sDataPosBegin = m_wstrInfoBar.find_first_of('`', uzCurrPosBegin);
 			sDataPosBegin != std::wstring::npos) {
 			if (const auto sDataPosEnd = m_wstrInfoBar.find_first_of('`', sDataPosBegin + 1);
 				sDataPosEnd != std::wstring::npos) {
@@ -2840,7 +2840,7 @@ void CHexCtrl::DrawInfoBar(HDC hDC)const
 				vecInfoData.emplace_back(POLYTEXTW { .n { iDataSize }, .lpstr { m_wstrInfoBar.data() + sDataPosBegin + 1 },
 					.rcl { rcInfoBarText } }, m_stColors.clrFontInfoData);
 				rcInfoBarText.left += iDataSize * m_sizeFontInfo.cx;
-				sCurrPosBegin = sDataPosEnd + 1;
+				uzCurrPosBegin = sDataPosEnd + 1;
 			}
 		}
 
@@ -2856,13 +2856,13 @@ void CHexCtrl::DrawInfoBar(HDC hDC)const
 
 	for (const auto& pid : vecInfoData) {
 		dc.SetTextColor(pid.clrText);
-		const auto& refPoly = pid.stPoly;
-		auto rc = refPoly.rcl;
-		dc.DrawTextW(refPoly.lpstr, refPoly.n, &rc, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
+		const auto& poly = pid.stPoly;
+		auto rc = poly.rcl;
+		dc.DrawTextW(poly.lpstr, poly.n, &rc, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
 
 		if (pid.iVertLineX > 0) {
-			dc.MoveTo(pid.iVertLineX, refPoly.rcl.top);
-			dc.LineTo(pid.iVertLineX, refPoly.rcl.bottom);
+			dc.MoveTo(pid.iVertLineX, poly.rcl.top);
+			dc.LineTo(pid.iVertLineX, poly.rcl.bottom);
 		}
 	}
 }
@@ -2910,7 +2910,7 @@ void CHexCtrl::DrawHexText(HDC hDC, ULONGLONG ullStartLine, int iLines, std::wst
 	vecWstrHex.reserve(static_cast<std::size_t>(iLines));
 	vecWstrText.reserve(static_cast<std::size_t>(iLines));
 	const auto ullStartOffset = ullStartLine * GetCapacity();
-	std::size_t sIndexToPrint { 0 };
+	std::size_t uzIndexToPrint { 0 };
 	HEXCOLORINFO hci { .hdr { m_Wnd, static_cast<UINT>(m_Wnd.GetDlgCtrlID()) },
 		.stClr { .clrBk { m_stColors.clrBkHex }, .clrText { m_stColors.clrFontHex } } };
 
@@ -2954,9 +2954,9 @@ void CHexCtrl::DrawHexText(HDC hDC, ULONGLONG ullStartLine, int iLines, std::wst
 			};
 
 		//Main loop for printing Hex chunks and Text chars.
-		for (auto itChunk { 0U }; itChunk < GetCapacity() && sIndexToPrint < wsvText.size(); ++itChunk, ++sIndexToPrint) {
+		for (auto itChunk { 0U }; itChunk < GetCapacity() && uzIndexToPrint < wsvText.size(); ++itChunk, ++uzIndexToPrint) {
 			if (m_pHexVirtColors != nullptr) {
-				hci.ullOffset = ullStartOffset + sIndexToPrint;
+				hci.ullOffset = ullStartOffset + uzIndexToPrint;
 				if (m_pHexVirtColors->OnHexGetColor(hci)) {
 					stClrTextArea = hci.stClr; //Text area color is now equal to the Hex area color.
 				}
@@ -2977,15 +2977,15 @@ void CHexCtrl::DrawHexText(HDC hDC, ULONGLONG ullStartLine, int iLines, std::wst
 
 			if (fNeedChunkPoint) {
 				int iCy;
-				HexChunkPoint(sIndexToPrint, iHexPosToPrintX, iCy);
-				TextChunkPoint(sIndexToPrint, iTextPosToPrintX, iCy);
+				HexChunkPoint(uzIndexToPrint, iHexPosToPrintX, iCy);
+				TextChunkPoint(uzIndexToPrint, iTextPosToPrintX, iCy);
 				fNeedChunkPoint = false;
 			}
 
 			lmbHexSpaces(itChunk);
-			wstrHexToPrint += wsvHex[sIndexToPrint * 2];
-			wstrHexToPrint += wsvHex[(sIndexToPrint * 2) + 1];
-			wstrTextToPrint += wsvText[sIndexToPrint];
+			wstrHexToPrint += wsvHex[uzIndexToPrint * 2];
+			wstrHexToPrint += wsvHex[(uzIndexToPrint * 2) + 1];
+			wstrTextToPrint += wsvText[uzIndexToPrint];
 		}
 
 		lmbPoly();
@@ -3024,7 +3024,7 @@ void CHexCtrl::DrawTemplates(HDC hDC, ULONGLONG ullStartLine, int iLines, std::w
 	std::vector<std::unique_ptr<std::wstring>> vecWstrFieldsHex; //unique_ptr to avoid wstring ptr invalidation.
 	std::vector<std::unique_ptr<std::wstring>> vecWstrFieldsText;
 	const auto ullStartOffset = ullStartLine * GetCapacity();
-	std::size_t sIndexToPrint { };
+	std::size_t uzIndexToPrint { };
 	PCHEXTEMPLFIELD pFieldCurr { };
 
 	for (auto itLine = 0; itLine < iLines; ++itLine) {
@@ -3069,9 +3069,9 @@ void CHexCtrl::DrawTemplates(HDC hDC, ULONGLONG ullStartLine, int iLines, std::w
 			};
 
 		//Main loop for printing Hex chunks and Text chars.
-		for (auto itChunk { 0U }; itChunk < GetCapacity() && sIndexToPrint < wsvText.size(); ++itChunk, ++sIndexToPrint) {
+		for (auto itChunk { 0U }; itChunk < GetCapacity() && uzIndexToPrint < wsvText.size(); ++itChunk, ++uzIndexToPrint) {
 			//Fields.
-			if (auto pField = m_DlgTemplMgr.HitTest(ullStartOffset + sIndexToPrint); pField != nullptr) {
+			if (auto pField = m_DlgTemplMgr.HitTest(ullStartOffset + uzIndexToPrint); pField != nullptr) {
 				if (itChunk == 0 && pField == pFieldCurr) {
 					fPrintVertLine = false;
 				}
@@ -3087,15 +3087,15 @@ void CHexCtrl::DrawTemplates(HDC hDC, ULONGLONG ullStartLine, int iLines, std::w
 
 				if (fNeedChunkPoint) {
 					int iCy;
-					HexChunkPoint(sIndexToPrint, iFieldHexPosToPrintX, iCy);
-					TextChunkPoint(sIndexToPrint, iFieldTextPosToPrintX, iCy);
+					HexChunkPoint(uzIndexToPrint, iFieldHexPosToPrintX, iCy);
+					TextChunkPoint(uzIndexToPrint, iFieldTextPosToPrintX, iCy);
 					fNeedChunkPoint = false;
 				}
 
 				lmbHexSpaces(itChunk);
-				wstrHexFieldToPrint += wsvHex[sIndexToPrint * 2];
-				wstrHexFieldToPrint += wsvHex[(sIndexToPrint * 2) + 1];
-				wstrTextFieldToPrint += wsvText[sIndexToPrint];
+				wstrHexFieldToPrint += wsvHex[uzIndexToPrint * 2];
+				wstrHexFieldToPrint += wsvHex[(uzIndexToPrint * 2) + 1];
+				wstrTextFieldToPrint += wsvText[uzIndexToPrint];
 				fField = true;
 			}
 			else if (fField) {
@@ -3169,7 +3169,7 @@ void CHexCtrl::DrawBookmarks(HDC hDC, ULONGLONG ullStartLine, int iLines, std::w
 	std::vector<std::unique_ptr<std::wstring>> vecWstrBkmHex; //unique_ptr to avoid wstring ptr invalidation.
 	std::vector<std::unique_ptr<std::wstring>> vecWstrBkmText;
 	const auto ullStartOffset = ullStartLine * GetCapacity();
-	std::size_t sIndexToPrint { };
+	std::size_t uzIndexToPrint { };
 
 	for (auto itLine = 0; itLine < iLines; ++itLine) {
 		std::wstring wstrHexBkmToPrint;
@@ -3211,9 +3211,9 @@ void CHexCtrl::DrawBookmarks(HDC hDC, ULONGLONG ullStartLine, int iLines, std::w
 			};
 
 		//Main loop for printing Hex chunks and Text chars.
-		for (auto itChunk { 0U }; itChunk < GetCapacity() && sIndexToPrint < wsvText.size(); ++itChunk, ++sIndexToPrint) {
+		for (auto itChunk { 0U }; itChunk < GetCapacity() && uzIndexToPrint < wsvText.size(); ++itChunk, ++uzIndexToPrint) {
 			//Bookmarks.
-			if (const auto pBkm = m_DlgBkmMgr.HitTest(ullStartOffset + sIndexToPrint); pBkm != nullptr) {
+			if (const auto pBkm = m_DlgBkmMgr.HitTest(ullStartOffset + uzIndexToPrint); pBkm != nullptr) {
 				//If it's nested bookmark.
 				if (pBkmCurr != nullptr && pBkmCurr != pBkm) {
 					lmbHexSpaces(itChunk);
@@ -3225,15 +3225,15 @@ void CHexCtrl::DrawBookmarks(HDC hDC, ULONGLONG ullStartLine, int iLines, std::w
 
 				if (fNeedChunkPoint) {
 					int iCy;
-					HexChunkPoint(sIndexToPrint, iBkmHexPosToPrintX, iCy);
-					TextChunkPoint(sIndexToPrint, iBkmTextPosToPrintX, iCy);
+					HexChunkPoint(uzIndexToPrint, iBkmHexPosToPrintX, iCy);
+					TextChunkPoint(uzIndexToPrint, iBkmTextPosToPrintX, iCy);
 					fNeedChunkPoint = false;
 				}
 
 				lmbHexSpaces(itChunk);
-				wstrHexBkmToPrint += wsvHex[sIndexToPrint * 2];
-				wstrHexBkmToPrint += wsvHex[(sIndexToPrint * 2) + 1];
-				wstrTextBkmToPrint += wsvText[sIndexToPrint];
+				wstrHexBkmToPrint += wsvHex[uzIndexToPrint * 2];
+				wstrHexBkmToPrint += wsvHex[(uzIndexToPrint * 2) + 1];
+				wstrTextBkmToPrint += wsvText[uzIndexToPrint];
 				fBookmark = true;
 			}
 			else if (fBookmark) {
@@ -3278,7 +3278,7 @@ void CHexCtrl::DrawSelection(HDC hDC, ULONGLONG ullStartLine, int iLines, std::w
 	std::vector<POLYTEXTW> vecPolySelText;
 	std::vector<std::unique_ptr<std::wstring>> vecWstrSel; //unique_ptr to avoid wstring ptr invalidation.
 	const auto ullStartOffset = ullStartLine * GetCapacity();
-	std::size_t sIndexToPrint { };
+	std::size_t uzIndexToPrint { };
 
 	for (auto itLine = 0; itLine < iLines; ++itLine) {
 		std::wstring wstrHexSelToPrint; //Selected Hex and Text strings to print.
@@ -3304,13 +3304,13 @@ void CHexCtrl::DrawSelection(HDC hDC, ULONGLONG ullStartLine, int iLines, std::w
 			};
 
 		//Main loop for printing Hex chunks and Text chars.
-		for (auto itChunk { 0U }; itChunk < GetCapacity() && sIndexToPrint < wsvText.size(); ++itChunk, ++sIndexToPrint) {
+		for (auto itChunk { 0U }; itChunk < GetCapacity() && uzIndexToPrint < wsvText.size(); ++itChunk, ++uzIndexToPrint) {
 			//Selection.
-			if (m_Selection.HitTest(ullStartOffset + sIndexToPrint)) {
+			if (m_Selection.HitTest(ullStartOffset + uzIndexToPrint)) {
 				if (fNeedChunkPoint) {
 					int iCy;
-					HexChunkPoint(sIndexToPrint, iSelHexPosToPrintX, iCy);
-					TextChunkPoint(sIndexToPrint, iSelTextPosToPrintX, iCy);
+					HexChunkPoint(uzIndexToPrint, iSelHexPosToPrintX, iCy);
+					TextChunkPoint(uzIndexToPrint, iSelTextPosToPrintX, iCy);
 					fNeedChunkPoint = false;
 				}
 
@@ -3324,9 +3324,9 @@ void CHexCtrl::DrawSelection(HDC hDC, ULONGLONG ullStartLine, int iLines, std::w
 						wstrHexSelToPrint += L"  ";
 					}
 				}
-				wstrHexSelToPrint += wsvHex[sIndexToPrint * 2];
-				wstrHexSelToPrint += wsvHex[(sIndexToPrint * 2) + 1];
-				wstrTextSelToPrint += wsvText[sIndexToPrint];
+				wstrHexSelToPrint += wsvHex[uzIndexToPrint * 2];
+				wstrHexSelToPrint += wsvHex[(uzIndexToPrint * 2) + 1];
+				wstrTextSelToPrint += wsvText[uzIndexToPrint];
 				fSelection = true;
 			}
 			else if (fSelection) {
@@ -3364,7 +3364,7 @@ void CHexCtrl::DrawSelHighlight(HDC hDC, ULONGLONG ullStartLine, int iLines, std
 	std::vector<POLYTEXTW> vecPolySelTextHgl;
 	std::vector<std::unique_ptr<std::wstring>> vecWstrSelHgl; //unique_ptr to avoid wstring ptr invalidation.
 	const auto ullStartOffset = ullStartLine * GetCapacity();
-	std::size_t sIndexToPrint { };
+	std::size_t uzIndexToPrint { };
 
 	for (auto itLine = 0; itLine < iLines; ++itLine) {
 		std::wstring wstrHexSelToPrint; //Selected Hex and Text strings to print.
@@ -3390,13 +3390,13 @@ void CHexCtrl::DrawSelHighlight(HDC hDC, ULONGLONG ullStartLine, int iLines, std
 			};
 
 		//Main loop for printing Hex chunks and Text chars.
-		for (auto itChunk { 0U }; itChunk < GetCapacity() && sIndexToPrint < wsvText.size(); ++itChunk, ++sIndexToPrint) {
+		for (auto itChunk { 0U }; itChunk < GetCapacity() && uzIndexToPrint < wsvText.size(); ++itChunk, ++uzIndexToPrint) {
 			//Selection highlights.
-			if (m_Selection.HitTestHighlight(ullStartOffset + sIndexToPrint)) {
+			if (m_Selection.HitTestHighlight(ullStartOffset + uzIndexToPrint)) {
 				if (fNeedChunkPoint) {
 					int iCy;
-					HexChunkPoint(sIndexToPrint, iSelHexPosToPrintX, iCy);
-					TextChunkPoint(sIndexToPrint, iSelTextPosToPrintX, iCy);
+					HexChunkPoint(uzIndexToPrint, iSelHexPosToPrintX, iCy);
+					TextChunkPoint(uzIndexToPrint, iSelTextPosToPrintX, iCy);
 					fNeedChunkPoint = false;
 				}
 
@@ -3410,9 +3410,9 @@ void CHexCtrl::DrawSelHighlight(HDC hDC, ULONGLONG ullStartLine, int iLines, std
 						wstrHexSelToPrint += L"  ";
 					}
 				}
-				wstrHexSelToPrint += wsvHex[sIndexToPrint * 2];
-				wstrHexSelToPrint += wsvHex[(sIndexToPrint * 2) + 1];
-				wstrTextSelToPrint += wsvText[sIndexToPrint];
+				wstrHexSelToPrint += wsvHex[uzIndexToPrint * 2];
+				wstrHexSelToPrint += wsvHex[(uzIndexToPrint * 2) + 1];
+				wstrTextSelToPrint += wsvText[uzIndexToPrint];
 				fSelection = true;
 			}
 			else if (fSelection) {
@@ -3510,7 +3510,7 @@ void CHexCtrl::DrawDataInterp(HDC hDC, ULONGLONG ullStartLine, int iLines, std::
 	std::vector<POLYTEXTW> vecPolyDataInterp;
 	std::vector<std::unique_ptr<std::wstring>> vecWstrDataInterp;
 	const auto ullStartOffset = ullStartLine * GetCapacity();
-	std::size_t sIndexToPrint { };
+	std::size_t uzIndexToPrint { };
 
 	for (auto itLine = 0; itLine < iLines; ++itLine) {
 		std::wstring wstrHexDataInterpToPrint; //Data Interpreter Hex and Text strings to print.
@@ -3521,13 +3521,13 @@ void CHexCtrl::DrawDataInterp(HDC hDC, ULONGLONG ullStartLine, int iLines, std::
 		const auto iPosToPrintY = m_iStartWorkAreaYPx + (m_sizeFontMain.cy * itLine); //Hex and Text are the same.
 
 		//Main loop for printing Hex chunks and Text chars.
-		for (auto itChunk { 0U }; itChunk < GetCapacity() && sIndexToPrint < wsvText.size(); ++itChunk, ++sIndexToPrint) {
-			const auto ullOffsetCurr = ullStartOffset + sIndexToPrint;
+		for (auto itChunk { 0U }; itChunk < GetCapacity() && uzIndexToPrint < wsvText.size(); ++itChunk, ++uzIndexToPrint) {
+			const auto ullOffsetCurr = ullStartOffset + uzIndexToPrint;
 			if (ullOffsetCurr >= ullCaretPos && ullOffsetCurr < (ullCaretPos + dwHglSize)) {
 				if (fNeedChunkPoint) {
 					int iCy;
-					HexChunkPoint(sIndexToPrint, iDataInterpHexPosToPrintX, iCy);
-					TextChunkPoint(sIndexToPrint, iDataInterpTextPosToPrintX, iCy);
+					HexChunkPoint(uzIndexToPrint, iDataInterpHexPosToPrintX, iCy);
+					TextChunkPoint(uzIndexToPrint, iDataInterpTextPosToPrintX, iCy);
 					fNeedChunkPoint = false;
 				}
 
@@ -3541,9 +3541,9 @@ void CHexCtrl::DrawDataInterp(HDC hDC, ULONGLONG ullStartLine, int iLines, std::
 						wstrHexDataInterpToPrint += L"  ";
 					}
 				}
-				wstrHexDataInterpToPrint += wsvHex[sIndexToPrint * 2];
-				wstrHexDataInterpToPrint += wsvHex[(sIndexToPrint * 2) + 1];
-				wstrTextDataInterpToPrint += wsvText[sIndexToPrint];
+				wstrHexDataInterpToPrint += wsvHex[uzIndexToPrint * 2];
+				wstrHexDataInterpToPrint += wsvHex[(uzIndexToPrint * 2) + 1];
+				wstrTextDataInterpToPrint += wsvText[uzIndexToPrint];
 			}
 		}
 
@@ -3693,8 +3693,8 @@ auto CHexCtrl::GetCharWidthNative()const->int
 
 auto CHexCtrl::GetCommandFromKey(UINT uKey, bool fCtrl, bool fShift, bool fAlt)const->std::optional<EHexCmd>
 {
-	if (const auto it = std::find_if(m_vecKeyBind.begin(), m_vecKeyBind.end(), [=](const KEYBIND& ref) {
-		return ref.fCtrl == fCtrl && ref.fShift == fShift && ref.fAlt == fAlt && ref.uKey == uKey; });
+	if (const auto it = std::find_if(m_vecKeyBind.begin(), m_vecKeyBind.end(), [=](const KEYBIND& kb) {
+		return kb.fCtrl == fCtrl && kb.fShift == fShift && kb.fAlt == fAlt && kb.uKey == uKey; });
 		it != m_vecKeyBind.end()) {
 		return it->eCmd;
 	}
@@ -3704,8 +3704,8 @@ auto CHexCtrl::GetCommandFromKey(UINT uKey, bool fCtrl, bool fShift, bool fAlt)c
 
 auto CHexCtrl::GetCommandFromMenu(WORD wMenuID)const->std::optional<EHexCmd>
 {
-	if (const auto it = std::find_if(m_vecKeyBind.begin(), m_vecKeyBind.end(), [=](const KEYBIND& ref) {
-		return ref.wMenuID == wMenuID; }); it != m_vecKeyBind.end()) {
+	if (const auto it = std::find_if(m_vecKeyBind.begin(), m_vecKeyBind.end(), [=](const KEYBIND& kb) {
+		return kb.wMenuID == wMenuID; }); it != m_vecKeyBind.end()) {
 		return it->eCmd;
 	}
 
@@ -3920,14 +3920,14 @@ void CHexCtrl::ModifyWorker(const HEXCTRL::HEXMODIFY& hms, const auto& FuncWorke
 
 	const auto& vecSpan = hms.vecSpan;
 	const auto ullTotalSize = std::reduce(vecSpan.begin(), vecSpan.end(), 0ULL,
-		[](ULONGLONG ullSumm, const HEXSPAN& ref) { return ullSumm + ref.ullSize; });
+		[](ULONGLONG ullSumm, const HEXSPAN& hs) { return ullSumm + hs.ullSize; });
 	assert(ullTotalSize <= GetDataSizeImpl());
 
 	CHexDlgProgress dlgProg(L"Modifying...", L"", vecSpan.back().ullOffset, vecSpan.back().ullOffset + ullTotalSize);
 	const auto lmbModify = [&]() {
-		for (const auto& ref : vecSpan) { //Span-vector's size times.
-			const auto ullOffsetToModify { ref.ullOffset };
-			const auto ullSizeToModify { ref.ullSize };
+		for (const auto& hs : vecSpan) { //Span-vector's size times.
+			const auto ullOffsetToModify { hs.ullOffset };
+			const auto ullSizeToModify { hs.ullSize };
 			const auto ullSizeDataOper { spnOper.size() };
 
 			//If the size of the data to_modify_from is bigger than
@@ -5026,30 +5026,30 @@ void CHexCtrl::Redo()
 	VecSpan vecSpan;
 	vecSpan.reserve(uptrRedo->size());
 	std::transform(uptrRedo->begin(), uptrRedo->end(), std::back_inserter(vecSpan),
-		[](UNDO& ref) { return HEXSPAN { ref.ullOffset, ref.vecData.size() }; });
+		[](UNDO& undo) { return HEXSPAN { undo.ullOffset, undo.vecData.size() }; });
 	SnapshotUndo(vecSpan); //Creating new Undo data snapshot.
 
-	for (const auto& ref : *uptrRedo) {
-		const auto& vecRedoData = ref.vecData;
+	for (const auto& redo : *uptrRedo) {
+		const auto& vecRedoData = redo.vecData;
 
 		if (IsVirtualImpl() && vecRedoData.size() > GetCacheSize()) { //In VirtualData mode processing data chunk by chunk.
 			const auto dwSizeChunk = GetCacheSize();
 			const auto sMod = vecRedoData.size() % dwSizeChunk;
 			auto ullChunks = vecRedoData.size() / dwSizeChunk + (sMod > 0 ? 1 : 0);
-			std::size_t ullOffset = 0;
+			std::size_t uzOffset = 0;
 			while (ullChunks-- > 0) {
 				const auto ullSize = (ullChunks == 1 && sMod > 0) ? sMod : dwSizeChunk;
-				if (const auto spnData = GetData({ ullOffset, ullSize }); !spnData.empty()) {
-					std::copy_n(vecRedoData.begin() + ullOffset, ullSize, spnData.data());
-					SetDataVirtual(spnData, { ullOffset, ullSize });
+				if (const auto spnData = GetData({ uzOffset, ullSize }); !spnData.empty()) {
+					std::copy_n(vecRedoData.begin() + uzOffset, ullSize, spnData.data());
+					SetDataVirtual(spnData, { uzOffset, ullSize });
 				}
-				ullOffset += ullSize;
+				uzOffset += ullSize;
 			}
 		}
 		else {
-			if (const auto spnData = GetData({ ref.ullOffset, vecRedoData.size() }); !spnData.empty()) {
+			if (const auto spnData = GetData({ redo.ullOffset, vecRedoData.size() }); !spnData.empty()) {
 				std::copy_n(vecRedoData.begin(), vecRedoData.size(), spnData.data());
-				SetDataVirtual(spnData, { ref.ullOffset, vecRedoData.size() });
+				SetDataVirtual(spnData, { redo.ullOffset, vecRedoData.size() });
 			}
 		}
 	}
@@ -5574,8 +5574,8 @@ bool CHexCtrl::SetConfigImpl(std::wstring_view wsvPath)
 	//This is vital for ExecuteCmd to work properly.
 	m_vecKeyBind.clear();
 	m_vecKeyBind.reserve(umapCmdMenu.size());
-	for (const auto& refMap : umapCmdMenu) {
-		m_vecKeyBind.emplace_back(KEYBIND { .eCmd { refMap.second.first }, .wMenuID { static_cast<WORD>(refMap.second.second) } });
+	for (const auto& map : umapCmdMenu) {
+		m_vecKeyBind.emplace_back(KEYBIND { .eCmd { map.second.first }, .wMenuID { static_cast<WORD>(map.second.second) } });
 	}
 
 	rapidjson::Document docJSON;
@@ -5592,10 +5592,10 @@ bool CHexCtrl::SetConfigImpl(std::wstring_view wsvPath)
 			return false;
 		}
 
-		const auto nSize = static_cast<std::size_t>(::SizeofResource(m_hInstRes, hRes));
+		const auto uzSize = static_cast<std::size_t>(::SizeofResource(m_hInstRes, hRes));
 		const auto pData = static_cast<const char*>(::LockResource(hResData));
-		docJSON.Parse(pData, nSize);
-		if (docJSON.IsNull()) { //Parse all default keybindings.
+		docJSON.Parse(pData, uzSize); //Parse all default keybindings.
+		if (docJSON.IsNull()) {
 			ut::DBG_REPORT(L"docJSON.IsNull().");
 			return false;
 		}
@@ -5614,19 +5614,19 @@ bool CHexCtrl::SetConfigImpl(std::wstring_view wsvPath)
 			return { };
 
 		KEYBIND stKB;
-		const auto nSize = sv.size();
-		std::size_t nPosStart { 0 }; //Next position to start search for '+' sign.
-		const auto nSubWords = std::count(sv.begin(), sv.end(), '+') + 1; //How many sub-words (divided by '+')?
-		for (auto itSubWords = 0; itSubWords < nSubWords; ++itSubWords) {
-			const auto nPosNext = sv.find('+', nPosStart);
-			const auto nSizeSubWord = nPosNext == std::string_view::npos ? nSize - nPosStart : nPosNext - nPosStart;
-			const auto strSubWord = sv.substr(nPosStart, nSizeSubWord);
-			nPosStart = nPosNext + 1;
+		const auto uzSize = sv.size();
+		std::size_t uzPosStart { 0 }; //Next position to start search for '+' sign.
+		const auto zSubWords = std::count(sv.begin(), sv.end(), '+') + 1; //How many sub-words (divided by '+')?
+		for (auto itSubWords = 0; itSubWords < zSubWords; ++itSubWords) {
+			const auto uzPosNext = sv.find('+', uzPosStart);
+			const auto uzSizeSubWord = uzPosNext == std::string_view::npos ? uzSize - uzPosStart : uzPosNext - uzPosStart;
+			const auto svSubWord = sv.substr(uzPosStart, uzSizeSubWord);
+			uzPosStart = uzPosNext + 1;
 
-			if (strSubWord.size() == 1) {
-				stKB.uKey = static_cast<UCHAR>(std::toupper(strSubWord[0])); //Binding keys are in uppercase.
+			if (svSubWord.size() == 1) {
+				stKB.uKey = static_cast<UCHAR>(std::toupper(svSubWord[0])); //Binding keys are in uppercase.
 			}
-			else if (const auto itKey = umapKeys.find(strSubWord); itKey != umapKeys.end()) {
+			else if (const auto itKey = umapKeys.find(svSubWord); itKey != umapKeys.end()) {
 				switch (const auto uChar = itKey->second.first; uChar) {
 				case VK_CONTROL:
 					stKB.fCtrl = true;
@@ -5653,7 +5653,7 @@ bool CHexCtrl::SetConfigImpl(std::wstring_view wsvPath)
 					optKB->eCmd = itCmd->second.first;
 					optKB->wMenuID = static_cast<WORD>(itCmd->second.second);
 					if (const auto itKB = std::find_if(m_vecKeyBind.begin(), m_vecKeyBind.end(),
-						[&optKB](const KEYBIND& ref) { return ref.eCmd == optKB->eCmd; }); itKB != m_vecKeyBind.end()) {
+						[&optKB](const KEYBIND& kb) { return kb.eCmd == optKB->eCmd; }); itKB != m_vecKeyBind.end()) {
 						if (itKB->uKey == 0) {
 							*itKB = *optKB; //Adding keybindings from JSON to m_vecKeyBind.
 						}
@@ -5677,8 +5677,8 @@ bool CHexCtrl::SetConfigImpl(std::wstring_view wsvPath)
 			return kb.wMenuID == vecKB.wMenuID; });
 			itTmp == itEnd && vecKB.wMenuID != 0 && vecKB.uKey != 0) {
 			auto wstr = m_MenuMain.GetItemWstr(vecKB.wMenuID);
-			if (const auto nPos = wstr.find('\t'); nPos != std::wstring::npos) {
-				wstr.erase(nPos);
+			if (const auto uzPos = wstr.find('\t'); uzPos != std::wstring::npos) {
+				wstr.erase(uzPos);
 			}
 
 			wstr += L'\t';
@@ -5693,8 +5693,8 @@ bool CHexCtrl::SetConfigImpl(std::wstring_view wsvPath)
 			}
 
 			//Search for any special key names: 'Tab', 'Enter', etc... If not found then it's just a char.
-			if (const auto itUmap = std::find_if(umapKeys.begin(), umapKeys.end(), [&](const auto& ref) {
-				return ref.second.first == vecKB.uKey; }); itUmap != umapKeys.end()) {
+			if (const auto itUmap = std::find_if(umapKeys.begin(), umapKeys.end(), [&](const auto& map) {
+				return map.second.first == vecKB.uKey; }); itUmap != umapKeys.end()) {
 				wstr += itUmap->second.second;
 			}
 			else {
@@ -5849,7 +5849,7 @@ void CHexCtrl::SnapshotUndo(const VecSpan& vecSpan)
 {
 	constexpr auto dwUndoMax { 512U }; //Undo's max limit.
 	const auto ullTotalSize = std::reduce(vecSpan.begin(), vecSpan.end(), 0ULL,
-		[](ULONGLONG ullSumm, const HEXSPAN& ref) { return ullSumm + ref.ullSize; });
+		[](ULONGLONG ullSumm, const HEXSPAN& hs) { return ullSumm + hs.ullSize; });
 
 	//Check for very big undo size.
 	if (ullTotalSize > 1024 * 1024 * 10)
@@ -5863,31 +5863,31 @@ void CHexCtrl::SnapshotUndo(const VecSpan& vecSpan)
 	}
 
 	//Making new Undo data snapshot.
-	const auto& refUndo = m_vecUndo.emplace_back(std::make_unique<std::vector<UNDO>>());
+	const auto& uptrVec = m_vecUndo.emplace_back(std::make_unique<std::vector<UNDO>>());
 
 	//Bad alloc may happen here!!!
 	try {
-		for (const auto& ref : vecSpan) { //vecSpan.size() amount of continuous areas to preserve.
-			auto& refUNDO = refUndo->emplace_back(UNDO { ref.ullOffset, { } });
-			refUNDO.vecData.resize(static_cast<std::size_t>(ref.ullSize));
+		for (const auto& hs : vecSpan) { //vecSpan.size() amount of continuous areas to preserve.
+			auto& undo = uptrVec->emplace_back(UNDO { hs.ullOffset, { } });
+			undo.vecData.resize(static_cast<std::size_t>(hs.ullSize));
 
 			//In VirtualData mode processing data chunk by chunk.
-			if (IsVirtualImpl() && ref.ullSize > GetCacheSize()) {
+			if (IsVirtualImpl() && hs.ullSize > GetCacheSize()) {
 				const auto dwSizeChunk = GetCacheSize();
-				const auto ullMod = ref.ullSize % dwSizeChunk;
-				auto ullChunks = ref.ullSize / dwSizeChunk + (ullMod > 0 ? 1 : 0);
+				const auto ullMod = hs.ullSize % dwSizeChunk;
+				auto ullChunks = hs.ullSize / dwSizeChunk + (ullMod > 0 ? 1 : 0);
 				ULONGLONG ullOffset { 0 };
 				while (ullChunks-- > 0) {
 					const auto ullSize = (ullChunks == 1 && ullMod > 0) ? ullMod : dwSizeChunk;
 					if (const auto spnData = GetData({ ullOffset, ullSize }); !spnData.empty()) {
-						std::copy_n(spnData.data(), ullSize, refUNDO.vecData.data() + static_cast<std::size_t>(ullOffset));
+						std::copy_n(spnData.data(), ullSize, undo.vecData.data() + static_cast<std::size_t>(ullOffset));
 					}
 					ullOffset += ullSize;
 				}
 			}
 			else {
-				if (const auto spnData = GetData(ref); !spnData.empty()) {
-					std::copy_n(spnData.data(), ref.ullSize, refUNDO.vecData.data());
+				if (const auto spnData = GetData(hs); !spnData.empty()) {
+					std::copy_n(spnData.data(), hs.ullSize, undo.vecData.data());
 				}
 			}
 		}
@@ -5959,21 +5959,21 @@ void CHexCtrl::Undo()
 	//Bad alloc may happen here! If there is no more free memory, just clear the vec and return.
 	try {
 		//Creating new Redo data snapshot.
-		const auto& refRedo = m_vecRedo.emplace_back(std::make_unique<std::vector<UNDO>>());
-		for (const auto& ref : *m_vecUndo.back()) {
-			auto& refRedoBack = refRedo->emplace_back(UNDO { ref.ullOffset, { } });
-			refRedoBack.vecData.resize(ref.vecData.size());
-			const auto& vecUndoData = ref.vecData;
+		const auto& uptrVec = m_vecRedo.emplace_back(std::make_unique<std::vector<UNDO>>());
+		for (const auto& undo : *m_vecUndo.back()) {
+			auto& redo = uptrVec->emplace_back(UNDO { undo.ullOffset, { } });
+			redo.vecData.resize(undo.vecData.size());
+			const auto& vecUndoData = undo.vecData;
 
 			if (IsVirtualImpl() && vecUndoData.size() > GetCacheSize()) { //In VirtualData mode processing data chunk by chunk.
 				const auto dwSizeChunk = GetCacheSize();
-				const auto sMod = vecUndoData.size() % dwSizeChunk;
-				auto ullChunks = vecUndoData.size() / dwSizeChunk + (sMod > 0 ? 1 : 0);
+				const auto uzMod = vecUndoData.size() % dwSizeChunk;
+				auto ullChunks = vecUndoData.size() / dwSizeChunk + (uzMod > 0 ? 1 : 0);
 				std::size_t ullOffset = 0;
 				while (ullChunks-- > 0) {
-					const auto ullSize = (ullChunks == 1 && sMod > 0) ? sMod : dwSizeChunk;
+					const auto ullSize = (ullChunks == 1 && uzMod > 0) ? uzMod : dwSizeChunk;
 					if (const auto spnData = GetData({ ullOffset, ullSize }); !spnData.empty()) {
-						std::copy_n(spnData.data(), ullSize, refRedoBack.vecData.begin() + ullOffset); //Fill Redo with the data.
+						std::copy_n(spnData.data(), ullSize, redo.vecData.begin() + ullOffset); //Fill Redo with the data.
 						std::copy_n(vecUndoData.begin() + ullOffset, ullSize, spnData.data()); //Undo the data.
 						SetDataVirtual(spnData, { ullOffset, ullSize });
 					}
@@ -5981,10 +5981,10 @@ void CHexCtrl::Undo()
 				}
 			}
 			else {
-				if (const auto spnData = GetData({ ref.ullOffset, vecUndoData.size() }); !spnData.empty()) {
-					std::copy_n(spnData.data(), vecUndoData.size(), refRedoBack.vecData.begin()); //Fill Redo with the data.
+				if (const auto spnData = GetData({ undo.ullOffset, vecUndoData.size() }); !spnData.empty()) {
+					std::copy_n(spnData.data(), vecUndoData.size(), redo.vecData.begin()); //Fill Redo with the data.
 					std::copy_n(vecUndoData.begin(), vecUndoData.size(), spnData.data()); //Undo the data.
-					SetDataVirtual(spnData, { ref.ullOffset, vecUndoData.size() });
+					SetDataVirtual(spnData, { undo.ullOffset, vecUndoData.size() });
 				}
 			}
 		}

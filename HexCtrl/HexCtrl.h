@@ -52,7 +52,7 @@
 namespace HEXCTRL {
 	constexpr auto HEXCTRL_VERSION_MAJOR = 3;
 	constexpr auto HEXCTRL_VERSION_MINOR = 8;
-	constexpr auto HEXCTRL_VERSION_PATCH = 0;
+	constexpr auto HEXCTRL_VERSION_PATCH = 1;
 
 	using SpanByte = std::span<std::byte>;
 	using SpanCByte = std::span<const std::byte>;

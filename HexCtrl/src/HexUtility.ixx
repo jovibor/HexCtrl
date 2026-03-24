@@ -75,35 +75,35 @@ namespace HEXCTRL::INTERNAL::ut { //Utility methods and stuff.
 
 	//Get data from IHexCtrl's given offset converted to a necessary type.
 	template<typename T>
-	[[nodiscard]] T GetIHexTData(const IHexCtrl& refHexCtrl, ULONGLONG ullOffset)
+	[[nodiscard]] T GetIHexTData(const IHexCtrl& hexctrl, ULONGLONG ullOffset)
 	{
-		const auto spnData = refHexCtrl.GetData({ .ullOffset { ullOffset }, .ullSize { sizeof(T) } });
+		const auto spnData = hexctrl.GetData({ .ullOffset { ullOffset }, .ullSize { sizeof(T) } });
 		assert(!spnData.empty());
 		return *reinterpret_cast<T*>(spnData.data());
 	}
 
 	//Set data of a necessary type to IHexCtrl's given offset.
 	template<typename T>
-	void SetIHexTData(IHexCtrl& refHexCtrl, ULONGLONG ullOffset, T tData)
+	void SetIHexTData(IHexCtrl& hexctrl, ULONGLONG ullOffset, T tData)
 	{
-		if (ullOffset + sizeof(T) > refHexCtrl.GetDataSize()) { //Data overflow check.
+		if (ullOffset + sizeof(T) > hexctrl.GetDataSize()) { //Data overflow check.
 			DBG_REPORT(L"Data overflow occurs.");
 			return;
 		}
 
-		refHexCtrl.ModifyData({ .eModifyMode { EHexModifyMode::MODIFY_ONCE },
+		hexctrl.ModifyData({ .eModifyMode { EHexModifyMode::MODIFY_ONCE },
 			.spnData { reinterpret_cast<std::byte*>(&tData), sizeof(T) },
 			.vecSpan { { ullOffset, sizeof(T) } } });
 	}
 
-	void SetIHexTData(IHexCtrl& refHexCtrl, ULONGLONG ullOffset, SpanCByte spnData)
+	void SetIHexTData(IHexCtrl& hexctrl, ULONGLONG ullOffset, SpanCByte spnData)
 	{
-		if (ullOffset + spnData.size() > refHexCtrl.GetDataSize()) { //Data overflow check.
+		if (ullOffset + spnData.size() > hexctrl.GetDataSize()) { //Data overflow check.
 			DBG_REPORT(L"Data overflow occurs.");
 			return;
 		}
 
-		refHexCtrl.ModifyData({ .eModifyMode { EHexModifyMode::MODIFY_ONCE },
+		hexctrl.ModifyData({ .eModifyMode { EHexModifyMode::MODIFY_ONCE },
 			.spnData { spnData }, .vecSpan { { ullOffset, spnData.size() } } });
 	}
 
@@ -283,9 +283,9 @@ namespace HEXCTRL::INTERNAL::ut { //Utility methods and stuff.
 			}
 
 			//Extract two current wchars and pass it to StringToNum as wstring.
-			const std::size_t nOffsetCurr = it - wsv.begin();
-			const auto iSize = nOffsetCurr + 2 <= wsv.size() ? 2 : 1;
-			if (const auto optNumber = stn::StrToUInt8(wsv.substr(nOffsetCurr, iSize), 16); optNumber) {
+			const std::size_t uzOffsetCurr = it - wsv.begin();
+			const auto iSize = uzOffsetCurr + 2 <= wsv.size() ? 2 : 1;
+			if (const auto optNumber = stn::StrToUInt8(wsv.substr(uzOffsetCurr, iSize), 16); optNumber) {
 				it += iSize;
 				strHexTmp += *optNumber;
 			}
@@ -335,8 +335,8 @@ namespace HEXCTRL::INTERNAL::ut { //Utility methods and stuff.
 			return std::nullopt;
 
 		//Find time seperator, if present.
-		if (const auto nPos = wstrDateTimeCooked.find(L' '); nPos != std::wstring::npos) {
-			wstrDateTimeCooked = wstrDateTimeCooked.substr(nPos + 1);
+		if (const auto uzPos = wstrDateTimeCooked.find(L' '); uzPos != std::wstring::npos) {
+			wstrDateTimeCooked = wstrDateTimeCooked.substr(uzPos + 1);
 
 			//Parse time component HH:MM:SS.mmm.
 			if (::swscanf_s(wstrDateTimeCooked.data(), L"%2hu/%2hu/%2hu/%3hu", &stSysTime.wHour, &stSysTime.wMinute,
@@ -415,21 +415,21 @@ namespace HEXCTRL::INTERNAL::ut { //Utility methods and stuff.
 	}
 
 	template<typename T>
-	[[nodiscard]] auto RangeToVecBytes(const T& refData) -> std::vector<std::byte>
+	[[nodiscard]] auto RangeToVecBytes(const T& TData) -> std::vector<std::byte>
 	{
 		const std::byte* pBegin;
 		const std::byte* pEnd;
 		if constexpr (std::is_same_v<T, std::string>) {
-			pBegin = reinterpret_cast<const std::byte*>(refData.data());
-			pEnd = pBegin + refData.size();
+			pBegin = reinterpret_cast<const std::byte*>(TData.data());
+			pEnd = pBegin + TData.size();
 		}
 		else if constexpr (std::is_same_v<T, std::wstring>) {
-			pBegin = reinterpret_cast<const std::byte*>(refData.data());
-			pEnd = pBegin + refData.size() * sizeof(wchar_t);
+			pBegin = reinterpret_cast<const std::byte*>(TData.data());
+			pEnd = pBegin + TData.size() * sizeof(wchar_t);
 		}
 		else {
-			pBegin = reinterpret_cast<const std::byte*>(&refData);
-			pEnd = pBegin + sizeof(refData);
+			pBegin = reinterpret_cast<const std::byte*>(&TData);
+			pEnd = pBegin + sizeof(TData);
 		}
 
 		return { pBegin, pEnd };

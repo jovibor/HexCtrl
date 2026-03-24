@@ -189,11 +189,11 @@ void CMFCDialogDlg::OnDropFiles(HDROP hDropInfo)
 	PVOID pOldValue;
 	Wow64DisableWow64FsRedirection(&pOldValue);
 
-	const auto nFilesDropped = DragQueryFileW(hDropInfo, 0xFFFFFFFFUL, nullptr, 0);
-	if (nFilesDropped > 0) { //If more than one file, we only use the first.
-		const auto nBuffer = DragQueryFileW(hDropInfo, 0, nullptr, 0);
-		std::wstring wstrFile(nBuffer, '\0');
-		DragQueryFileW(hDropInfo, 0, wstrFile.data(), nBuffer + 1);
+	const auto dwFilesDropped = DragQueryFileW(hDropInfo, 0xFFFFFFFFUL, nullptr, 0);
+	if (dwFilesDropped > 0) { //If more than one file, we only use the first.
+		const auto dwBuffer = DragQueryFileW(hDropInfo, 0, nullptr, 0);
+		std::wstring wstrFile(dwBuffer, '\0');
+		DragQueryFileW(hDropInfo, 0, wstrFile.data(), dwBuffer + 1);
 		FileOpen(wstrFile, IsLnk());
 	}
 	DragFinish(hDropInfo);
@@ -372,8 +372,8 @@ void CMFCDialogDlg::LoadTemplates(IHexCtrl* pHexCtrl)
 		const auto pTempl = pHexCtrl->GetTemplates();
 		for (const auto& entry : std::filesystem::directory_iterator { pathTemplates }) {
 			const std::wstring_view wsvFile = entry.path().c_str();
-			if (const auto npos = wsvFile.find_last_of(L'.'); npos != std::wstring_view::npos) {
-				if (wsvFile.substr(npos + 1) == L"json") { //Check json extension of templates.
+			if (const auto uzPos = wsvFile.find_last_of(L'.'); uzPos != std::wstring_view::npos) {
+				if (wsvFile.substr(uzPos + 1) == L"json") { //Check json extension of templates.
 					const auto p = HEXCTRL::IHexTemplates::LoadFromFile(wsvFile.data());
 					pTempl->AddTemplate(*p);
 					//pTempl->LoadTemplate(wsvFile.data());
