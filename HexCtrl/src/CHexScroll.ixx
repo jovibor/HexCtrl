@@ -985,5 +985,5 @@ void CHexScroll::SetThumbPos(int iPos)
 
 void CHexScroll::UpdateScrollBarSizeForDPI()
 {
-	m_dwBarSizeWH = ::GetSystemMetricsForDpi(IsVert() ? SM_CXVSCROLL : SM_CXHSCROLL, GDIUT::GetDPIForHWND(m_Wnd));
+	m_dwBarSizeWH = ::GetSystemMetricsForDpi(IsVert() ? SM_CXVSCROLL : SM_CXHSCROLL, ::GetDpiForWindow(m_Wnd));
 }

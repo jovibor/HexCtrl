@@ -667,7 +667,7 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	m_ttiMain.cbSize = sizeof(TTTOOLINFOW);
 	m_ttiMain.uFlags = TTF_TRACK;
 	m_wndTTMain.SendMsg(TTM_ADDTOOLW, 0, reinterpret_cast<LPARAM>(&m_ttiMain));
-	m_wndTTMain.SendMsg(TTM_SETMAXTIPWIDTH, 0, static_cast<LPARAM>(400)); //To allow the use of a newline \n.
+	m_wndTTMain.SendMsg(TTM_SETMAXTIPWIDTH, 0, 400); //To allow the use of a newline \n.
 
 	m_wndTTOffset.Attach(::CreateWindowExW(WS_EX_TOPMOST, TOOLTIPS_CLASSW, nullptr,
 		TTS_NOANIMATE | TTS_NOFADE | TTS_NOPREFIX | TTS_ALWAYSTIP,
@@ -675,7 +675,7 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	m_ttiOffset.cbSize = sizeof(TTTOOLINFOW);
 	m_ttiOffset.uFlags = TTF_TRACK;
 	m_wndTTOffset.SendMsg(TTM_ADDTOOLW, 0, reinterpret_cast<LPARAM>(&m_ttiOffset));
-	m_wndTTOffset.SendMsg(TTM_SETMAXTIPWIDTH, 0, static_cast<LPARAM>(400)); //To allow the use of a newline \n.
+	m_wndTTOffset.SendMsg(TTM_SETMAXTIPWIDTH, 0, 400); //To allow the use of a newline \n.
 
 	if (hcs.pColors != nullptr) {
 		m_stColors = *hcs.pColors;
@@ -4835,7 +4835,7 @@ void CHexCtrl::Print()
 	const GDIUT::CRect rcPrint(POINT(0, 0), SIZE(::GetDeviceCaps(dcPrint, HORZRES) - (iMarginX * 2),
 		::GetDeviceCaps(dcPrint, VERTRES) - (iMarginY * 2)));
 	const SIZE sizePrintDpi { ::GetDeviceCaps(dcPrint, LOGPIXELSX), ::GetDeviceCaps(dcPrint, LOGPIXELSY) };
-	const auto iFontSizeRatio { sizePrintDpi.cy / GDIUT::GetDPIForHWND(m_Wnd) };
+	const auto iFontSizeRatio { sizePrintDpi.cy / ::GetDpiForWindow(m_Wnd) };
 	const auto dwCapacity = GetCapacity();
 
 	//Setting scaled fonts for printing, and temporarily disabling redraw.
@@ -5918,7 +5918,7 @@ void CHexCtrl::TTMainShow(bool fShow, bool fTimer)
 		::GetCursorPos(&ptCur);
 		m_wndTTMain.SendMsg(TTM_TRACKPOSITION, 0, static_cast<LPARAM>(MAKELONG(ptCur.x + 9, ptCur.y - 20)));
 		m_wndTTMain.SendMsg(TTM_UPDATETIPTEXTW, 0, reinterpret_cast<LPARAM>(&m_ttiMain));
-		m_wndTTMain.SendMsg(TTM_TRACKACTIVATE, static_cast<WPARAM>(TRUE), reinterpret_cast<LPARAM>(&m_ttiMain));
+		m_wndTTMain.SendMsg(TTM_TRACKACTIVATE, TRUE, reinterpret_cast<LPARAM>(&m_ttiMain));
 		m_Wnd.SetTimer(m_uIDTTTMain, 300, nullptr);
 	}
 	else {
@@ -5948,7 +5948,7 @@ void CHexCtrl::TTOffsetShow(bool fShow)
 		m_ttiOffset.lpszText = nullptr;
 	}
 
-	m_wndTTOffset.SendMsg(TTM_TRACKACTIVATE, static_cast<WPARAM>(fShow), reinterpret_cast<LPARAM>(&m_ttiOffset));
+	m_wndTTOffset.SendMsg(TTM_TRACKACTIVATE, fShow, reinterpret_cast<LPARAM>(&m_ttiOffset));
 }
 
 void CHexCtrl::Undo()

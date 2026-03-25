@@ -521,16 +521,8 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 		return 0;
 	}
 
-	[[nodiscard]] auto GetDPIForHWND(HWND hWnd) -> UINT {
-		//const auto hDC = ::GetDC(hWnd);
-		//const auto iLOGPIXELSY = ::GetDeviceCaps(hDC, LOGPIXELSY);
-		//::ReleaseDC(hWnd, hDC);
-		const auto iLOGPIXELSY = ::GetDpiForWindow(hWnd); //Available only since "Windows 10, version 1607".
-		return iLOGPIXELSY;
-	}
-
 	[[nodiscard]] auto GetDPIScaleForHWND(HWND hWnd) -> float {
-		return static_cast<float>(GetDPIForHWND(hWnd)) / USER_DEFAULT_SCREEN_DPI; //High-DPI scale factor for window.
+		return static_cast<float>(::GetDpiForWindow(hWnd)) / USER_DEFAULT_SCREEN_DPI; //High-DPI scale factor for window.
 	}
 
 	//Get GDI font size in points from the size in pixels.
@@ -1079,6 +1071,10 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 			assert(IsWindow());
 			return static_cast<int>(SendMsg(CB_FINDSTRINGEXACT, iIndex, reinterpret_cast<LPARAM>(pwszStr)));
 		}
+		[[nodiscard]] auto GetComboBoxInfo()const -> COMBOBOXINFO {
+			assert(IsWindow());	COMBOBOXINFO cbi { .cbSize { sizeof(COMBOBOXINFO) } };
+			::GetComboBoxInfo(GetHWND(), &cbi); return cbi;
+		}
 		[[nodiscard]] int GetCount()const {
 			assert(IsWindow()); return static_cast<int>(SendMsg(CB_GETCOUNT, 0, 0));
 		}
@@ -1088,7 +1084,7 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 		[[nodiscard]] auto GetItemData(int iIndex)const -> DWORD_PTR {
 			assert(IsWindow()); return SendMsg(CB_GETITEMDATA, iIndex, 0);
 		}
-		[[nodiscard]] bool HasString(LPCWSTR pwszStr)const { return FindStringExact(0, pwszStr) != CB_ERR; };
+		[[nodiscard]] bool HasString(LPCWSTR pwszStr)const { return FindStringExact(-1, pwszStr) != CB_ERR; };
 		[[nodiscard]] bool HasString(const std::wstring& wstr)const { return HasString(wstr.data()); };
 		int InsertString(int iIndex, const std::wstring& wstr)const { return InsertString(iIndex, wstr.data()); }
 		int InsertString(int iIndex, LPCWSTR pwszStr)const {

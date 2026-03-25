@@ -54,7 +54,7 @@ namespace HEXCTRL::INTERNAL {
 		void CalcMemChunks(SEARCHFUNCDATA& sfd)const;
 		void ClearComboSearchType();
 		void ClearList();
-		void ComboSearchFill(LPCWSTR pwsz);
+		void ComboFindFill(LPCWSTR pwsz);
 		void ComboReplaceFill(LPCWSTR pwsz);
 		[[nodiscard]] auto CreateSearchData(CHexDlgProgress* pDlgProg = nullptr)const -> SEARCHFUNCDATA;
 		void FindAll();
@@ -135,6 +135,7 @@ namespace HEXCTRL::INTERNAL {
 		void SetEditStartFrom(ULONGLONG ullOffset); //Start search offset edit set.
 		void UpdateControlsState();
 		void UpdateCueBanners();
+		void UpdateTTState();
 	private:
 		//Static functions.
 		static void Replace(IHexCtrl* pHexCtrl, ULONGLONG ullIndex, SpanCByte spnReplace);
@@ -191,10 +192,11 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] static auto SearchFuncVecFwdByte4(const SEARCHFUNCDATA& sfd) -> FINDRESULT;
 	private:
 		static constexpr std::byte m_uWildcard { '?' }; //Wildcard symbol.
-		static constexpr auto m_pwszWrongInput { L"Wrong input data." };
+		static constexpr auto m_pwszWrongInput { L"Wrong input data format." };
 		HINSTANCE m_hInstRes { };
 		GDIUT::CWnd m_Wnd;                 //Main window.
 		GDIUT::CWnd m_WndStatResult;       //Static text "Result:".
+		GDIUT::CWnd m_WndTTFind;           //Tooltip for Find combo-box.
 		GDIUT::CWndCombo m_WndCmbFind;     //Combo box "Search".
 		GDIUT::CWndCombo m_WndCmbReplace;  //Combo box "Replace".
 		GDIUT::CWndCombo m_WndCmbMode;     //Combo box "Search mode".
@@ -481,12 +483,11 @@ void CHexDlgSearch::ClearList()
 	m_vecSearchRes.clear();
 }
 
-void CHexDlgSearch::ComboSearchFill(LPCWSTR pwsz)
+void CHexDlgSearch::ComboFindFill(LPCWSTR pwsz)
 {
 	//Insert text into ComboBox only if it's not already there.
-	if (m_WndCmbFind.FindStringExact(0, pwsz) == CB_ERR) {
-		//Keep max 50 strings in list.
-		if (m_WndCmbFind.GetCount() == 50) {
+	if (!m_WndCmbFind.HasString(pwsz)) {
+		if (m_WndCmbFind.GetCount() == 50) { //Keep max 50 strings in the list.
 			m_WndCmbFind.DeleteString(49);
 		}
 		m_WndCmbFind.InsertString(0, pwsz);
@@ -496,9 +497,8 @@ void CHexDlgSearch::ComboSearchFill(LPCWSTR pwsz)
 void CHexDlgSearch::ComboReplaceFill(LPCWSTR pwsz)
 {
 	//Insert wstring into ComboBox only if it's not already presented.
-	if (m_WndCmbReplace.FindStringExact(0, pwsz) == CB_ERR) {
-		//Keep max 50 strings in list.
-		if (m_WndCmbReplace.GetCount() == 50) {
+	if (!m_WndCmbReplace.HasString(pwsz)) {
+		if (m_WndCmbReplace.GetCount() == 50) { //Keep max 50 strings in the list.
 			m_WndCmbReplace.DeleteString(49);
 		}
 		m_WndCmbReplace.InsertString(0, pwsz);
@@ -801,7 +801,8 @@ auto CHexDlgSearch::GetSearchFuncFwd()const->PtrSearchFunc
 		}
 		break;
 	case TEXT_UTF8:
-		return SearchFuncFwd<SEARCHTYPE(DATA_ASCII, eVecSize, fDlgProg, true, false)>; //Search UTF-8 as plain chars.
+		//Search UTF-8 as plain chars, with Match-case=true.
+		return SearchFuncFwd<SEARCHTYPE(DATA_ASCII, eVecSize, fDlgProg, true, false)>;
 	case TEXT_UTF16:
 		if (IsMatchCase() && !IsWildcard()) {
 			return SearchFuncFwd<SEARCHTYPE(DATA_WCHAR, eVecSize, fDlgProg, true, false)>;
@@ -819,6 +820,7 @@ auto CHexDlgSearch::GetSearchFuncFwd()const->PtrSearchFunc
 			return SearchFuncFwd<SEARCHTYPE(DATA_WCHAR, eVecSize, fDlgProg, false, false)>;
 		}
 		break;
+	//All numerics, including floats, are searched as plain unsigned data of respective size.
 	case NUM_INT8:
 	case NUM_UINT8:
 		return SearchFuncFwd<SEARCHTYPE(DATA_UINT8, eVecSize, fDlgProg)>;
@@ -1112,6 +1114,7 @@ auto CHexDlgSearch::OnClose()->INT_PTR
 void CHexDlgSearch::OnComboSearchModeChange()
 {
 	UpdateControlsState();
+	UpdateTTState();
 
 	if (GetSearchMode() != GetSearchModePrev()) {
 		ResetSearch();
@@ -1362,20 +1365,30 @@ auto CHexDlgSearch::OnInitDialog(const MSG& msg)->INT_PTR
 	m_WndEditRngBegin.SetCueBanner(L"range begin");
 	m_WndEditRngEnd.SetCueBanner(L"range end");
 
+	m_WndTTFind = ::CreateWindowExW(0, TOOLTIPS_CLASSW, nullptr, WS_POPUP | TTS_ALWAYSTIP,
+		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, m_Wnd, nullptr, nullptr, nullptr);
 	const GDIUT::CWnd wndTipWC = ::CreateWindowExW(0, TOOLTIPS_CLASSW, nullptr, WS_POPUP | TTS_ALWAYSTIP,
 		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, m_Wnd, nullptr, nullptr, nullptr);
 	const GDIUT::CWnd wndTipInv = ::CreateWindowExW(0, TOOLTIPS_CLASSW, nullptr, WS_POPUP | TTS_ALWAYSTIP,
 		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, m_Wnd, nullptr, nullptr, nullptr);
 	const GDIUT::CWnd wndTipRangeEnd = ::CreateWindowExW(0, TOOLTIPS_CLASSW, nullptr, WS_POPUP | TTS_ALWAYSTIP,
 		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, m_Wnd, nullptr, nullptr, nullptr);
-	if (wndTipWC.IsNull() || wndTipInv.IsNull() || wndTipRangeEnd.IsNull())
+	if (wndTipWC.IsNull() || wndTipInv.IsNull() || wndTipRangeEnd.IsNull() || m_WndTTFind.IsNull())
 		return FALSE;
 
-	TTTOOLINFOW stToolInfo { .cbSize { sizeof(TTTOOLINFOW) }, .uFlags { TTF_IDISHWND | TTF_SUBCLASS }, .hwnd { m_Wnd },
-		.uId { reinterpret_cast<UINT_PTR>(m_WndBtnWC.GetHWND()) } }; //"Wildcard" check box tooltip.
-
+	TTTOOLINFOW stToolInfo { .cbSize { sizeof(TTTOOLINFOW) }, .uFlags { TTF_IDISHWND | TTF_SUBCLASS }, .hwnd { m_Wnd } };
 	std::wstring wstrToolText;
-	wstrToolText += L"Use ";
+
+	stToolInfo.uId = reinterpret_cast<UINT_PTR>(m_WndCmbFind.GetComboBoxInfo().hwndItem); //Edit-box of combo-box.
+	wstrToolText = L"To search for numbers range, use a colon (e.g. -1:15).";
+	stToolInfo.lpszText = wstrToolText.data();
+	m_WndTTFind.SendMsg(TTM_ADDTOOLW, 0, reinterpret_cast<LPARAM>(&stToolInfo));
+	m_WndTTFind.SendMsg(TTM_SETDELAYTIME, TTDT_INITIAL, static_cast<LPARAM>(LOWORD(1000))); //1 sec before show.
+	m_WndTTFind.SendMsg(TTM_SETDELAYTIME, TTDT_AUTOPOP, static_cast<LPARAM>(LOWORD(5000))); //5 sec showing time.
+	m_WndTTFind.SendMsg(TTM_SETMAXTIPWIDTH, 0, 1000);
+
+	stToolInfo.uId = reinterpret_cast<UINT_PTR>(m_WndBtnWC.GetHWND()); //"Wildcard" check box tooltip.
+	wstrToolText = L"Use ";
 	wstrToolText += static_cast<wchar_t>(m_uWildcard);
 	wstrToolText += L" character to match any symbol, or any byte if in \"Hex Bytes\" search mode.\r\n";
 	wstrToolText += L"Example:\r\n";
@@ -1384,23 +1397,24 @@ auto CHexDlgSearch::OnInitDialog(const MSG& msg)->INT_PTR
 	stToolInfo.lpszText = wstrToolText.data();
 	wndTipWC.SendMsg(TTM_ADDTOOLW, 0, reinterpret_cast<LPARAM>(&stToolInfo));
 	wndTipWC.SendMsg(TTM_SETDELAYTIME, TTDT_AUTOPOP, static_cast<LPARAM>(LOWORD(0x7FFF)));
-	wndTipWC.SendMsg(TTM_SETMAXTIPWIDTH, 0, static_cast<LPARAM>(1000));
+	wndTipWC.SendMsg(TTM_SETMAXTIPWIDTH, 0, 1000);
 
 	stToolInfo.uId = reinterpret_cast<UINT_PTR>(m_WndBtnInv.GetHWND()); //"Inverted" check box tooltip.
 	wstrToolText = L"Search for the non-matching occurences.\r\nThat is everything that doesn't match search conditions.";
 	stToolInfo.lpszText = wstrToolText.data();
 	wndTipInv.SendMsg(TTM_ADDTOOLW, 0, reinterpret_cast<LPARAM>(&stToolInfo));
 	wndTipInv.SendMsg(TTM_SETDELAYTIME, TTDT_AUTOPOP, static_cast<LPARAM>(LOWORD(0x7FFF)));
-	wndTipInv.SendMsg(TTM_SETMAXTIPWIDTH, 0, static_cast<LPARAM>(1000));
+	wndTipInv.SendMsg(TTM_SETMAXTIPWIDTH, 0, 1000);
 
 	stToolInfo.uId = reinterpret_cast<UINT_PTR>(m_WndEditRngEnd.GetHWND()); //"Search range end" edit box tooltip.
 	wstrToolText = L"Last offset for the search.\r\nEmpty means until data end.";
 	stToolInfo.lpszText = wstrToolText.data();
 	wndTipRangeEnd.SendMsg(TTM_ADDTOOLW, 0, reinterpret_cast<LPARAM>(&stToolInfo));
 	wndTipRangeEnd.SendMsg(TTM_SETDELAYTIME, TTDT_AUTOPOP, static_cast<LPARAM>(LOWORD(0x7FFF)));
-	wndTipRangeEnd.SendMsg(TTM_SETMAXTIPWIDTH, 0, static_cast<LPARAM>(1000));
+	wndTipRangeEnd.SendMsg(TTM_SETMAXTIPWIDTH, 0, 1000);
 
 	UpdateControlsState();
+	UpdateTTState();
 
 	return TRUE;
 }
@@ -1541,7 +1555,7 @@ void CHexDlgSearch::Prepare()
 		ComboReplaceFill(m_wstrReplace.data());
 	}
 
-	ComboSearchFill(wstrSearch.data()); //Adding current search text to the search combo-box.
+	ComboFindFill(wstrSearch.data()); //Adding current search text to the search combo-box.
 
 	ULONGLONG ullStartFrom;
 	ULONGLONG ullRngStart;
@@ -2143,6 +2157,11 @@ void CHexDlgSearch::UpdateCueBanners()
 		m_WndCmbReplace.SetCueBanner(L"");
 		break;
 	}
+}
+
+void CHexDlgSearch::UpdateTTState()
+{
+	m_WndTTFind.SendMsg(TTM_ACTIVATE, GetSearchMode() == ESearchMode::MODE_NUMBERS);
 }
 
 

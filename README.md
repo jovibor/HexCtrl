@@ -153,7 +153,7 @@
 * Powerful system of [Templates](#templates)
 * [Assignable keyboard shortcuts](#setconfig) via external config file
 * Customizable look and appearance, font, colors
-* **High-DPI** compliant
+* **Per-Monitor V2 High-DPI Awareness** compliant
 * Utilizes **AVX/AVX2** instruction set for best performance
 * Supports compiling for the **ARM64** architecture
 * Written with the **/std:c++20** standard conformance
