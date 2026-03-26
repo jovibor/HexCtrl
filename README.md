@@ -107,6 +107,7 @@
 * [Enums](#enums) <details><summary>_Expand_</summary>
   * [EHexCmd](#ehexcmd)
   * [EHexDataType](#ehexdatatype)
+  * [EHexDlgItem](#ehexdlgitem)
   * [EHexModifyMode](#ehexmodifymode)
   * [EHexOperMode](#ehexopermode)
   * [EHexWnd](#ehexwnd)
@@ -1149,6 +1150,17 @@ Enum of the data type used in the [`HEXMODIFY`](#hexmodify) struct with the `EHe
 enum class EHexDataType : std::uint8_t {
     DATA_INT8, DATA_UINT8, DATA_INT16, DATA_UINT16, DATA_INT32,
     DATA_UINT32, DATA_INT64, DATA_UINT64, DATA_FLOAT, DATA_DOUBLE
+};
+```
+
+### [](#)EHexDlgItem
+Enum of all **HexCtrl**'s internal dialogs' items. Used in the [`GetDlgItemHandle`](#getdlgitemhandle).
+```cpp
+enum class EHexDlgItem : std::uint8_t {
+    BKMMGR_CHK_HEX, DATAINTERP_CHK_HEX, DATAINTERP_CHK_BE, TEMPLMGR_CHK_MIN, TEMPLMGR_CHK_TT,
+    TEMPLMGR_CHK_HGL, TEMPLMGR_CHK_HEX, TEMPLMGR_CHK_SWAP, SEARCH_COMBO_FIND,
+    SEARCH_COMBO_REPLACE, SEARCH_EDIT_START, SEARCH_EDIT_STEP, SEARCH_EDIT_RNGBEG,
+    SEARCH_EDIT_RNGEND, SEARCH_EDIT_LIMIT, SEARCH_EDIT_WILDCARD, FILLDATA_COMBO_DATA
 };
 ```
 

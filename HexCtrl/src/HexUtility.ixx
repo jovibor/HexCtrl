@@ -1052,9 +1052,9 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 	class CWndEdit final : public CWnd {
 	public:
 		void SetCueBanner(LPCWSTR pwszText, bool fDrawIfFocus = false)const {
-			assert(IsWindow());
-			SendMsg(EM_SETCUEBANNER, static_cast<WPARAM>(fDrawIfFocus), reinterpret_cast<LPARAM>(pwszText));
+			assert(IsWindow()); SendMsg(EM_SETCUEBANNER, fDrawIfFocus, reinterpret_cast<LPARAM>(pwszText));
 		}
+		void SetLimitText(int iSize) { assert(IsWindow()); SendMsg(EM_LIMITTEXT, iSize); }
 	};
 
 	class CWndCombo final : public CWnd {
