@@ -48,11 +48,11 @@ BOOL CMFCDialogDlg::OnInitDialog()
 	m_editDataSize.SetWindowTextW(L"0x4000");
 	m_chkRW.SetCheck(BST_CHECKED);
 
-	//For Drag'n Drop to work even in elevated mode.
-	//https://helgeklein.com/blog/2010/03/how-to-enable-drag-and-drop-for-an-elevated-mfc-application-on-vistawindows-7/
-	ChangeWindowMessageFilter(WM_DROPFILES, MSGFLT_ADD);
-	ChangeWindowMessageFilter(WM_COPYDATA, MSGFLT_ADD);
-	ChangeWindowMessageFilter(0x0049, MSGFLT_ADD);
+	//For Drag'n Drop to work in elevated mode.
+	//https://helgeklein.com/blog/how-to-enable-drag-and-drop-for-an-elevated-mfc-application-on-vistawindows-7/
+	ChangeWindowMessageFilterEx(m_hWnd, WM_DROPFILES, MSGFLT_ALLOW, nullptr);
+	ChangeWindowMessageFilterEx(m_hWnd, WM_COPYDATA, MSGFLT_ALLOW, nullptr);
+	ChangeWindowMessageFilterEx(m_hWnd, 0x0049, MSGFLT_ALLOW, nullptr);
 	DragAcceptFiles(TRUE);
 
 	m_pHexDlg->CreateDialogCtrl(IDC_MY_HEX, m_hWnd);

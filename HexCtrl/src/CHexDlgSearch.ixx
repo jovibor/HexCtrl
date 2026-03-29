@@ -43,7 +43,6 @@ namespace HEXCTRL::INTERNAL {
 	private:
 		enum class ESearchMode : std::uint8_t; //Forward declarations.
 		enum class ESearchType : std::uint8_t;
-		enum class EVecSize : std::uint8_t;
 		enum class EMenuID : std::uint16_t;
 		struct SEARCHFUNCDATA;
 		struct FINDRESULT;
@@ -72,9 +71,9 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] auto GetSearchDataSize()const -> DWORD;  //Search vec data size.
 		[[nodiscard]] auto GetSearchRngSize()const -> ULONGLONG;
 		[[nodiscard]] auto GetSearchFunc(bool fFwd, bool fDlgProg)const -> PtrSearchFunc;
-		template<bool fDlgProg, EVecSize eVecSize>
+		template<bool fDlgProg, simd::EVecType eVecType>
 		[[nodiscard]] auto GetSearchFuncFwd()const -> PtrSearchFunc;
-		template<bool fDlgProg, EVecSize eVecSize>
+		template<bool fDlgProg, simd::EVecType eVecType>
 		[[nodiscard]] auto GetSearchFuncBack()const -> PtrSearchFunc;
 		[[nodiscard]] auto GetSearchMode()const -> ESearchMode; //Get current search mode.
 		[[nodiscard]] auto GetSearchModePrev()const -> ESearchMode; //Get previous search mode.
@@ -119,10 +118,11 @@ namespace HEXCTRL::INTERNAL {
 		auto OnMeasureItem(const MSG& msg) -> INT_PTR;
 		auto OnMouseActivate(const MSG& msg) -> INT_PTR;
 		auto OnNotify(const MSG& msg) -> INT_PTR;
-		void OnNotifyListGetDispInfo(NMHDR *pNMHDR);
-		void OnNotifyListItemChanged(NMHDR *pNMHDR);
-		void OnNotifyListRClick(NMHDR *pNMHDR);
-		void OnNotifyTT(NMHDR* pNMHDR);
+		void OnNotifyList(NMHDR* pNMHDR);
+		void OnNotifyListGetDispInfo(NMHDR* pNMHDR);
+		void OnNotifyListItemChanged(NMHDR* pNMHDR);
+		void OnNotifyListRClick(NMHDR* pNMHDR);
+		void OnNotifyTTWildcard(NMHDR* pNMHDR);
 		void OnOK();
 		void Prepare();
 		[[nodiscard]] bool PrepareHexBytes();
@@ -146,16 +146,16 @@ namespace HEXCTRL::INTERNAL {
 			DATA_INT8, DATA_UINT8, DATA_INT16, DATA_UINT16, DATA_INT32, DATA_UINT32,
 			DATA_INT64, DATA_UINT64, DATA_FLOAT, DATA_DOUBLE, DATA_ASCII, DATA_WCHAR
 		};
-		enum class EVecSize : std::uint8_t { VEC128 = 16, VEC256 = 32 /*SSE4.2 = sizeof(__m128), AVX2 = sizeof(__m256).*/ };
+
 		struct SEARCHTYPE { //Compile time struct for template parameters in the SearchFunc and MemCmp*.
 			constexpr SEARCHTYPE() = default;
-			constexpr SEARCHTYPE(EMemCmp eMemCmp, EVecSize eVecSize, bool fDlgProg = false, bool fMatchCase = false,
+			constexpr SEARCHTYPE(EMemCmp eMemCmp, simd::EVecType eVecType, bool fDlgProg = false, bool fMatchCase = false,
 				bool fWildcard = false, bool fInverted = false) :
-				eMemCmp { eMemCmp }, eVecSize { eVecSize }, fDlgProg { fDlgProg }, fMatchCase { fMatchCase },
+				eMemCmp { eMemCmp }, eVecType { eVecType }, fDlgProg { fDlgProg }, fMatchCase { fMatchCase },
 				fWildcard { fWildcard }, fInverted { fInverted } { }
 			constexpr ~SEARCHTYPE() = default;
 			EMemCmp eMemCmp { };
-			EVecSize eVecSize { };
+			simd::EVecType eVecType { };
 			bool fDlgProg { false };
 			bool fMatchCase { false };
 			bool fWildcard { false };
@@ -184,24 +184,12 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] static auto SearchFuncTextBack(const SEARCHFUNCDATA& sfd) -> FINDRESULT;
 
 		//Vector functions return index within the vector of found element, index greater than sizeof(vec)-1 means not found.
-		template<EVecSize eVecSize>
-		[[nodiscard]] static auto __forceinline MemCmpEQVecByte1(const std::byte* pWhere, std::byte bWhat)->int;
-		template<EVecSize eVecSize>
-		[[nodiscard]] static auto __forceinline MemCmpNEQVecByte1(const std::byte* pWhere, std::byte bWhat)->int;
-		template<EVecSize eVecSize>
-		[[nodiscard]] static auto __forceinline MemCmpEQVecByte2(const std::byte* pWhere, std::uint16_t ui16What)->int;
-		template<EVecSize eVecSize>
-		[[nodiscard]] static auto __forceinline MemCmpNEQVecByte2(const std::byte* pWhere, std::uint16_t ui16What)->int;
-		template<EVecSize eVecSize>
-		[[nodiscard]] static auto __forceinline MemCmpEQVecByte4(const std::byte* pWhere, std::uint32_t ui32What)->int;
-		template<EVecSize eVecSize>
-		[[nodiscard]] static auto __forceinline MemCmpNEQVecByte4(const std::byte* pWhere, std::uint32_t ui32What)->int;
 		template<SEARCHTYPE st>
-		[[nodiscard]] static auto SearchFuncVecFwdByte1(const SEARCHFUNCDATA& sfd) -> FINDRESULT;
+		[[nodiscard]] static auto SearchFuncVecFwd1(const SEARCHFUNCDATA& sfd) -> FINDRESULT;
 		template<SEARCHTYPE st>
-		[[nodiscard]] static auto SearchFuncVecFwdByte2(const SEARCHFUNCDATA& sfd) -> FINDRESULT;
+		[[nodiscard]] static auto SearchFuncVecFwd2(const SEARCHFUNCDATA& sfd) -> FINDRESULT;
 		template<SEARCHTYPE st>
-		[[nodiscard]] static auto SearchFuncVecFwdByte4(const SEARCHFUNCDATA& sfd) -> FINDRESULT;
+		[[nodiscard]] static auto SearchFuncVecFwd4(const SEARCHFUNCDATA& sfd) -> FINDRESULT;
 	private:
 		static constexpr auto m_uSearchSizeLimit { 256U }; //Search size limit.
 		static constexpr auto m_pwszWrongInput { L"Wrong input data format." };
@@ -293,7 +281,7 @@ struct CHexDlgSearch::SEARCHFUNCDATA {
 	SpanCByte spnFindTo;     //When search in range it's a range end. When single search, it's empty.
 	std::byte bWildcard { }; //Wildcard symbol when in text search mode and in Hexbytes.
 	bool fBigStep { };
-	bool fInverted { };
+	bool fInverted { }; //Vectorized functions use templated st.fInverted, non-vectorized use runtime fInverted.
 };
 
 void CHexDlgSearch::ClearData()
@@ -558,7 +546,7 @@ void CHexDlgSearch::FindAll()
 		}
 	}
 	else {
-		CHexDlgProgress dlgProg(L"Searching...", L"Found: ", GetStartFrom(), GetLastSearchOffset());
+		CHexDlgProgress dlgProg(L"Searching...", L"Found:", GetStartFrom(), GetLastSearchOffset());
 		stFuncData.pDlgProg = &dlgProg;
 		const auto lmbFindAllThread = [&]() {
 			auto lmbWrapper = [&]()mutable->FINDRESULT {
@@ -735,19 +723,25 @@ auto CHexDlgSearch::GetSearchDataSize()const->DWORD
 
 auto CHexDlgSearch::GetSearchFunc(bool fFwd, bool fDlgProg)const->PtrSearchFunc
 {
-	using enum EVecSize;
-#if defined(_M_IX86) || defined(_M_X64)
-	if (ut::HasAVX2()) {
-		return fFwd ? (fDlgProg ? GetSearchFuncFwd<true, VEC256>() : GetSearchFuncFwd<false, VEC256>()) :
-			(fDlgProg ? GetSearchFuncBack<true, VEC256>() : GetSearchFuncBack<false, VEC256>());
+	using enum simd::EVecType;
+	const auto eVecType = simd::GetVectorType();
+	if (eVecType == VecX64_128) {
+		return fFwd ? (fDlgProg ? GetSearchFuncFwd<true, VecX64_128>() : GetSearchFuncFwd<false, VecX64_128>()) :
+			(fDlgProg ? GetSearchFuncBack<true, VecX64_128>() : GetSearchFuncBack<false, VecX64_128>());
 	}
-#endif
-	//For ARM64 and VEC128 path is the same.
-	return fFwd ? (fDlgProg ? GetSearchFuncFwd<true, VEC128>() : GetSearchFuncFwd<false, VEC128>()) :
-		(fDlgProg ? GetSearchFuncBack<true, VEC128>() : GetSearchFuncBack<false, VEC128>());
+	else if (eVecType == VecX64_256) {
+		return fFwd ? (fDlgProg ? GetSearchFuncFwd<true, VecX64_256>() : GetSearchFuncFwd<false, VecX64_256>()) :
+			(fDlgProg ? GetSearchFuncBack<true, VecX64_256>() : GetSearchFuncBack<false, VecX64_256>());
+	}
+	else if (eVecType == VecARM64_NEON) {
+		return fFwd ? (fDlgProg ? GetSearchFuncFwd<true, VecARM64_NEON>() : GetSearchFuncFwd<false, VecARM64_NEON>()) :
+			(fDlgProg ? GetSearchFuncBack<true, VecARM64_NEON>() : GetSearchFuncBack<false, VecARM64_NEON>());
+	}
+
+	return nullptr;
 }
 
-template<bool fDlgProg, CHexDlgSearch::EVecSize eVecSize>
+template<bool fDlgProg, simd::EVecType eVecType>
 auto CHexDlgSearch::GetSearchFuncFwd()const->PtrSearchFunc
 {
 	//The `fDlgProg` arg ensures that no runtime check will be performed for the 
@@ -757,16 +751,16 @@ auto CHexDlgSearch::GetSearchFuncFwd()const->PtrSearchFunc
 
 	if (IsNumRangeSearch()) { //Special case for search in numbers range (e.g. -1:15).
 		switch (GetSearchType()) {
-		case NUM_INT8: return SearchFuncNumRngFwd<SEARCHTYPE(DATA_INT8, eVecSize, fDlgProg)>;
-		case NUM_UINT8: return SearchFuncNumRngFwd<SEARCHTYPE(DATA_UINT8, eVecSize, fDlgProg)>;
-		case NUM_INT16: return SearchFuncNumRngFwd<SEARCHTYPE(DATA_INT16, eVecSize, fDlgProg)>;
-		case NUM_UINT16: return SearchFuncNumRngFwd<SEARCHTYPE(DATA_UINT16, eVecSize, fDlgProg)>;
-		case NUM_INT32: return SearchFuncNumRngFwd<SEARCHTYPE(DATA_INT32, eVecSize, fDlgProg)>;
-		case NUM_UINT32: return SearchFuncNumRngFwd<SEARCHTYPE(DATA_UINT32, eVecSize, fDlgProg)>;
-		case NUM_INT64: return SearchFuncNumRngFwd<SEARCHTYPE(DATA_INT64, eVecSize, fDlgProg)>;
-		case NUM_UINT64: return SearchFuncNumRngFwd<SEARCHTYPE(DATA_UINT64, eVecSize, fDlgProg)>;
-		case NUM_FLOAT: return SearchFuncNumRngFwd<SEARCHTYPE(DATA_FLOAT, eVecSize, fDlgProg)>;
-		case NUM_DOUBLE: return SearchFuncNumRngFwd<SEARCHTYPE(DATA_DOUBLE, eVecSize, fDlgProg)>;
+		case NUM_INT8: return SearchFuncNumRngFwd<SEARCHTYPE(DATA_INT8, eVecType, fDlgProg)>;
+		case NUM_UINT8: return SearchFuncNumRngFwd<SEARCHTYPE(DATA_UINT8, eVecType, fDlgProg)>;
+		case NUM_INT16: return SearchFuncNumRngFwd<SEARCHTYPE(DATA_INT16, eVecType, fDlgProg)>;
+		case NUM_UINT16: return SearchFuncNumRngFwd<SEARCHTYPE(DATA_UINT16, eVecType, fDlgProg)>;
+		case NUM_INT32: return SearchFuncNumRngFwd<SEARCHTYPE(DATA_INT32, eVecType, fDlgProg)>;
+		case NUM_UINT32: return SearchFuncNumRngFwd<SEARCHTYPE(DATA_UINT32, eVecType, fDlgProg)>;
+		case NUM_INT64: return SearchFuncNumRngFwd<SEARCHTYPE(DATA_INT64, eVecType, fDlgProg)>;
+		case NUM_UINT64: return SearchFuncNumRngFwd<SEARCHTYPE(DATA_UINT64, eVecType, fDlgProg)>;
+		case NUM_FLOAT: return SearchFuncNumRngFwd<SEARCHTYPE(DATA_FLOAT, eVecType, fDlgProg)>;
+		case NUM_DOUBLE: return SearchFuncNumRngFwd<SEARCHTYPE(DATA_DOUBLE, eVecType, fDlgProg)>;
 		default:
 			assert(false); //Should never get here.
 			return nullptr;
@@ -780,16 +774,16 @@ auto CHexDlgSearch::GetSearchFuncFwd()const->PtrSearchFunc
 		switch (GetSearchDataSize()) {
 		case 1: //Special case for 1 byte data size SIMD.
 			return IsInverted() ?
-				SearchFuncVecFwdByte1<SEARCHTYPE(DATA_UINT8, eVecSize, fDlgProg, false, false, true)> :
-				SearchFuncVecFwdByte1<SEARCHTYPE(DATA_UINT8, eVecSize, fDlgProg, false, false, false)>;
+				SearchFuncVecFwd1<SEARCHTYPE(DATA_UINT8, eVecType, fDlgProg, false, false, true)> :
+				SearchFuncVecFwd1<SEARCHTYPE(DATA_UINT8, eVecType, fDlgProg, false, false, false)>;
 		case 2: //Special case for 2 bytes data size SIMD.
 			return IsInverted() ?
-				SearchFuncVecFwdByte2<SEARCHTYPE(DATA_UINT16, eVecSize, fDlgProg, false, false, true)> :
-				SearchFuncVecFwdByte2<SEARCHTYPE(DATA_UINT16, eVecSize, fDlgProg, false, false, false)>;
+				SearchFuncVecFwd2<SEARCHTYPE(DATA_UINT16, eVecType, fDlgProg, false, false, true)> :
+				SearchFuncVecFwd2<SEARCHTYPE(DATA_UINT16, eVecType, fDlgProg, false, false, false)>;
 		case 4: //Special case for 4 bytes data size SIMD.
 			return IsInverted() ?
-				SearchFuncVecFwdByte4<SEARCHTYPE(DATA_UINT32, eVecSize, fDlgProg, false, false, true)> :
-				SearchFuncVecFwdByte4<SEARCHTYPE(DATA_UINT32, eVecSize, fDlgProg, false, false, false)>;
+				SearchFuncVecFwd4<SEARCHTYPE(DATA_UINT32, eVecType, fDlgProg, false, false, true)> :
+				SearchFuncVecFwd4<SEARCHTYPE(DATA_UINT32, eVecType, fDlgProg, false, false, false)>;
 		default:
 			break;
 		};
@@ -798,61 +792,61 @@ auto CHexDlgSearch::GetSearchFuncFwd()const->PtrSearchFunc
 	switch (GetSearchType()) {
 	case HEXBYTES:
 		return IsWildcard() ?
-			SearchFuncTextFwd<SEARCHTYPE(DATA_ASCII, eVecSize, fDlgProg, true, true)> :
-			SearchFuncTextFwd<SEARCHTYPE(DATA_ASCII, eVecSize, fDlgProg, true, false)>;
+			SearchFuncTextFwd<SEARCHTYPE(DATA_ASCII, eVecType, fDlgProg, true, true)> :
+			SearchFuncTextFwd<SEARCHTYPE(DATA_ASCII, eVecType, fDlgProg, true, false)>;
 	case TEXT_ASCII:
 		if (IsMatchCase() && !IsWildcard()) {
-			return SearchFuncTextFwd<SEARCHTYPE(DATA_ASCII, eVecSize, fDlgProg, true, false)>;
+			return SearchFuncTextFwd<SEARCHTYPE(DATA_ASCII, eVecType, fDlgProg, true, false)>;
 		}
 
 		if (IsMatchCase() && IsWildcard()) {
-			return SearchFuncTextFwd<SEARCHTYPE(DATA_ASCII, eVecSize, fDlgProg, true, true)>;
+			return SearchFuncTextFwd<SEARCHTYPE(DATA_ASCII, eVecType, fDlgProg, true, true)>;
 		}
 
 		if (!IsMatchCase() && IsWildcard()) {
-			return SearchFuncTextFwd<SEARCHTYPE(DATA_ASCII, eVecSize, fDlgProg, false, true)>;
+			return SearchFuncTextFwd<SEARCHTYPE(DATA_ASCII, eVecType, fDlgProg, false, true)>;
 		}
 
 		if (!IsMatchCase() && !IsWildcard()) {
-			return SearchFuncTextFwd<SEARCHTYPE(DATA_ASCII, eVecSize, fDlgProg, false, false)>;
+			return SearchFuncTextFwd<SEARCHTYPE(DATA_ASCII, eVecType, fDlgProg, false, false)>;
 		}
 		break;
 	case TEXT_UTF8:
 		//Search UTF-8 as plain chars, with Match-case=true.
-		return SearchFuncTextFwd<SEARCHTYPE(DATA_ASCII, eVecSize, fDlgProg, true, false)>;
+		return SearchFuncTextFwd<SEARCHTYPE(DATA_ASCII, eVecType, fDlgProg, true, false)>;
 	case TEXT_UTF16:
 		if (IsMatchCase() && !IsWildcard()) {
-			return SearchFuncTextFwd<SEARCHTYPE(DATA_WCHAR, eVecSize, fDlgProg, true, false)>;
+			return SearchFuncTextFwd<SEARCHTYPE(DATA_WCHAR, eVecType, fDlgProg, true, false)>;
 		}
 
 		if (IsMatchCase() && IsWildcard()) {
-			return SearchFuncTextFwd<SEARCHTYPE(DATA_WCHAR, eVecSize, fDlgProg, true, true)>;
+			return SearchFuncTextFwd<SEARCHTYPE(DATA_WCHAR, eVecType, fDlgProg, true, true)>;
 		}
 
 		if (!IsMatchCase() && IsWildcard()) {
-			return SearchFuncTextFwd<SEARCHTYPE(DATA_WCHAR, eVecSize, fDlgProg, false, true)>;
+			return SearchFuncTextFwd<SEARCHTYPE(DATA_WCHAR, eVecType, fDlgProg, false, true)>;
 		}
 
 		if (!IsMatchCase() && !IsWildcard()) {
-			return SearchFuncTextFwd<SEARCHTYPE(DATA_WCHAR, eVecSize, fDlgProg, false, false)>;
+			return SearchFuncTextFwd<SEARCHTYPE(DATA_WCHAR, eVecType, fDlgProg, false, false)>;
 		}
 		break;
 	//All numerics, including floats, are searched as plain unsigned data of respective size.
 	case NUM_INT8:
 	case NUM_UINT8:
-		return SearchFuncNumFwd<SEARCHTYPE(DATA_UINT8, eVecSize, fDlgProg)>;
+		return SearchFuncNumFwd<SEARCHTYPE(DATA_UINT8, eVecType, fDlgProg)>;
 	case NUM_INT16:
 	case NUM_UINT16:
-		return SearchFuncNumFwd<SEARCHTYPE(DATA_UINT16, eVecSize, fDlgProg)>;
+		return SearchFuncNumFwd<SEARCHTYPE(DATA_UINT16, eVecType, fDlgProg)>;
 	case NUM_INT32:
 	case NUM_UINT32:
 	case NUM_FLOAT:
-		return SearchFuncNumFwd<SEARCHTYPE(DATA_UINT32, eVecSize, fDlgProg)>;
+		return SearchFuncNumFwd<SEARCHTYPE(DATA_UINT32, eVecType, fDlgProg)>;
 	case NUM_INT64:
 	case NUM_UINT64:
 	case NUM_DOUBLE:
 	case STRUCT_FILETIME:
-		return SearchFuncNumFwd<SEARCHTYPE(DATA_UINT64, eVecSize, fDlgProg)>;
+		return SearchFuncNumFwd<SEARCHTYPE(DATA_UINT64, eVecType, fDlgProg)>;
 	default:
 		break;
 	}
@@ -860,26 +854,26 @@ auto CHexDlgSearch::GetSearchFuncFwd()const->PtrSearchFunc
 	return { };
 }
 
-template<bool fDlgProg, CHexDlgSearch::EVecSize eVecSize>
+template<bool fDlgProg, simd::EVecType eVecType>
 auto CHexDlgSearch::GetSearchFuncBack()const->PtrSearchFunc
 {
 	//The `fDlgProg` arg ensures that no runtime check will be performed for the 
 	//'SEARCHFUNCDATA::pDlgProg == nullptr', at the hot path inside the SearchFunc function.
 
-	using enum ESearchType; using enum EMemCmp; using enum EVecSize;
+	using enum ESearchType; using enum EMemCmp;
 
 	if (IsNumRangeSearch()) { //Special case for search in numbers range (e.g. -1:15).
 		switch (GetSearchType()) {
-		case NUM_INT8: return SearchFuncNumRngBack<SEARCHTYPE(DATA_INT8, eVecSize, fDlgProg)>;
-		case NUM_UINT8: return SearchFuncNumRngBack<SEARCHTYPE(DATA_UINT8, eVecSize, fDlgProg)>;
-		case NUM_INT16: return SearchFuncNumRngBack<SEARCHTYPE(DATA_INT16, eVecSize, fDlgProg)>;
-		case NUM_UINT16: return SearchFuncNumRngBack<SEARCHTYPE(DATA_UINT16, eVecSize, fDlgProg)>;
-		case NUM_INT32: return SearchFuncNumRngBack<SEARCHTYPE(DATA_INT32, eVecSize, fDlgProg)>;
-		case NUM_UINT32: return SearchFuncNumRngBack<SEARCHTYPE(DATA_UINT32, eVecSize, fDlgProg)>;
-		case NUM_INT64: return SearchFuncNumRngBack<SEARCHTYPE(DATA_INT64, eVecSize, fDlgProg)>;
-		case NUM_UINT64: return SearchFuncNumRngBack<SEARCHTYPE(DATA_UINT64, eVecSize, fDlgProg)>;
-		case NUM_FLOAT: return SearchFuncNumRngBack<SEARCHTYPE(DATA_FLOAT, eVecSize, fDlgProg)>;
-		case NUM_DOUBLE: return SearchFuncNumRngBack<SEARCHTYPE(DATA_DOUBLE, eVecSize, fDlgProg)>;
+		case NUM_INT8: return SearchFuncNumRngBack<SEARCHTYPE(DATA_INT8, eVecType, fDlgProg)>;
+		case NUM_UINT8: return SearchFuncNumRngBack<SEARCHTYPE(DATA_UINT8, eVecType, fDlgProg)>;
+		case NUM_INT16: return SearchFuncNumRngBack<SEARCHTYPE(DATA_INT16, eVecType, fDlgProg)>;
+		case NUM_UINT16: return SearchFuncNumRngBack<SEARCHTYPE(DATA_UINT16, eVecType, fDlgProg)>;
+		case NUM_INT32: return SearchFuncNumRngBack<SEARCHTYPE(DATA_INT32, eVecType, fDlgProg)>;
+		case NUM_UINT32: return SearchFuncNumRngBack<SEARCHTYPE(DATA_UINT32, eVecType, fDlgProg)>;
+		case NUM_INT64: return SearchFuncNumRngBack<SEARCHTYPE(DATA_INT64, eVecType, fDlgProg)>;
+		case NUM_UINT64: return SearchFuncNumRngBack<SEARCHTYPE(DATA_UINT64, eVecType, fDlgProg)>;
+		case NUM_FLOAT: return SearchFuncNumRngBack<SEARCHTYPE(DATA_FLOAT, eVecType, fDlgProg)>;
+		case NUM_DOUBLE: return SearchFuncNumRngBack<SEARCHTYPE(DATA_DOUBLE, eVecType, fDlgProg)>;
 		default:
 			assert(false); //Should never get here.
 			return nullptr;
@@ -889,59 +883,59 @@ auto CHexDlgSearch::GetSearchFuncBack()const->PtrSearchFunc
 	switch (GetSearchType()) {
 	case HEXBYTES:
 		return IsWildcard() ?
-			SearchFuncTextBack<SEARCHTYPE(DATA_ASCII, eVecSize, fDlgProg, true, true)> :
-			SearchFuncTextBack<SEARCHTYPE(DATA_ASCII, eVecSize, fDlgProg, true, false)>;
+			SearchFuncTextBack<SEARCHTYPE(DATA_ASCII, eVecType, fDlgProg, true, true)> :
+			SearchFuncTextBack<SEARCHTYPE(DATA_ASCII, eVecType, fDlgProg, true, false)>;
 	case TEXT_ASCII:
 		if (IsMatchCase() && !IsWildcard()) {
-			return SearchFuncTextBack<SEARCHTYPE(DATA_ASCII, eVecSize, fDlgProg, true, false)>;
+			return SearchFuncTextBack<SEARCHTYPE(DATA_ASCII, eVecType, fDlgProg, true, false)>;
 		}
 
 		if (IsMatchCase() && IsWildcard()) {
-			return SearchFuncTextBack<SEARCHTYPE(DATA_ASCII, eVecSize, fDlgProg, true, true)>;
+			return SearchFuncTextBack<SEARCHTYPE(DATA_ASCII, eVecType, fDlgProg, true, true)>;
 		}
 
 		if (!IsMatchCase() && IsWildcard()) {
-			return SearchFuncTextBack<SEARCHTYPE(DATA_ASCII, eVecSize, fDlgProg, false, true)>;
+			return SearchFuncTextBack<SEARCHTYPE(DATA_ASCII, eVecType, fDlgProg, false, true)>;
 		}
 
 		if (!IsMatchCase() && !IsWildcard()) {
-			return SearchFuncTextBack<SEARCHTYPE(DATA_ASCII, eVecSize, fDlgProg, false, false)>;
+			return SearchFuncTextBack<SEARCHTYPE(DATA_ASCII, eVecType, fDlgProg, false, false)>;
 		}
 		break;
 	case TEXT_UTF8:
-		return SearchFuncTextBack<SEARCHTYPE(DATA_ASCII, eVecSize, fDlgProg, true, false)>; //Search UTF-8 as plain chars.
+		return SearchFuncTextBack<SEARCHTYPE(DATA_ASCII, eVecType, fDlgProg, true, false)>; //Search UTF-8 as plain chars.
 	case TEXT_UTF16:
 		if (IsMatchCase() && !IsWildcard()) {
-			return SearchFuncTextBack<SEARCHTYPE(DATA_WCHAR, eVecSize, fDlgProg, true, false)>;
+			return SearchFuncTextBack<SEARCHTYPE(DATA_WCHAR, eVecType, fDlgProg, true, false)>;
 		}
 
 		if (IsMatchCase() && IsWildcard()) {
-			return SearchFuncTextBack<SEARCHTYPE(DATA_WCHAR, eVecSize, fDlgProg, true, true)>;
+			return SearchFuncTextBack<SEARCHTYPE(DATA_WCHAR, eVecType, fDlgProg, true, true)>;
 		}
 
 		if (!IsMatchCase() && IsWildcard()) {
-			return SearchFuncTextBack<SEARCHTYPE(DATA_WCHAR, eVecSize, fDlgProg, false, true)>;
+			return SearchFuncTextBack<SEARCHTYPE(DATA_WCHAR, eVecType, fDlgProg, false, true)>;
 		}
 
 		if (!IsMatchCase() && !IsWildcard()) {
-			return SearchFuncTextBack<SEARCHTYPE(DATA_WCHAR, eVecSize, fDlgProg, false, false)>;
+			return SearchFuncTextBack<SEARCHTYPE(DATA_WCHAR, eVecType, fDlgProg, false, false)>;
 		}
 		break;
 	case NUM_INT8:
 	case NUM_UINT8:
-		return SearchFuncNumBack<SEARCHTYPE(DATA_UINT8, eVecSize, fDlgProg)>;
+		return SearchFuncNumBack<SEARCHTYPE(DATA_UINT8, eVecType, fDlgProg)>;
 	case NUM_INT16:
 	case NUM_UINT16:
-		return SearchFuncNumBack<SEARCHTYPE(DATA_UINT16, eVecSize, fDlgProg)>;
+		return SearchFuncNumBack<SEARCHTYPE(DATA_UINT16, eVecType, fDlgProg)>;
 	case NUM_INT32:
 	case NUM_UINT32:
 	case NUM_FLOAT:
-		return SearchFuncNumBack<SEARCHTYPE(DATA_UINT32, eVecSize, fDlgProg)>;
+		return SearchFuncNumBack<SEARCHTYPE(DATA_UINT32, eVecType, fDlgProg)>;
 	case NUM_INT64:
 	case NUM_UINT64:
 	case NUM_DOUBLE:
 	case STRUCT_FILETIME:
-		return SearchFuncNumBack<SEARCHTYPE(DATA_UINT64, eVecSize, fDlgProg)>;
+		return SearchFuncNumBack<SEARCHTYPE(DATA_UINT64, eVecType, fDlgProg)>;
 	default:
 		break;
 	}
@@ -1155,11 +1149,15 @@ void CHexDlgSearch::OnComboSearchModeChange()
 
 void CHexDlgSearch::OnComboSearchModeHEXBYTES()
 {
-	ClearComboSearchType();
+	if (GetSearchMode() != GetSearchModePrev()) {
+		ClearComboSearchType();
+	}
+
 	m_WndCmbType.EnableWindow(false);
 	m_WndBtnBE.EnableWindow(false);
 	m_WndBtnMC.EnableWindow(false);
 	m_WndBtnWC.EnableWindow(true);
+	UpdateCueBanners();
 }
 
 void CHexDlgSearch::OnComboSearchModeNUMBERS()
@@ -1194,6 +1192,7 @@ void CHexDlgSearch::OnComboSearchModeNUMBERS()
 	m_WndBtnBE.EnableWindow(true);
 	m_WndBtnMC.EnableWindow(false);
 	m_WndBtnWC.EnableWindow(false);
+	UpdateCueBanners();
 }
 
 void CHexDlgSearch::OnComboSearchModeSTRUCTS()
@@ -1210,6 +1209,7 @@ void CHexDlgSearch::OnComboSearchModeSTRUCTS()
 	m_WndBtnMC.EnableWindow(false);
 	m_WndBtnBE.EnableWindow(true);
 	m_WndBtnWC.EnableWindow(false);
+	UpdateCueBanners();
 }
 
 void CHexDlgSearch::OnComboSearchModeTEXT()
@@ -1243,6 +1243,8 @@ void CHexDlgSearch::OnComboSearchModeTEXT()
 	default:
 		break;
 	}
+
+	UpdateCueBanners();
 }
 
 void CHexDlgSearch::OnComboSearchTypeChange()
@@ -1418,7 +1420,7 @@ auto CHexDlgSearch::OnInitDialog(const MSG& msg)->INT_PTR
 	m_WndTTFind.SendMsg(TTM_SETMAXTIPWIDTH, 0, 1000);
 
 	stToolInfo.uId = reinterpret_cast<UINT_PTR>(m_WndBtnWC.GetHWND()); //"Wildcard" check-box tooltip.
-	stToolInfo.lpszText = LPSTR_TEXTCALLBACKW; //Text is obtained from OnNotifyTT.
+	stToolInfo.lpszText = LPSTR_TEXTCALLBACKW; //Text is obtained from OnNotifyTTWildcard.
 	wndTipWC.SendMsg(TTM_ADDTOOLW, 0, reinterpret_cast<LPARAM>(&stToolInfo));
 	wndTipWC.SendMsg(TTM_SETDELAYTIME, TTDT_AUTOPOP, static_cast<LPARAM>(LOWORD(0x7FFF)));
 	wndTipWC.SendMsg(TTM_SETMAXTIPWIDTH, 0, 1000);
@@ -1467,22 +1469,26 @@ auto CHexDlgSearch::OnNotify(const MSG& msg)->INT_PTR
 	const auto pNMHDR = reinterpret_cast<NMHDR*>(msg.lParam);
 
 	if (pNMHDR->idFrom == reinterpret_cast<UINT_PTR>(m_WndBtnWC.GetHWND())) { //Wildcard tooltip.
-		OnNotifyTT(pNMHDR);
+		OnNotifyTTWildcard(pNMHDR);
 	}
 	else {
 		switch (pNMHDR->idFrom) {
-		case IDC_HEXCTRL_SEARCH_LIST:
-			switch (pNMHDR->code) {
-			case LVN_GETDISPINFOW: OnNotifyListGetDispInfo(pNMHDR); break;
-			case LVN_ITEMCHANGED: OnNotifyListItemChanged(pNMHDR); break;
-			case NM_RCLICK: OnNotifyListRClick(pNMHDR); break;
-			default: break;
-			}
+		case IDC_HEXCTRL_SEARCH_LIST: OnNotifyList(pNMHDR);
 		default: break;
 		}
 	}
 
 	return TRUE;
+}
+
+void CHexDlgSearch::OnNotifyList(NMHDR* pNMHDR)
+{
+	switch (pNMHDR->code) {
+	case LVN_GETDISPINFOW: OnNotifyListGetDispInfo(pNMHDR); break;
+	case LVN_ITEMCHANGED: OnNotifyListItemChanged(pNMHDR); break;
+	case NM_RCLICK: OnNotifyListRClick(pNMHDR); break;
+	default: break;
+	}
 }
 
 void CHexDlgSearch::OnNotifyListGetDispInfo(NMHDR* pNMHDR)
@@ -1543,7 +1549,7 @@ void CHexDlgSearch::OnNotifyListRClick([[maybe_unused]] NMHDR* pNMHDR)
 	m_MenuList.TrackPopupMenu(pt.x, pt.y, m_Wnd);
 }
 
-void CHexDlgSearch::OnNotifyTT(NMHDR* pNMHDR)
+void CHexDlgSearch::OnNotifyTTWildcard(NMHDR* pNMHDR)
 {
 	const auto pDI = reinterpret_cast<NMTTDISPINFOW*>(pNMHDR);
 	if (pDI->hdr.code == TTN_GETDISPINFOW) {
@@ -2153,17 +2159,6 @@ void CHexDlgSearch::UpdateControlsState()
 	if (!pHexCtrl->IsCreated() || !pHexCtrl->IsDataSet())
 		return;
 
-	const auto fMutable = pHexCtrl->IsMutable();
-	const auto fSearchEnabled = !m_WndCmbFind.IsWndTextEmpty();
-	const auto fReplaceEnabled = fMutable && fSearchEnabled && !m_WndCmbReplace.IsWndTextEmpty();
-
-	m_WndCmbReplace.EnableWindow(fMutable);
-	m_Wnd.GetDlgItem(IDC_HEXCTRL_SEARCH_BTN_SEARCHF).EnableWindow(fSearchEnabled);
-	m_Wnd.GetDlgItem(IDC_HEXCTRL_SEARCH_BTN_SEARCHB).EnableWindow(fSearchEnabled);
-	m_Wnd.GetDlgItem(IDC_HEXCTRL_SEARCH_BTN_FINDALL).EnableWindow(fSearchEnabled);
-	m_Wnd.GetDlgItem(IDC_HEXCTRL_SEARCH_BTN_REPL).EnableWindow(fReplaceEnabled);
-	m_Wnd.GetDlgItem(IDC_HEXCTRL_SEARCH_BTN_REPLALL).EnableWindow(fReplaceEnabled);
-
 	using enum ESearchMode;
 	switch (GetSearchMode()) {
 	case MODE_HEXBYTES:
@@ -2182,8 +2177,16 @@ void CHexDlgSearch::UpdateControlsState()
 		break;
 	}
 
+	const auto fMutable = pHexCtrl->IsMutable();
+	const auto fSearchEnabled = !m_WndCmbFind.IsWndTextEmpty();
+	const auto fReplaceEnabled = fMutable && fSearchEnabled && !m_WndCmbReplace.IsWndTextEmpty();
+	m_WndCmbReplace.EnableWindow(fMutable);
+	m_Wnd.GetDlgItem(IDC_HEXCTRL_SEARCH_BTN_SEARCHF).EnableWindow(fSearchEnabled);
+	m_Wnd.GetDlgItem(IDC_HEXCTRL_SEARCH_BTN_SEARCHB).EnableWindow(fSearchEnabled);
+	m_Wnd.GetDlgItem(IDC_HEXCTRL_SEARCH_BTN_FINDALL).EnableWindow(fSearchEnabled);
+	m_Wnd.GetDlgItem(IDC_HEXCTRL_SEARCH_BTN_REPL).EnableWindow(fReplaceEnabled);
+	m_Wnd.GetDlgItem(IDC_HEXCTRL_SEARCH_BTN_REPLALL).EnableWindow(fReplaceEnabled);
 	m_WndEditWC.EnableWindow(IsWildcard());
-	UpdateCueBanners();
 }
 
 void CHexDlgSearch::UpdateCueBanners()
@@ -2585,6 +2588,7 @@ auto CHexDlgSearch::SearchFuncTextFwd(const SEARCHFUNCDATA& sfd)->FINDRESULT
 {
 	//Members locality is important for the best performance of the tight search loop below.
 	constexpr auto LOOP_UNROLL_SIZE = 8U; //How many comparisons we do at one loop cycle.
+	constexpr auto fInverted = st.fInverted;
 	const auto ullOffsetSentinel = sfd.ullRngEnd + 1;
 	const auto ullStep = sfd.ullStep;
 	const auto pHexCtrl = sfd.pHexCtrl;
@@ -2593,7 +2597,6 @@ auto CHexDlgSearch::SearchFuncTextFwd(const SEARCHFUNCDATA& sfd)->FINDRESULT
 	const auto uzSizeSearch = sfd.spnFindFrom.size();
 	const auto ullEnd = ullOffsetSentinel - uzSizeSearch;
 	const auto fBigStep = sfd.fBigStep;
-	const auto fInverted = sfd.fInverted;
 	const auto ullChunks = sfd.ullChunks;
 	const auto bWildcard = sfd.bWildcard;
 	auto ullChunkSize = sfd.ullChunkSize;
@@ -3049,203 +3052,12 @@ auto CHexDlgSearch::SearchFuncTextBack(const SEARCHFUNCDATA& sfd)->FINDRESULT
 }
 
 #if defined(_M_IX86) || defined(_M_X64)
-template<CHexDlgSearch::EVecSize eVecSize>
-int CHexDlgSearch::MemCmpEQVecByte1(const std::byte* pWhere, std::byte bWhat)
-{
-	if constexpr (eVecSize == EVecSize::VEC128) {
-		const auto m128iWhere = _mm_loadu_si128(reinterpret_cast<const __m128i*>(pWhere));
-		const auto m128iWhat = _mm_set1_epi8(static_cast<char>(bWhat));
-		const auto m128iResult = _mm_cmpeq_epi8(m128iWhere, m128iWhat);
-		const auto uiMask = static_cast<std::uint32_t>(_mm_movemask_epi8(m128iResult));
-		return std::countr_zero(uiMask); //>15 here means not found, all in mask are zeros.
-	}
-	else if constexpr (eVecSize == EVecSize::VEC256) {
-		const auto m256iWhere = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(pWhere));
-		const auto m256iWhat = _mm256_set1_epi8(static_cast<char>(bWhat));
-		const auto m256iResult = _mm256_cmpeq_epi8(m256iWhere, m256iWhat);
-		const auto uiMask = static_cast<std::uint32_t>(_mm256_movemask_epi8(m256iResult));
-		return std::countr_zero(uiMask); //>31 here means not found, all in mask are zeros.
-	}
-}
-
-template<CHexDlgSearch::EVecSize eVecSize>
-int CHexDlgSearch::MemCmpNEQVecByte1(const std::byte* pWhere, std::byte bWhat)
-{
-	if constexpr (eVecSize == EVecSize::VEC128) {
-		const auto m128iWhere = _mm_loadu_si128(reinterpret_cast<const __m128i*>(pWhere));
-		const auto m128iWhat = _mm_set1_epi8(static_cast<char>(bWhat));
-		const auto m128iResult = _mm_cmpeq_epi8(m128iWhere, m128iWhat);
-		const auto iMask = static_cast<std::uint32_t>(_mm_movemask_epi8(m128iResult));
-		return std::countr_zero(~iMask);
-	}
-	else if constexpr (eVecSize == EVecSize::VEC256) {
-		const auto m256iWhere = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(pWhere));
-		const auto m256iWhat = _mm256_set1_epi8(static_cast<char>(bWhat));
-		const auto m256iResult = _mm256_cmpeq_epi8(m256iWhere, m256iWhat);
-		const auto iMask = static_cast<std::uint32_t>(_mm256_movemask_epi8(m256iResult));
-		return std::countr_zero(~iMask);
-	}
-}
-
-template<CHexDlgSearch::EVecSize eVecSize>
-int CHexDlgSearch::MemCmpEQVecByte2(const std::byte* pWhere, std::uint16_t ui16What)
-{
-	if constexpr (eVecSize == EVecSize::VEC128) {
-		const auto m128iWhere0 = _mm_loadu_si128(reinterpret_cast<const __m128i*>(pWhere));
-		const auto m128iWhere1 = _mm_srli_si128(m128iWhere0, 1); //Shifting-right the whole vector by 1 byte.
-		const auto m128iWhat = _mm_set1_epi16(ui16What);
-		const auto m128iResult0 = _mm_cmpeq_epi16(m128iWhere0, m128iWhat);
-		const auto m128iResult1 = _mm_cmpeq_epi16(m128iWhere1, m128iWhat); //Comparing both loads simultaneously.
-		const auto uiMask0 = static_cast<std::uint32_t>(_mm_movemask_epi8(m128iResult0));
-		//Shifting-left the mask by 1 to compensate previous 1 byte right-shift by _mm_srli_si128.
-		const auto uiMask1 = static_cast<std::uint32_t>(_mm_movemask_epi8(m128iResult1)) << 1;
-		const auto iRes0 = std::countr_zero(uiMask0);
-		//Setting the last bit (of 16) to zero, to avoid false positives when searching for `0000` and last byte is `00`.
-		const auto iRes1 = std::countr_zero(uiMask1 & 0b01111111'11111110);
-		return (std::min)(iRes0, iRes1); //>15 here means not found, all in mask are zeros.
-	}
-	else if constexpr (eVecSize == EVecSize::VEC256) {
-		const auto m256iWhere0 = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(pWhere));
-		const auto m256iWhere1 = _mm256_srli_si256(m256iWhere0, 1); //Shifting-right the whole vector by 1 byte.
-		const auto m256iWhat = _mm256_set1_epi16(ui16What);
-		const auto m256iResult0 = _mm256_cmpeq_epi16(m256iWhere0, m256iWhat);
-		const auto m256iResult1 = _mm256_cmpeq_epi16(m256iWhere1, m256iWhat); //Comparing both loads simultaneously.
-		const auto uiMask0 = static_cast<std::uint32_t>(_mm256_movemask_epi8(m256iResult0));
-		//Shifting-left the mask by 1 to compensate previous 1 byte right-shift by _mm256_srli_si256.
-		const auto uiMask1 = static_cast<std::uint32_t>(_mm256_movemask_epi8(m256iResult1)) << 1;
-		const auto iRes0 = std::countr_zero(uiMask0);
-		//Setting the last bit (of 32) to zero, to avoid false positives when searching for `0000` and last byte is `00`.
-		const auto iRes1 = std::countr_zero(uiMask1 & 0b01111111'11111111'11111111'11111110);
-		return (std::min)(iRes0, iRes1); //>31 here means not found, all in mask are zeros.
-	}
-}
-
-template<CHexDlgSearch::EVecSize eVecSize>
-int CHexDlgSearch::MemCmpNEQVecByte2(const std::byte* pWhere, std::uint16_t ui16What)
-{
-	if constexpr (eVecSize == EVecSize::VEC128) {
-		const auto m128iWhere0 = _mm_loadu_si128(reinterpret_cast<const __m128i*>(pWhere));
-		const auto m128iWhere1 = _mm_srli_si128(m128iWhere0, 1);
-		const auto m128iWhat = _mm_set1_epi16(ui16What);
-		const auto m128iResult0 = _mm_cmpeq_epi16(m128iWhere0, m128iWhat);
-		const auto m128iResult1 = _mm_cmpeq_epi16(m128iWhere1, m128iWhat);
-		const auto uiMask0 = static_cast<std::uint32_t>(_mm_movemask_epi8(m128iResult0));
-		const auto uiMask1 = static_cast<std::uint32_t>(_mm_movemask_epi8(m128iResult1)) << 1;
-		const auto iRes0 = std::countr_zero(~uiMask0);
-		//Setting the first bit (of 16), after inverting, to zero, because it's always 0 after the left-shifting above.
-		const auto iRes1 = std::countr_zero((~uiMask1) & 0b01111111'11111110);
-		return (std::min)(iRes0, iRes1);
-	}
-	else if constexpr (eVecSize == EVecSize::VEC256) {
-		const auto m256iWhere0 = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(pWhere));
-		const auto m256iWhere1 = _mm256_srli_si256(m256iWhere0, 1);
-		const auto m256iWhat = _mm256_set1_epi16(ui16What);
-		const auto m256iResult0 = _mm256_cmpeq_epi16(m256iWhere0, m256iWhat);
-		const auto m256iResult1 = _mm256_cmpeq_epi16(m256iWhere1, m256iWhat);
-		const auto uiMask0 = static_cast<std::uint32_t>(_mm256_movemask_epi8(m256iResult0));
-		const auto uiMask1 = static_cast<std::uint32_t>(_mm256_movemask_epi8(m256iResult1)) << 1;
-		const auto iRes0 = std::countr_zero(~uiMask0);
-		//Setting the first bit (of 32), after inverting, to zero, because it's always 0 after the left-shifting above.
-		const auto iRes1 = std::countr_zero((~uiMask1) & 0b01111111'11111111'11111111'11111110);
-		return (std::min)(iRes0, iRes1);
-	}
-}
-
-template<CHexDlgSearch::EVecSize eVecSize>
-int CHexDlgSearch::MemCmpEQVecByte4(const std::byte* pWhere, std::uint32_t ui32What)
-{
-	if constexpr (eVecSize == EVecSize::VEC128) {
-		const auto m128iWhere0 = _mm_loadu_si128(reinterpret_cast<const __m128i*>(pWhere));
-		const auto m128iWhere1 = _mm_srli_si128(m128iWhere0, 1);
-		const auto m128iWhere2 = _mm_srli_si128(m128iWhere0, 2);
-		const auto m128iWhere3 = _mm_srli_si128(m128iWhere0, 3);
-		const auto m128iWhat = _mm_set1_epi32(ui32What);
-		const auto m128iResult0 = _mm_cmpeq_epi32(m128iWhere0, m128iWhat);
-		const auto m128iResult1 = _mm_cmpeq_epi32(m128iWhere1, m128iWhat);
-		const auto m128iResult2 = _mm_cmpeq_epi32(m128iWhere2, m128iWhat);
-		const auto m128iResult3 = _mm_cmpeq_epi32(m128iWhere3, m128iWhat);
-		const auto uiMask0 = static_cast<std::uint32_t>(_mm_movemask_epi8(m128iResult0));
-		const auto uiMask1 = static_cast<std::uint32_t>(_mm_movemask_epi8(m128iResult1)) << 1;
-		const auto uiMask2 = static_cast<std::uint32_t>(_mm_movemask_epi8(m128iResult2)) << 2;
-		const auto uiMask3 = static_cast<std::uint32_t>(_mm_movemask_epi8(m128iResult3)) << 3;
-		const auto iRes0 = std::countr_zero(uiMask0);
-		const auto iRes1 = std::countr_zero(uiMask1 & 0b00011111'11111110);
-		const auto iRes2 = std::countr_zero(uiMask2 & 0b00111111'11111100);
-		const auto iRes3 = std::countr_zero(uiMask3 & 0b01111111'11111000);
-		return (std::min)(iRes0, (std::min)(iRes1, (std::min)(iRes2, iRes3)));
-	}
-	else if constexpr (eVecSize == EVecSize::VEC256) {
-		const auto m256iWhere0 = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(pWhere));
-		const auto m256iWhere1 = _mm256_srli_si256(m256iWhere0, 1);
-		const auto m256iWhere2 = _mm256_srli_si256(m256iWhere0, 2);
-		const auto m256iWhere3 = _mm256_srli_si256(m256iWhere0, 3);
-		const auto m256iWhat = _mm256_set1_epi32(ui32What);
-		const auto m256iResult0 = _mm256_cmpeq_epi32(m256iWhere0, m256iWhat);
-		const auto m256iResult1 = _mm256_cmpeq_epi32(m256iWhere1, m256iWhat);
-		const auto m256iResult2 = _mm256_cmpeq_epi32(m256iWhere2, m256iWhat);
-		const auto m256iResult3 = _mm256_cmpeq_epi32(m256iWhere3, m256iWhat);
-		const auto uiMask0 = static_cast<std::uint32_t>(_mm256_movemask_epi8(m256iResult0));
-		const auto uiMask1 = static_cast<std::uint32_t>(_mm256_movemask_epi8(m256iResult1)) << 1;
-		const auto uiMask2 = static_cast<std::uint32_t>(_mm256_movemask_epi8(m256iResult2)) << 2;
-		const auto uiMask3 = static_cast<std::uint32_t>(_mm256_movemask_epi8(m256iResult3)) << 3;
-		const auto iRes0 = std::countr_zero(uiMask0);
-		const auto iRes1 = std::countr_zero(uiMask1 & 0b00011111'11111111'11111111'11111110);
-		const auto iRes2 = std::countr_zero(uiMask2 & 0b00111111'11111111'11111111'11111100);
-		const auto iRes3 = std::countr_zero(uiMask3 & 0b01111111'11111111'11111111'11111000);
-		return (std::min)(iRes0, (std::min)(iRes1, (std::min)(iRes2, iRes3)));
-	}
-}
-
-template<CHexDlgSearch::EVecSize eVecSize>
-int CHexDlgSearch::MemCmpNEQVecByte4(const std::byte* pWhere, std::uint32_t ui32What)
-{
-	if constexpr (eVecSize == EVecSize::VEC128) {
-		const auto m128iWhere0 = _mm_loadu_si128(reinterpret_cast<const __m128i*>(pWhere));
-		const auto m128iWhere1 = _mm_srli_si128(m128iWhere0, 1);
-		const auto m128iWhere2 = _mm_srli_si128(m128iWhere0, 2);
-		const auto m128iWhere3 = _mm_srli_si128(m128iWhere0, 3);
-		const auto m128iWhat = _mm_set1_epi32(ui32What);
-		const auto m128iResult0 = _mm_cmpeq_epi32(m128iWhere0, m128iWhat);
-		const auto m128iResult1 = _mm_cmpeq_epi32(m128iWhere1, m128iWhat);
-		const auto m128iResult2 = _mm_cmpeq_epi32(m128iWhere2, m128iWhat);
-		const auto m128iResult3 = _mm_cmpeq_epi32(m128iWhere3, m128iWhat);
-		const auto uiMask0 = static_cast<std::uint32_t>(_mm_movemask_epi8(m128iResult0));
-		const auto uiMask1 = static_cast<std::uint32_t>(_mm_movemask_epi8(m128iResult1)) << 1;
-		const auto uiMask2 = static_cast<std::uint32_t>(_mm_movemask_epi8(m128iResult2)) << 2;
-		const auto uiMask3 = static_cast<std::uint32_t>(_mm_movemask_epi8(m128iResult3)) << 3;
-		const auto iRes0 = std::countr_zero(~uiMask0);
-		const auto iRes1 = std::countr_zero((~uiMask1) & 0b00011111'11111110);
-		const auto iRes2 = std::countr_zero((~uiMask2) & 0b00111111'11111100);
-		const auto iRes3 = std::countr_zero((~uiMask3) & 0b01111111'11111000);
-		return (std::min)(iRes0, (std::min)(iRes1, (std::min)(iRes2, iRes3)));
-	}
-	else if constexpr (eVecSize == EVecSize::VEC256) {
-		const auto m256iWhere0 = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(pWhere));
-		const auto m256iWhere1 = _mm256_srli_si256(m256iWhere0, 1);
-		const auto m256iWhere2 = _mm256_srli_si256(m256iWhere0, 2);
-		const auto m256iWhere3 = _mm256_srli_si256(m256iWhere0, 3);
-		const auto m256iWhat = _mm256_set1_epi32(ui32What);
-		const auto m256iResult0 = _mm256_cmpeq_epi32(m256iWhere0, m256iWhat);
-		const auto m256iResult1 = _mm256_cmpeq_epi32(m256iWhere1, m256iWhat);
-		const auto m256iResult2 = _mm256_cmpeq_epi32(m256iWhere2, m256iWhat);
-		const auto m256iResult3 = _mm256_cmpeq_epi32(m256iWhere3, m256iWhat);
-		const auto uiMask0 = static_cast<std::uint32_t>(_mm256_movemask_epi8(m256iResult0));
-		const auto uiMask1 = static_cast<std::uint32_t>(_mm256_movemask_epi8(m256iResult1)) << 1;
-		const auto uiMask2 = static_cast<std::uint32_t>(_mm256_movemask_epi8(m256iResult2)) << 2;
-		const auto uiMask3 = static_cast<std::uint32_t>(_mm256_movemask_epi8(m256iResult3)) << 3;
-		const auto iRes0 = std::countr_zero(~uiMask0);
-		const auto iRes1 = std::countr_zero((~uiMask1) & 0b00011111'11111111'11111111'11111110);
-		const auto iRes2 = std::countr_zero((~uiMask2) & 0b00111111'11111111'11111111'11111100);
-		const auto iRes3 = std::countr_zero((~uiMask3) & 0b01111111'11111111'11111111'11111000);
-		return (std::min)(iRes0, (std::min)(iRes1, (std::min)(iRes2, iRes3)));
-	}
-}
-
 template<CHexDlgSearch::SEARCHTYPE st>
-auto CHexDlgSearch::SearchFuncVecFwdByte1(const SEARCHFUNCDATA& sfd)->FINDRESULT
+auto CHexDlgSearch::SearchFuncVecFwd1(const SEARCHFUNCDATA& sfd)->FINDRESULT
 {
 	//Members locality is important for the best performance of the tight search loop below.
-	constexpr auto iVecSize = static_cast<int>(st.eVecSize); //Vector size 128/256.
+	constexpr auto iVecSize = static_cast<int>(st.eVecType); //Vector size 128/256.
+	constexpr auto fInverted = st.fInverted;
 	const auto ullOffsetSentinel = sfd.ullRngEnd + 1;
 	const auto ullStep = sfd.ullStep;
 	const auto pHexCtrl = sfd.pHexCtrl;
@@ -3254,7 +3066,6 @@ auto CHexDlgSearch::SearchFuncVecFwdByte1(const SEARCHFUNCDATA& sfd)->FINDRESULT
 	const auto uzSizeSearch = sfd.spnFindFrom.size();
 	const auto ullEnd = ullOffsetSentinel - uzSizeSearch;
 	const auto fBigStep = sfd.fBigStep;
-	const auto fInverted = sfd.fInverted;
 	const auto ullChunks = sfd.ullChunks;
 	auto ullChunkSize = sfd.ullChunkSize;
 	auto ullChunkMaxOffset = sfd.ullChunkMaxOffset;
@@ -3267,17 +3078,9 @@ auto CHexDlgSearch::SearchFuncVecFwdByte1(const SEARCHFUNCDATA& sfd)->FINDRESULT
 
 		for (auto ullOffsetData = 0ULL; ullOffsetData <= ullChunkMaxOffset; ullOffsetData += iVecSize) {
 			if ((ullOffsetData + iVecSize) <= ullChunkMaxOffset) {
-				if constexpr (!st.fInverted) { //SIMD forward not inverted.
-					if (const auto iRes = MemCmpEQVecByte1<st.eVecSize>(spnData.data() + ullOffsetData, *pDataSearch);
-						iRes < iVecSize) {
-						return { ullOffsetSearch + ullOffsetData + iRes, true, false };
-					}
-				}
-				else if constexpr (st.fInverted) { //SIMD forward inverted.
-					if (const auto iRes = MemCmpNEQVecByte1<st.eVecSize>(spnData.data() + ullOffsetData, *pDataSearch);
-						iRes < iVecSize) {
-						return { ullOffsetSearch + ullOffsetData + iRes, true, false };
-					}
+				if (const auto iRes = simd::MemCmpEQ1<st.eVecType, !fInverted>(spnData.data() + ullOffsetData,
+					*reinterpret_cast<const std::uint8_t*>(pDataSearch)); iRes < iVecSize) {
+					return { ullOffsetSearch + ullOffsetData + iRes, true, false };
 				}
 			}
 			else {
@@ -3316,10 +3119,11 @@ auto CHexDlgSearch::SearchFuncVecFwdByte1(const SEARCHFUNCDATA& sfd)->FINDRESULT
 }
 
 template<CHexDlgSearch::SEARCHTYPE st>
-auto CHexDlgSearch::SearchFuncVecFwdByte2(const SEARCHFUNCDATA& sfd)->FINDRESULT
+auto CHexDlgSearch::SearchFuncVecFwd2(const SEARCHFUNCDATA& sfd)->FINDRESULT
 {
 	//Members locality is important for the best performance of the tight search loop below.
-	constexpr auto iVecSize = static_cast<int>(st.eVecSize);
+	constexpr auto iVecSize = static_cast<int>(st.eVecType);
+	constexpr auto fInverted = st.fInverted;
 	const auto ullOffsetSentinel = sfd.ullRngEnd + 1;
 	const auto ullStep = sfd.ullStep;
 	const auto pHexCtrl = sfd.pHexCtrl;
@@ -3328,7 +3132,6 @@ auto CHexDlgSearch::SearchFuncVecFwdByte2(const SEARCHFUNCDATA& sfd)->FINDRESULT
 	const auto uzSizeSearch = sfd.spnFindFrom.size();
 	const auto ullEnd = ullOffsetSentinel - uzSizeSearch;
 	const auto fBigStep = sfd.fBigStep;
-	const auto fInverted = sfd.fInverted;
 	const auto ullChunks = sfd.ullChunks;
 	auto ullChunkSize = sfd.ullChunkSize;
 	auto ullChunkMaxOffset = sfd.ullChunkMaxOffset;
@@ -3342,19 +3145,9 @@ auto CHexDlgSearch::SearchFuncVecFwdByte2(const SEARCHFUNCDATA& sfd)->FINDRESULT
 		//Next cycle offset is "iVecSize - 1", to get the data that crosses the vector.
 		for (auto ullOffsetData = 0ULL; ullOffsetData <= ullChunkMaxOffset; ullOffsetData += (iVecSize - 1)) {
 			if ((ullOffsetData + iVecSize) <= ullChunkMaxOffset) {
-				if constexpr (!st.fInverted) { //SIMD forward not inverted.
-					if (const auto iRes = MemCmpEQVecByte2<st.eVecSize>(spnData.data() + ullOffsetData,
-						*reinterpret_cast<const std::uint16_t*>(pDataSearch));
-						iRes < iVecSize) {
-						return { ullOffsetSearch + ullOffsetData + iRes, true, false };
-					}
-				}
-				else if constexpr (st.fInverted) { //SIMD forward inverted.
-					if (const auto iRes = MemCmpNEQVecByte2<st.eVecSize>(spnData.data() + ullOffsetData,
-						*reinterpret_cast<const std::uint16_t*>(pDataSearch));
-						iRes < iVecSize) {
-						return { ullOffsetSearch + ullOffsetData + iRes, true, false };
-					}
+				if (const auto iRes = simd::MemCmpEQ2<st.eVecType, !fInverted>(spnData.data() + ullOffsetData,
+					*reinterpret_cast<const std::uint16_t*>(pDataSearch)); iRes < iVecSize) {
+					return { ullOffsetSearch + ullOffsetData + iRes, true, false };
 				}
 			}
 			else {
@@ -3393,10 +3186,11 @@ auto CHexDlgSearch::SearchFuncVecFwdByte2(const SEARCHFUNCDATA& sfd)->FINDRESULT
 }
 
 template<CHexDlgSearch::SEARCHTYPE st>
-auto CHexDlgSearch::SearchFuncVecFwdByte4(const SEARCHFUNCDATA& sfd)->FINDRESULT
+auto CHexDlgSearch::SearchFuncVecFwd4(const SEARCHFUNCDATA& sfd)->FINDRESULT
 {
 	//Members locality is important for the best performance of the tight search loop below.
-	constexpr auto iVecSize = static_cast<int>(st.eVecSize);
+	constexpr auto iVecSize = static_cast<int>(st.eVecType);
+	constexpr auto fInverted = st.fInverted;
 	const auto ullOffsetSentinel = sfd.ullRngEnd + 1;
 	const auto ullStep = sfd.ullStep;
 	const auto pHexCtrl = sfd.pHexCtrl;
@@ -3405,7 +3199,6 @@ auto CHexDlgSearch::SearchFuncVecFwdByte4(const SEARCHFUNCDATA& sfd)->FINDRESULT
 	const auto uzSizeSearch = sfd.spnFindFrom.size();
 	const auto ullEnd = ullOffsetSentinel - uzSizeSearch;
 	const auto fBigStep = sfd.fBigStep;
-	const auto fInverted = sfd.fInverted;
 	const auto ullChunks = sfd.ullChunks;
 	auto ullChunkSize = sfd.ullChunkSize;
 	auto ullChunkMaxOffset = sfd.ullChunkMaxOffset;
@@ -3419,19 +3212,9 @@ auto CHexDlgSearch::SearchFuncVecFwdByte4(const SEARCHFUNCDATA& sfd)->FINDRESULT
 		//Next cycle offset is "iVecSize - 3", to get the data that crosses the vector.
 		for (auto ullOffsetData = 0ULL; ullOffsetData <= ullChunkMaxOffset; ullOffsetData += (iVecSize - 3)) {
 			if ((ullOffsetData + iVecSize) <= ullChunkMaxOffset) {
-				if constexpr (!st.fInverted) { //SIMD forward not inverted.
-					if (const auto iRes = MemCmpEQVecByte4<st.eVecSize>(spnData.data() + ullOffsetData,
-						*reinterpret_cast<const std::uint32_t*>(pDataSearch));
-						iRes < iVecSize) {
-						return { ullOffsetSearch + ullOffsetData + iRes, true, false };
-					}
-				}
-				else if constexpr (st.fInverted) { //SIMD forward inverted.
-					if (const auto iRes = MemCmpNEQVecByte4<st.eVecSize>(spnData.data() + ullOffsetData,
-						*reinterpret_cast<const std::uint32_t*>(pDataSearch));
-						iRes < iVecSize) {
-						return { ullOffsetSearch + ullOffsetData + iRes, true, false };
-					}
+				if (const auto iRes = simd::MemCmpEQ4<st.eVecType, !fInverted>(spnData.data() + ullOffsetData,
+					*reinterpret_cast<const std::uint32_t*>(pDataSearch)); iRes < iVecSize) {
+					return { ullOffsetSearch + ullOffsetData + iRes, true, false };
 				}
 			}
 			else {
@@ -3470,17 +3253,17 @@ auto CHexDlgSearch::SearchFuncVecFwdByte4(const SEARCHFUNCDATA& sfd)->FINDRESULT
 }
 #elif defined(_M_ARM64) //^^^ _M_IX86 || _M_X64 / vvv _M_ARM64
 template<CHexDlgSearch::SEARCHTYPE st>
-auto CHexDlgSearch::SearchFuncVecFwdByte1(const SEARCHFUNCDATA& sfd)->FINDRESULT {
+auto CHexDlgSearch::SearchFuncVecFwd1(const SEARCHFUNCDATA& sfd)->FINDRESULT {
 	return CHexDlgSearch::SearchFuncNumFwd<st>(sfd);
 }
 
 template<CHexDlgSearch::SEARCHTYPE st>
-auto CHexDlgSearch::SearchFuncVecFwdByte2(const SEARCHFUNCDATA& sfd)->FINDRESULT {
+auto CHexDlgSearch::SearchFuncVecFwd2(const SEARCHFUNCDATA& sfd)->FINDRESULT {
 	return CHexDlgSearch::SearchFuncNumFwd<st>(sfd);
 }
 
 template<CHexDlgSearch::SEARCHTYPE st>
-auto CHexDlgSearch::SearchFuncVecFwdByte4(const SEARCHFUNCDATA& sfd)->FINDRESULT {
+auto CHexDlgSearch::SearchFuncVecFwd4(const SEARCHFUNCDATA& sfd)->FINDRESULT {
 	return CHexDlgSearch::SearchFuncNumFwd<st>(sfd);
 }
 #endif //^^^ _M_ARM64

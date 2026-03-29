@@ -2034,9 +2034,9 @@ void CHexDlgTemplMgr::ShowListDataFILETIME(LPWSTR pwsz, FILETIME stFTime, bool f
 		stFTime = ut::ByteSwap(stFTime);
 	}
 
-	const auto ui64 = std::bit_cast<std::uint64_t>(stFTime);
+	const auto u64 = std::bit_cast<std::uint64_t>(stFTime);
 	const auto wstrTime = ut::FileTimeToString(stFTime, m_dwDateFormat, m_wchDateSepar);
-	*std::vformat_to(pwsz, IsShowAsHex() ? L"0x{0:016X}" : L"{}", std::make_wformat_args(ui64, wstrTime)) = L'\0';
+	*std::vformat_to(pwsz, IsShowAsHex() ? L"0x{0:016X}" : L"{}", std::make_wformat_args(u64, wstrTime)) = L'\0';
 }
 
 void CHexDlgTemplMgr::ShowListDataSYSTEMTIME(LPWSTR pwsz, SYSTEMTIME stSTime, bool fShouldSwap)const

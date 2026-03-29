@@ -177,18 +177,18 @@ auto CHexDlgProgress::OnTimer(const MSG& msg)->INT_PTR
 
 	std::wstring wstrDisplay;
 	if (ullSpeedBS < uBInMB) { //Less than 1 MB/s.
-		wstrDisplay = std::format(L"{}{} KB/s", m_wstrOperName, ullSpeedBS / uBInKB);
+		wstrDisplay = std::format(L"{} {} KB/s", m_wstrOperName, ullSpeedBS / uBInKB);
 	}
 	else if (ullSpeedBS < uBInGB) { //Less than 1 GB/s.
-		wstrDisplay = std::format(L"{}{} MB/s", m_wstrOperName, ullSpeedBS / uBInMB);
+		wstrDisplay = std::format(L"{} {} MB/s", m_wstrOperName, ullSpeedBS / uBInMB);
 	}
 	else { //More than or equal to 1 GB/s.
-		wstrDisplay = std::format(L"{}{:.2f} GB/s", m_wstrOperName, ullSpeedBS / static_cast<float>(uBInGB));
+		wstrDisplay = std::format(L"{} {:.2f} GB/s", m_wstrOperName, ullSpeedBS / static_cast<float>(uBInGB));
 	}
 	m_WndOper.SetWndText(wstrDisplay);
 
 	if (m_ullCount > 0) {
-		m_WndCount.SetWndText(std::format(ut::GetLocale(), L"{}{:L}", m_wstrCountName, m_ullCount));
+		m_WndCount.SetWndText(std::format(ut::GetLocale(), L"{} {:L}", m_wstrCountName, m_ullCount));
 	}
 
 	return TRUE;
