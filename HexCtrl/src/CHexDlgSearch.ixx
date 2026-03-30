@@ -1703,40 +1703,14 @@ void CHexDlgSearch::Prepare()
 	}
 
 	//"Step".
-	ULONGLONG ullStep;
-	if (!m_WndEditStep.IsWndTextEmpty()) {
-		if (const auto optStep = stn::StrToUInt64(m_WndEditStep.GetWndText()); optStep) {
-			ullStep = *optStep;
-		}
-		else {
-			m_WndEditStep.SetFocus();
-			::MessageBoxW(m_Wnd, L"Incorrect step size.", L"Incorrect step", MB_ICONERROR);
-			return;
-		}
-	}
-	else {
-		m_WndEditStep.SetFocus();
-		::MessageBoxW(m_Wnd, L"Step size must be at least one.", L"Incorrect step", MB_ICONERROR);
-		return;
-	}
+	auto u64Step = stn::StrToUInt64(m_WndEditStep.GetWndText()).value_or(1ULL);
+	u64Step = std::clamp(u64Step, 1ULL, (std::numeric_limits<std::uint64_t>::max)());
+	m_WndEditStep.SetWndText(std::format(L"{}", u64Step));
 
-	//"Limit".
-	DWORD dwLimit;
-	if (!m_WndEditLimit.IsWndTextEmpty()) {
-		if (const auto optLimit = stn::StrToUInt32(m_WndEditLimit.GetWndText()); optLimit) {
-			dwLimit = *optLimit;
-		}
-		else {
-			m_WndEditLimit.SetFocus();
-			::MessageBoxW(m_Wnd, L"Incorrect limit size.", L"Incorrect limit", MB_ICONERROR);
-			return;
-		}
-	}
-	else {
-		m_WndEditLimit.SetFocus();
-		::MessageBoxW(m_Wnd, L"Limit size must be at least one.", L"Incorrect limit", MB_ICONERROR);
-		return;
-	}
+	//"Limit match hits:". Not more than int max value.
+	auto u32LimitHits = stn::StrToUInt32(m_WndEditLimit.GetWndText()).value_or((std::numeric_limits<int>::max)());
+	u32LimitHits = std::clamp(u32LimitHits, 1U, static_cast<std::uint32_t>((std::numeric_limits<int>::max)()));
+	m_WndEditLimit.SetWndText(std::format(L"{}", u32LimitHits));
 
 	if (IsReplace() && GetReplaceDataSize() > GetSearchDataSize()) {
 		static constexpr auto wstrReplaceWarning { L"The replacing data is longer than search data.\r\n"
@@ -1748,8 +1722,8 @@ void CHexDlgSearch::Prepare()
 	m_ullRngBegin = ullRngStart;
 	m_ullRngEnd = ullRngEnd;
 	m_ullStartFrom = ullStartFrom;
-	m_ullStep = ullStep;
-	m_dwLimit = dwLimit;
+	m_ullStep = u64Step;
+	m_dwLimit = u32LimitHits;
 
 	bool fSuccess { false };
 	switch (GetSearchMode()) {
