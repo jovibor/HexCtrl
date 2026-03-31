@@ -1056,9 +1056,9 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 		[[nodiscard]] int GetCurSel()const {
 			assert(IsWindow()); return static_cast<int>(SendMsg(TCM_GETCURSEL, 0, 0L));
 		}
-		[[nodiscard]] auto GetItemRect(int nItem)const -> CRect {
+		[[nodiscard]] auto GetItemRect(int iItem)const -> CRect {
 			assert(IsWindow());
-			RECT rc { }; SendMsg(TCM_GETITEMRECT, nItem, reinterpret_cast<LPARAM>(&rc));
+			RECT rc { }; SendMsg(TCM_GETITEMRECT, iItem, reinterpret_cast<LPARAM>(&rc));
 			return rc;
 		}
 		auto InsertItem(int iItem, TCITEMW* pItem)const -> LONG {

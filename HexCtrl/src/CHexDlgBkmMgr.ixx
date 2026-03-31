@@ -476,10 +476,10 @@ auto CHexDlgBkmMgr::OnCommand(const MSG& msg) -> INT_PTR
 			const auto uSelCount = m_ListEx.GetSelectedCount();
 			std::vector<int> vecIndex;
 			vecIndex.reserve(uSelCount);
-			int nItem { -1 };
+			int iItem { -1 };
 			for (auto i = 0UL; i < uSelCount; ++i) {
-				nItem = m_ListEx.GetNextItem(nItem, LVNI_SELECTED);
-				vecIndex.insert(vecIndex.begin(), nItem); //Last indexes go first.
+				iItem = m_ListEx.GetNextItem(iItem, LVNI_SELECTED);
+				vecIndex.insert(vecIndex.begin(), iItem); //Last indexes go first.
 			}
 
 			for (const auto iIndexBkm : vecIndex) {

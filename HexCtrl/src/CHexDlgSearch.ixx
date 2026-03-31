@@ -140,13 +140,10 @@ namespace HEXCTRL::INTERNAL {
 		void UpdateCueBanners();
 		void UpdateTTState();
 	private:
-		//Static functions.
-		static void Replace(IHexCtrl* pHexCtrl, ULONGLONG ullIndex, SpanCByte spnReplace);
 		enum class EMemCmp : std::uint8_t {
 			DATA_INT8, DATA_UINT8, DATA_INT16, DATA_UINT16, DATA_INT32, DATA_UINT32,
 			DATA_INT64, DATA_UINT64, DATA_FLOAT, DATA_DOUBLE, DATA_ASCII, DATA_WCHAR
 		};
-
 		struct SEARCHTYPE { //Compile time struct for template parameters in the SearchFunc and MemCmp*.
 			constexpr SEARCHTYPE() = default;
 			constexpr SEARCHTYPE(EMemCmp eMemCmp, simd::EVecType eVecType, bool fDlgProg = false, bool fMatchCase = false,
@@ -162,6 +159,7 @@ namespace HEXCTRL::INTERNAL {
 			bool fInverted { false };
 		};
 
+		//Static functions.
 		template<SEARCHTYPE st> //For comparing numbers.
 		[[nodiscard]] static auto __forceinline MemCmpEQNum(const std::byte* pWhere, const std::byte* pWhat)->bool;
 		template<SEARCHTYPE st> //For comparing numbers ranges.
@@ -169,7 +167,7 @@ namespace HEXCTRL::INTERNAL {
 		template<SEARCHTYPE st> //For comparing all kind of texts.
 		[[nodiscard]] static auto __forceinline MemCmpEQText(const std::byte* pWhere, const std::byte* pWhat,
 			std::size_t uzSize, std::byte bWildcard)->bool;
-
+		static void Replace(IHexCtrl* pHexCtrl, ULONGLONG ullIndex, SpanCByte spnReplace);
 		template<SEARCHTYPE st>
 		[[nodiscard]] static auto SearchNumFwd(const SEARCHFUNCDATA& sfd) -> FINDRESULT;
 		template<SEARCHTYPE st>
@@ -1278,10 +1276,10 @@ auto CHexDlgSearch::OnCommand(const MSG& msg)->INT_PTR
 		switch (static_cast<EMenuID>(uCtrlID)) {
 		case EMenuID::IDM_SEARCH_ADDBKM:
 		{
-			int nItem { -1 };
+			int iItem { -1 };
 			for (auto i = 0UL; i < m_ListEx.GetSelectedCount(); ++i) {
-				nItem = m_ListEx.GetNextItem(nItem, LVNI_SELECTED);
-				const HEXBKM hbs { .vecSpan { HEXSPAN { m_vecSearchRes.at(static_cast<std::size_t>(nItem)),
+				iItem = m_ListEx.GetNextItem(iItem, LVNI_SELECTED);
+				const HEXBKM hbs { .vecSpan { HEXSPAN { m_vecSearchRes.at(static_cast<std::size_t>(iItem)),
 					m_fReplace ? GetReplaceDataSize() : GetSearchDataSize() } }, .wstrDesc { m_wstrSearch },
 					.stClr { GetHexCtrl()->GetColors().clrBkBkm, GetHexCtrl()->GetColors().clrFontBkm } };
 				GetHexCtrl()->GetBookmarks()->AddBkm(hbs, false);
@@ -1513,14 +1511,14 @@ void CHexDlgSearch::OnNotifyListItemChanged(NMHDR* pNMHDR)
 		return;
 
 	VecSpan vecSpan;
-	int nItem = -1;
+	int iItem = -1;
 	for (auto i = 0UL; i < m_ListEx.GetSelectedCount(); ++i) {
-		nItem = m_ListEx.GetNextItem(nItem, LVNI_SELECTED);
+		iItem = m_ListEx.GetNextItem(iItem, LVNI_SELECTED);
 
 		//Do not yet add selected (clicked) item (in multiselect), will add it after the loop,
 		//so that it's always last in the vecSpan to highlight it in HexCtrlHighlight.
-		if (pNMI->iItem != nItem) {
-			vecSpan.emplace_back(m_vecSearchRes.at(static_cast<std::size_t>(nItem)),
+		if (pNMI->iItem != iItem) {
+			vecSpan.emplace_back(m_vecSearchRes.at(static_cast<std::size_t>(iItem)),
 				m_fReplace ? GetReplaceDataSize() : GetSearchDataSize());
 		}
 	}
@@ -1952,16 +1950,16 @@ void CHexDlgSearch::ReplaceAll()
 			return pSearchFunc(stFuncData);
 			};
 
-		const auto sSizeRepl = GetReplaceDataSize();
+		const auto dwSizeRepl = GetReplaceDataSize();
 		while (const auto findRes = lmbWrapper()) {
-			if (findRes.ullOffset + sSizeRepl > GetSentinel())
+			if (findRes.ullOffset + dwSizeRepl > GetSentinel())
 				break;
 
 			Replace(stFuncData.pHexCtrl, findRes.ullOffset, GetReplaceSpan());
 			m_vecSearchRes.emplace_back(findRes.ullOffset); //Filling the vector of Found occurences.
 
-			const auto ullNext = findRes.ullOffset + (sSizeRepl <= stFuncData.ullStep ?
-				stFuncData.ullStep : sSizeRepl);
+			const auto ullNext = findRes.ullOffset + (dwSizeRepl <= stFuncData.ullStep ?
+				stFuncData.ullStep : dwSizeRepl);
 			if (ullNext > GetLastSearchOffset() || m_vecSearchRes.size() >= m_dwLimit) {
 				break;
 			}
@@ -2185,12 +2183,6 @@ void CHexDlgSearch::UpdateTTState()
 
 //Static functions.
 
-void CHexDlgSearch::Replace(IHexCtrl* pHexCtrl, ULONGLONG ullIndex, SpanCByte spnReplace)
-{
-	pHexCtrl->ModifyData({ .eModifyMode { EHexModifyMode::MODIFY_ONCE }, .spnData { spnReplace },
-		.vecSpan { { ullIndex, spnReplace.size() } } });
-}
-
 template<CHexDlgSearch::SEARCHTYPE st>
 bool CHexDlgSearch::MemCmpEQNum(const std::byte* pWhere, const std::byte* pWhat)
 {
@@ -2327,6 +2319,12 @@ auto CHexDlgSearch::MemCmpEQText(const std::byte* pWhere, const std::byte* pWhat
 		}
 		return true;
 	}
+}
+
+void CHexDlgSearch::Replace(IHexCtrl* pHexCtrl, ULONGLONG ullIndex, SpanCByte spnReplace)
+{
+	pHexCtrl->ModifyData({ .eModifyMode { EHexModifyMode::MODIFY_ONCE }, .spnData { spnReplace },
+		.vecSpan { { ullIndex, spnReplace.size() } } });
 }
 
 template<CHexDlgSearch::SEARCHTYPE st>
