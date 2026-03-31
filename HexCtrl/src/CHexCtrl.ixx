@@ -709,13 +709,13 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	SetUnprintableCharImpl(L'.', false);
 
 	//All dialogs are initialized after the main window, to set the parent handle correctly.
-	m_DlgBkmMgr.Initialize(this, m_hInstRes);
-	m_DlgDataInterp.Initialize(this, m_hInstRes);
-	m_DlgCodepage.Initialize(this, m_hInstRes);
-	m_DlgGoTo.Initialize(this, m_hInstRes);
-	m_DlgSearch.Initialize(this, m_hInstRes);
-	m_DlgTemplMgr.Initialize(this, m_hInstRes);
-	m_DlgModify.Initialize(this, m_hInstRes);
+	m_DlgBkmMgr.Initialize(*this, m_hInstRes);
+	m_DlgDataInterp.Initialize(*this, m_hInstRes);
+	m_DlgCodepage.Initialize(*this, m_hInstRes);
+	m_DlgGoTo.Initialize(*this, m_hInstRes);
+	m_DlgSearch.Initialize(*this, m_hInstRes);
+	m_DlgTemplMgr.Initialize(*this, m_hInstRes);
+	m_DlgModify.Initialize(*this, m_hInstRes);
 
 	RedrawImpl();
 
@@ -1639,13 +1639,13 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 		//In cases where the only one affected data region (hms.vecSpan.size()==1) is used,
 		//and ullSizeToModify > ulSizeOfVec, we use SIMD.
 		//At the end we simply fill up the remainder (ullSizeToModify % ulSizeOfVec).
-		const auto ulSizeOfVec { ut::HasAVX2() ? 32UL : 16UL };
+		const auto ulSizeOfVec { simd::HasAVX2() ? 32UL : 16UL };
 		const auto ullOffsetToModify = hms.vecSpan.back().ullOffset;
 		const auto ullSizeToModify = hms.vecSpan.back().ullSize;
 		const auto ullSizeToFillWith = hms.spnData.size();
 
 		if (hms.vecSpan.size() == 1 && ((ullSizeToModify / ulSizeOfVec) > 0)) {
-			ModifyWorker(hms, ut::HasAVX2() ? ModifyOperVec256 : ModifyOperVec128,
+			ModifyWorker(hms, simd::HasAVX2() ? ModifyOperVec256 : ModifyOperVec128,
 				{ static_cast<std::byte*>(nullptr), ulSizeOfVec }); //Worker with vector.
 
 			if (const auto ullRem = ullSizeToModify % ulSizeOfVec; ullRem >= ullSizeToFillWith) { //Remainder of the vector data.
@@ -6342,7 +6342,7 @@ void CHexCtrl::ModifyOperVec128(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 
 	constexpr auto lmbOperVec128Int16 = [](std::int16_t* pi16Data, const HEXMODIFY& hms) {
 		const auto m128iData = hms.fBigEndian ?
-			ut::ByteSwapVec<std::int16_t>(_mm_loadu_si128(reinterpret_cast<const __m128i*>(pi16Data)))
+			simd::ByteSwapVec<std::int16_t>(_mm_loadu_si128(reinterpret_cast<const __m128i*>(pi16Data)))
 			: _mm_loadu_si128(reinterpret_cast<const __m128i*>(pi16Data));
 		alignas(16) std::int16_t i16Data[8];
 		_mm_store_si128(reinterpret_cast<__m128i*>(i16Data), m128iData);
@@ -6375,7 +6375,7 @@ void CHexCtrl::ModifyOperVec128(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 			m128iResult = _mm_min_epi16(m128iData, m128iOper);
 			break;
 		case OPER_SWAP:
-			m128iResult = ut::ByteSwapVec<std::int16_t>(m128iData);
+			m128iResult = simd::ByteSwapVec<std::int16_t>(m128iData);
 			break;
 		case OPER_OR:
 			m128iResult = _mm_or_si128(m128iData, m128iOper);
@@ -6427,7 +6427,7 @@ void CHexCtrl::ModifyOperVec128(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 		}
 
 		if (hms.fBigEndian) { //Swap bytes back.
-			m128iResult = ut::ByteSwapVec<std::int16_t>(m128iResult);
+			m128iResult = simd::ByteSwapVec<std::int16_t>(m128iResult);
 		}
 
 		_mm_storeu_si128(reinterpret_cast<__m128i*>(pi16Data), m128iResult);
@@ -6435,7 +6435,7 @@ void CHexCtrl::ModifyOperVec128(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 
 	constexpr auto lmbOperVec128UInt16 = [](std::uint16_t* pu16Data, const HEXMODIFY& hms) {
 		const auto m128iData = hms.fBigEndian ?
-			ut::ByteSwapVec<std::uint16_t>(_mm_loadu_si128(reinterpret_cast<const __m128i*>(pu16Data)))
+			simd::ByteSwapVec<std::uint16_t>(_mm_loadu_si128(reinterpret_cast<const __m128i*>(pu16Data)))
 			: _mm_loadu_si128(reinterpret_cast<const __m128i*>(pu16Data));
 		alignas(16) std::uint16_t u16Data[8];
 		_mm_store_si128(reinterpret_cast<__m128i*>(u16Data), m128iData);
@@ -6471,7 +6471,7 @@ void CHexCtrl::ModifyOperVec128(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 			m128iResult = _mm_min_epu16(m128iData, m128iOper);
 			break;
 		case OPER_SWAP:
-			m128iResult = ut::ByteSwapVec<std::uint16_t>(m128iData);
+			m128iResult = simd::ByteSwapVec<std::uint16_t>(m128iData);
 			break;
 		case OPER_OR:
 			m128iResult = _mm_or_si128(m128iData, m128iOper);
@@ -6513,7 +6513,7 @@ void CHexCtrl::ModifyOperVec128(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 		}
 
 		if (hms.fBigEndian) { //Swap bytes back.
-			m128iResult = ut::ByteSwapVec<std::uint16_t>(m128iResult);
+			m128iResult = simd::ByteSwapVec<std::uint16_t>(m128iResult);
 		}
 
 		_mm_storeu_si128(reinterpret_cast<__m128i*>(pu16Data), m128iResult);
@@ -6521,7 +6521,7 @@ void CHexCtrl::ModifyOperVec128(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 
 	constexpr auto lmbOperVec128Int32 = [](std::int32_t* pi32Data, const HEXMODIFY& hms) {
 		const auto m128iData = hms.fBigEndian ?
-			ut::ByteSwapVec<std::int32_t>(_mm_loadu_si128(reinterpret_cast<const __m128i*>(pi32Data)))
+			simd::ByteSwapVec<std::int32_t>(_mm_loadu_si128(reinterpret_cast<const __m128i*>(pi32Data)))
 			: _mm_loadu_si128(reinterpret_cast<const __m128i*>(pi32Data));
 		alignas(16) std::int32_t i32Data[4];
 		_mm_store_si128(reinterpret_cast<__m128i*>(i32Data), m128iData);
@@ -6554,7 +6554,7 @@ void CHexCtrl::ModifyOperVec128(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 			m128iResult = _mm_min_epi32(m128iData, m128iOper);
 			break;
 		case OPER_SWAP:
-			m128iResult = ut::ByteSwapVec<std::int32_t>(m128iData);
+			m128iResult = simd::ByteSwapVec<std::int32_t>(m128iData);
 			break;
 		case OPER_OR:
 			m128iResult = _mm_or_si128(m128iData, m128iOper);
@@ -6597,7 +6597,7 @@ void CHexCtrl::ModifyOperVec128(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 		}
 
 		if (hms.fBigEndian) { //Swap bytes back.
-			m128iResult = ut::ByteSwapVec<std::int32_t>(m128iResult);
+			m128iResult = simd::ByteSwapVec<std::int32_t>(m128iResult);
 		}
 
 		_mm_storeu_si128(reinterpret_cast<__m128i*>(pi32Data), m128iResult);
@@ -6605,7 +6605,7 @@ void CHexCtrl::ModifyOperVec128(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 
 	constexpr auto lmbOperVec128UInt32 = [](std::uint32_t* pu32Data, const HEXMODIFY& hms) {
 		const auto m128iData = hms.fBigEndian ?
-			ut::ByteSwapVec<std::uint32_t>(_mm_loadu_si128(reinterpret_cast<const __m128i*>(pu32Data)))
+			simd::ByteSwapVec<std::uint32_t>(_mm_loadu_si128(reinterpret_cast<const __m128i*>(pu32Data)))
 			: _mm_loadu_si128(reinterpret_cast<const __m128i*>(pu32Data));
 		alignas(16) std::uint32_t u32Data[4];
 		_mm_store_si128(reinterpret_cast<__m128i*>(u32Data), m128iData);
@@ -6639,7 +6639,7 @@ void CHexCtrl::ModifyOperVec128(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 			m128iResult = _mm_min_epu32(m128iData, m128iOper); //SSE4.1
 			break;
 		case OPER_SWAP:
-			m128iResult = ut::ByteSwapVec<std::uint32_t>(m128iData);
+			m128iResult = simd::ByteSwapVec<std::uint32_t>(m128iData);
 			break;
 		case OPER_OR:
 			m128iResult = _mm_or_si128(m128iData, m128iOper);
@@ -6678,7 +6678,7 @@ void CHexCtrl::ModifyOperVec128(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 		}
 
 		if (hms.fBigEndian) { //Swap bytes back.
-			m128iResult = ut::ByteSwapVec<std::uint32_t>(m128iResult);
+			m128iResult = simd::ByteSwapVec<std::uint32_t>(m128iResult);
 		}
 
 		_mm_storeu_si128(reinterpret_cast<__m128i*>(pu32Data), m128iResult);
@@ -6686,7 +6686,7 @@ void CHexCtrl::ModifyOperVec128(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 
 	constexpr auto lmbOperVec128Int64 = [](std::int64_t* pi64Data, const HEXMODIFY& hms) {
 		const auto m128iData = hms.fBigEndian ?
-			ut::ByteSwapVec<std::int64_t>(_mm_loadu_si128(reinterpret_cast<const __m128i*>(pi64Data)))
+			simd::ByteSwapVec<std::int64_t>(_mm_loadu_si128(reinterpret_cast<const __m128i*>(pi64Data)))
 			: _mm_loadu_si128(reinterpret_cast<const __m128i*>(pi64Data));
 		alignas(16) std::int64_t i64Data[2];
 		_mm_store_si128(reinterpret_cast<__m128i*>(i64Data), m128iData);
@@ -6718,7 +6718,7 @@ void CHexCtrl::ModifyOperVec128(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 			m128iResult = _mm_setr_epi64x((std::min)(i64Data[0], i64Oper), (std::min)(i64Data[1], i64Oper));
 			break;
 		case OPER_SWAP:
-			m128iResult = ut::ByteSwapVec<std::int64_t>(m128iData);
+			m128iResult = simd::ByteSwapVec<std::int64_t>(m128iData);
 			break;
 		case OPER_OR:
 			m128iResult = _mm_or_si128(m128iData, m128iOper);
@@ -6756,7 +6756,7 @@ void CHexCtrl::ModifyOperVec128(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 		}
 
 		if (hms.fBigEndian) { //Swap bytes back.
-			m128iResult = ut::ByteSwapVec<std::int64_t>(m128iResult);
+			m128iResult = simd::ByteSwapVec<std::int64_t>(m128iResult);
 		}
 
 		_mm_storeu_si128(reinterpret_cast<__m128i*>(pi64Data), m128iResult);
@@ -6764,7 +6764,7 @@ void CHexCtrl::ModifyOperVec128(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 
 	constexpr auto lmbOperVec128UInt64 = [](std::uint64_t* pu64Data, const HEXMODIFY& hms) {
 		const auto m128iData = hms.fBigEndian ?
-			ut::ByteSwapVec<std::uint64_t>(_mm_loadu_si128(reinterpret_cast<const __m128i*>(pu64Data)))
+			simd::ByteSwapVec<std::uint64_t>(_mm_loadu_si128(reinterpret_cast<const __m128i*>(pu64Data)))
 			: _mm_loadu_si128(reinterpret_cast<const __m128i*>(pu64Data));
 		alignas(16) std::uint64_t u64Data[2];
 		_mm_store_si128(reinterpret_cast<__m128i*>(u64Data), m128iData);
@@ -6796,7 +6796,7 @@ void CHexCtrl::ModifyOperVec128(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 			m128iResult = _mm_setr_epi64x((std::min)(u64Data[0], u64Oper), (std::min)(u64Data[1], u64Oper));
 			break;
 		case OPER_SWAP:
-			m128iResult = ut::ByteSwapVec<std::uint64_t>(m128iData);
+			m128iResult = simd::ByteSwapVec<std::uint64_t>(m128iData);
 			break;
 		case OPER_OR:
 			m128iResult = _mm_or_si128(m128iData, m128iOper);
@@ -6834,14 +6834,14 @@ void CHexCtrl::ModifyOperVec128(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 		}
 
 		if (hms.fBigEndian) { //Swap bytes back.
-			m128iResult = ut::ByteSwapVec<std::uint64_t>(m128iResult);
+			m128iResult = simd::ByteSwapVec<std::uint64_t>(m128iResult);
 		}
 
 		_mm_storeu_si128(reinterpret_cast<__m128i*>(pu64Data), m128iResult);
 		};
 
 	constexpr auto lmbOperVec128Float = [](float* pflData, const HEXMODIFY& hms) {
-		const auto m128Data = hms.fBigEndian ? ut::ByteSwapVec<float>(_mm_loadu_ps(pflData)) : _mm_loadu_ps(pflData);
+		const auto m128Data = hms.fBigEndian ? simd::ByteSwapVec<float>(_mm_loadu_ps(pflData)) : _mm_loadu_ps(pflData);
 		const auto m128Oper = _mm_set1_ps(*reinterpret_cast<const float*>(hms.spnData.data()));
 		__m128 m128Result { };
 
@@ -6868,7 +6868,7 @@ void CHexCtrl::ModifyOperVec128(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 			m128Result = _mm_min_ps(m128Data, m128Oper);
 			break;
 		case OPER_SWAP:
-			m128Result = ut::ByteSwapVec<float>(m128Data);
+			m128Result = simd::ByteSwapVec<float>(m128Data);
 			break;
 		default:
 			ut::DBG_REPORT(L"Unsupported float operation.");
@@ -6876,14 +6876,14 @@ void CHexCtrl::ModifyOperVec128(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 		}
 
 		if (hms.fBigEndian) { //Swap bytes back.
-			m128Result = ut::ByteSwapVec<float>(m128Result);
+			m128Result = simd::ByteSwapVec<float>(m128Result);
 		}
 
 		_mm_storeu_ps(pflData, m128Result);
 		};
 
 	constexpr auto lmbOperVec128Double = [](double* pdblData, const HEXMODIFY& hms) {
-		const auto m128dData = hms.fBigEndian ? ut::ByteSwapVec<double>(_mm_loadu_pd(pdblData)) : _mm_loadu_pd(pdblData);
+		const auto m128dData = hms.fBigEndian ? simd::ByteSwapVec<double>(_mm_loadu_pd(pdblData)) : _mm_loadu_pd(pdblData);
 		const auto m128dOper = _mm_set1_pd(*reinterpret_cast<const double*>(hms.spnData.data()));
 		__m128d m128dResult { };
 
@@ -6910,7 +6910,7 @@ void CHexCtrl::ModifyOperVec128(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 			m128dResult = _mm_min_pd(m128dData, m128dOper);
 			break;
 		case OPER_SWAP:
-			m128dResult = ut::ByteSwapVec<double>(m128dData);
+			m128dResult = simd::ByteSwapVec<double>(m128dData);
 			break;
 		default:
 			ut::DBG_REPORT(L"Unsupported double operation.");
@@ -6918,7 +6918,7 @@ void CHexCtrl::ModifyOperVec128(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 		}
 
 		if (hms.fBigEndian) { //Swap bytes back.
-			m128dResult = ut::ByteSwapVec<double>(m128dResult);
+			m128dResult = simd::ByteSwapVec<double>(m128dResult);
 		}
 
 		_mm_storeu_pd(pdblData, m128dResult);
@@ -7261,7 +7261,7 @@ void CHexCtrl::ModifyOperVec256(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 
 	constexpr auto lmbOperVec256Int16 = [](std::int16_t* pi16Data, const HEXMODIFY& hms) {
 		const auto m256iData = hms.fBigEndian ?
-			ut::ByteSwapVec<std::int16_t>(_mm256_loadu_si256(reinterpret_cast<const __m256i*>(pi16Data)))
+			simd::ByteSwapVec<std::int16_t>(_mm256_loadu_si256(reinterpret_cast<const __m256i*>(pi16Data)))
 			: _mm256_loadu_si256(reinterpret_cast<const __m256i*>(pi16Data));
 		alignas(32) std::int16_t i16Data[16];
 		_mm256_store_si256(reinterpret_cast<__m256i*>(i16Data), m256iData);
@@ -7297,7 +7297,7 @@ void CHexCtrl::ModifyOperVec256(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 			m256iResult = _mm256_min_epi16(m256iData, m256iOper);
 			break;
 		case OPER_SWAP:
-			m256iResult = ut::ByteSwapVec<std::int16_t>(m256iData);
+			m256iResult = simd::ByteSwapVec<std::int16_t>(m256iData);
 			break;
 		case OPER_OR:
 			m256iResult = _mm256_or_si256(m256iData, m256iOper);
@@ -7367,7 +7367,7 @@ void CHexCtrl::ModifyOperVec256(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 		}
 
 		if (hms.fBigEndian) { //Swap bytes back.
-			m256iResult = ut::ByteSwapVec<std::int16_t>(m256iResult);
+			m256iResult = simd::ByteSwapVec<std::int16_t>(m256iResult);
 		}
 
 		_mm256_storeu_si256(reinterpret_cast<__m256i*>(pi16Data), m256iResult);
@@ -7375,7 +7375,7 @@ void CHexCtrl::ModifyOperVec256(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 
 	constexpr auto lmbOperVec256UInt16 = [](std::uint16_t* pu16Data, const HEXMODIFY& hms) {
 		const auto m256iData = hms.fBigEndian ?
-			ut::ByteSwapVec<std::uint16_t>(_mm256_loadu_si256(reinterpret_cast<const __m256i*>(pu16Data)))
+			simd::ByteSwapVec<std::uint16_t>(_mm256_loadu_si256(reinterpret_cast<const __m256i*>(pu16Data)))
 			: _mm256_loadu_si256(reinterpret_cast<const __m256i*>(pu16Data));
 		alignas(32) std::uint16_t u16Data[16];
 		_mm256_store_si256(reinterpret_cast<__m256i*>(u16Data), m256iData);
@@ -7415,7 +7415,7 @@ void CHexCtrl::ModifyOperVec256(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 			m256iResult = _mm256_min_epu16(m256iData, m256iOper);
 			break;
 		case OPER_SWAP:
-			m256iResult = ut::ByteSwapVec<std::uint16_t>(m256iData);
+			m256iResult = simd::ByteSwapVec<std::uint16_t>(m256iData);
 			break;
 		case OPER_OR:
 			m256iResult = _mm256_or_si256(m256iData, m256iOper);
@@ -7465,7 +7465,7 @@ void CHexCtrl::ModifyOperVec256(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 		}
 
 		if (hms.fBigEndian) { //Swap bytes back.
-			m256iResult = ut::ByteSwapVec<std::uint16_t>(m256iResult);
+			m256iResult = simd::ByteSwapVec<std::uint16_t>(m256iResult);
 		}
 
 		_mm256_storeu_si256(reinterpret_cast<__m256i*>(pu16Data), m256iResult);
@@ -7473,7 +7473,7 @@ void CHexCtrl::ModifyOperVec256(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 
 	constexpr auto lmbOperVec256Int32 = [](std::int32_t* pi32Data, const HEXMODIFY& hms) {
 		const auto m256iData = hms.fBigEndian ?
-			ut::ByteSwapVec<std::int32_t>(_mm256_loadu_si256(reinterpret_cast<const __m256i*>(pi32Data)))
+			simd::ByteSwapVec<std::int32_t>(_mm256_loadu_si256(reinterpret_cast<const __m256i*>(pi32Data)))
 			: _mm256_loadu_si256(reinterpret_cast<const __m256i*>(pi32Data));
 		alignas(32) std::int32_t i32Data[8];
 		_mm256_store_si256(reinterpret_cast<__m256i*>(i32Data), m256iData);
@@ -7507,7 +7507,7 @@ void CHexCtrl::ModifyOperVec256(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 			m256iResult = _mm256_min_epi32(m256iData, m256iOper);
 			break;
 		case OPER_SWAP:
-			m256iResult = ut::ByteSwapVec<std::int32_t>(m256iData);
+			m256iResult = simd::ByteSwapVec<std::int32_t>(m256iData);
 			break;
 		case OPER_OR:
 			m256iResult = _mm256_or_si256(m256iData, m256iOper);
@@ -7559,7 +7559,7 @@ void CHexCtrl::ModifyOperVec256(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 		}
 
 		if (hms.fBigEndian) { //Swap bytes back.
-			m256iResult = ut::ByteSwapVec<std::int32_t>(m256iResult);
+			m256iResult = simd::ByteSwapVec<std::int32_t>(m256iResult);
 		}
 
 		_mm256_storeu_si256(reinterpret_cast<__m256i*>(pi32Data), m256iResult);
@@ -7567,7 +7567,7 @@ void CHexCtrl::ModifyOperVec256(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 
 	constexpr auto lmbOperVec256UInt32 = [](std::uint32_t* pu32Data, const HEXMODIFY& hms) {
 		const auto m256iData = hms.fBigEndian ?
-			ut::ByteSwapVec<std::uint32_t>(_mm256_loadu_si256(reinterpret_cast<const __m256i*>(pu32Data)))
+			simd::ByteSwapVec<std::uint32_t>(_mm256_loadu_si256(reinterpret_cast<const __m256i*>(pu32Data)))
 			: _mm256_loadu_si256(reinterpret_cast<const __m256i*>(pu32Data));
 		alignas(32) std::uint32_t u32Data[8];
 		_mm256_store_si256(reinterpret_cast<__m256i*>(u32Data), m256iData);
@@ -7603,7 +7603,7 @@ void CHexCtrl::ModifyOperVec256(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 			m256iResult = _mm256_min_epu32(m256iData, m256iOper);
 			break;
 		case OPER_SWAP:
-			m256iResult = ut::ByteSwapVec<std::uint32_t>(m256iData);
+			m256iResult = simd::ByteSwapVec<std::uint32_t>(m256iData);
 			break;
 		case OPER_OR:
 			m256iResult = _mm256_or_si256(m256iData, m256iOper);
@@ -7645,7 +7645,7 @@ void CHexCtrl::ModifyOperVec256(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 		}
 
 		if (hms.fBigEndian) { //Swap bytes back.
-			m256iResult = ut::ByteSwapVec<std::uint32_t>(m256iResult);
+			m256iResult = simd::ByteSwapVec<std::uint32_t>(m256iResult);
 		}
 
 		_mm256_storeu_si256(reinterpret_cast<__m256i*>(pu32Data), m256iResult);
@@ -7653,7 +7653,7 @@ void CHexCtrl::ModifyOperVec256(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 
 	constexpr auto lmbOperVec256Int64 = [](std::int64_t* pi64Data, const HEXMODIFY& hms) {
 		const auto m256iData = hms.fBigEndian ?
-			ut::ByteSwapVec<std::int64_t>(_mm256_loadu_si256(reinterpret_cast<const __m256i*>(pi64Data)))
+			simd::ByteSwapVec<std::int64_t>(_mm256_loadu_si256(reinterpret_cast<const __m256i*>(pi64Data)))
 			: _mm256_loadu_si256(reinterpret_cast<const __m256i*>(pi64Data));
 		alignas(32) std::int64_t i64Data[4];
 		_mm256_store_si256(reinterpret_cast<__m256i*>(i64Data), m256iData);
@@ -7689,7 +7689,7 @@ void CHexCtrl::ModifyOperVec256(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 				(std::min)(i64Data[2], i64Oper), (std::min)(i64Data[3], i64Oper));
 			break;
 		case OPER_SWAP:
-			m256iResult = ut::ByteSwapVec<std::int64_t>(m256iData);
+			m256iResult = simd::ByteSwapVec<std::int64_t>(m256iData);
 			break;
 		case OPER_OR:
 			m256iResult = _mm256_or_si256(m256iData, m256iOper);
@@ -7733,7 +7733,7 @@ void CHexCtrl::ModifyOperVec256(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 		}
 
 		if (hms.fBigEndian) { //Swap bytes back.
-			m256iResult = ut::ByteSwapVec<std::int64_t>(m256iResult);
+			m256iResult = simd::ByteSwapVec<std::int64_t>(m256iResult);
 		}
 
 		_mm256_storeu_si256(reinterpret_cast<__m256i*>(pi64Data), m256iResult);
@@ -7741,7 +7741,7 @@ void CHexCtrl::ModifyOperVec256(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 
 	constexpr auto lmbOperVec256UInt64 = [](std::uint64_t* pu64Data, const HEXMODIFY& hms) {
 		const auto m256iData = hms.fBigEndian ?
-			ut::ByteSwapVec<std::uint64_t>(_mm256_loadu_si256(reinterpret_cast<const __m256i*>(pu64Data)))
+			simd::ByteSwapVec<std::uint64_t>(_mm256_loadu_si256(reinterpret_cast<const __m256i*>(pu64Data)))
 			: _mm256_loadu_si256(reinterpret_cast<const __m256i*>(pu64Data));
 		alignas(32) std::uint64_t u64Data[4];
 		_mm256_store_si256(reinterpret_cast<__m256i*>(u64Data), m256iData);
@@ -7777,7 +7777,7 @@ void CHexCtrl::ModifyOperVec256(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 				 (std::min)(u64Data[2], u64Oper), (std::min)(u64Data[3], u64Oper));
 			break;
 		case OPER_SWAP:
-			m256iResult = ut::ByteSwapVec<std::uint64_t>(m256iData);
+			m256iResult = simd::ByteSwapVec<std::uint64_t>(m256iData);
 			break;
 		case OPER_OR:
 			m256iResult = _mm256_or_si256(m256iData, m256iOper);
@@ -7820,14 +7820,14 @@ void CHexCtrl::ModifyOperVec256(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 		}
 
 		if (hms.fBigEndian) { //Swap bytes back.
-			m256iResult = ut::ByteSwapVec<std::uint64_t>(m256iResult);
+			m256iResult = simd::ByteSwapVec<std::uint64_t>(m256iResult);
 		}
 
 		_mm256_storeu_si256(reinterpret_cast<__m256i*>(pu64Data), m256iResult);
 		};
 
 	constexpr auto lmbOperVec256Float = [](float* pflData, const HEXMODIFY& hms) {
-		const auto m256Data = hms.fBigEndian ? ut::ByteSwapVec<float>(_mm256_loadu_ps(pflData)) : _mm256_loadu_ps(pflData);
+		const auto m256Data = hms.fBigEndian ? simd::ByteSwapVec<float>(_mm256_loadu_ps(pflData)) : _mm256_loadu_ps(pflData);
 		const auto m256Oper = _mm256_set1_ps(*reinterpret_cast<const float*>(hms.spnData.data()));
 		__m256 m256Result { };
 
@@ -7854,7 +7854,7 @@ void CHexCtrl::ModifyOperVec256(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 			m256Result = _mm256_min_ps(m256Data, m256Oper);
 			break;
 		case OPER_SWAP:
-			m256Result = ut::ByteSwapVec<float>(m256Data);
+			m256Result = simd::ByteSwapVec<float>(m256Data);
 			break;
 		default:
 			ut::DBG_REPORT(L"Unsupported float operation.");
@@ -7862,14 +7862,14 @@ void CHexCtrl::ModifyOperVec256(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 		}
 
 		if (hms.fBigEndian) { //Swap bytes back.
-			m256Result = ut::ByteSwapVec<float>(m256Result);
+			m256Result = simd::ByteSwapVec<float>(m256Result);
 		}
 
 		_mm256_storeu_ps(pflData, m256Result);
 		};
 
 	constexpr auto lmbOperVec256Double = [](double* pdblData, const HEXMODIFY& hms) {
-		const auto m256dData = hms.fBigEndian ? ut::ByteSwapVec<double>(_mm256_loadu_pd(pdblData)) : _mm256_loadu_pd(pdblData);
+		const auto m256dData = hms.fBigEndian ? simd::ByteSwapVec<double>(_mm256_loadu_pd(pdblData)) : _mm256_loadu_pd(pdblData);
 		const auto m256dOper = _mm256_set1_pd(*reinterpret_cast<const double*>(hms.spnData.data()));
 		__m256d m256dResult { };
 
@@ -7896,7 +7896,7 @@ void CHexCtrl::ModifyOperVec256(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 			m256dResult = _mm256_min_pd(m256dData, m256dOper);
 			break;
 		case OPER_SWAP:
-			m256dResult = ut::ByteSwapVec<double>(m256dData);
+			m256dResult = simd::ByteSwapVec<double>(m256dData);
 			break;
 		default:
 			ut::DBG_REPORT(L"Unsupported double operation.");
@@ -7904,7 +7904,7 @@ void CHexCtrl::ModifyOperVec256(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 		}
 
 		if (hms.fBigEndian) { //Swap bytes back.
-			m256dResult = ut::ByteSwapVec<double>(m256dResult);
+			m256dResult = simd::ByteSwapVec<double>(m256dResult);
 		}
 
 		_mm256_storeu_pd(pdblData, m256dResult);

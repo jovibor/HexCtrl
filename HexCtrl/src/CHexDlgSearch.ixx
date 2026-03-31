@@ -33,7 +33,7 @@ namespace HEXCTRL::INTERNAL {
 		void DestroyDlg();
 		[[nodiscard]] auto GetDlgItemHandle(EHexDlgItem eItem)const -> HWND;
 		[[nodiscard]] auto GetHWND()const -> HWND;
-		void Initialize(IHexCtrl* pHexCtrl, HINSTANCE hInstRes);
+		void Initialize(IHexCtrl &HexCtrl, HINSTANCE hInstRes);
 		[[nodiscard]] bool IsSearchAvail()const; //Can we do search next/prev?
 		[[nodiscard]] bool PreTranslateMsg(MSG* pMsg);
 		[[nodiscard]] auto ProcessMsg(const MSG& msg) -> INT_PTR;
@@ -343,14 +343,9 @@ auto CHexDlgSearch::GetHWND()const->HWND
 	return m_Wnd;
 }
 
-void CHexDlgSearch::Initialize(IHexCtrl* pHexCtrl, HINSTANCE hInstRes)
+void CHexDlgSearch::Initialize(IHexCtrl &HexCtrl, HINSTANCE hInstRes)
 {
-	if (pHexCtrl == nullptr || hInstRes == nullptr) {
-		ut::DBG_REPORT(L"Initialize == nullptr");
-		return;
-	}
-
-	m_pHexCtrl = pHexCtrl;
+	m_pHexCtrl = &HexCtrl;
 	m_hInstRes = hInstRes;
 }
 
@@ -3025,7 +3020,6 @@ auto CHexDlgSearch::SearchTextBack(const SEARCHFUNCDATA& sfd)->FINDRESULT
 	return { };
 }
 
-#if defined(_M_IX86) || defined(_M_X64)
 template<CHexDlgSearch::SEARCHTYPE st>
 auto CHexDlgSearch::SearchFwdVec1(const SEARCHFUNCDATA& sfd)->FINDRESULT
 {
@@ -3225,19 +3219,3 @@ auto CHexDlgSearch::SearchFwdVec4(const SEARCHFUNCDATA& sfd)->FINDRESULT
 
 	return { };
 }
-#elif defined(_M_ARM64) //^^^ _M_IX86 || _M_X64 / vvv _M_ARM64
-template<CHexDlgSearch::SEARCHTYPE st>
-auto CHexDlgSearch::SearchFwdVec1(const SEARCHFUNCDATA& sfd)->FINDRESULT {
-	return CHexDlgSearch::SearchNumFwd<st>(sfd);
-}
-
-template<CHexDlgSearch::SEARCHTYPE st>
-auto CHexDlgSearch::SearchFwdVec2(const SEARCHFUNCDATA& sfd)->FINDRESULT {
-	return CHexDlgSearch::SearchNumFwd<st>(sfd);
-}
-
-template<CHexDlgSearch::SEARCHTYPE st>
-auto CHexDlgSearch::SearchFwdVec4(const SEARCHFUNCDATA& sfd)->FINDRESULT {
-	return CHexDlgSearch::SearchNumFwd<st>(sfd);
-}
-#endif //^^^ _M_ARM64

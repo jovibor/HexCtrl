@@ -37,7 +37,7 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] bool HasBookmarks()const;
 		[[nodiscard]] auto HitTest(ULONGLONG ullOffset) -> PHEXBKM override;
 		[[nodiscard]] auto HitTest(ULONGLONG ullOffset)const -> PHEXBKM;
-		void Initialize(IHexCtrl* pHexCtrl, HINSTANCE hInstRes);
+		void Initialize(IHexCtrl &HexCtrl, HINSTANCE hInstRes);
 		[[nodiscard]] bool IsVirtual()const;
 		[[nodiscard]] bool PreTranslateMsg(MSG* pMsg);
 		[[nodiscard]] auto ProcessMsg(const MSG& msg) -> INT_PTR;
@@ -282,14 +282,9 @@ auto CHexDlgBkmMgr::HitTest(ULONGLONG ullOffset)const->PHEXBKM
 	return const_cast<CHexDlgBkmMgr*>(this)->HitTest(ullOffset);
 }
 
-void CHexDlgBkmMgr::Initialize(IHexCtrl* pHexCtrl, HINSTANCE hInstRes)
+void CHexDlgBkmMgr::Initialize(IHexCtrl &HexCtrl, HINSTANCE hInstRes)
 {
-	if (pHexCtrl == nullptr || hInstRes == nullptr) {
-		ut::DBG_REPORT(L"Initialize == nullptr");
-		return;
-	}
-
-	m_pHexCtrl = pHexCtrl;
+	m_pHexCtrl = &HexCtrl;
 	m_hInstRes = hInstRes;
 }
 
