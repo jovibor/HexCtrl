@@ -1635,14 +1635,25 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 		//In cases where the only one affected data region (hms.vecSpan.size()==1) is used,
 		//and ullSizeToModify > ulSizeOfVec, we use SIMD.
 		//At the end we simply fill up the remainder (ullSizeToModify % ulSizeOfVec).
-		const auto ulSizeOfVec { simd::GetVectorSize() };
+		const auto ulSizeOfVec { simd::VecTypeToSize(simd::GetVectorType()) };
 		const auto ullOffsetToModify = hms.vecSpan.back().ullOffset;
 		const auto ullSizeToModify = hms.vecSpan.back().ullSize;
 		const auto ullSizeToFillWith = hms.spnData.size();
 
 		if (hms.vecSpan.size() == 1 && ((ullSizeToModify / ulSizeOfVec) > 0)) {
-			ModifyWorker(hms, ulSizeOfVec == 16 ? simd::ModifyOperVec128 : simd::ModifyOperVec256,
-				{ static_cast<std::byte*>(nullptr), ulSizeOfVec }); //Worker with vector.
+			using PFuncWorker = void(*)(std::byte* pData, const HEXCTRL::HEXMODIFY& hms, HEXCTRL::SpanCByte);
+			PFuncWorker pFuncWorker;
+			switch (simd::GetVectorType()) {
+			case simd::EVecType::VECTOR_128:
+				pFuncWorker = simd::ModifyOperVec<simd::EVecType::VECTOR_128>;
+				break;
+			case simd::EVecType::VECTOR_256:
+				pFuncWorker = simd::ModifyOperVec<simd::EVecType::VECTOR_256>;
+				break;
+			default: return;
+			}
+
+			ModifyWorker(hms, pFuncWorker, { static_cast<std::byte*>(nullptr), ulSizeOfVec }); //Vector worker.
 
 			if (const auto ullRem = ullSizeToModify % ulSizeOfVec; ullRem >= ullSizeToFillWith) { //Remainder of the vector data.
 				const auto ullOffset = ullOffsetToModify + ullSizeToModify - ullRem;

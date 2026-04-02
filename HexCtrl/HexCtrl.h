@@ -16,7 +16,7 @@
 #include <vector>
 
 #if !defined(__cpp_lib_format) || !defined(__cpp_lib_span) || !defined(__cpp_lib_bit_cast)
-#error "C++20 compliant compiler is required to build HexCtrl."
+#error "C++20 compliant compiler is required for HexCtrl."
 #endif
 
 #ifndef HEXCTRLAPI

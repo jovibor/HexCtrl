@@ -717,21 +717,15 @@ auto CHexDlgSearch::GetSearchDataSize()const->DWORD
 auto CHexDlgSearch::GetSearchFunc(bool fFwd, bool fDlgProg)const->PtrSearchFunc
 {
 	using enum simd::EVecType;
-	const auto eVecType = simd::GetVectorType();
-	if (eVecType == VecX64_128) {
-		return fFwd ? (fDlgProg ? GetSearchFuncFwd<true, VecX64_128>() : GetSearchFuncFwd<false, VecX64_128>()) :
-			(fDlgProg ? GetSearchFuncBack<true, VecX64_128>() : GetSearchFuncBack<false, VecX64_128>());
+	switch (simd::GetVectorType()) {
+	case VECTOR_128:
+		return fFwd ? (fDlgProg ? GetSearchFuncFwd<true, VECTOR_128>() : GetSearchFuncFwd<false, VECTOR_128>()) :
+			(fDlgProg ? GetSearchFuncBack<true, VECTOR_128>() : GetSearchFuncBack<false, VECTOR_128>());
+	case VECTOR_256:
+		return fFwd ? (fDlgProg ? GetSearchFuncFwd<true, VECTOR_256>() : GetSearchFuncFwd<false, VECTOR_256>()) :
+			(fDlgProg ? GetSearchFuncBack<true, VECTOR_256>() : GetSearchFuncBack<false, VECTOR_256>());
+	default: return nullptr;
 	}
-	else if (eVecType == VecX64_256) {
-		return fFwd ? (fDlgProg ? GetSearchFuncFwd<true, VecX64_256>() : GetSearchFuncFwd<false, VecX64_256>()) :
-			(fDlgProg ? GetSearchFuncBack<true, VecX64_256>() : GetSearchFuncBack<false, VecX64_256>());
-	}
-	else if (eVecType == VecARM64_NEON) {
-		return fFwd ? (fDlgProg ? GetSearchFuncFwd<true, VecARM64_NEON>() : GetSearchFuncFwd<false, VecARM64_NEON>()) :
-			(fDlgProg ? GetSearchFuncBack<true, VecARM64_NEON>() : GetSearchFuncBack<false, VecARM64_NEON>());
-	}
-
-	return nullptr;
 }
 
 template<bool fDlgProg, simd::EVecType eVecType>
@@ -3022,7 +3016,7 @@ template<CHexDlgSearch::SEARCHTYPE st>
 auto CHexDlgSearch::SearchFwdVec1(const SEARCHFUNCDATA& sfd)->FINDRESULT
 {
 	//Members locality is important for the best performance of the tight search loop below.
-	constexpr auto iVecSize = static_cast<std::uint64_t>(st.eVecType); //Vector size 128/256.
+	constexpr auto u32VecSize = simd::VecTypeToSize(st.eVecType); //Vector size 128/256.
 	constexpr auto fInverted = st.fInverted;
 	const auto ullOffsetSentinel = sfd.ullRngEnd + 1;
 	const auto ullStep = sfd.ullStep;
@@ -3042,10 +3036,10 @@ auto CHexDlgSearch::SearchFwdVec1(const SEARCHFUNCDATA& sfd)->FINDRESULT
 		assert(!spnData.empty());
 		assert(spnData.size() >= ullChunkSize);
 
-		for (auto ullOffsetData = 0ULL; ullOffsetData <= ullChunkMaxOffset; ullOffsetData += iVecSize) {
-			if ((ullOffsetData + iVecSize) <= ullChunkMaxOffset) {
+		for (auto ullOffsetData = 0ULL; ullOffsetData <= ullChunkMaxOffset; ullOffsetData += u32VecSize) {
+			if ((ullOffsetData + u32VecSize) <= ullChunkMaxOffset) {
 				if (const auto u64Res = simd::MemCmpEQ1<st.eVecType, !fInverted>(spnData.data() + ullOffsetData,
-					*reinterpret_cast<const std::uint8_t*>(pDataSearch)); u64Res < iVecSize) {
+					*reinterpret_cast<const std::uint8_t*>(pDataSearch)); u64Res < u32VecSize) {
 					return { ullOffsetSearch + ullOffsetData + u64Res, true, false };
 				}
 			}
@@ -3088,7 +3082,7 @@ template<CHexDlgSearch::SEARCHTYPE st>
 auto CHexDlgSearch::SearchFwdVec2(const SEARCHFUNCDATA& sfd)->FINDRESULT
 {
 	//Members locality is important for the best performance of the tight search loop below.
-	constexpr auto iVecSize = static_cast<int>(st.eVecType);
+	constexpr auto u32VecSize = simd::VecTypeToSize(st.eVecType);
 	constexpr auto fInverted = st.fInverted;
 	const auto ullOffsetSentinel = sfd.ullRngEnd + 1;
 	const auto ullStep = sfd.ullStep;
@@ -3108,11 +3102,11 @@ auto CHexDlgSearch::SearchFwdVec2(const SEARCHFUNCDATA& sfd)->FINDRESULT
 		assert(!spnData.empty());
 		assert(spnData.size() >= ullChunkSize);
 
-		//Next cycle offset is "iVecSize - 1", to get the data that crosses the vector.
-		for (auto ullOffsetData = 0ULL; ullOffsetData <= ullChunkMaxOffset; ullOffsetData += (iVecSize - 1)) {
-			if ((ullOffsetData + iVecSize) <= ullChunkMaxOffset) {
+		//Next cycle offset is "u32VecSize - 1", to get the data that crosses the vector.
+		for (auto ullOffsetData = 0ULL; ullOffsetData <= ullChunkMaxOffset; ullOffsetData += (u32VecSize - 1)) {
+			if ((ullOffsetData + u32VecSize) <= ullChunkMaxOffset) {
 				if (const auto u64Res = simd::MemCmpEQ2<st.eVecType, !fInverted>(spnData.data() + ullOffsetData,
-					*reinterpret_cast<const std::uint16_t*>(pDataSearch)); u64Res < iVecSize) {
+					*reinterpret_cast<const std::uint16_t*>(pDataSearch)); u64Res < u32VecSize) {
 					return { ullOffsetSearch + ullOffsetData + u64Res, true, false };
 				}
 			}
@@ -3155,7 +3149,7 @@ template<CHexDlgSearch::SEARCHTYPE st>
 auto CHexDlgSearch::SearchFwdVec4(const SEARCHFUNCDATA& sfd)->FINDRESULT
 {
 	//Members locality is important for the best performance of the tight search loop below.
-	constexpr auto iVecSize = static_cast<int>(st.eVecType);
+	constexpr auto u32VecSize = simd::VecTypeToSize(st.eVecType);
 	constexpr auto fInverted = st.fInverted;
 	const auto ullOffsetSentinel = sfd.ullRngEnd + 1;
 	const auto ullStep = sfd.ullStep;
@@ -3175,11 +3169,11 @@ auto CHexDlgSearch::SearchFwdVec4(const SEARCHFUNCDATA& sfd)->FINDRESULT
 		assert(!spnData.empty());
 		assert(spnData.size() >= ullChunkSize);
 
-		//Next cycle offset is "iVecSize - 3", to get the data that crosses the vector.
-		for (auto ullOffsetData = 0ULL; ullOffsetData <= ullChunkMaxOffset; ullOffsetData += (iVecSize - 3)) {
-			if ((ullOffsetData + iVecSize) <= ullChunkMaxOffset) {
+		//Next cycle offset is "u32VecSize - 3", to get the data that crosses the vector.
+		for (auto ullOffsetData = 0ULL; ullOffsetData <= ullChunkMaxOffset; ullOffsetData += (u32VecSize - 3)) {
+			if ((ullOffsetData + u32VecSize) <= ullChunkMaxOffset) {
 				if (const auto u64Res = simd::MemCmpEQ4<st.eVecType, !fInverted>(spnData.data() + ullOffsetData,
-					*reinterpret_cast<const std::uint32_t*>(pDataSearch)); u64Res < iVecSize) {
+					*reinterpret_cast<const std::uint32_t*>(pDataSearch)); u64Res < u32VecSize) {
 					return { ullOffsetSearch + ullOffsetData + u64Res, true, false };
 				}
 			}
