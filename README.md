@@ -179,13 +179,30 @@ To build **HexCtrl** from the sources:
 To build and use **HexCtrl** as a DLL:
 1. Build **HexCtrl{x86/x64/ARM64}.dll** and **HexCtrl{x86/x64/ARM64}.lib** with the **HexCtrl DLL.vcxproj**  project
 1. Add `HexCtrl.h` header into your project
-1. Add `/DHEXCTRL_DYNAMIC_LIB` compiler option, or alternatively `#define` it before including `HexCtrl.h`:
+1. Tell to the linker a name of the **HexCtrl**'s `.lib` file.  
+You can do it manually in your project settings, or with the help of this macro, which will expand and link to the appropriate `.lib` name based on current arch (`x86/x64/ARM64`) and build type (`Debug/Release`):
     ```cpp
-    #define HEXCTRL_DYNAMIC_LIB
-    #include "HexCtrl.h"
+    #ifdef _M_IX86
+    #ifdef _DEBUG
+    define HEXCTRL_LIBNAME "HexCtrlx86D"
+    #else //^^^ _DEBUG / vvv !_DEBUG
+    #define HEXCTRL_LIBNAME "HexCtrlx86"
+    #endif //^^^ !_DEBUG
+    #elif defined(_M_X64) //^^^ _M_IX86 / vvv _M_X64
+    #ifdef _DEBUG
+    #define HEXCTRL_LIBNAME "HexCtrlx64D"
+    #else //^^^ _DEBUG / vvv !_DEBUG
+    #define HEXCTRL_LIBNAME "HexCtrlx64"
+    #endif //^^^ !_DEBUG
+    #elif defined(_M_ARM64) //^^^ _M_X64 / vvv _M_ARM64
+    #ifdef _DEBUG
+    #define HEXCTRL_LIBNAME "HexCtrlARM64D"
+    #else //^^^ _DEBUG / vvv !_DEBUG
+    #define HEXCTRL_LIBNAME "HexCtrlARM64"
+    #endif //^^^ _DEBUG
+    #endif //^^^ _M_ARM64
+    #pragma comment(lib, HEXCTRL_LIBNAME)
     ```
-1. Declare `IHexCtrlPtr` object: `auto myHex { HEXCTRL::CreateHexCtrl() };`
-1. [Create](#creating) control instance
 
 ## [](#)Creating
 

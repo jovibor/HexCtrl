@@ -22,6 +22,10 @@ module;
 #include <unordered_map>
 export module HEXCTRL:CHexDlgTemplMgr;
 
+#ifndef HEXCTRLAPI
+#define	HEXCTRLAPI
+#endif
+
 import :HexUtility;
 
 namespace HEXCTRL::INTERNAL {

@@ -19,35 +19,9 @@
 #error "C++20 compliant compiler is required to build HexCtrl."
 #endif
 
-#ifdef HEXCTRL_DYNAMIC_LIB
-#ifdef HEXCTRL_DYNAMIC_LIB_EXPORT
-#define HEXCTRLAPI __declspec(dllexport)
-#else //^^^ HEXCTRL_DYNAMIC_LIB_EXPORT / vvv !HEXCTRL_DYNAMIC_LIB_EXPORT
-#define HEXCTRLAPI __declspec(dllimport)
-#ifdef _M_IX86
-#ifdef _DEBUG
-#define HEXCTRL_LIBNAME "HexCtrlx86D.lib"
-#else //^^^ _DEBUG / vvv !_DEBUG
-#define HEXCTRL_LIBNAME "HexCtrlx86.lib"
-#endif //^^^ !_DEBUG
-#elif defined(_M_X64) //^^^ _M_IX86 / vvv _M_X64
-#ifdef _DEBUG
-#define HEXCTRL_LIBNAME "HexCtrlx64D.lib"
-#else //^^^ _DEBUG / vvv !_DEBUG
-#define HEXCTRL_LIBNAME "HexCtrlx64.lib"
-#endif //^^^ !_DEBUG
-#elif defined(_M_ARM64) //^^^ _M_X64 / vvv _M_ARM64
-#ifdef _DEBUG
-#define HEXCTRL_LIBNAME "HexCtrlARM64D.lib"
-#else //^^^ _DEBUG / vvv !_DEBUG
-#define HEXCTRL_LIBNAME "HexCtrlARM64.lib"
-#endif //^^^ _DEBUG
-#endif //^^^ _M_ARM64
-#pragma comment(lib, HEXCTRL_LIBNAME)
-#endif //^^^ !HEXCTRL_DYNAMIC_LIB_EXPORT
-#else //^^^ HEXCTRL_DYNAMIC_LIB / vvv !HEXCTRL_DYNAMIC_LIB
+#ifndef HEXCTRLAPI
 #define	HEXCTRLAPI
-#endif //^^^ !HEXCTRL_DYNAMIC_LIB
+#endif
 
 namespace HEXCTRL {
 	constexpr auto HEXCTRL_VERSION_MAJOR = 3;

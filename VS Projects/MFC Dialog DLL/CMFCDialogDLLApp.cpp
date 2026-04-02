@@ -2,13 +2,30 @@
 #include "CMFCDialogDLLApp.h"
 #include "CMFCDialogDLLDlg.h"
 
+#ifdef _M_IX86
+#ifdef _DEBUG
+#define HEXCTRL_LIBNAME "HexCtrlx86D"
+#else //^^^ _DEBUG / vvv !_DEBUG
+#define HEXCTRL_LIBNAME "HexCtrlx86"
+#endif //^^^ !_DEBUG
+#elif defined(_M_X64) //^^^ _M_IX86 / vvv _M_X64
+#ifdef _DEBUG
+#define HEXCTRL_LIBNAME "HexCtrlx64D"
+#else //^^^ _DEBUG / vvv !_DEBUG
+#define HEXCTRL_LIBNAME "HexCtrlx64"
+#endif //^^^ !_DEBUG
+#elif defined(_M_ARM64) //^^^ _M_X64 / vvv _M_ARM64
+#ifdef _DEBUG
+#define HEXCTRL_LIBNAME "HexCtrlARM64D"
+#else //^^^ _DEBUG / vvv !_DEBUG
+#define HEXCTRL_LIBNAME "HexCtrlARM64"
+#endif //^^^ _DEBUG
+#endif //^^^ _M_ARM64
+#pragma comment(lib, HEXCTRL_LIBNAME)
+
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
-
-BEGIN_MESSAGE_MAP(CMFCDialogDLLApp, CWinApp)
-	ON_COMMAND(ID_HELP, &CWinApp::OnHelp)
-END_MESSAGE_MAP()
 
 CMFCDialogDLLApp theApp;
 
@@ -18,18 +35,8 @@ BOOL CMFCDialogDLLApp::InitInstance()
 
 	auto dlg = new CMFCDialogDLLDlg;
 	m_pMainWnd = dlg;
-	INT_PTR nResponse = dlg->DoModal();
-	if (nResponse == -1) {
-		TRACE(traceAppMsg, 0, "Warning: dialog creation failed, so application is terminating unexpectedly.\n");
-		TRACE(traceAppMsg, 0, "Warning: if you are using MFC controls on the dialog, you cannot #define _AFX_NO_MFC_CONTROLS_IN_DIALOGS.\n");
-	}
-
-#if !defined(_AFXDLL) && !defined(_AFX_NO_MFC_CONTROLS_IN_DIALOGS)
-	ControlBarCleanUp();
-#endif
-
+	dlg->DoModal();
 	delete dlg;
-	// Since the dialog has been closed, return FALSE so that we exit the
-	//  application, rather than start the application's message pump.
+
 	return FALSE;
 }

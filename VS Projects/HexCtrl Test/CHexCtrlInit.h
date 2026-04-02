@@ -14,23 +14,26 @@ using enum EHexDataType;
 
 #ifdef _M_IX86
 #ifdef _DEBUG
-#define HEXCTRL_DLL(x) x"x86D.dll"
+#define HEXCTRL_LIBNAME "HexCtrlx86D"
 #else //^^^ _DEBUG / vvv !_DEBUG
-#define HEXCTRL_DLL(x) x"x86.dll"
+#define HEXCTRL_LIBNAME "HexCtrlx86"
 #endif //^^^ !_DEBUG
 #elif defined(_M_X64) //^^^ _M_IX86 / vvv _M_X64
 #ifdef _DEBUG
-#define HEXCTRL_DLL(x) x"x64D.dll"
+#define HEXCTRL_LIBNAME "HexCtrlx64D"
 #else //^^^ _DEBUG / vvv !_DEBUG
-#define HEXCTRL_DLL(x) x"x64.dll"
+#define HEXCTRL_LIBNAME "HexCtrlx64"
 #endif //^^^ !_DEBUG
 #elif defined(_M_ARM64) //^^^ _M_X64 / vvv _M_ARM64
 #ifdef _DEBUG
-#define HEXCTRL_DLL(x) x"ARM64D.dll"
+#define HEXCTRL_LIBNAME "HexCtrlARM64D"
 #else //^^^ _DEBUG / vvv !_DEBUG
-#define HEXCTRL_DLL(x) x"ARM64.dll"
+#define HEXCTRL_LIBNAME "HexCtrlARM64"
 #endif //^^^ _DEBUG
 #endif //^^^ _M_ARM64
+#pragma comment(lib, HEXCTRL_LIBNAME)
+
+#define WIDEN_STRING(x) (L#x)
 
 namespace TestHexCtrl {
 	[[nodiscard]] consteval auto GetTestDataSize() {
@@ -41,7 +44,7 @@ namespace TestHexCtrl {
 		static IHexCtrl* pHexCtrl = []() {
 			static auto pHex { CreateHexCtrl() };
 			static std::byte byteData[GetTestDataSize()] { };
-			pHex->Create({ .hInstRes { ::GetModuleHandleW(HEXCTRL_DLL(L"HexCtrl")) },
+			pHex->Create({ .hInstRes { ::GetModuleHandleW(WIDEN_STRING(HEXCTRL_LIBNAME)) },
 				.dwStyle { WS_POPUP | WS_OVERLAPPEDWINDOW }, .dwExStyle { WS_EX_APPWINDOW } });
 			pHex->SetData({ .spnData { byteData, sizeof(byteData) }, .fMutable { true } });
 			return pHex.get();
