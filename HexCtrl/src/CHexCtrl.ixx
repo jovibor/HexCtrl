@@ -446,7 +446,7 @@ namespace HEXCTRL::INTERNAL {
 		void TTOffsetShow(bool fShow); //Tooltip Offset show/hide.
 		void Undo();
 		void UpdateDPIScale(); //Set new DPI scale factor according to current DPI.
-		static void ModifyOper(std::byte* pData, const HEXMODIFY& hms, SpanCByte); //Modify operation scalar.
+		static void ModifyOperScalar(std::byte* pData, const HEXMODIFY& hms, SpanCByte); //Modify operation scalar.
 		static auto CALLBACK SubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
 			UINT_PTR uIDSubclass, DWORD_PTR dwRefData)->LRESULT;
 	private:
@@ -1672,13 +1672,13 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 				const auto ullOffset = ullOffsetToModify + ullSizeToModify - ullRem;
 				const auto spnData = GetData({ .ullOffset { ullOffset }, .ullSize { ullRem } });
 				for (std::size_t itRem = 0; itRem < (ullRem / ullSizeToFillWith); ++itRem) { //Works only if ullRem >= ullSizeToFillWith.
-					ModifyOper(spnData.data() + (itRem * ullSizeToFillWith), hms, { });
+					ModifyOperScalar(spnData.data() + (itRem * ullSizeToFillWith), hms, { });
 				}
 				SetDataVirtual(spnData, { .ullOffset { ullOffset }, .ullSize { ullRem - (ullRem % ullSizeToFillWith) } });
 			}
 		}
 		else {
-			ModifyWorker(hms, ModifyOper, hms.spnData);
+			ModifyWorker(hms, ModifyOperScalar, hms.spnData);
 		}
 	}
 	break;
@@ -6036,13 +6036,13 @@ void CHexCtrl::UpdateDPIScale()
 	m_flDPIScale = GDIUT::GetDPIScaleForHWND(m_Wnd);
 }
 
-void CHexCtrl::ModifyOper(std::byte* pData, const HEXMODIFY& hms, [[maybe_unused]] SpanCByte)
+void CHexCtrl::ModifyOperScalar(std::byte* pData, const HEXMODIFY& hms, [[maybe_unused]] SpanCByte)
 {
 	assert(pData != nullptr);
 	using enum EHexDataType;
 	using enum EHexOperMode;
 
-	constexpr auto lmbOperT = []<typename T>(T * pData, const HEXMODIFY & hms) {
+	constexpr auto lmbOperScalarT = []<typename T>(T * pData, const HEXMODIFY & hms) {
 		T tData = hms.fBigEndian ? ut::ByteSwap(*pData) : *pData;
 		assert(!hms.spnData.empty());
 		const T tOper = *reinterpret_cast<const T*>(hms.spnData.data());
@@ -6129,34 +6129,34 @@ void CHexCtrl::ModifyOper(std::byte* pData, const HEXMODIFY& hms, [[maybe_unused
 
 	switch (hms.eDataType) {
 	case DATA_INT8:
-		lmbOperT(reinterpret_cast<std::int8_t*>(pData), hms);
+		lmbOperScalarT(reinterpret_cast<std::int8_t*>(pData), hms);
 		break;
 	case DATA_UINT8:
-		lmbOperT(reinterpret_cast<std::uint8_t*>(pData), hms);
+		lmbOperScalarT(reinterpret_cast<std::uint8_t*>(pData), hms);
 		break;
 	case DATA_INT16:
-		lmbOperT(reinterpret_cast<std::int16_t*>(pData), hms);
+		lmbOperScalarT(reinterpret_cast<std::int16_t*>(pData), hms);
 		break;
 	case DATA_UINT16:
-		lmbOperT(reinterpret_cast<std::uint16_t*>(pData), hms);
+		lmbOperScalarT(reinterpret_cast<std::uint16_t*>(pData), hms);
 		break;
 	case DATA_INT32:
-		lmbOperT(reinterpret_cast<std::int32_t*>(pData), hms);
+		lmbOperScalarT(reinterpret_cast<std::int32_t*>(pData), hms);
 		break;
 	case DATA_UINT32:
-		lmbOperT(reinterpret_cast<std::uint32_t*>(pData), hms);
+		lmbOperScalarT(reinterpret_cast<std::uint32_t*>(pData), hms);
 		break;
 	case DATA_INT64:
-		lmbOperT(reinterpret_cast<std::int64_t*>(pData), hms);
+		lmbOperScalarT(reinterpret_cast<std::int64_t*>(pData), hms);
 		break;
 	case DATA_UINT64:
-		lmbOperT(reinterpret_cast<std::uint64_t*>(pData), hms);
+		lmbOperScalarT(reinterpret_cast<std::uint64_t*>(pData), hms);
 		break;
 	case DATA_FLOAT:
-		lmbOperT(reinterpret_cast<float*>(pData), hms);
+		lmbOperScalarT(reinterpret_cast<float*>(pData), hms);
 		break;
 	case DATA_DOUBLE:
-		lmbOperT(reinterpret_cast<double*>(pData), hms);
+		lmbOperScalarT(reinterpret_cast<double*>(pData), hms);
 		break;
 	default:
 		break;

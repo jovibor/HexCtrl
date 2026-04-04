@@ -3506,12 +3506,22 @@ namespace HEXCTRL::INTERNAL::simd {
 			break;
 		case OPER_MIN:
 			for (auto i = 0U; i < uChunksData; ++i) {
-				pData[i] = (std::max)(pData[i], tOper);
+				if constexpr (std::is_floating_point_v<T>) {
+					pData[i] = std::fmax(pData[i], tOper);
+				}
+				else {
+					pData[i] = (std::max)(pData[i], tOper);
+				}
 			}
 			break;
 		case OPER_MAX:
 			for (auto i = 0U; i < uChunksData; ++i) {
-				pData[i] = (std::min)(pData[i], tOper);
+				if constexpr (std::is_floating_point_v<T>) {
+					pData[i] = std::fmin(pData[i], tOper);
+				}
+				else {
+					pData[i] = (std::min)(pData[i], tOper);
+				}
 			}
 			break;
 		case OPER_SWAP:

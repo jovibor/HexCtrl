@@ -249,9 +249,9 @@ void CHexDlgOpers::OnComboOperSelChange()
 	if (fShouldHaveFloats != fHasFloats) {
 		m_WndCmbType.SetRedraw(false);
 		if (fShouldHaveFloats) {
-			auto iIndex = m_WndCmbType.AddString(L"Float");
+			auto iIndex = m_WndCmbType.AddString(L"float");
 			m_WndCmbType.SetItemData(iIndex, static_cast<DWORD_PTR>(DATA_FLOAT));
-			iIndex = m_WndCmbType.AddString(L"Double");
+			iIndex = m_WndCmbType.AddString(L"double");
 			m_WndCmbType.SetItemData(iIndex, static_cast<DWORD_PTR>(DATA_DOUBLE));
 		}
 		else {
@@ -347,22 +347,22 @@ auto CHexDlgOpers::OnInitDialog(const MSG& msg)->INT_PTR
 	m_WndCmbOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_BITREV));
 
 	using enum EHexDataType;
-	iIndex = m_WndCmbType.AddString(L"Int8");
+	iIndex = m_WndCmbType.AddString(L"int8");
 	m_WndCmbType.SetItemData(iIndex, static_cast<DWORD_PTR>(DATA_INT8));
 	m_WndCmbType.SetCurSel(iIndex);
-	iIndex = m_WndCmbType.AddString(L"Unsigned Int8");
+	iIndex = m_WndCmbType.AddString(L"uint8");
 	m_WndCmbType.SetItemData(iIndex, static_cast<DWORD_PTR>(DATA_UINT8));
-	iIndex = m_WndCmbType.AddString(L"Int16");
+	iIndex = m_WndCmbType.AddString(L"int16");
 	m_WndCmbType.SetItemData(iIndex, static_cast<DWORD_PTR>(DATA_INT16));
-	iIndex = m_WndCmbType.AddString(L"Unsigned Int16");
+	iIndex = m_WndCmbType.AddString(L"uint16");
 	m_WndCmbType.SetItemData(iIndex, static_cast<DWORD_PTR>(DATA_UINT16));
-	iIndex = m_WndCmbType.AddString(L"Int32");
+	iIndex = m_WndCmbType.AddString(L"int32");
 	m_WndCmbType.SetItemData(iIndex, static_cast<DWORD_PTR>(DATA_INT32));
-	iIndex = m_WndCmbType.AddString(L"Unsigned Int32");
+	iIndex = m_WndCmbType.AddString(L"uint32");
 	m_WndCmbType.SetItemData(iIndex, static_cast<DWORD_PTR>(DATA_UINT32));
-	iIndex = m_WndCmbType.AddString(L"Int64");
+	iIndex = m_WndCmbType.AddString(L"int64");
 	m_WndCmbType.SetItemData(iIndex, static_cast<DWORD_PTR>(DATA_INT64));
-	iIndex = m_WndCmbType.AddString(L"Unsigned Int64");
+	iIndex = m_WndCmbType.AddString(L"uint64");
 	m_WndCmbType.SetItemData(iIndex, static_cast<DWORD_PTR>(DATA_UINT64));
 
 	m_Wnd.CheckRadioButton(IDC_HEXCTRL_OPERS_RAD_ALL, IDC_HEXCTRL_OPERS_RAD_SEL, IDC_HEXCTRL_OPERS_RAD_ALL);
