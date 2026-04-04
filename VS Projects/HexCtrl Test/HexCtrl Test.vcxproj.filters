@@ -63,6 +63,9 @@
     <ClCompile Include="CModifyBITREV.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="CModifyASSIGN.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CHexCtrlInit.h">

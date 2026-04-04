@@ -165,8 +165,8 @@ bool CHexDlgOpers::FillVecOper(bool fCheckBE)
 	}
 
 	//Some operations don't need to swap the whole data in big-endian mode.
-	//Instead, the operand itself can be swapped. Binary OR/XOR/AND are good examples.
-	//Binary NOT and OPER_BITREV don't need to swap at all.
+	//Instead, the operand itself can be swapped preemptively for such operations.
+	//Bitwise OR/XOR/AND are good examples. Bitwise NOT and OPER_BITREV don't need to swap at all.
 	if (fCheckBE && (eOperMode == OPER_OR || eOperMode == OPER_XOR
 		|| eOperMode == OPER_AND || eOperMode == OPER_ASSIGN)) {
 		tOper = ut::ByteSwap(tOper);

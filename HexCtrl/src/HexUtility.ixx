@@ -13,6 +13,7 @@ module;
 #include <algorithm>
 #include <bit>
 #include <cassert>
+#include <cmath>
 #include <cwctype>
 #include <format>
 #include <locale>
@@ -109,7 +110,8 @@ namespace HEXCTRL::INTERNAL::ut { //Utility methods and stuff.
 
 	template<typename T> concept TSize1248 = (sizeof(T) == 1 || sizeof(T) == 2 || sizeof(T) == 4 || sizeof(T) == 8);
 
-	template<TSize1248 T> [[nodiscard]] constexpr T ByteSwap(T tData)noexcept
+	template<TSize1248 T>
+	[[nodiscard]] constexpr T ByteSwap(T tData)noexcept
 	{
 		//Since a swapping-data type can be any type of 2, 4, or 8 bytes size,
 		//we first bit_cast swapping-data to an integral type of the same size,
@@ -118,32 +120,32 @@ namespace HEXCTRL::INTERNAL::ut { //Utility methods and stuff.
 			return tData;
 		}
 		else if constexpr (sizeof(T) == sizeof(std::uint16_t)) { //2 bytes.
-			auto wData = std::bit_cast<std::uint16_t>(tData);
+			auto u16Data = std::bit_cast<std::uint16_t>(tData);
 			if (std::is_constant_evaluated()) {
-				wData = static_cast<std::uint16_t>((wData << 8) | (wData >> 8));
-				return std::bit_cast<T>(wData);
+				u16Data = static_cast<std::uint16_t>((u16Data << 8) | (u16Data >> 8));
+				return std::bit_cast<T>(u16Data);
 			}
-			return std::bit_cast<T>(_byteswap_ushort(wData));
+			return std::bit_cast<T>(_byteswap_ushort(u16Data));
 		}
 		else if constexpr (sizeof(T) == sizeof(std::uint32_t)) { //4 bytes.
-			auto ulData = std::bit_cast<std::uint32_t>(tData);
+			auto u32Data = std::bit_cast<std::uint32_t>(tData);
 			if (std::is_constant_evaluated()) {
-				ulData = (ulData << 24) | ((ulData << 8) & 0x00FF'0000U)
-					| ((ulData >> 8) & 0x0000'FF00U) | (ulData >> 24);
-				return std::bit_cast<T>(ulData);
+				u32Data = (u32Data << 24) | ((u32Data << 8) & 0x00FF'0000U)
+					| ((u32Data >> 8) & 0x0000'FF00U) | (u32Data >> 24);
+				return std::bit_cast<T>(u32Data);
 			}
-			return std::bit_cast<T>(_byteswap_ulong(ulData));
+			return std::bit_cast<T>(_byteswap_ulong(u32Data));
 		}
 		else if constexpr (sizeof(T) == sizeof(std::uint64_t)) { //8 bytes.
-			auto ullData = std::bit_cast<std::uint64_t>(tData);
+			auto u64Data = std::bit_cast<std::uint64_t>(tData);
 			if (std::is_constant_evaluated()) {
-				ullData = (ullData << 56) | ((ullData << 40) & 0x00FF'0000'0000'0000ULL)
-					| ((ullData << 24) & 0x0000'FF00'0000'0000ULL) | ((ullData << 8) & 0x0000'00FF'0000'0000ULL)
-					| ((ullData >> 8) & 0x0000'0000'FF00'0000ULL) | ((ullData >> 24) & 0x0000'0000'00FF'0000ULL)
-					| ((ullData >> 40) & 0x0000'0000'0000'FF00ULL) | (ullData >> 56);
-				return std::bit_cast<T>(ullData);
+				u64Data = (u64Data << 56) | ((u64Data << 40) & 0x00FF'0000'0000'0000ULL)
+					| ((u64Data << 24) & 0x0000'FF00'0000'0000ULL) | ((u64Data << 8) & 0x0000'00FF'0000'0000ULL)
+					| ((u64Data >> 8) & 0x0000'0000'FF00'0000ULL) | ((u64Data >> 24) & 0x0000'0000'00FF'0000ULL)
+					| ((u64Data >> 40) & 0x0000'0000'0000'FF00ULL) | (u64Data >> 56);
+				return std::bit_cast<T>(u64Data);
 			}
-			return std::bit_cast<T>(_byteswap_uint64(ullData));
+			return std::bit_cast<T>(_byteswap_uint64(u64Data));
 		}
 	}
 
@@ -2284,6 +2286,7 @@ namespace HEXCTRL::INTERNAL::simd {
 		const auto m128Data = hms.fBigEndian ?
 			ByteSwapVec<float>(_mm_loadu_ps(reinterpret_cast<const float*>(pData)))
 			: _mm_loadu_ps(reinterpret_cast<const float*>(pData));
+		assert(std::isfinite(*reinterpret_cast<const float*>(hms.spnData.data())));
 		const auto m128Oper = _mm_set_ps1(*reinterpret_cast<const float*>(hms.spnData.data()));
 		__m128 m128Result { };
 
@@ -2329,6 +2332,7 @@ namespace HEXCTRL::INTERNAL::simd {
 		const auto m128dData = hms.fBigEndian ?
 			ByteSwapVec<double>(_mm_loadu_pd(reinterpret_cast<const double*>(pData)))
 			: _mm_loadu_pd(reinterpret_cast<const double*>(pData));
+		assert(std::isfinite(*reinterpret_cast<const double*>(hms.spnData.data())));
 		const auto m128dOper = _mm_set1_pd(*reinterpret_cast<const double*>(hms.spnData.data()));
 		__m128d m128dResult { };
 
@@ -3243,6 +3247,7 @@ namespace HEXCTRL::INTERNAL::simd {
 		const auto m256Data = hms.fBigEndian ?
 			ByteSwapVec<float>(_mm256_loadu_ps(reinterpret_cast<const float*>(pData)))
 			: _mm256_loadu_ps(reinterpret_cast<const float*>(pData));
+		assert(std::isfinite(*reinterpret_cast<const float*>(hms.spnData.data())));
 		const auto m256Oper = _mm256_set1_ps(*reinterpret_cast<const float*>(hms.spnData.data()));
 		__m256 m256Result { };
 
@@ -3288,6 +3293,7 @@ namespace HEXCTRL::INTERNAL::simd {
 		const auto m256dData = hms.fBigEndian ?
 			ByteSwapVec<double>(_mm256_loadu_pd(reinterpret_cast<const double*>(pData)))
 			: _mm256_loadu_pd(reinterpret_cast<const double*>(pData));
+		assert(std::isfinite(*reinterpret_cast<const double*>(hms.spnData.data())));
 		const auto m256dOper = _mm256_set1_pd(*reinterpret_cast<const double*>(hms.spnData.data()));
 		__m256d m256dResult { };
 

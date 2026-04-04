@@ -1599,31 +1599,44 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 	{
 		using enum EHexDataType;
 		using enum EHexOperMode;
-		//Special case for the OPER_ASSIGN operation.
-		//It can easily be replaced with the MODIFY_REPEAT mode, which is significantly faster.
-		//Additionally, ensuring that the spnData.size() (operand size) is equal eDataType size.
+		//Special case for the OPER_ASSIGN operation. This operation can easily be replaced 
+		//with the MODIFY_REPEAT mode, which is significantly faster.
+
 		if (hms.eOperMode == OPER_ASSIGN) {
 			HEXMODIFY hmsRepeat = hms;
 			hmsRepeat.eModifyMode = MODIFY_REPEAT;
+			std::uint64_t u64Data { };
+
 			switch (hms.eDataType) {
-			case DATA_INT8:
-			case DATA_UINT8:
-				hmsRepeat.spnData = { hms.spnData.data(), sizeof(std::int8_t) };
-				break;
 			case DATA_INT16:
 			case DATA_UINT16:
-				hmsRepeat.spnData = { hms.spnData.data(), sizeof(std::int16_t) };
-				break;
+			{
+				auto u16 = *reinterpret_cast<const std::uint16_t*>(hms.spnData.data());
+				if (hms.fBigEndian) { u16 = ut::ByteSwap(u16); }
+				u64Data = u16;
+				hmsRepeat.spnData = { reinterpret_cast<const std::byte*>(&u64Data), sizeof(std::uint16_t) };
+			}
+			break;
 			case DATA_INT32:
 			case DATA_UINT32:
 			case DATA_FLOAT:
-				hmsRepeat.spnData = { hms.spnData.data(), sizeof(std::int32_t) };
-				break;
+			{
+				auto u32 = *reinterpret_cast<const std::uint32_t*>(hms.spnData.data());
+				if (hms.fBigEndian) { u32 = ut::ByteSwap(u32); }
+				u64Data = u32;
+				hmsRepeat.spnData = { reinterpret_cast<const std::byte*>(&u64Data), sizeof(std::uint32_t) };
+			}
+			break;
 			case DATA_INT64:
 			case DATA_UINT64:
 			case DATA_DOUBLE:
-				hmsRepeat.spnData = { hms.spnData.data(), sizeof(std::int64_t) };
-				break;
+			{
+				auto u64 = *reinterpret_cast<const std::uint64_t*>(hms.spnData.data());
+				if (hms.fBigEndian) { u64 = ut::ByteSwap(u64); }
+				u64Data = u64;
+				hmsRepeat.spnData = { reinterpret_cast<const std::byte*>(&u64Data), sizeof(std::uint64_t) };
+			}
+			break;
 			default:
 				break;
 			};
@@ -6085,10 +6098,20 @@ void CHexCtrl::ModifyOper(std::byte* pData, const HEXMODIFY& hms, [[maybe_unused
 			tData /= tOper;
 			break;
 		case OPER_MIN:
-			tData = (std::max)(tData, tOper);
+			if constexpr (std::is_floating_point_v<T>) {
+				tData = std::fmax(tData, tOper);
+			}
+			else {
+				tData = (std::max)(tData, tOper);
+			}
 			break;
 		case OPER_MAX:
-			tData = (std::min)(tData, tOper);
+			if constexpr (std::is_floating_point_v<T>) {
+				tData = std::fmin(tData, tOper);
+			}
+			else {
+				tData = (std::min)(tData, tOper);
+			}
 			break;
 		case OPER_SWAP:
 			tData = ut::ByteSwap(tData);
