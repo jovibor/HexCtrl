@@ -1373,9 +1373,9 @@ namespace HEXCTRL::LISTEX {
 		HFONT m_hFntList { };              //Default list font.
 		HFONT m_hFntListUnderline { };     //Underlined list font, for links.
 		HPEN m_hPenGrid { };               //Pen for list lines between cells.
-		HWND m_hWndCellTT { };             //Cells tool-tip window.
-		HWND m_hWndLinkTT { };             //Links tool-tip window.
-		HWND m_hWndRowTT { };              //Tooltip window for row in m_fHighLatency mode.
+		HWND m_hWndTTCell { };             //Tooltip window for cells.
+		HWND m_hWndTTLink { };             //Tooltip window for links.
+		HWND m_hWndTTRow { };              //Tooltip window for rows, in the m_fHighLatency mode.
 		HWND m_hWndEditInPlace { };        //Edit box for in-place cells editing.
 		GDIUT::CRect m_rcLinkCurr;         //Current link's rect;
 		LISTEXCOLORS m_stColors { };
@@ -1481,49 +1481,48 @@ bool CListEx::Create(const LISTEXCREATE& lcs)
 	m_ptTTOffset = lcs.ptTTOffset;
 
 	//Cell Tooltip.
-	if (m_hWndCellTT = ::CreateWindowExW(WS_EX_TOPMOST, TOOLTIPS_CLASSW, nullptr, lcs.dwTTStyleCell, CW_USEDEFAULT,
-		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, nullptr, nullptr, nullptr, nullptr); m_hWndCellTT == nullptr) {
+	if (m_hWndTTCell = ::CreateWindowExW(WS_EX_TOPMOST, TOOLTIPS_CLASSW, nullptr, lcs.dwTTStyleCell, CW_USEDEFAULT,
+		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, nullptr, nullptr, nullptr, nullptr); m_hWndTTCell == nullptr) {
 		assert(false);
 		return false;
 	}
 
 	//The TTF_TRACK flag should not be used with the TTS_BALLOON tooltips, because in this case
 	//the balloon will always be positioned _below_ provided coordinates.
-	const TTTOOLINFOW ttiCell { .cbSize { sizeof(TTTOOLINFOW) },
-		.uFlags { static_cast<UINT>(lcs.dwTTStyleCell & TTS_BALLOON ? 0 : TTF_TRACK) } };
-	::SendMessageW(m_hWndCellTT, TTM_ADDTOOLW, 0, reinterpret_cast<LPARAM>(&ttiCell));
-	::SendMessageW(m_hWndCellTT, TTM_SETMAXTIPWIDTH, 0, static_cast<LPARAM>(400)); //to allow use of newline \n.
+	TTTOOLINFOW ti { .cbSize { sizeof(TTTOOLINFOW) } };
+	ti.uFlags = static_cast<UINT>(lcs.dwTTStyleCell & TTS_BALLOON ? 0 : TTF_TRACK);
+	::SendMessageW(m_hWndTTCell, TTM_ADDTOOLW, 0, reinterpret_cast<LPARAM>(&ti));
+	::SendMessageW(m_hWndTTCell, TTM_SETMAXTIPWIDTH, 0, static_cast<LPARAM>(400)); //to allow use of newline \n.
 	if (m_stColors.clrTooltipText != 0xFFFFFFFFUL || m_stColors.clrTooltipBk != 0xFFFFFFFFUL) {
 		//To prevent Windows from changing theme of cells tooltip window.
 		//Without this call Windows draws Tooltips with current Theme colors, and
 		//TTM_SETTIPTEXTCOLOR/TTM_SETTIPBKCOLOR have no effect.
-		::SetWindowTheme(m_hWndCellTT, nullptr, L"");
-		::SendMessageW(m_hWndCellTT, TTM_SETTIPTEXTCOLOR, static_cast<WPARAM>(m_stColors.clrTooltipText), 0);
-		::SendMessageW(m_hWndCellTT, TTM_SETTIPBKCOLOR, static_cast<WPARAM>(m_stColors.clrTooltipBk), 0);
+		::SetWindowTheme(m_hWndTTCell, nullptr, L"");
+		::SendMessageW(m_hWndTTCell, TTM_SETTIPTEXTCOLOR, static_cast<WPARAM>(m_stColors.clrTooltipText), 0);
+		::SendMessageW(m_hWndTTCell, TTM_SETTIPBKCOLOR, static_cast<WPARAM>(m_stColors.clrTooltipBk), 0);
 	}
 
 	//Link Tooltip.
-	if (m_hWndLinkTT = ::CreateWindowExW(WS_EX_TOPMOST, TOOLTIPS_CLASSW, nullptr, lcs.dwTTStyleLink, CW_USEDEFAULT,
-		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, nullptr, nullptr, nullptr, nullptr); m_hWndLinkTT == nullptr) {
+	if (m_hWndTTLink = ::CreateWindowExW(WS_EX_TOPMOST, TOOLTIPS_CLASSW, nullptr, lcs.dwTTStyleLink, CW_USEDEFAULT,
+		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, nullptr, nullptr, nullptr, nullptr); m_hWndTTLink == nullptr) {
 		assert(false);
 		return false;
 	}
 
-	const TTTOOLINFOW ttiLink { .cbSize { sizeof(TTTOOLINFOW) },
-		.uFlags { static_cast<UINT>(lcs.dwTTStyleLink & TTS_BALLOON ? 0 : TTF_TRACK) } };
-	::SendMessageW(m_hWndLinkTT, TTM_ADDTOOLW, 0, reinterpret_cast<LPARAM>(&ttiLink));
-	::SendMessageW(m_hWndLinkTT, TTM_SETMAXTIPWIDTH, 0, static_cast<LPARAM>(400)); //to allow use of newline \n.
+	ti.uFlags = static_cast<UINT>(lcs.dwTTStyleLink & TTS_BALLOON ? 0 : TTF_TRACK);
+	::SendMessageW(m_hWndTTLink, TTM_ADDTOOLW, 0, reinterpret_cast<LPARAM>(&ti));
+	::SendMessageW(m_hWndTTLink, TTM_SETMAXTIPWIDTH, 0, static_cast<LPARAM>(400)); //to allow use of newline \n.
 
 	if (m_fHighLatency) { //Tooltip for HighLatency mode.
-		if (m_hWndRowTT = ::CreateWindowExW(WS_EX_TOPMOST, TOOLTIPS_CLASSW, nullptr,
+		if (m_hWndTTRow = ::CreateWindowExW(WS_EX_TOPMOST, TOOLTIPS_CLASSW, nullptr,
 			TTS_NOANIMATE | TTS_NOFADE | TTS_NOPREFIX | TTS_ALWAYSTIP, CW_USEDEFAULT, CW_USEDEFAULT,
-			CW_USEDEFAULT, CW_USEDEFAULT, m_hWnd, nullptr, nullptr, nullptr); m_hWndRowTT == nullptr) {
+			CW_USEDEFAULT, CW_USEDEFAULT, m_hWnd, nullptr, nullptr, nullptr); m_hWndTTRow == nullptr) {
 			assert(false);
 			return false;
 		}
 
-		const TTTOOLINFOW ttiHL { .cbSize { sizeof(TTTOOLINFOW) }, .uFlags { static_cast<UINT>(TTF_TRACK) } };
-		::SendMessageW(m_hWndRowTT, TTM_ADDTOOLW, 0, reinterpret_cast<LPARAM>(&ttiHL));
+		ti.uFlags = static_cast<UINT>(TTF_TRACK);
+		::SendMessageW(m_hWndTTRow, TTM_ADDTOOLW, 0, reinterpret_cast<LPARAM>(&ti));
 	}
 
 	UpdateDPIScale();
@@ -2521,9 +2520,9 @@ auto CListEx::OnCommand(const MSG& msg)->LRESULT
 
 auto CListEx::OnDestroy()->LRESULT
 {
-	::DestroyWindow(m_hWndCellTT);
-	::DestroyWindow(m_hWndLinkTT);
-	::DestroyWindow(m_hWndRowTT);
+	::DestroyWindow(m_hWndTTCell);
+	::DestroyWindow(m_hWndTTLink);
+	::DestroyWindow(m_hWndTTRow);
 	::DestroyWindow(m_hWndEditInPlace);
 	::DeleteObject(m_hFntList);
 	::DeleteObject(m_hFntListUnderline);
@@ -3136,15 +3135,14 @@ void CListEx::SetFontSizeInPoints(float flSizePoints)
 
 void CListEx::TTCellShow(bool fShow, bool fTimer)
 {
-	TTTOOLINFOW ttiCell { .cbSize { sizeof(TTTOOLINFOW) }, .lpszText { m_wstrTTText.data() } };
+	const TTTOOLINFOW ti { .cbSize { sizeof(TTTOOLINFOW) }, .lpszText { m_wstrTTText.data() } };
 	if (fShow) {
 		GDIUT::CPoint ptCur;
 		::GetCursorPos(&ptCur);
 		ptCur.Offset(m_ptTTOffset);
-		::SendMessageW(m_hWndCellTT, TTM_TRACKPOSITION, 0, static_cast<LPARAM>(MAKELONG(ptCur.x, ptCur.y)));
-		::SendMessageW(m_hWndCellTT, TTM_SETTITLEW, TTI_NONE, reinterpret_cast<LPARAM>(m_wstrTTCaption.data()));
-		::SendMessageW(m_hWndCellTT, TTM_UPDATETIPTEXTW, 0, reinterpret_cast<LPARAM>(&ttiCell));
-		::SendMessageW(m_hWndCellTT, TTM_TRACKACTIVATE, TRUE, reinterpret_cast<LPARAM>(&ttiCell));
+		::SendMessageW(m_hWndTTCell, TTM_TRACKPOSITION, 0, static_cast<LPARAM>(MAKELONG(ptCur.x, ptCur.y)));
+		::SendMessageW(m_hWndTTCell, TTM_SETTITLEW, TTI_NONE, reinterpret_cast<LPARAM>(m_wstrTTCaption.data()));
+		::SendMessageW(m_hWndTTCell, TTM_UPDATETIPTEXTW, 0, reinterpret_cast<LPARAM>(&ti));
 		m_tmTT = std::chrono::high_resolution_clock::now();
 		::SetTimer(m_hWnd, m_uIDTTTCellCheck, 300, nullptr); //Timer to check whether mouse has left subitem's rect.
 	}
@@ -3160,20 +3158,19 @@ void CListEx::TTCellShow(bool fShow, bool fTimer)
 		}
 
 		m_fCellTTActive = false;
-		::SendMessageW(m_hWndCellTT, TTM_TRACKACTIVATE, FALSE, reinterpret_cast<LPARAM>(&ttiCell));
 	}
+	::SendMessageW(m_hWndTTCell, TTM_TRACKACTIVATE, fShow, reinterpret_cast<LPARAM>(&ti));
 }
 
 void CListEx::TTLinkShow(bool fShow, bool fTimer)
 {
-	TTTOOLINFOW ttiLink { .cbSize { sizeof(TTTOOLINFOW) }, .lpszText { m_wstrTTText.data() } };
+	const TTTOOLINFOW ti { .cbSize { sizeof(TTTOOLINFOW) }, .lpszText { m_wstrTTText.data() } };
 	if (fShow) {
 		GDIUT::CPoint ptCur;
 		::GetCursorPos(&ptCur);
 		ptCur.Offset(m_ptTTOffset);
-		::SendMessageW(m_hWndLinkTT, TTM_TRACKPOSITION, 0, static_cast<LPARAM>(MAKELONG(ptCur.x, ptCur.y)));
-		::SendMessageW(m_hWndLinkTT, TTM_UPDATETIPTEXTW, 0, reinterpret_cast<LPARAM>(&ttiLink));
-		::SendMessageW(m_hWndLinkTT, TTM_TRACKACTIVATE, TRUE, reinterpret_cast<LPARAM>(&ttiLink));
+		::SendMessageW(m_hWndTTLink, TTM_TRACKPOSITION, 0, static_cast<LPARAM>(MAKELONG(ptCur.x, ptCur.y)));
+		::SendMessageW(m_hWndTTLink, TTM_UPDATETIPTEXTW, 0, reinterpret_cast<LPARAM>(&ti));
 		m_tmTT = std::chrono::high_resolution_clock::now();
 		::SetTimer(m_hWnd, m_uIDTTTLinkCheck, 300, nullptr); //Timer to check whether mouse has left link's rect.
 	}
@@ -3186,24 +3183,25 @@ void CListEx::TTLinkShow(bool fShow, bool fTimer)
 		}
 
 		m_fLinkTTActive = false;
-		::SendMessageW(m_hWndLinkTT, TTM_TRACKACTIVATE, FALSE, reinterpret_cast<LPARAM>(&ttiLink));
 	}
+	::SendMessageW(m_hWndTTLink, TTM_TRACKACTIVATE, fShow, reinterpret_cast<LPARAM>(&ti));
 }
 
 void CListEx::TTHLShow(bool fShow, UINT uRow)
 {
+	TTTOOLINFOW ti { .cbSize { sizeof(TTTOOLINFOW) } };
 	if (fShow) {
 		POINT ptCur;
 		::GetCursorPos(&ptCur);
 		wchar_t warrOffset[32];
 		*std::format_to(warrOffset, L"Row: {}", uRow) = L'\0';
-		TTTOOLINFOW ttiHL { .cbSize { sizeof(TTTOOLINFOW) }, .lpszText { warrOffset } };
-		::SendMessageW(m_hWndRowTT, TTM_TRACKPOSITION, 0, static_cast<LPARAM>(MAKELONG(ptCur.x - 5, ptCur.y - 20)));
-		::SendMessageW(m_hWndRowTT, TTM_UPDATETIPTEXTW, 0, reinterpret_cast<LPARAM>(&ttiHL));
+		ti.lpszText = warrOffset;
+		::SendMessageW(m_hWndTTRow, TTM_TRACKPOSITION, 0, static_cast<LPARAM>(MAKELONG(ptCur.x - 5, ptCur.y - 20)));
+		::SendMessageW(m_hWndTTRow, TTM_UPDATETIPTEXTW, 0, reinterpret_cast<LPARAM>(&ti));
+		ti.lpszText = nullptr;
 	}
 
-	TTTOOLINFOW ttiHL { .cbSize { sizeof(TTTOOLINFOW) }, };
-	::SendMessageW(m_hWndRowTT, TTM_TRACKACTIVATE, fShow, reinterpret_cast<LPARAM>(&ttiHL));
+	::SendMessageW(m_hWndTTRow, TTM_TRACKACTIVATE, fShow, reinterpret_cast<LPARAM>(&ti));
 }
 
 void CListEx::UpdateDPIScale()

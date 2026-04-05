@@ -442,7 +442,7 @@ namespace HEXCTRL::INTERNAL {
 		void SetUnprintableCharImpl(wchar_t wch, bool fRedraw = true);
 		void SnapshotUndo(const VecSpan& vecSpan); //Takes currently modifiable data snapshot.
 		void TextChunkPoint(ULONGLONG ullOffset, int& iCx, int& iCy)const; //Point of the text chunk.
-		void TTMainShow(bool fShow, bool fTimer = false); //Main tooltip show/hide.
+		void TTMainShow(bool fShow, bool fTimer = false, LPCWSTR pwszTT = nullptr); //Main tooltip show/hide.
 		void TTOffsetShow(bool fShow); //Tooltip Offset show/hide.
 		void Undo();
 		void UpdateDPIScale(); //Set new DPI scale factor according to current DPI.
@@ -451,13 +451,15 @@ namespace HEXCTRL::INTERNAL {
 			UINT_PTR uIDSubclass, DWORD_PTR dwRefData)->LRESULT;
 	private:
 		static constexpr auto m_pwszClassName { L"HexCtrl_MainWnd" }; //HexCtrl unique Window Class name.
-		static constexpr auto m_uIDTTTMain { 0x01UL };                //Timer ID for default tooltip.
+		static constexpr auto m_uIDTTTMain { 0x01UL };                //Timer ID for the tooltip.
 		static constexpr auto m_uIDTScrolCursor { 0x02UL };           //Timer ID for the scroll cursor.
 		static constexpr auto m_iFirstHorzLinePx { 0 };               //First horizontal line indent.
 		static constexpr auto m_iFirstVertLinePx { 0 };               //First vertical line indent.
 		static constexpr auto m_dwVKMouseWheelUp { 0x0100UL };        //Artificial Virtual Key for a Mouse-Wheel Up event.
 		static constexpr auto m_dwVKMouseWheelDown { 0x0101UL };      //Artificial Virtual Key for a Mouse-Wheel Down event.
 		static constexpr auto m_dwVKMiddleButtonDown { 0x0102UL };    //Artificial Virtual Key for a Middle Button Down event.
+		static constexpr auto m_u32TTMainID { 0x01U };   //Main tooltip tool ID.
+		static constexpr auto m_u32TTOffsetID { 0x02U }; //Offset tooltip tool ID.
 		CHexDlgBkmMgr m_DlgBkmMgr;            //"Bookmark manager" dialog.
 		CHexDlgCodepage m_DlgCodepage;        //"Codepage" dialog.
 		CHexDlgDataInterp m_DlgDataInterp;    //"Data interpreter" dialog.
@@ -470,8 +472,7 @@ namespace HEXCTRL::INTERNAL {
 		CHexScroll m_ScrollH;                 //Horizontal scroll bar.
 		HINSTANCE m_hInstRes { };             //Hinstance of the HexCtrl resources.
 		GDIUT::CWnd m_Wnd;                    //Main window.
-		GDIUT::CWnd m_wndTTMain;              //Main tooltip window. It differs in creation flags from m_wndTTOffset.
-		GDIUT::CWnd m_wndTTOffset;            //Tooltip window for Offset in m_fHighLatency mode.
+		GDIUT::CWnd m_WndTT;                  //Tooltip window.
 		GDIUT::CMenu m_MenuMain;              //Main popup menu.
 		GDIUT::CPoint m_ptScrollCursorClick;  //Scroll cursor click coordinates.
 		std::wstring m_wstrPageName;          //Name of the sector/page.
@@ -489,8 +490,6 @@ namespace HEXCTRL::INTERNAL {
 		IHexVirtData* m_pHexVirtData { };     //Data handler pointer for Virtual mode.
 		IHexVirtColors* m_pHexVirtColors { }; //Pointer for custom colors class.
 		SpanByte m_spnData;                   //Main data span.
-		TTTOOLINFOW m_ttiMain { };            //Main tooltip info.
-		TTTOOLINFOW m_ttiOffset { };          //Tooltip info for Offset.
 		std::chrono::steady_clock::time_point m_tmTT; //Start time of the tooltip.
 		PHEXBKM m_pBkmTTCurr { };             //Currently shown bookmark's tooltip;
 		PCHEXTEMPLFIELD m_pTFieldTTCurr { };  //Currently shown Template field's tooltip;
@@ -659,20 +658,14 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	m_ScrollV.AddSibling(&m_ScrollH);
 	m_ScrollH.AddSibling(&m_ScrollV);
 
-	m_wndTTMain.Attach(::CreateWindowExW(WS_EX_TOPMOST, TOOLTIPS_CLASSW, nullptr, TTS_ALWAYSTIP | TTS_NOPREFIX,
+	m_WndTT.Attach(::CreateWindowExW(WS_EX_TOPMOST, TOOLTIPS_CLASSW, nullptr, TTS_ALWAYSTIP | TTS_NOPREFIX,
 		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, m_Wnd, nullptr, nullptr, nullptr));
-	m_wndTTMain.SendMsg(TTM_SETMAXTIPWIDTH, 0, 400); //To allow the use of a newline \n.
-	m_ttiMain.cbSize = sizeof(TTTOOLINFOW);
-	m_ttiMain.uFlags = TTF_TRACK;
-	m_wndTTMain.SendMsg(TTM_ADDTOOLW, 0, reinterpret_cast<LPARAM>(&m_ttiMain));
-
-	m_wndTTOffset.Attach(::CreateWindowExW(WS_EX_TOPMOST, TOOLTIPS_CLASSW, nullptr,
-		TTS_ALWAYSTIP | TTS_NOPREFIX | TTS_NOANIMATE | TTS_NOFADE,
-		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, m_Wnd, nullptr, nullptr, nullptr));
-	m_wndTTOffset.SendMsg(TTM_SETMAXTIPWIDTH, 0, 400); //To allow the use of a newline \n.
-	m_ttiOffset.cbSize = sizeof(TTTOOLINFOW);
-	m_ttiOffset.uFlags = TTF_TRACK;
-	m_wndTTOffset.SendMsg(TTM_ADDTOOLW, 0, reinterpret_cast<LPARAM>(&m_ttiOffset));
+	m_WndTT.SendMsg(TTM_SETMAXTIPWIDTH, 0, 400); //To allow the use of a newline \n.
+	TTTOOLINFOW ti { .cbSize { sizeof(TTTOOLINFOW) }, .uFlags { TTF_TRACK } };
+	ti.uId = m_u32TTMainID;
+	m_WndTT.SendMsg(TTM_ADDTOOLW, 0, reinterpret_cast<LPARAM>(&ti));
+	ti.uId = m_u32TTOffsetID;
+	m_WndTT.SendMsg(TTM_ADDTOOLW, 0, reinterpret_cast<LPARAM>(&ti));
 
 	if (hcs.pColors != nullptr) {
 		m_stColors = *hcs.pColors;
@@ -4620,8 +4613,7 @@ auto CHexCtrl::OnMouseMove(const MSG& msg)->LRESULT
 			if (const auto pBkm = m_DlgBkmMgr.HitTest(optHit->ullOffset); pBkm != nullptr) {
 				if (m_pBkmTTCurr != pBkm) {
 					m_pBkmTTCurr = pBkm;
-					m_ttiMain.lpszText = pBkm->wstrDesc.data();
-					TTMainShow(true);
+					TTMainShow(true, false, pBkm->wstrDesc.data());
 				}
 			}
 			else if (m_pBkmTTCurr != nullptr) {
@@ -4631,8 +4623,7 @@ auto CHexCtrl::OnMouseMove(const MSG& msg)->LRESULT
 				m_DlgTemplMgr.IsTooltips() && pField != nullptr) {
 				if (m_pTFieldTTCurr != pField) {
 					m_pTFieldTTCurr = pField;
-					m_ttiMain.lpszText = const_cast<LPWSTR>(pField->wstrName.data());
-					TTMainShow(true);
+					TTMainShow(true, false, pField->wstrName.data());
 				}
 			}
 			else if (m_pTFieldTTCurr != nullptr) {
@@ -5942,15 +5933,17 @@ void CHexCtrl::TextChunkPoint(ULONGLONG ullOffset, int& iCx, int& iCy)const
 		(ullScrollV - (ullScrollV % m_sizeFontMain.cy)));
 }
 
-void CHexCtrl::TTMainShow(bool fShow, bool fTimer)
+void CHexCtrl::TTMainShow(bool fShow, bool fTimer, LPCWSTR pwszTT)
 {
+	const TTTOOLINFOW ti { .cbSize { sizeof(TTTOOLINFOW) }, .uFlags { TTF_TRACK }, .uId { m_u32TTMainID },
+		.lpszText { const_cast<LPWSTR>(pwszTT) } };
+
 	if (fShow) {
 		m_tmTT = std::chrono::high_resolution_clock::now();
 		POINT ptCur;
 		::GetCursorPos(&ptCur);
-		m_wndTTMain.SendMsg(TTM_TRACKPOSITION, 0, static_cast<LPARAM>(MAKELONG(ptCur.x + 9, ptCur.y - 20)));
-		m_wndTTMain.SendMsg(TTM_UPDATETIPTEXTW, 0, reinterpret_cast<LPARAM>(&m_ttiMain));
-		m_wndTTMain.SendMsg(TTM_TRACKACTIVATE, TRUE, reinterpret_cast<LPARAM>(&m_ttiMain));
+		m_WndTT.SendMsg(TTM_TRACKPOSITION, 0, static_cast<LPARAM>(MAKELONG(ptCur.x + 9, ptCur.y - 20)));
+		m_WndTT.SendMsg(TTM_UPDATETIPTEXTW, 0, reinterpret_cast<LPARAM>(&ti));
 		m_Wnd.SetTimer(m_uIDTTTMain, 300, nullptr);
 	}
 	else {
@@ -5963,24 +5956,25 @@ void CHexCtrl::TTMainShow(bool fShow, bool fTimer)
 			m_pBkmTTCurr = nullptr;
 			m_pTFieldTTCurr = nullptr;
 		}
-
-		m_wndTTMain.SendMsg(TTM_TRACKACTIVATE, FALSE, reinterpret_cast<LPARAM>(&m_ttiMain));
 	}
+	m_WndTT.SendMsg(TTM_TRACKACTIVATE, fShow, reinterpret_cast<LPARAM>(&ti));
 }
 
 void CHexCtrl::TTOffsetShow(bool fShow)
 {
+	TTTOOLINFOW ti { .cbSize { sizeof(TTTOOLINFOW) }, .uFlags { TTF_TRACK }, .uId { m_u32TTOffsetID } };
+
 	if (fShow) {
 		POINT ptCur;
 		::GetCursorPos(&ptCur);
 		auto wstrOffset = (IsOffsetAsHexImpl() ? L"Offset: 0x" : L"Offset: ") + OffsetToWstr(GetTopLine() * GetCapacity());
-		m_ttiOffset.lpszText = wstrOffset.data();
-		m_wndTTOffset.SendMsg(TTM_TRACKPOSITION, 0, static_cast<LPARAM>(MAKELONG(ptCur.x - 5, ptCur.y - 20)));
-		m_wndTTOffset.SendMsg(TTM_UPDATETIPTEXTW, 0, reinterpret_cast<LPARAM>(&m_ttiOffset));
-		m_ttiOffset.lpszText = nullptr;
+		ti.lpszText = wstrOffset.data();
+		m_WndTT.SendMsg(TTM_UPDATETIPTEXTW, 0, reinterpret_cast<LPARAM>(&ti));
+		m_WndTT.SendMsg(TTM_TRACKPOSITION, 0, static_cast<LPARAM>(MAKELONG(ptCur.x - 5, ptCur.y - 25)));
+		ti.lpszText = nullptr;
 	}
 
-	m_wndTTOffset.SendMsg(TTM_TRACKACTIVATE, fShow, reinterpret_cast<LPARAM>(&m_ttiOffset));
+	m_WndTT.SendMsg(TTM_TRACKACTIVATE, fShow, reinterpret_cast<LPARAM>(&ti));
 }
 
 void CHexCtrl::Undo()
