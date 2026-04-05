@@ -470,7 +470,7 @@ namespace HEXCTRL::INTERNAL {
 		CHexScroll m_ScrollH;                 //Horizontal scroll bar.
 		HINSTANCE m_hInstRes { };             //Hinstance of the HexCtrl resources.
 		GDIUT::CWnd m_Wnd;                    //Main window.
-		GDIUT::CWnd m_wndTTMain;              //Main tooltip window.
+		GDIUT::CWnd m_wndTTMain;              //Main tooltip window. It differs in creation flags from m_wndTTOffset.
 		GDIUT::CWnd m_wndTTOffset;            //Tooltip window for Offset in m_fHighLatency mode.
 		GDIUT::CMenu m_MenuMain;              //Main popup menu.
 		GDIUT::CPoint m_ptScrollCursorClick;  //Scroll cursor click coordinates.
@@ -659,20 +659,20 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	m_ScrollV.AddSibling(&m_ScrollH);
 	m_ScrollH.AddSibling(&m_ScrollV);
 
-	m_wndTTMain.Attach(::CreateWindowExW(WS_EX_TOPMOST, TOOLTIPS_CLASSW, nullptr, TTS_NOPREFIX | TTS_ALWAYSTIP,
+	m_wndTTMain.Attach(::CreateWindowExW(WS_EX_TOPMOST, TOOLTIPS_CLASSW, nullptr, TTS_ALWAYSTIP | TTS_NOPREFIX,
 		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, m_Wnd, nullptr, nullptr, nullptr));
+	m_wndTTMain.SendMsg(TTM_SETMAXTIPWIDTH, 0, 400); //To allow the use of a newline \n.
 	m_ttiMain.cbSize = sizeof(TTTOOLINFOW);
 	m_ttiMain.uFlags = TTF_TRACK;
 	m_wndTTMain.SendMsg(TTM_ADDTOOLW, 0, reinterpret_cast<LPARAM>(&m_ttiMain));
-	m_wndTTMain.SendMsg(TTM_SETMAXTIPWIDTH, 0, 400); //To allow the use of a newline \n.
 
 	m_wndTTOffset.Attach(::CreateWindowExW(WS_EX_TOPMOST, TOOLTIPS_CLASSW, nullptr,
-		TTS_NOANIMATE | TTS_NOFADE | TTS_NOPREFIX | TTS_ALWAYSTIP,
+		TTS_ALWAYSTIP | TTS_NOPREFIX | TTS_NOANIMATE | TTS_NOFADE,
 		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, m_Wnd, nullptr, nullptr, nullptr));
+	m_wndTTOffset.SendMsg(TTM_SETMAXTIPWIDTH, 0, 400); //To allow the use of a newline \n.
 	m_ttiOffset.cbSize = sizeof(TTTOOLINFOW);
 	m_ttiOffset.uFlags = TTF_TRACK;
 	m_wndTTOffset.SendMsg(TTM_ADDTOOLW, 0, reinterpret_cast<LPARAM>(&m_ttiOffset));
-	m_wndTTOffset.SendMsg(TTM_SETMAXTIPWIDTH, 0, 400); //To allow the use of a newline \n.
 
 	if (hcs.pColors != nullptr) {
 		m_stColors = *hcs.pColors;

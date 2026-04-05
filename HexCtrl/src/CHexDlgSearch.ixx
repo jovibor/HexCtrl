@@ -122,7 +122,7 @@ namespace HEXCTRL::INTERNAL {
 		void OnNotifyListGetDispInfo(NMHDR* pNMHDR);
 		void OnNotifyListItemChanged(NMHDR* pNMHDR);
 		void OnNotifyListRClick(NMHDR* pNMHDR);
-		void OnNotifyTTWildcard(NMHDR* pNMHDR);
+		void OnNotifyTT(NMHDR* pNMHDR);
 		void OnOK();
 		void Prepare();
 		[[nodiscard]] bool PrepareHexBytes();
@@ -194,7 +194,7 @@ namespace HEXCTRL::INTERNAL {
 		HINSTANCE m_hInstRes { };
 		GDIUT::CWnd m_Wnd;                 //Main window.
 		GDIUT::CWnd m_WndStatResult;       //Static text "Result:".
-		GDIUT::CWnd m_WndTTFind;           //Tooltip for Find combo-box.
+		GDIUT::CWnd m_WndTT;               //Tooltips window.
 		GDIUT::CWndCombo m_WndCmbFind;     //Combo box "Search".
 		GDIUT::CWndCombo m_WndCmbReplace;  //Combo box "Replace".
 		GDIUT::CWndCombo m_WndCmbMode;     //Combo box "Search mode".
@@ -1384,47 +1384,32 @@ auto CHexDlgSearch::OnInitDialog(const MSG& msg)->INT_PTR
 	m_WndEditRngBegin.SetCueBanner(L"range begin");
 	m_WndEditRngEnd.SetCueBanner(L"range end");
 
-	m_WndTTFind = ::CreateWindowExW(0, TOOLTIPS_CLASSW, nullptr, WS_POPUP | TTS_ALWAYSTIP,
+	m_WndTT = ::CreateWindowExW(0, TOOLTIPS_CLASSW, nullptr, WS_POPUP | TTS_ALWAYSTIP,
 		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, m_Wnd, nullptr, nullptr, nullptr);
-	const GDIUT::CWnd wndTipWC = ::CreateWindowExW(0, TOOLTIPS_CLASSW, nullptr, WS_POPUP | TTS_ALWAYSTIP,
-		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, m_Wnd, nullptr, nullptr, nullptr);
-	const GDIUT::CWnd wndTipInv = ::CreateWindowExW(0, TOOLTIPS_CLASSW, nullptr, WS_POPUP | TTS_ALWAYSTIP,
-		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, m_Wnd, nullptr, nullptr, nullptr);
-	const GDIUT::CWnd wndTipRangeEnd = ::CreateWindowExW(0, TOOLTIPS_CLASSW, nullptr, WS_POPUP | TTS_ALWAYSTIP,
-		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, m_Wnd, nullptr, nullptr, nullptr);
-	if (wndTipWC.IsNull() || wndTipInv.IsNull() || wndTipRangeEnd.IsNull() || m_WndTTFind.IsNull())
-		return FALSE;
+	m_WndTT.SendMsg(TTM_SETDELAYTIME, TTDT_AUTOPOP, static_cast<LPARAM>(LOWORD(0x7FFF)));
+	m_WndTT.SendMsg(TTM_SETMAXTIPWIDTH, 0, 1000);
 
-	TTTOOLINFOW stToolInfo { .cbSize { sizeof(TTTOOLINFOW) }, .uFlags { TTF_IDISHWND | TTF_SUBCLASS }, .hwnd { m_Wnd } };
-	std::wstring wstrToolText;
+	TTTOOLINFOW ti { .cbSize { sizeof(TTTOOLINFOW) }, .uFlags { TTF_IDISHWND | TTF_SUBCLASS }, .hwnd { m_Wnd } };
+	std::wstring wstrTTText;
 
-	stToolInfo.uId = reinterpret_cast<UINT_PTR>(m_WndCmbFind.GetComboBoxInfo().hwndItem); //Edit-box of combo-box.
-	wstrToolText = L"To search for numbers range, use a colon (e.g. -1:15).";
-	stToolInfo.lpszText = wstrToolText.data();
-	m_WndTTFind.SendMsg(TTM_ADDTOOLW, 0, reinterpret_cast<LPARAM>(&stToolInfo));
-	m_WndTTFind.SendMsg(TTM_SETDELAYTIME, TTDT_INITIAL, static_cast<LPARAM>(LOWORD(1000))); //1 sec before show.
-	m_WndTTFind.SendMsg(TTM_SETDELAYTIME, TTDT_AUTOPOP, static_cast<LPARAM>(LOWORD(5000))); //5 sec showing time.
-	m_WndTTFind.SendMsg(TTM_SETMAXTIPWIDTH, 0, 1000);
+	ti.uId = reinterpret_cast<UINT_PTR>(m_WndBtnWC.GetHWND()); //"Wildcard" check-box tooltip.
+	ti.lpszText = LPSTR_TEXTCALLBACKW; //Text is obtained from OnNotifyTT.
+	m_WndTT.SendMsg(TTM_ADDTOOLW, 0, reinterpret_cast<LPARAM>(&ti));
 
-	stToolInfo.uId = reinterpret_cast<UINT_PTR>(m_WndBtnWC.GetHWND()); //"Wildcard" check-box tooltip.
-	stToolInfo.lpszText = LPSTR_TEXTCALLBACKW; //Text is obtained from OnNotifyTTWildcard.
-	wndTipWC.SendMsg(TTM_ADDTOOLW, 0, reinterpret_cast<LPARAM>(&stToolInfo));
-	wndTipWC.SendMsg(TTM_SETDELAYTIME, TTDT_AUTOPOP, static_cast<LPARAM>(LOWORD(0x7FFF)));
-	wndTipWC.SendMsg(TTM_SETMAXTIPWIDTH, 0, 1000);
+	ti.uId = reinterpret_cast<UINT_PTR>(m_WndBtnInv.GetHWND()); //"Inverted" check-box tooltip.
+	wstrTTText = L"Search for inverted results.\r\nIt's anything that does NOT match the search conditions.";
+	ti.lpszText = wstrTTText.data();
+	m_WndTT.SendMsg(TTM_ADDTOOLW, 0, reinterpret_cast<LPARAM>(&ti));
 
-	stToolInfo.uId = reinterpret_cast<UINT_PTR>(m_WndBtnInv.GetHWND()); //"Inverted" check-box tooltip.
-	wstrToolText = L"Search for inverted results.\r\nAnything that does NOT match the search conditions.";
-	stToolInfo.lpszText = wstrToolText.data();
-	wndTipInv.SendMsg(TTM_ADDTOOLW, 0, reinterpret_cast<LPARAM>(&stToolInfo));
-	wndTipInv.SendMsg(TTM_SETDELAYTIME, TTDT_AUTOPOP, static_cast<LPARAM>(LOWORD(0x7FFF)));
-	wndTipInv.SendMsg(TTM_SETMAXTIPWIDTH, 0, 1000);
+	ti.uId = reinterpret_cast<UINT_PTR>(m_WndEditStart.GetHWND()); //"Start from:" edit-box tooltip.
+	wstrTTText = L"Starting search offset within the search range.";
+	ti.lpszText = wstrTTText.data();
+	m_WndTT.SendMsg(TTM_ADDTOOLW, 0, reinterpret_cast<LPARAM>(&ti));
 
-	stToolInfo.uId = reinterpret_cast<UINT_PTR>(m_WndEditRngEnd.GetHWND()); //"Search range end" edit-box tooltip.
-	wstrToolText = L"Last offset for the search.\r\nEmpty means until data end.";
-	stToolInfo.lpszText = wstrToolText.data();
-	wndTipRangeEnd.SendMsg(TTM_ADDTOOLW, 0, reinterpret_cast<LPARAM>(&stToolInfo));
-	wndTipRangeEnd.SendMsg(TTM_SETDELAYTIME, TTDT_AUTOPOP, static_cast<LPARAM>(LOWORD(0x7FFF)));
-	wndTipRangeEnd.SendMsg(TTM_SETMAXTIPWIDTH, 0, 1000);
+	ti.uId = reinterpret_cast<UINT_PTR>(m_WndEditRngEnd.GetHWND()); //"Search range: (end)" edit-box tooltip.
+	wstrTTText = L"Last offset for a search, or empty for the whole data range.";
+	ti.lpszText = wstrTTText.data();
+	m_WndTT.SendMsg(TTM_ADDTOOLW, 0, reinterpret_cast<LPARAM>(&ti));
 
 	UpdateControlsState();
 	UpdateTTState();
@@ -1455,8 +1440,8 @@ auto CHexDlgSearch::OnNotify(const MSG& msg)->INT_PTR
 {
 	const auto pNMHDR = reinterpret_cast<NMHDR*>(msg.lParam);
 
-	if (pNMHDR->idFrom == reinterpret_cast<UINT_PTR>(m_WndBtnWC.GetHWND())) { //Wildcard tooltip.
-		OnNotifyTTWildcard(pNMHDR);
+	if (pNMHDR->code == TTN_GETDISPINFOW) { //Tooltips notifications.
+		OnNotifyTT(pNMHDR);
 	}
 	else {
 		switch (pNMHDR->idFrom) {
@@ -1536,17 +1521,21 @@ void CHexDlgSearch::OnNotifyListRClick([[maybe_unused]] NMHDR* pNMHDR)
 	m_MenuList.TrackPopupMenu(pt.x, pt.y, m_Wnd);
 }
 
-void CHexDlgSearch::OnNotifyTTWildcard(NMHDR* pNMHDR)
+void CHexDlgSearch::OnNotifyTT(NMHDR* pNMHDR)
 {
-	const auto pDI = reinterpret_cast<NMTTDISPINFOW*>(pNMHDR);
-	if (pDI->hdr.code == TTN_GETDISPINFOW) {
+	const auto pTTDI = reinterpret_cast<NMTTDISPINFOW*>(pNMHDR);
+
+	if (pNMHDR->idFrom == reinterpret_cast<UINT_PTR>(m_WndBtnWC.GetHWND())) { //Wildcard tooltip.
 		static std::wstring wstrTT;
 		const auto wchWildcard = static_cast<wchar_t>(GetWildcard());
 		wstrTT = std::vformat(L"Use a wildcard character '{0}' to match any letter, or any byte if searching for Hex Bytes.\r\n"
 				L"Example:\r\n"
 				L"  Hex Bytes: 11{0}11 will match 112211, 113311, 114411, 115611, etc...\r\n"
 				L"  Text: sa{0}{0}le will match sample, saMPle, saMple, saddle, etc...", std::make_wformat_args(wchWildcard));
-		pDI->lpszText = wstrTT.data();
+		pTTDI->lpszText = wstrTT.data();
+	}
+	else if (pNMHDR->idFrom == reinterpret_cast<UINT_PTR>(m_WndCmbFind.GetComboBoxInfo().hwndItem)) {
+		wcscpy_s(pTTDI->szText, L"To search for numbers range, use a colon (e.g. -1:15).");
 	}
 }
 
@@ -2171,7 +2160,9 @@ void CHexDlgSearch::UpdateCueBanners()
 
 void CHexDlgSearch::UpdateTTState()
 {
-	m_WndTTFind.SendMsg(TTM_ACTIVATE, GetSearchMode() == ESearchMode::MODE_NUMBERS);
+	const TTTOOLINFOW ti { .cbSize { sizeof(TTTOOLINFOW) }, .uFlags { TTF_IDISHWND | TTF_SUBCLASS }, .hwnd { m_Wnd },
+		.uId { reinterpret_cast<UINT_PTR>(m_WndCmbFind.GetComboBoxInfo().hwndItem) }, .lpszText { LPSTR_TEXTCALLBACKW } };
+	m_WndTT.SendMsg(GetSearchMode() == ESearchMode::MODE_NUMBERS ? TTM_ADDTOOLW : TTM_DELTOOLW, 0, reinterpret_cast<LPARAM>(&ti));
 }
 
 
