@@ -53,7 +53,7 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] bool HasTemplates()const;
 		[[nodiscard]] auto HitTest(ULONGLONG ullOffset)const -> PCHEXTEMPLFIELD; //Template hittest by offset.
 		void Initialize(IHexCtrl &HexCtrl, HINSTANCE hInstRes);
-		[[nodiscard]] bool IsTooltips()const;
+		[[nodiscard]] bool IsShowTooltips()const;
 		int LoadTemplate(const wchar_t* pFilePath)override; //Returns loaded template ID on success, zero otherwise.
 		[[nodiscard]] bool PreTranslateMsg(MSG* pMsg);
 		[[nodiscard]] auto ProcessMsg(const MSG& msg) -> INT_PTR;
@@ -92,7 +92,6 @@ namespace HEXCTRL::INTERNAL {
 		auto OnCtlClrStatic(const MSG& msg) -> INT_PTR;
 		void OnCheckHex();
 		void OnCheckSwapEndian();
-		void OnCheckShowTt();
 		void OnCheckMin();
 		auto OnClose() -> INT_PTR;
 		auto OnDestroy() -> INT_PTR;
@@ -158,7 +157,7 @@ namespace HEXCTRL::INTERNAL {
 		GDIUT::CWnd m_WndStatOffset;     //Static text "Template offset:".
 		GDIUT::CWnd m_WndStatSize;       //Static text Template size:".
 		GDIUT::CWndEdit m_WndEditOffset; //"Offset" edit box.
-		GDIUT::CWndBtn m_WndBtnShowTT;   //Check-box "Show tooltips".
+		GDIUT::CWndBtn m_WndBtnTT;       //Check-box "Show tooltips".
 		GDIUT::CWndBtn m_WndBtnMin;      //Check-box min-max.
 		GDIUT::CWndBtn m_WndBtnHglSel;   //Check-box "Highlight selected".
 		GDIUT::CWndBtn m_WndBtnHex;      //Check-box "Hex numbers".
@@ -183,7 +182,6 @@ namespace HEXCTRL::INTERNAL {
 		bool m_fCurInSplitter { };         //Indicates that mouse cursor is in the splitter area.
 		bool m_fLMDownResize { };          //Left mouse pressed in splitter area to resize.
 		bool m_fListGuardEvent { false };  //To not proceed with OnListItemChanged, same as pTree->action == TVC_UNKNOWN.
-		bool m_fTooltips { true };         //Show tooltips or not.
 	};
 }
 
@@ -340,7 +338,7 @@ auto CHexDlgTemplMgr::GetDlgItemHandle(EHexDlgItem eItem)const->HWND
 	using enum EHexDlgItem;
 	switch (eItem) {
 	case TEMPLMGR_CHK_MIN: return m_WndBtnMin;
-	case TEMPLMGR_CHK_TT: return m_WndBtnShowTT;
+	case TEMPLMGR_CHK_TT: return m_WndBtnTT;
 	case TEMPLMGR_CHK_HGL: return m_WndBtnHglSel;
 	case TEMPLMGR_CHK_HEX: return m_WndBtnHex;
 	case TEMPLMGR_CHK_SWAP: return m_WndBtnEndian;
@@ -412,9 +410,9 @@ void CHexDlgTemplMgr::Initialize(IHexCtrl &HexCtrl, HINSTANCE hInstRes)
 	m_hInstRes = hInstRes;
 }
 
-bool CHexDlgTemplMgr::IsTooltips()const
+bool CHexDlgTemplMgr::IsShowTooltips()const
 {
-	return m_fTooltips;
+	return m_WndBtnTT.IsWindow() && m_WndBtnTT.IsChecked();
 }
 
 int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
@@ -468,7 +466,7 @@ void CHexDlgTemplMgr::SetDlgProperties(std::uint64_t u64Flags)
 
 void CHexDlgTemplMgr::ShowTooltips(bool fShow)
 {
-	m_fTooltips = fShow;
+	m_WndBtnTT.SetCheck(fShow);
 }
 
 void CHexDlgTemplMgr::ShowWindow(int iCmdShow)
@@ -570,7 +568,7 @@ bool CHexDlgTemplMgr::IsNoEsc()const
 
 bool CHexDlgTemplMgr::IsShowAsHex()const
 {
-	return  m_WndBtnHex.IsChecked();
+	return m_WndBtnHex.IsChecked();
 }
 
 bool CHexDlgTemplMgr::IsSwapEndian()const
@@ -701,12 +699,6 @@ void CHexDlgTemplMgr::OnCheckSwapEndian()
 	m_ListEx.RedrawWindow();
 }
 
-void CHexDlgTemplMgr::OnCheckShowTt()
-{
-	//Overriden IHexTemplates` interface method.
-	ShowTooltips(m_WndBtnShowTT.IsChecked());
-}
-
 void CHexDlgTemplMgr::OnCheckMin()
 {
 	static constexpr int arrIDsToHide[] { IDC_HEXCTRL_TEMPLMGR_STAT_AVAIL, IDC_HEXCTRL_TEMPLMGR_COMBO_TEMPLATES,
@@ -774,7 +766,6 @@ auto CHexDlgTemplMgr::OnCommand(const MSG& msg)->INT_PTR
 		case IDC_HEXCTRL_TEMPLMGR_BTN_LOAD: OnBnLoadTemplate(); break;
 		case IDC_HEXCTRL_TEMPLMGR_BTN_UNLOAD: OnBnUnloadTemplate(); break;
 		case IDC_HEXCTRL_TEMPLMGR_BTN_RNDCLR: OnBnRandomizeColors(); break;
-		case IDC_HEXCTRL_TEMPLMGR_CHK_TT: OnCheckShowTt(); break;
 		case IDC_HEXCTRL_TEMPLMGR_CHK_HEX: OnCheckHex(); break;
 		case IDC_HEXCTRL_TEMPLMGR_CHK_SWAP: OnCheckSwapEndian(); break;
 		case IDC_HEXCTRL_TEMPLMGR_CHK_MIN: OnCheckMin(); break;
@@ -875,7 +866,7 @@ auto CHexDlgTemplMgr::OnInitDialog(const MSG& msg)->INT_PTR
 	m_WndStatOffset.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_TEMPLMGR_STAT_OFFSETNUM));
 	m_WndStatSize.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_TEMPLMGR_STAT_SIZENUM));
 	m_WndEditOffset.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_TEMPLMGR_EDIT_OFFSET));
-	m_WndBtnShowTT.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_TEMPLMGR_CHK_TT));
+	m_WndBtnTT.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_TEMPLMGR_CHK_TT));
 	m_WndBtnMin.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_TEMPLMGR_CHK_MIN));
 	m_WndBtnHglSel.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_TEMPLMGR_CHK_HGL));
 	m_WndBtnHex.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_TEMPLMGR_CHK_HEX));
@@ -920,7 +911,7 @@ auto CHexDlgTemplMgr::OnInitDialog(const MSG& msg)->INT_PTR
 	m_MenuTree.AppendString(static_cast<UINT_PTR>(IDM_TREE_DISAPPLYALL), L"Disapply all");
 
 	m_WndEditOffset.SetWndText(L"0x0");
-	m_WndBtnShowTT.SetCheck(IsTooltips());
+	m_WndBtnTT.SetCheck(true);
 	m_WndBtnHglSel.SetCheck(IsHglSel());
 	m_WndBtnHex.SetCheck(IsShowAsHex());
 

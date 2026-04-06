@@ -442,8 +442,7 @@ namespace HEXCTRL::INTERNAL {
 		void SetUnprintableCharImpl(wchar_t wch, bool fRedraw = true);
 		void SnapshotUndo(const VecSpan& vecSpan); //Takes currently modifiable data snapshot.
 		void TextChunkPoint(ULONGLONG ullOffset, int& iCx, int& iCy)const; //Point of the text chunk.
-		void TTMainShow(bool fShow, bool fTimer = false, LPCWSTR pwszTT = nullptr); //Main tooltip show/hide.
-		void TTOffsetShow(bool fShow); //Tooltip Offset show/hide.
+		void TTTrackShow(bool fShow, bool fTimer, const wchar_t* pwszText = nullptr);
 		void Undo();
 		void UpdateDPIScale(); //Set new DPI scale factor according to current DPI.
 		static void ModifyOperScalar(std::byte* pData, const HEXMODIFY& hms, SpanCByte); //Modify operation scalar.
@@ -451,15 +450,13 @@ namespace HEXCTRL::INTERNAL {
 			UINT_PTR uIDSubclass, DWORD_PTR dwRefData)->LRESULT;
 	private:
 		static constexpr auto m_pwszClassName { L"HexCtrl_MainWnd" }; //HexCtrl unique Window Class name.
-		static constexpr auto m_uIDTTTMain { 0x01UL };                //Timer ID for the tooltip.
+		static constexpr auto m_uIDTTooltip { 0x01UL };               //Timer ID for the tooltip.
 		static constexpr auto m_uIDTScrolCursor { 0x02UL };           //Timer ID for the scroll cursor.
 		static constexpr auto m_iFirstHorzLinePx { 0 };               //First horizontal line indent.
 		static constexpr auto m_iFirstVertLinePx { 0 };               //First vertical line indent.
 		static constexpr auto m_dwVKMouseWheelUp { 0x0100UL };        //Artificial Virtual Key for a Mouse-Wheel Up event.
 		static constexpr auto m_dwVKMouseWheelDown { 0x0101UL };      //Artificial Virtual Key for a Mouse-Wheel Down event.
 		static constexpr auto m_dwVKMiddleButtonDown { 0x0102UL };    //Artificial Virtual Key for a Middle Button Down event.
-		static constexpr auto m_u32TTMainID { 0x01U };   //Main tooltip tool ID.
-		static constexpr auto m_u32TTOffsetID { 0x02U }; //Offset tooltip tool ID.
 		CHexDlgBkmMgr m_DlgBkmMgr;            //"Bookmark manager" dialog.
 		CHexDlgCodepage m_DlgCodepage;        //"Codepage" dialog.
 		CHexDlgDataInterp m_DlgDataInterp;    //"Data interpreter" dialog.
@@ -491,8 +488,7 @@ namespace HEXCTRL::INTERNAL {
 		IHexVirtColors* m_pHexVirtColors { }; //Pointer for custom colors class.
 		SpanByte m_spnData;                   //Main data span.
 		std::chrono::steady_clock::time_point m_tmTT; //Start time of the tooltip.
-		PHEXBKM m_pBkmTTCurr { };             //Currently shown bookmark's tooltip;
-		PCHEXTEMPLFIELD m_pTFieldTTCurr { };  //Currently shown Template field's tooltip;
+		const wchar_t* m_pwszTTText { };      //Current tooltip text.
 		ULONGLONG m_ullCaretPos { };          //Current caret position.
 		ULONGLONG m_ullCursorNow { };         //The cursor's current clicked pos.
 		ULONGLONG m_ullCursorPrev { };        //The cursor's previously clicked pos, used in selection resolutions.
@@ -661,10 +657,7 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	m_WndTT.Attach(::CreateWindowExW(WS_EX_TOPMOST, TOOLTIPS_CLASSW, nullptr, TTS_ALWAYSTIP | TTS_NOPREFIX,
 		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, m_Wnd, nullptr, nullptr, nullptr));
 	m_WndTT.SendMsg(TTM_SETMAXTIPWIDTH, 0, 400); //To allow the use of a newline \n.
-	TTTOOLINFOW ti { .cbSize { sizeof(TTTOOLINFOW) }, .uFlags { TTF_TRACK } };
-	ti.uId = m_u32TTMainID;
-	m_WndTT.SendMsg(TTM_ADDTOOLW, 0, reinterpret_cast<LPARAM>(&ti));
-	ti.uId = m_u32TTOffsetID;
+	const TTTOOLINFOW ti { .cbSize { sizeof(TTTOOLINFOW) }, .uFlags { TTF_TRACK } };
 	m_WndTT.SendMsg(TTM_ADDTOOLW, 0, reinterpret_cast<LPARAM>(&ti));
 
 	if (hcs.pColors != nullptr) {
@@ -4610,30 +4603,30 @@ auto CHexCtrl::OnMouseMove(const MSG& msg)->LRESULT
 	}
 	else {
 		if (optHit) {
-			if (const auto pBkm = m_DlgBkmMgr.HitTest(optHit->ullOffset); pBkm != nullptr) {
-				if (m_pBkmTTCurr != pBkm) {
-					m_pBkmTTCurr = pBkm;
-					TTMainShow(true, false, pBkm->wstrDesc.data());
+			if (const auto pBkm = m_DlgBkmMgr.HitTest(optHit->ullOffset);
+				pBkm != nullptr && m_DlgBkmMgr.IsShowTooltips()) {
+				const auto pwszBkmDesc = pBkm->wstrDesc.data();
+				if (m_pwszTTText != pwszBkmDesc) {
+					m_pwszTTText = pwszBkmDesc;
+					TTTrackShow(true, true, m_pwszTTText);
 				}
-			}
-			else if (m_pBkmTTCurr != nullptr) {
-				TTMainShow(false);
 			}
 			else if (const auto pField = m_DlgTemplMgr.HitTest(optHit->ullOffset);
-				m_DlgTemplMgr.IsTooltips() && pField != nullptr) {
-				if (m_pTFieldTTCurr != pField) {
-					m_pTFieldTTCurr = pField;
-					TTMainShow(true, false, pField->wstrName.data());
+				pField != nullptr && m_DlgTemplMgr.IsShowTooltips()) {
+				const auto pwszFieldName = pField->wstrName.data();
+				if (m_pwszTTText != pwszFieldName) {
+					m_pwszTTText = pwszFieldName;
+					TTTrackShow(true, true, m_pwszTTText);
 				}
 			}
-			else if (m_pTFieldTTCurr != nullptr) {
-				TTMainShow(false);
+			else if (m_pwszTTText != nullptr) {
+				TTTrackShow(false, false);
 			}
 		}
 		else {
 			//If there is tooltip already shown, but cursor is outside of data chunks.
-			if (m_pBkmTTCurr != nullptr || m_pTFieldTTCurr != nullptr) {
-				TTMainShow(false);
+			if (m_pwszTTText != nullptr) {
+				TTTrackShow(false, false);
 			}
 		}
 
@@ -4793,20 +4786,20 @@ auto CHexCtrl::OnTimer(const MSG& msg)->LRESULT
 {
 	const auto uIDTimer = msg.wParam;
 
-	if (uIDTimer == m_uIDTTTMain) {
-		constexpr auto dbSecToShow { 5000.0 }; //How many ms to show tooltips.
+	if (uIDTimer == m_uIDTTooltip) {
+		constexpr auto dSecToShow { 5000.0 }; //How many ms to show tooltips.
 		auto rcClient = m_Wnd.GetClientRect();
 		m_Wnd.ClientToScreen(rcClient);
 		GDIUT::CPoint ptCur;
 		::GetCursorPos(ptCur);
 
-		if (!rcClient.PtInRect(ptCur)) { //Check if cursor has left client rect,
-			TTMainShow(false);
+		if (!rcClient.PtInRect(ptCur)) { //Check if cursor has left the client rect.
+			TTTrackShow(false, false);
 		}
 		else if (const auto msElapsed = std::chrono::duration<double, std::milli>
 			(std::chrono::high_resolution_clock::now() - m_tmTT).count();
-			msElapsed >= dbSecToShow) { //or more than dbSecToShow ms have passed since toolip was shown.
-			TTMainShow(false, true);
+			msElapsed >= dSecToShow) { //Check if more than dSecToShow ms have passed since toolip is shown.
+			TTTrackShow(false, true);
 		}
 
 		return 0;
@@ -4836,7 +4829,13 @@ auto CHexCtrl::OnVScroll([[maybe_unused]] const MSG& msg)->LRESULT
 	bool fRedraw { true };
 	if (m_fHighLatency) {
 		fRedraw = m_ScrollV.IsThumbReleased();
-		TTOffsetShow(!fRedraw);
+		if (!fRedraw) {
+			const auto wstrOffset = (IsOffsetAsHexImpl() ? L"Offset: 0x" : L"Offset: ") + OffsetToWstr(GetTopLine() * GetCapacity());
+			TTTrackShow(true, false, wstrOffset.data());
+		}
+		else {
+			TTTrackShow(false, false);
+		}
 	}
 
 	if (fRedraw) {
@@ -5933,47 +5932,31 @@ void CHexCtrl::TextChunkPoint(ULONGLONG ullOffset, int& iCx, int& iCy)const
 		(ullScrollV - (ullScrollV % m_sizeFontMain.cy)));
 }
 
-void CHexCtrl::TTMainShow(bool fShow, bool fTimer, LPCWSTR pwszTT)
+void CHexCtrl::TTTrackShow(bool fShow, bool fTimer, const wchar_t* pwszText)
 {
-	const TTTOOLINFOW ti { .cbSize { sizeof(TTTOOLINFOW) }, .uFlags { TTF_TRACK }, .uId { m_u32TTMainID },
-		.lpszText { const_cast<LPWSTR>(pwszTT) } };
+	//When fShow==true, the fTimer==true means to set a new timer for tooltip.
+	//When fShow==false, the fTimer==true means that this call is from the OnTimer, and tooltip showing time has run out.
 
-	if (fShow) {
-		m_tmTT = std::chrono::high_resolution_clock::now();
-		POINT ptCur;
-		::GetCursorPos(&ptCur);
-		m_WndTT.SendMsg(TTM_TRACKPOSITION, 0, static_cast<LPARAM>(MAKELONG(ptCur.x + 9, ptCur.y - 20)));
-		m_WndTT.SendMsg(TTM_UPDATETIPTEXTW, 0, reinterpret_cast<LPARAM>(&ti));
-		m_Wnd.SetTimer(m_uIDTTTMain, 300, nullptr);
-	}
-	else {
-		m_Wnd.KillTimer(m_uIDTTTMain);
-
-		//When hiding tooltip by timer we not nullify the pointer.
-		//Otherwise tooltip will be shown again after mouse movement,
-		//even if cursor didn't leave current bkm area.
-		if (!fTimer) {
-			m_pBkmTTCurr = nullptr;
-			m_pTFieldTTCurr = nullptr;
-		}
-	}
-	m_WndTT.SendMsg(TTM_TRACKACTIVATE, fShow, reinterpret_cast<LPARAM>(&ti));
-}
-
-void CHexCtrl::TTOffsetShow(bool fShow)
-{
-	TTTOOLINFOW ti { .cbSize { sizeof(TTTOOLINFOW) }, .uFlags { TTF_TRACK }, .uId { m_u32TTOffsetID } };
-
+	const TTTOOLINFOW ti { .cbSize { sizeof(TTTOOLINFOW) }, .uFlags { TTF_TRACK }, .lpszText { const_cast<LPWSTR>(pwszText) } };
 	if (fShow) {
 		POINT ptCur;
 		::GetCursorPos(&ptCur);
-		auto wstrOffset = (IsOffsetAsHexImpl() ? L"Offset: 0x" : L"Offset: ") + OffsetToWstr(GetTopLine() * GetCapacity());
-		ti.lpszText = wstrOffset.data();
 		m_WndTT.SendMsg(TTM_UPDATETIPTEXTW, 0, reinterpret_cast<LPARAM>(&ti));
 		m_WndTT.SendMsg(TTM_TRACKPOSITION, 0, static_cast<LPARAM>(MAKELONG(ptCur.x - 5, ptCur.y - 25)));
-		ti.lpszText = nullptr;
-	}
 
+		if (fTimer) { //To track tooltip showing time.
+			m_tmTT = std::chrono::high_resolution_clock::now(); //To track tooltip showing time.
+			m_Wnd.SetTimer(m_uIDTTooltip, 300, nullptr);
+		}
+	}
+	else {
+		//When hiding a tooltip by the timer event, we not nullify the pointer, because otherwise the tooltip
+		//will be shown again after mouse movement, even if the cursor doesn't leave current tooltip's area.
+		if (!fTimer) {
+			m_pwszTTText = nullptr;
+		}
+		m_Wnd.KillTimer(m_uIDTTooltip);
+	}
 	m_WndTT.SendMsg(TTM_TRACKACTIVATE, fShow, reinterpret_cast<LPARAM>(&ti));
 }
 

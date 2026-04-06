@@ -38,6 +38,7 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] auto HitTest(ULONGLONG ullOffset) -> PHEXBKM override;
 		[[nodiscard]] auto HitTest(ULONGLONG ullOffset)const -> PHEXBKM;
 		void Initialize(IHexCtrl &HexCtrl, HINSTANCE hInstRes);
+		[[nodiscard]] bool IsShowTooltips()const;
 		[[nodiscard]] bool IsVirtual()const;
 		[[nodiscard]] bool PreTranslateMsg(MSG* pMsg);
 		[[nodiscard]] auto ProcessMsg(const MSG& msg) -> INT_PTR;
@@ -78,6 +79,7 @@ namespace HEXCTRL::INTERNAL {
 		HINSTANCE m_hInstRes { };
 		GDIUT::CWnd m_Wnd;
 		GDIUT::CWndBtn m_WndBtnHex; //Check-box "Hex numbers".
+		GDIUT::CWndBtn m_WndBtnTT;  //Check-box "Show tooltips".
 		GDIUT::CMenu m_menuList;
 		GDIUT::CDynLayout m_DynLayout;
 		std::vector<HEXBKM> m_vecBookmarks; //Bookmarks data.
@@ -184,6 +186,8 @@ auto CHexDlgBkmMgr::GetDlgItemHandle(EHexDlgItem eItem)const->HWND
 	switch (eItem) {
 	case BKMMGR_CHK_HEX:
 		return m_WndBtnHex;
+	case BKMMGR_CHK_TT:
+		return m_WndBtnTT;
 	default:
 		return { };
 	}
@@ -286,6 +290,11 @@ void CHexDlgBkmMgr::Initialize(IHexCtrl &HexCtrl, HINSTANCE hInstRes)
 {
 	m_pHexCtrl = &HexCtrl;
 	m_hInstRes = hInstRes;
+}
+
+bool CHexDlgBkmMgr::IsShowTooltips()const
+{
+	return m_WndBtnTT.IsWindow() && m_WndBtnTT.IsChecked();
 }
 
 bool CHexDlgBkmMgr::IsVirtual()const
@@ -550,6 +559,7 @@ auto CHexDlgBkmMgr::OnInitDialog(const MSG& msg)->INT_PTR
 {
 	m_Wnd.Attach(msg.hwnd);
 	m_WndBtnHex.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_BKMMGR_CHK_HEX));
+	m_WndBtnTT.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_BKMMGR_CHK_TT));
 
 	m_ListEx.Create({ .hWndParent { m_Wnd }, .uID { IDC_HEXCTRL_BKMMGR_LIST }, .flSizeFontList { 10.F },
 		.flSizeFontHdr { 10.F }, .fDialogCtrl { true }, .fSortable { true } });
@@ -567,13 +577,15 @@ auto CHexDlgBkmMgr::OnInitDialog(const MSG& msg)->INT_PTR
 	m_menuList.AppendSepar();
 	m_menuList.AppendString(static_cast<UINT_PTR>(EMenuID::IDM_BKMMGR_REMOVEALL), L"Remove All");
 
-	m_WndBtnHex.SetCheck(BST_CHECKED);
+	m_WndBtnHex.SetCheck(true);
+	m_WndBtnTT.SetCheck(true);
 
 	UpdateListCount();
 
 	m_DynLayout.SetHost(m_Wnd);
 	m_DynLayout.AddItem(IDC_HEXCTRL_BKMMGR_LIST, GDIUT::CDynLayout::MoveNone(), GDIUT::CDynLayout::SizeHorzAndVert(100, 100));
 	m_DynLayout.AddItem(IDC_HEXCTRL_BKMMGR_CHK_HEX, GDIUT::CDynLayout::MoveVert(100), GDIUT::CDynLayout::SizeNone());
+	m_DynLayout.AddItem(IDC_HEXCTRL_BKMMGR_CHK_TT, GDIUT::CDynLayout::MoveVert(100), GDIUT::CDynLayout::SizeNone());
 	m_DynLayout.Enable(true);
 
 	return TRUE;
