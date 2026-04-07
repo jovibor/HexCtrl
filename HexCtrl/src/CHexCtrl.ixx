@@ -381,9 +381,10 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] bool IsDrawable()const;                  //Should WM_PAINT be handled atm or not.
 		[[nodiscard]] bool IsMutableImpl()const;
 		[[nodiscard]] bool IsOffsetAsHexImpl()const;
-		[[nodiscard]] bool IsPageVisible()const;               //Returns m_fSectorVisible.
+		[[nodiscard]] bool IsPageVisible()const;
+		[[nodiscard]] bool IsScrollCursor()const;
 		[[nodiscard]] bool IsVirtualImpl()const;
-		void ModifyWorker(const HEXCTRL::HEXMODIFY& hms, const auto& FuncWorker, HEXCTRL::SpanCByte spnOper); //Main "Modify" method with different workers.
+		void ModifyWorker(const HEXCTRL::HEXMODIFY& hms, const auto& FuncWorker, HEXCTRL::SpanCByte spnOper)const; //Main "Modify" method with different workers.
 		[[nodiscard]] auto OffsetToWstr(ULONGLONG ullOffset)const -> std::wstring; //Format offset as std::wstring.
 		void OnCaretPosChange(ULONGLONG ullOffset);            //On changing caret position.
 		auto OnChar(const MSG& msg) -> LRESULT;
@@ -438,7 +439,7 @@ namespace HEXCTRL::INTERNAL {
 		void SetFontImpl(const LOGFONTW& lf, bool fMain, bool fRedraw = true, bool fNotify = true);
 		void SetFontSizeInPoints(float flSizePoints, bool fMain); //Set font size in points.
 		void SetGroupSizeImpl(DWORD dwSize, bool fRedraw = true, bool fNotify = true);
-		void SetScrollCursor();
+		void SetScrollCursor(bool fSet);
 		void SetUnprintableCharImpl(wchar_t wch, bool fRedraw = true);
 		void SnapshotUndo(const VecSpan& vecSpan); //Takes currently modifiable data snapshot.
 		void TextChunkPoint(ULONGLONG ullOffset, int& iCx, int& iCy)const; //Point of the text chunk.
@@ -931,7 +932,7 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 		CaretMoveDown();
 		break;
 	case CMD_SCROLL_CURSOR:
-		SetScrollCursor();
+		SetScrollCursor(!IsScrollCursor());
 		break;
 	case CMD_SCROLL_PAGEUP:
 		m_ScrollV.ScrollPageUp();
@@ -3973,12 +3974,17 @@ bool CHexCtrl::IsPageVisible()const
 	return GetPageSizeImpl() > 0 && (GetPageSizeImpl() % GetCapacity() == 0) && GetPageSizeImpl() >= GetCapacity();
 }
 
+bool CHexCtrl::IsScrollCursor()const
+{
+	return m_fScrollCursor;
+}
+
 bool CHexCtrl::IsVirtualImpl()const
 {
 	return m_pHexVirtData != nullptr;
 }
 
-void CHexCtrl::ModifyWorker(const HEXCTRL::HEXMODIFY& hms, const auto& FuncWorker, const HEXCTRL::SpanCByte spnOper)
+void CHexCtrl::ModifyWorker(const HEXCTRL::HEXMODIFY& hms, const auto& FuncWorker, const HEXCTRL::SpanCByte spnOper)const
 {
 	if (spnOper.empty()) { ut::DBG_REPORT(L"Operation span is empty."); return; }
 
@@ -4430,8 +4436,8 @@ auto CHexCtrl::OnLButtonDown(const MSG& msg)->LRESULT
 
 	m_Wnd.SetFocus(); //SetFocus is vital to give proper keyboard input to the main HexCtrl window.
 
-	if (m_fScrollCursor) {
-		SetScrollCursor();
+	if (IsScrollCursor()) {
+		SetScrollCursor(false);
 		return 0;
 	}
 
@@ -4737,8 +4743,8 @@ auto CHexCtrl::OnPaint()->LRESULT
 
 auto CHexCtrl::OnRButtonDown([[maybe_unused]] const MSG& msg)->LRESULT
 {
-	if (m_fScrollCursor) {
-		SetScrollCursor();
+	if (IsScrollCursor()) {
+		SetScrollCursor(false);
 		return 0;
 	}
 
@@ -4747,7 +4753,7 @@ auto CHexCtrl::OnRButtonDown([[maybe_unused]] const MSG& msg)->LRESULT
 
 auto CHexCtrl::OnSetCursor(const MSG& msg)->LRESULT
 {
-	if (m_fScrollCursor) {
+	if (IsScrollCursor()) {
 		static const auto hCurScroll = static_cast<HCURSOR>(::LoadImageW(nullptr, MAKEINTRESOURCEW(32654),
 			IMAGE_CURSOR, 0, 0, LR_DEFAULTSIZE | LR_SHARED)); //Standard Windows scrolling cursor.
 		::SetCursor(hCurScroll);
@@ -4808,14 +4814,17 @@ auto CHexCtrl::OnTimer(const MSG& msg)->LRESULT
 	if (uIDTimer == m_uIDTScrolCursor) {
 		GDIUT::CPoint ptCur;
 		::GetCursorPos(ptCur);
-		const auto iSegmentPx = static_cast<int>(40 * GetDPIScale()); //Segment size in pixels, to accelerate against.
+		constexpr auto flSlowFactor = 4.F; //For scrolling slowly, for every segment.
+
+		//Segment size in pixels for cursor to move, to accelerate against.
+		const auto iSegmentPx = static_cast<int>(20 * GetDPIScale());
 		const auto iSegmentsY = (ptCur.y - m_ptScrollCursorClick.y) / iSegmentPx; //How many vertical segments away from click.
 		const auto i64NewScrollY = static_cast<std::int64_t>(m_ScrollV.GetScrollPos()
-			+ m_ScrollV.GetScrollLineSize() / 4.F * iSegmentsY);
+			+ m_ScrollV.GetScrollLineSize() / flSlowFactor * iSegmentsY);
 		m_ScrollV.SetScrollPos(i64NewScrollY);
 		const auto iSegmentsX = (ptCur.x - m_ptScrollCursorClick.x) / iSegmentPx; //How many horizontal segments away from click.
 		const auto i64NewScrollX = static_cast<std::int64_t>(m_ScrollH.GetScrollPos()
-			+ m_ScrollH.GetScrollLineSize() / 4.F * iSegmentsX);
+			+ m_ScrollH.GetScrollLineSize() / flSlowFactor * iSegmentsX);
 		m_ScrollH.SetScrollPos(i64NewScrollX);
 
 		return 0;
@@ -5848,11 +5857,11 @@ void CHexCtrl::SetGroupSizeImpl(DWORD dwSize, bool fRedraw, bool fNotify)
 	SetCapacityImpl(m_dwCapacity, fRedraw, fNotify); //To recalc current representation.
 }
 
-void CHexCtrl::SetScrollCursor()
+void CHexCtrl::SetScrollCursor(bool fSet)
 {
-	m_fScrollCursor = !m_fScrollCursor;
+	m_fScrollCursor = fSet;
 
-	if (m_fScrollCursor) {
+	if (fSet) {
 		::GetCursorPos(m_ptScrollCursorClick);
 		m_Wnd.SetTimer(m_uIDTScrolCursor, 20, nullptr);
 	}
@@ -5942,10 +5951,10 @@ void CHexCtrl::TTTrackShow(bool fShow, bool fTimer, const wchar_t* pwszText)
 		POINT ptCur;
 		::GetCursorPos(&ptCur);
 		m_WndTT.SendMsg(TTM_UPDATETIPTEXTW, 0, reinterpret_cast<LPARAM>(&ti));
-		m_WndTT.SendMsg(TTM_TRACKPOSITION, 0, static_cast<LPARAM>(MAKELONG(ptCur.x - 5, ptCur.y - 25)));
+		m_WndTT.SendMsg(TTM_TRACKPOSITION, 0, MAKELPARAM(ptCur.x - 5, ptCur.y - 25));
 
 		if (fTimer) { //To track tooltip showing time.
-			m_tmTT = std::chrono::high_resolution_clock::now(); //To track tooltip showing time.
+			m_tmTT = std::chrono::high_resolution_clock::now();
 			m_Wnd.SetTimer(m_uIDTTooltip, 300, nullptr);
 		}
 	}

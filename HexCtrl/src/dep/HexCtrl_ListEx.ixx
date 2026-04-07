@@ -1432,38 +1432,36 @@ bool CListEx::Create(const LISTEXCREATE& lcs)
 	assert(!IsCreated());
 	if (IsCreated()) { return false; }
 
-	HWND hWnd { }; //Main window.
 	//Header subclassing is available only in the LVS_REPORT mode.
 	auto dwStyle = lcs.dwStyle | WS_CHILD | LVS_REPORT | LVS_OWNERDRAWFIXED;
 	if (lcs.fDialogCtrl) {
-		hWnd = ::GetDlgItem(lcs.hWndParent, lcs.uID);
-		if (hWnd == nullptr) {
+		m_hWnd = ::GetDlgItem(lcs.hWndParent, lcs.uID);
+		if (m_hWnd == nullptr) {
 			assert(false);
 			return false;
 		}
 
-		dwStyle |= ::GetWindowLongPtrW(hWnd, GWL_STYLE);
-		::SetWindowLongPtrW(hWnd, GWL_STYLE, dwStyle);
+		dwStyle |= ::GetWindowLongPtrW(m_hWnd, GWL_STYLE);
+		::SetWindowLongPtrW(m_hWnd, GWL_STYLE, dwStyle);
 	}
 	else {
 		const GDIUT::CRect rc = lcs.rect;
-		if (hWnd = ::CreateWindowExW(lcs.dwExStyle, WC_LISTVIEWW, nullptr, dwStyle, rc.left, rc.top, rc.Width(),
+		if (m_hWnd = ::CreateWindowExW(lcs.dwExStyle, WC_LISTVIEWW, nullptr, dwStyle, rc.left, rc.top, rc.Width(),
 			rc.Height(), lcs.hWndParent, reinterpret_cast<HMENU>(static_cast<UINT_PTR>(lcs.uID)), nullptr, this);
-			hWnd == nullptr) {
+			m_hWnd == nullptr) {
 			assert(false);
 			return false;
 		}
 	}
 
-	if (::SetWindowSubclass(hWnd, SubclassProc, reinterpret_cast<UINT_PTR>(this), 0) == FALSE) {
+	if (::SetWindowSubclass(m_hWnd, SubclassProc, reinterpret_cast<UINT_PTR>(this), 0) == FALSE) {
 		assert(false);
 		return false;
 	}
 
-	GetHeaderCtrl().SubclassHeader(::GetDlgItem(hWnd, 0));
+	GetHeaderCtrl().SubclassHeader(::GetDlgItem(m_hWnd, 0));
 
 	m_fVirtual = dwStyle & LVS_OWNERDATA;
-	m_hWnd = hWnd;
 
 	if (lcs.pColors != nullptr) {
 		m_stColors = *lcs.pColors;
