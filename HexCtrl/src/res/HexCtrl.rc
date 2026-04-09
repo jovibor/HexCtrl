@@ -317,7 +317,7 @@ BEGIN
     BEGIN
         POPUP "Search and Replace"
         BEGIN
-            MENUITEM "Search and Replace...",       IDM_HEXCTRL_SEARCH_DLGSEARCH
+            MENUITEM "Search and Replace...",       IDM_HEXCTRL_SEARCH_SEARCH
             MENUITEM SEPARATOR
             MENUITEM "Search Next",                 IDM_HEXCTRL_SEARCH_NEXT
             MENUITEM "Search Previous",             IDM_HEXCTRL_SEARCH_PREV
@@ -325,17 +325,17 @@ BEGIN
         MENUITEM SEPARATOR
         POPUP "Group Data"
         BEGIN
-            MENUITEM "1 Byte",                      IDM_HEXCTRL_GROUPDATA_BYTE, CHECKED
-            MENUITEM "2 Bytes",                     IDM_HEXCTRL_GROUPDATA_WORD
-            MENUITEM "4 Bytes",                     IDM_HEXCTRL_GROUPDATA_DWORD
-            MENUITEM "8 Bytes",                     IDM_HEXCTRL_GROUPDATA_QWORD
+            MENUITEM "1 Byte",                      IDM_HEXCTRL_GROUPDATA_1BYTE, CHECKED
+            MENUITEM "2 Bytes",                     IDM_HEXCTRL_GROUPDATA_2BYTE
+            MENUITEM "4 Bytes",                     IDM_HEXCTRL_GROUPDATA_4BYTE
+            MENUITEM "8 Bytes",                     IDM_HEXCTRL_GROUPDATA_8BYTE
             MENUITEM SEPARATOR
             MENUITEM "Increase Size",               IDM_HEXCTRL_GROUPDATA_INC
             MENUITEM "Decrease Size",               IDM_HEXCTRL_GROUPDATA_DEC
         END
         POPUP "Navigation"
         BEGIN
-            MENUITEM "Go to...",                    IDM_HEXCTRL_NAV_DLGGOTO
+            MENUITEM "Go to...",                    IDM_HEXCTRL_NAV_GOTO
             MENUITEM "Repeat Forward",              IDM_HEXCTRL_NAV_REPFWD
             MENUITEM "Repeat Backward",             IDM_HEXCTRL_NAV_REPBKW
             MENUITEM SEPARATOR
@@ -353,12 +353,12 @@ BEGIN
             MENUITEM "Add Bookmark",                IDM_HEXCTRL_BKM_ADD
             MENUITEM "Remove Bookmark",             IDM_HEXCTRL_BKM_REMOVE
             MENUITEM SEPARATOR
-            MENUITEM "Go Next Bookmark",            IDM_HEXCTRL_BKM_NEXT
-            MENUITEM "Go Previous Bookmark",        IDM_HEXCTRL_BKM_PREV
+            MENUITEM "Go Next Bookmark",            IDM_HEXCTRL_BKM_GONEXT
+            MENUITEM "Go Previous Bookmark",        IDM_HEXCTRL_BKM_GOPREV
             MENUITEM SEPARATOR
             MENUITEM "Remove All Bookmarks",        IDM_HEXCTRL_BKM_REMOVEALL
             MENUITEM SEPARATOR
-            MENUITEM "Bookmarks Manager...",        IDM_HEXCTRL_BKM_DLGMGR
+            MENUITEM "Bookmarks Manager...",        IDM_HEXCTRL_BKM_BKMMGR
         END
         POPUP "Clipboard"
         BEGIN
@@ -372,17 +372,17 @@ BEGIN
             MENUITEM "Copy as Grep Hex",            IDM_HEXCTRL_CLPBRD_COPYGREPHEX
             MENUITEM "Copy as Print Screen",        IDM_HEXCTRL_CLPBRD_COPYPRNTSCRN
             MENUITEM SEPARATOR
-            MENUITEM "Copy Caret Offset",           IDM_HEXCTRL_CLPBRD_COPYOFFSET
+            MENUITEM "Copy Caret Offset",           IDM_HEXCTRL_CLPBRD_COPYCAROFF
             MENUITEM SEPARATOR
             MENUITEM "Paste as Hex Bytes",          IDM_HEXCTRL_CLPBRD_PASTEHEX
-            MENUITEM "Paste as Text UTF-16",        IDM_HEXCTRL_CLPBRD_PASTETEXTUTF16
+            MENUITEM "Paste as Text UTF-16",        IDM_HEXCTRL_CLPBRD_PASTEUTF16
             MENUITEM "Paste as Text CP",            IDM_HEXCTRL_CLPBRD_PASTETEXTCP
         END
         POPUP "Modify"
         BEGIN
-            MENUITEM "Operations...",               IDM_HEXCTRL_MODIFY_DLGOPERS
+            MENUITEM "Operations...",               IDM_HEXCTRL_MODIFY_OPERS
             MENUITEM "Fill with Zeros",             IDM_HEXCTRL_MODIFY_FILLZEROS
-            MENUITEM "Fill with Data...",           IDM_HEXCTRL_MODIFY_DLGFILLDATA
+            MENUITEM "Fill with Data...",           IDM_HEXCTRL_MODIFY_FILLDATA
             MENUITEM SEPARATOR
             MENUITEM "Undo",                        IDM_HEXCTRL_MODIFY_UNDO
             MENUITEM "Redo",                        IDM_HEXCTRL_MODIFY_REDO
@@ -398,30 +398,30 @@ BEGIN
             MENUITEM "Apply Current Template",      IDM_HEXCTRL_TEMPL_APPLYCURR
             MENUITEM "Disapply Template",           IDM_HEXCTRL_TEMPL_DISAPPLY
             MENUITEM SEPARATOR
-            MENUITEM "Disapply All Templates",      IDM_HEXCTRL_TEMPL_DISAPPALL
+            MENUITEM "Disapply All Templates",      IDM_HEXCTRL_TEMPL_DISAPPLYALL
             MENUITEM SEPARATOR
-            MENUITEM "Template Manager...",         IDM_HEXCTRL_TEMPL_DLGMGR
+            MENUITEM "Template Manager...",         IDM_HEXCTRL_TEMPL_TEMPLMGR
         END
         POPUP "Data View"
         BEGIN
-            MENUITEM "Data Interpreter...",         IDM_HEXCTRL_DLGDATAINTERP
-            MENUITEM "Text Codepage...",            IDM_HEXCTRL_DLGCODEPAGE
+            MENUITEM "Data Interpreter...",         IDM_HEXCTRL_DATAINTERP
+            MENUITEM "Text Codepage...",            IDM_HEXCTRL_TEXTCODEPAGE
         END
         POPUP "Appearance"
         BEGIN
-            MENUITEM "Choose Font...",              IDM_HEXCTRL_APPEAR_DLGFONT
-            MENUITEM "Increase Font Size",          IDM_HEXCTRL_APPEAR_FONTINC
-            MENUITEM "Decrease Font Size",          IDM_HEXCTRL_APPEAR_FONTDEC
+            MENUITEM "Choose Font...",              IDM_HEXCTRL_APPEAR_CHOOSEFONT
+            MENUITEM "Increase Font Size",          IDM_HEXCTRL_APPEAR_INCFONT
+            MENUITEM "Decrease Font Size",          IDM_HEXCTRL_APPEAR_DECFONT
             MENUITEM SEPARATOR
-            MENUITEM "Increase Capacity",           IDM_HEXCTRL_APPEAR_CAPACINC
-            MENUITEM "Decrease Capacity",           IDM_HEXCTRL_APPEAR_CAPACDEC
+            MENUITEM "Increase Capacity",           IDM_HEXCTRL_APPEAR_INCCAPAC
+            MENUITEM "Decrease Capacity",           IDM_HEXCTRL_APPEAR_DECCAPAC
         END
         MENUITEM SEPARATOR
         POPUP "Other"
         BEGIN
-            MENUITEM "Print...",                    IDM_HEXCTRL_OTHER_DLGPRINT
+            MENUITEM "Print...",                    IDM_HEXCTRL_OTHER_PRINT
             MENUITEM SEPARATOR
-            MENUITEM "About...",                    IDM_HEXCTRL_OTHER_DLGABOUT
+            MENUITEM "About...",                    IDM_HEXCTRL_OTHER_ABOUT
         END
     END
 END

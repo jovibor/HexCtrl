@@ -1150,8 +1150,11 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 			const MENUITEMINFOW mii { .cbSize { sizeof(MENUITEMINFOW) }, .fMask { MIIM_DATA }, .dwItemData { dwData } };
 			SetItemInfo(uItem, &mii, fByID);
 		}
-		void SetItemInfo(UINT uItem, LPCMENUITEMINFO pMII, bool fByID = true)const {
+		void SetItemInfo(UINT uItem, LPCMENUITEMINFOW pMII, bool fByID = true)const {
 			assert(IsMenu()); ::SetMenuItemInfoW(m_hMenu, uItem, !fByID, pMII);
+		}
+		void SetItemInfo(UINT uItem, const MENUITEMINFOW& mii, bool fByID = true)const {
+			SetItemInfo(uItem, &mii, fByID);
 		}
 		void SetItemType(UINT uItem, UINT uType, bool fByID = true)const {
 			const MENUITEMINFOW mii { .cbSize { sizeof(MENUITEMINFOW) }, .fMask { MIIM_FTYPE }, .fType { uType } };

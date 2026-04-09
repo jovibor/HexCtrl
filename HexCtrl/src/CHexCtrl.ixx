@@ -298,6 +298,7 @@ namespace HEXCTRL::INTERNAL {
 		void SetFont(const LOGFONTW& lf, bool fMain = true)override;
 		void SetGroupSize(DWORD dwSize)override;
 		void SetHexCharsCase(bool fUpper)override;
+		void SetMenuItem(EHexMenuItem eItem, const MENUITEMINFOW& mii)override;
 		void SetMutable(bool fMutable)override;
 		void SetOffsetMode(bool fHex)override;
 		void SetPageSize(DWORD dwSize, std::wstring_view wsvName)override;
@@ -309,7 +310,7 @@ namespace HEXCTRL::INTERNAL {
 		void SetWindowPos(HWND hWndAfter, int iX, int iY, int iWidth, int iHeight, UINT uFlags)override;
 		void ShowInfoBar(bool fShow)override;
 	private:
-		struct KEYBIND; struct UNDO; enum class EClipboard : std::uint8_t;
+		struct KEYBIND; struct UNDO; struct MENUITEM; enum class EClipboard : std::uint8_t;
 		[[nodiscard]] auto BuildDataToDraw(ULONGLONG ullStartLine, int iLines)const -> std::tuple<std::wstring, std::wstring>;
 		void CaretMoveDown();  //Set caret one line down.
 		void CaretMoveLeft();  //Set caret one chunk left.
@@ -480,6 +481,7 @@ namespace HEXCTRL::INTERNAL {
 			decltype([](HBITMAP hBmp) { ::DeleteObject(hBmp); }) >> m_vecIconsMenu; //Icons for the Menu.
 		std::vector<KEYBIND> m_vecKeyBind;    //Vector of key bindings.
 		std::vector<int> m_vecCharsWidth;     //Vector of chars widths.
+		std::unordered_map<EHexMenuItem, MENUITEM> m_umapMenuItems; //m_MenuMain items.
 		HFONT m_hFntMain { };                 //Main Hex chunks font.
 		HFONT m_hFntInfoBar { };              //Font for bottom Info bar.
 		HPEN m_hPenLinesMain { };             //Pen for main lines.
@@ -488,8 +490,8 @@ namespace HEXCTRL::INTERNAL {
 		IHexVirtData* m_pHexVirtData { };     //Data handler pointer for Virtual mode.
 		IHexVirtColors* m_pHexVirtColors { }; //Pointer for custom colors class.
 		SpanByte m_spnData;                   //Main data span.
-		std::chrono::steady_clock::time_point m_tmTT; //Start time of the tooltip.
 		const wchar_t* m_pwszTTText { };      //Current tooltip text.
+		std::chrono::steady_clock::time_point m_tmTT; //Start time of the tooltip.
 		ULONGLONG m_ullCaretPos { };          //Current caret position.
 		ULONGLONG m_ullCursorNow { };         //The cursor's current clicked pos.
 		ULONGLONG m_ullCursorPrev { };        //The cursor's previously clicked pos, used in selection resolutions.
@@ -565,6 +567,11 @@ struct CHexCtrl::KEYBIND { //Key bindings.
 struct CHexCtrl::UNDO {
 	ULONGLONG              ullOffset { }; //Start byte to apply Undo to.
 	std::vector<std::byte> vecData;       //Data for Undo.
+};
+
+struct CHexCtrl::MENUITEM {
+	HMENU hMenuSub { }; //If it's not null, then it's popup menu (submenu) of the m_MenuMain.
+	UINT  uMenuID { };  //If hMenuSub is null, then it's menu ID within the m_MenuMain.
 };
 
 enum class CHexCtrl::EClipboard : std::uint8_t {
@@ -1907,6 +1914,50 @@ void CHexCtrl::SetHexCharsCase(bool fUpper)
 	RedrawImpl();
 }
 
+void CHexCtrl::SetMenuItem(EHexMenuItem eItem, const MENUITEMINFOW& mii)
+{
+	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return; }
+
+	const auto it = m_umapMenuItems.find(eItem);
+	if (it == m_umapMenuItems.end()) {
+		return;
+	}
+
+	const auto& item = it->second;
+	if (item.hMenuSub == nullptr) {
+		m_MenuMain.SetItemInfo(item.uMenuID, mii, true);
+	}
+	else {
+		//Returns parent HMENU and position within it, of the hMenuSubFind popup menu (submenu).
+		const auto lmbSubMenuPos = [](HMENU hMenu, HMENU hMenuSubFind) {
+			struct FINDITEM {
+				HMENU hMenuSub { };
+				int iPos { -1 };
+			};
+			const auto _lmbSubMenuPos = [](const auto& lmbSelf, HMENU hMenu, HMENU hMenuSubFind)->std::optional<FINDITEM> {
+				const auto menu = GDIUT::CMenu(hMenu);
+				for (auto i = 0; i < menu.GetItemsCount(); ++i) {
+					if (const auto menuSub = menu.GetSubMenu(i); menuSub.IsMenu()) {
+						if (menuSub == hMenuSubFind) {
+							return FINDITEM { menu, i };
+						}
+
+						if (const auto opt = lmbSelf(lmbSelf, menuSub, hMenuSubFind); opt) {
+							return opt;
+						}
+					}
+				}
+				return std::nullopt;
+				};
+			return _lmbSubMenuPos(_lmbSubMenuPos, hMenu, hMenuSubFind);
+			};
+
+		if (const auto opt = lmbSubMenuPos(m_MenuMain, item.hMenuSub); opt) {
+			GDIUT::CMenu(opt->hMenuSub).SetItemInfo(opt->iPos, mii, false);
+		}
+	}
+}
+
 void CHexCtrl::SetMutable(bool fMutable)
 {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return; }
@@ -2691,6 +2742,99 @@ void CHexCtrl::CreateMenu()
 		}
 	}
 
+	//Returns parent HMENU for the given menu item ID.
+	const auto lmbHMENUFromID = [](HMENU hMenu, UINT uMenuID)->HMENU {
+		const auto _lmbHMENUFromID = [](const auto& lmbSelf, HMENU hMenu, UINT uMenuID)->HMENU {
+			const auto menu = GDIUT::CMenu(hMenu);
+			for (auto i = 0; i < menu.GetItemsCount(); ++i) {
+				if (menu.GetItemID(i) == uMenuID) {
+					return hMenu;
+				}
+
+				if (const auto menuSub = menu.GetSubMenu(i); menuSub.IsMenu()) {
+					if (const auto hMenuParent = lmbSelf(lmbSelf, menuSub, uMenuID); hMenuParent != nullptr) {
+						return hMenuParent;
+					}
+				}
+			}
+			return nullptr;
+			};
+
+		return _lmbHMENUFromID(_lmbHMENUFromID, hMenu, uMenuID);
+		};
+
+	using enum EHexMenuItem;
+	std::unordered_map<EHexMenuItem, MENUITEM> umapMenuItems {
+		{ IDM_SEARCH_POPUP, { .hMenuSub { lmbHMENUFromID(m_MenuMain, IDM_HEXCTRL_SEARCH_SEARCH) } } },
+		{ IDM_SEARCH_SEARCH, { .uMenuID { IDM_HEXCTRL_SEARCH_SEARCH } } },
+		{ IDM_SEARCH_NEXT, { .uMenuID { IDM_HEXCTRL_SEARCH_NEXT } } },
+		{ IDM_SEARCH_PREV, { .uMenuID { IDM_HEXCTRL_SEARCH_PREV } } },
+		{ IDM_GROUPDATA_POPUP, { .hMenuSub { lmbHMENUFromID(m_MenuMain, IDM_HEXCTRL_GROUPDATA_1BYTE) } } },
+		{ IDM_GROUPDATA_1BYTE, { .uMenuID { IDM_HEXCTRL_GROUPDATA_1BYTE } } },
+		{ IDM_GROUPDATA_2BYTE, { .uMenuID { IDM_HEXCTRL_GROUPDATA_2BYTE } } },
+		{ IDM_GROUPDATA_4BYTE, { .uMenuID { IDM_HEXCTRL_GROUPDATA_4BYTE } } },
+		{ IDM_GROUPDATA_8BYTE, { .uMenuID { IDM_HEXCTRL_GROUPDATA_8BYTE } } },
+		{ IDM_GROUPDATA_INC, { .uMenuID { IDM_HEXCTRL_GROUPDATA_INC } } },
+		{ IDM_GROUPDATA_DEC, { .uMenuID { IDM_HEXCTRL_GROUPDATA_DEC } } },
+		{ IDM_NAV_POPUP, { .hMenuSub { lmbHMENUFromID(m_MenuMain, IDM_HEXCTRL_NAV_GOTO) } } },
+		{ IDM_NAV_GOTO, { .uMenuID { IDM_HEXCTRL_NAV_GOTO } } },
+		{ IDM_NAV_REPFWD, { .uMenuID { IDM_HEXCTRL_NAV_REPFWD } } },
+		{ IDM_NAV_REPBKW, { .uMenuID { IDM_HEXCTRL_NAV_REPBKW } } },
+		{ IDM_NAV_DATABEG, { .uMenuID { IDM_HEXCTRL_NAV_DATABEG } } },
+		{ IDM_NAV_DATAEND, { .uMenuID { IDM_HEXCTRL_NAV_DATAEND } } },
+		{ IDM_NAV_PAGEBEG, { .uMenuID { IDM_HEXCTRL_NAV_PAGEBEG } } },
+		{ IDM_NAV_PAGEEND, { .uMenuID { IDM_HEXCTRL_NAV_PAGEEND } } },
+		{ IDM_NAV_LINEBEG, { .uMenuID { IDM_HEXCTRL_NAV_LINEBEG } } },
+		{ IDM_NAV_LINEEND, { .uMenuID { IDM_HEXCTRL_NAV_LINEEND } } },
+		{ IDM_BKM_POPUP, { .hMenuSub { lmbHMENUFromID(m_MenuMain, IDM_HEXCTRL_BKM_ADD) } } },
+		{ IDM_BKM_ADD, { .uMenuID { IDM_HEXCTRL_BKM_ADD } } },
+		{ IDM_BKM_REMOVE, { .uMenuID { IDM_HEXCTRL_BKM_REMOVE } } },
+		{ IDM_BKM_GONEXT, { .uMenuID { IDM_HEXCTRL_BKM_GONEXT } } },
+		{ IDM_BKM_GOPREV, { .uMenuID { IDM_HEXCTRL_BKM_GOPREV } } },
+		{ IDM_BKM_REMOVEALL, { .uMenuID { IDM_HEXCTRL_BKM_REMOVEALL } } },
+		{ IDM_BKM_BKMMGR, { .uMenuID { IDM_HEXCTRL_BKM_BKMMGR } } },
+		{ IDM_CLPBRD_POPUP, { .hMenuSub { lmbHMENUFromID(m_MenuMain, IDM_HEXCTRL_CLPBRD_COPYHEX) } } },
+		{ IDM_CLPBRD_COPYHEX, { .uMenuID { IDM_HEXCTRL_CLPBRD_COPYHEX } } },
+		{ IDM_CLPBRD_COPYHEXLE, { .uMenuID { IDM_HEXCTRL_CLPBRD_COPYHEXLE } } },
+		{ IDM_CLPBRD_COPYHEXFMT, { .uMenuID { IDM_HEXCTRL_CLPBRD_COPYHEXFMT } } },
+		{ IDM_CLPBRD_COPYTEXTCP, { .uMenuID { IDM_HEXCTRL_CLPBRD_COPYTEXTCP } } },
+		{ IDM_CLPBRD_COPYBASE64, { .uMenuID { IDM_HEXCTRL_CLPBRD_COPYBASE64 } } },
+		{ IDM_CLPBRD_COPYCARR, { .uMenuID { IDM_HEXCTRL_CLPBRD_COPYCARR } } },
+		{ IDM_CLPBRD_COPYGREPHEX, { .uMenuID { IDM_HEXCTRL_CLPBRD_COPYGREPHEX } } },
+		{ IDM_CLPBRD_COPYPRNTSCRN, { .uMenuID { IDM_HEXCTRL_CLPBRD_COPYPRNTSCRN } } },
+		{ IDM_CLPBRD_COPYCAROFF, { .uMenuID { IDM_HEXCTRL_CLPBRD_COPYCAROFF } } },
+		{ IDM_CLPBRD_PASTEHEX, { .uMenuID { IDM_HEXCTRL_CLPBRD_PASTEHEX } } },
+		{ IDM_CLPBRD_PASTEUTF16, { .uMenuID { IDM_HEXCTRL_CLPBRD_PASTEUTF16 } } },
+		{ IDM_CLPBRD_PASTETEXTCP, { .uMenuID { IDM_HEXCTRL_CLPBRD_PASTETEXTCP } } },
+		{ IDM_MODIFY_POPUP, { .hMenuSub { lmbHMENUFromID(m_MenuMain, IDM_HEXCTRL_MODIFY_OPERS) } } },
+		{ IDM_MODIFY_OPERS, { .uMenuID { IDM_HEXCTRL_MODIFY_OPERS } } },
+		{ IDM_MODIFY_FILLZEROS, { .uMenuID { IDM_HEXCTRL_MODIFY_FILLZEROS } } },
+		{ IDM_MODIFY_FILLDATA, { .uMenuID { IDM_HEXCTRL_MODIFY_FILLDATA } } },
+		{ IDM_MODIFY_UNDO, { .uMenuID { IDM_HEXCTRL_MODIFY_UNDO } } },
+		{ IDM_MODIFY_REDO, { .uMenuID { IDM_HEXCTRL_MODIFY_REDO } } },
+		{ IDM_SEL_POPUP, { .hMenuSub { lmbHMENUFromID(m_MenuMain, IDM_HEXCTRL_SEL_MARKSTARTEND) } } },
+		{ IDM_SEL_MARKSTARTEND, { .uMenuID { IDM_HEXCTRL_SEL_MARKSTARTEND } } },
+		{ IDM_SEL_SELALL, { .uMenuID { IDM_HEXCTRL_SEL_ALL } } },
+		{ IDM_TEMPL_POPUP, { .hMenuSub { lmbHMENUFromID(m_MenuMain, IDM_HEXCTRL_TEMPL_APPLYCURR) } } },
+		{ IDM_TEMPL_APPLYCURR, { .uMenuID { IDM_HEXCTRL_TEMPL_APPLYCURR } } },
+		{ IDM_TEMPL_DISAPPLY, { .uMenuID { IDM_HEXCTRL_TEMPL_DISAPPLY } } },
+		{ IDM_TEMPL_DISAPPLYALL, { .uMenuID { IDM_HEXCTRL_TEMPL_DISAPPLYALL } } },
+		{ IDM_TEMPL_TEMPLMGR, { .uMenuID { IDM_HEXCTRL_TEMPL_TEMPLMGR } } },
+		{ IDM_DATAVIEW_POPUP, { .hMenuSub { lmbHMENUFromID(m_MenuMain, IDM_HEXCTRL_DATAINTERP) } } },
+		{ IDM_DATAVIEW_DATAINTERP, { .uMenuID { IDM_HEXCTRL_DATAINTERP } } },
+		{ IDM_DATAVIEW_TEXTCP, { .uMenuID { IDM_HEXCTRL_TEXTCODEPAGE } } },
+		{ IDM_APPEAR_POPUP, { .hMenuSub { lmbHMENUFromID(m_MenuMain, IDM_HEXCTRL_APPEAR_CHOOSEFONT) } } },
+		{ IDM_APPEAR_CHOOSEFONT, { .uMenuID { IDM_HEXCTRL_APPEAR_CHOOSEFONT } } },
+		{ IDM_APPEAR_INCFONT, { .uMenuID { IDM_HEXCTRL_APPEAR_INCFONT } } },
+		{ IDM_APPEAR_DECFONT, { .uMenuID { IDM_HEXCTRL_APPEAR_DECFONT } } },
+		{ IDM_APPEAR_INCCAPAS, { .uMenuID { IDM_HEXCTRL_APPEAR_INCCAPAC } } },
+		{ IDM_APPEAR_DECCAPAS, { .uMenuID { IDM_HEXCTRL_APPEAR_DECCAPAC } } },
+		{ IDM_OTHER_POPUP, { .hMenuSub { lmbHMENUFromID(m_MenuMain, IDM_HEXCTRL_OTHER_PRINT) } } },
+		{ IDM_OTHER_PRINT, { .uMenuID { IDM_HEXCTRL_OTHER_PRINT } } },
+		{ IDM_OTHER_ABOUT, { .uMenuID { IDM_HEXCTRL_OTHER_ABOUT } } }
+	};
+	m_umapMenuItems = std::move(umapMenuItems);
+
 	m_vecIconsMenu.clear();
 	const auto iSizeIcon = static_cast<int>(16 * GetDPIScale());
 	const auto menuTop = m_MenuMain.GetSubMenu(0); //Context sub-menu handle.
@@ -2698,9 +2842,8 @@ void CHexCtrl::CreateMenu()
 	//"Search" menu icon.
 	auto hBmp = static_cast<HBITMAP>(::LoadImageW(m_hInstRes, MAKEINTRESOURCEW(IDB_HEXCTRL_SEARCH), IMAGE_BITMAP,
 		iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
-
 	menuTop.SetItemBitmap(0, hBmp, false); //"Search" parent menu icon.
-	m_MenuMain.SetItemBitmap(IDM_HEXCTRL_SEARCH_DLGSEARCH, hBmp);
+	m_MenuMain.SetItemBitmap(IDM_HEXCTRL_SEARCH_SEARCH, hBmp); //"Search..." dialog menu icon.
 	m_vecIconsMenu.emplace_back(hBmp);
 
 	//"Group Data" menu icon.
@@ -2709,24 +2852,22 @@ void CHexCtrl::CreateMenu()
 	menuTop.SetItemBitmap(2, hBmp, false); //"Group Data" parent menu icon.
 	m_vecIconsMenu.emplace_back(hBmp);
 
-	//"Bookmarks->Add" menu icon.
+	//"Bookmarks" menu icon.
 	hBmp = static_cast<HBITMAP>(::LoadImageW(m_hInstRes, MAKEINTRESOURCEW(IDB_HEXCTRL_BKMS), IMAGE_BITMAP,
 		iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
 	menuTop.SetItemBitmap(4, hBmp, false); //"Bookmarks" parent menu icon.
-	m_MenuMain.SetItemBitmap(IDM_HEXCTRL_BKM_ADD, hBmp);
+	m_MenuMain.SetItemBitmap(IDM_HEXCTRL_BKM_ADD, hBmp); //"Bookmarks->Add Bookmark" menu icon.
 	m_vecIconsMenu.emplace_back(hBmp);
 
-	//"Clipboard->Copy as Hex" menu icon.
+	//"Clipboard" menu icon.
 	hBmp = static_cast<HBITMAP>(::LoadImageW(m_hInstRes, MAKEINTRESOURCEW(IDB_HEXCTRL_CLPBRD_COPYHEX), IMAGE_BITMAP,
 		iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
 	menuTop.SetItemBitmap(5, hBmp, false); //"Clipboard" parent menu icon.
-	m_MenuMain.SetItemBitmap(IDM_HEXCTRL_CLPBRD_COPYHEX, hBmp);
+	m_MenuMain.SetItemBitmap(IDM_HEXCTRL_CLPBRD_COPYHEX, hBmp); //"Clipboard->Copy as Hex Bytes" menu icon.
 	m_vecIconsMenu.emplace_back(hBmp);
-
-	//"Clipboard->Paste as Hex" menu icon.
 	hBmp = static_cast<HBITMAP>(::LoadImageW(m_hInstRes, MAKEINTRESOURCEW(IDB_HEXCTRL_CLPBRD_PASTEHEX), IMAGE_BITMAP,
 		iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
-	m_MenuMain.SetItemBitmap(IDM_HEXCTRL_CLPBRD_PASTEHEX, hBmp);
+	m_MenuMain.SetItemBitmap(IDM_HEXCTRL_CLPBRD_PASTEHEX, hBmp); //"Clipboard->Paste as Hex Bytes" menu icon.
 	m_vecIconsMenu.emplace_back(hBmp);
 
 	//"Modify" parent menu icon.
@@ -2734,17 +2875,15 @@ void CHexCtrl::CreateMenu()
 		iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
 	menuTop.SetItemBitmap(6, hBmp, false);
 	m_vecIconsMenu.emplace_back(hBmp);
-
-	//"Modify->Fill with Zeros" menu icon.
 	hBmp = static_cast<HBITMAP>(::LoadImageW(m_hInstRes, MAKEINTRESOURCEW(IDB_HEXCTRL_MODIFY_FILLZEROS), IMAGE_BITMAP,
 		iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
-	m_MenuMain.SetItemBitmap(IDM_HEXCTRL_MODIFY_FILLZEROS, hBmp);
+	m_MenuMain.SetItemBitmap(IDM_HEXCTRL_MODIFY_FILLZEROS, hBmp); //"Modify->Fill with Zeros" menu icon.
 	m_vecIconsMenu.emplace_back(hBmp);
 
-	//"Appearance->Choose Font" menu icon.
+	//"Appearance" menu icon.
 	hBmp = static_cast<HBITMAP>(::LoadImageW(m_hInstRes, MAKEINTRESOURCEW(IDB_HEXCTRL_FONTCHOOSE), IMAGE_BITMAP,
 		iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
-	m_MenuMain.SetItemBitmap(IDM_HEXCTRL_APPEAR_DLGFONT, hBmp);
+	m_MenuMain.SetItemBitmap(IDM_HEXCTRL_APPEAR_CHOOSEFONT, hBmp); //"Appearance->Choose Font..." menu icon.
 	m_vecIconsMenu.emplace_back(hBmp);
 }
 
@@ -4220,6 +4359,7 @@ auto CHexCtrl::OnDestroy()->LRESULT
 	m_vecUndo.clear();
 	m_vecRedo.clear();
 	m_vecCharsWidth.clear();
+	m_umapMenuItems.clear();
 	m_MenuMain.DestroyMenu();
 	::DeleteObject(m_hFntMain);
 	::DeleteObject(m_hFntInfoBar);
@@ -4278,12 +4418,12 @@ auto CHexCtrl::OnInitMenuPopup(const MSG& msg)->LRESULT
 	//The LOWORD(lParam) specifies zero-based relative position of the menu, that opens drop-down menu or submenu.
 	switch (LOWORD(msg.lParam)) {
 	case 0:	//Search.
-		m_MenuMain.EnableItem(IDM_HEXCTRL_SEARCH_DLGSEARCH, IsCmdAvail(CMD_SEARCH_DLG));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_SEARCH_SEARCH, IsCmdAvail(CMD_SEARCH_DLG));
 		m_MenuMain.EnableItem(IDM_HEXCTRL_SEARCH_NEXT, IsCmdAvail(CMD_SEARCH_NEXT));
 		m_MenuMain.EnableItem(IDM_HEXCTRL_SEARCH_PREV, IsCmdAvail(CMD_SEARCH_PREV));
 		break;
 	case 3:	//Navigation.
-		m_MenuMain.EnableItem(IDM_HEXCTRL_NAV_DLGGOTO, IsCmdAvail(CMD_NAV_GOTO_DLG));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_NAV_GOTO, IsCmdAvail(CMD_NAV_GOTO_DLG));
 		m_MenuMain.EnableItem(IDM_HEXCTRL_NAV_REPFWD, IsCmdAvail(CMD_NAV_REPFWD));
 		m_MenuMain.EnableItem(IDM_HEXCTRL_NAV_REPBKW, IsCmdAvail(CMD_NAV_REPBKW));
 		m_MenuMain.EnableItem(IDM_HEXCTRL_NAV_DATABEG, IsCmdAvail(CMD_NAV_DATABEG));
@@ -4296,10 +4436,10 @@ auto CHexCtrl::OnInitMenuPopup(const MSG& msg)->LRESULT
 	case 4:	//Bookmarks.
 		m_MenuMain.EnableItem(IDM_HEXCTRL_BKM_ADD, IsCmdAvail(CMD_BKM_ADD));
 		m_MenuMain.EnableItem(IDM_HEXCTRL_BKM_REMOVE, IsCmdAvail(CMD_BKM_REMOVE));
-		m_MenuMain.EnableItem(IDM_HEXCTRL_BKM_NEXT, IsCmdAvail(CMD_BKM_NEXT));
-		m_MenuMain.EnableItem(IDM_HEXCTRL_BKM_PREV, IsCmdAvail(CMD_BKM_PREV));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_BKM_GONEXT, IsCmdAvail(CMD_BKM_NEXT));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_BKM_GOPREV, IsCmdAvail(CMD_BKM_PREV));
 		m_MenuMain.EnableItem(IDM_HEXCTRL_BKM_REMOVEALL, IsCmdAvail(CMD_BKM_REMOVEALL));
-		m_MenuMain.EnableItem(IDM_HEXCTRL_BKM_DLGMGR, IsCmdAvail(CMD_BKM_DLG_MGR));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_BKM_BKMMGR, IsCmdAvail(CMD_BKM_DLG_MGR));
 		break;
 	case 5:	//Clipboard.
 		m_MenuMain.EnableItem(IDM_HEXCTRL_CLPBRD_COPYHEX, IsCmdAvail(CMD_CLPBRD_COPY_HEX));
@@ -4310,15 +4450,15 @@ auto CHexCtrl::OnInitMenuPopup(const MSG& msg)->LRESULT
 		m_MenuMain.EnableItem(IDM_HEXCTRL_CLPBRD_COPYCARR, IsCmdAvail(CMD_CLPBRD_COPY_CARR));
 		m_MenuMain.EnableItem(IDM_HEXCTRL_CLPBRD_COPYGREPHEX, IsCmdAvail(CMD_CLPBRD_COPY_GREPHEX));
 		m_MenuMain.EnableItem(IDM_HEXCTRL_CLPBRD_COPYPRNTSCRN, IsCmdAvail(CMD_CLPBRD_COPY_PRNTSCRN));
-		m_MenuMain.EnableItem(IDM_HEXCTRL_CLPBRD_COPYOFFSET, IsCmdAvail(CMD_CLPBRD_COPY_OFFSET));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_CLPBRD_COPYCAROFF, IsCmdAvail(CMD_CLPBRD_COPY_OFFSET));
 		m_MenuMain.EnableItem(IDM_HEXCTRL_CLPBRD_PASTEHEX, IsCmdAvail(CMD_CLPBRD_PASTE_HEX));
-		m_MenuMain.EnableItem(IDM_HEXCTRL_CLPBRD_PASTETEXTUTF16, IsCmdAvail(CMD_CLPBRD_PASTE_TEXTUTF16));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_CLPBRD_PASTEUTF16, IsCmdAvail(CMD_CLPBRD_PASTE_TEXTUTF16));
 		m_MenuMain.EnableItem(IDM_HEXCTRL_CLPBRD_PASTETEXTCP, IsCmdAvail(CMD_CLPBRD_PASTE_TEXTCP));
 		break;
 	case 6: //Modify.
 		m_MenuMain.EnableItem(IDM_HEXCTRL_MODIFY_FILLZEROS, IsCmdAvail(CMD_MODIFY_FILLZEROS));
-		m_MenuMain.EnableItem(IDM_HEXCTRL_MODIFY_DLGFILLDATA, IsCmdAvail(CMD_MODIFY_FILLDATA_DLG));
-		m_MenuMain.EnableItem(IDM_HEXCTRL_MODIFY_DLGOPERS, IsCmdAvail(CMD_MODIFY_OPERS_DLG));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_MODIFY_FILLDATA, IsCmdAvail(CMD_MODIFY_FILLDATA_DLG));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_MODIFY_OPERS, IsCmdAvail(CMD_MODIFY_OPERS_DLG));
 		m_MenuMain.EnableItem(IDM_HEXCTRL_MODIFY_UNDO, IsCmdAvail(CMD_MODIFY_UNDO));
 		m_MenuMain.EnableItem(IDM_HEXCTRL_MODIFY_REDO, IsCmdAvail(CMD_MODIFY_REDO));
 		break;
@@ -4329,12 +4469,12 @@ auto CHexCtrl::OnInitMenuPopup(const MSG& msg)->LRESULT
 	case 8: //Templates.
 		m_MenuMain.EnableItem(IDM_HEXCTRL_TEMPL_APPLYCURR, IsCmdAvail(CMD_TEMPL_APPLYCURR));
 		m_MenuMain.EnableItem(IDM_HEXCTRL_TEMPL_DISAPPLY, IsCmdAvail(CMD_TEMPL_DISAPPLY));
-		m_MenuMain.EnableItem(IDM_HEXCTRL_TEMPL_DISAPPALL, IsCmdAvail(CMD_TEMPL_DISAPPALL));
-		m_MenuMain.EnableItem(IDM_HEXCTRL_TEMPL_DLGMGR, IsCmdAvail(CMD_TEMPL_DLG_MGR));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_TEMPL_DISAPPLYALL, IsCmdAvail(CMD_TEMPL_DISAPPALL));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_TEMPL_TEMPLMGR, IsCmdAvail(CMD_TEMPL_DLG_MGR));
 		break;
 	case 9: //Data Presentation.
-		m_MenuMain.EnableItem(IDM_HEXCTRL_DLGDATAINTERP, IsCmdAvail(CMD_DATAINTERP_DLG));
-		m_MenuMain.EnableItem(IDM_HEXCTRL_DLGCODEPAGE, IsCmdAvail(CMD_CODEPAGE_DLG));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_DATAINTERP, IsCmdAvail(CMD_DATAINTERP_DLG));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_TEXTCODEPAGE, IsCmdAvail(CMD_CODEPAGE_DLG));
 		break;
 	default:
 		break;
@@ -5493,10 +5633,10 @@ bool CHexCtrl::SetConfigImpl(std::wstring_view wsvPath)
 	using enum EHexCmd;
 	//Mapping between stringified EHexCmd::* and its value-menuID pairs.
 	const std::unordered_map<std::string_view, std::pair<EHexCmd, DWORD>> umapCmdMenu {
-		{ "CMD_SEARCH_DLG", { CMD_SEARCH_DLG, IDM_HEXCTRL_SEARCH_DLGSEARCH } },
+		{ "CMD_SEARCH_DLG", { CMD_SEARCH_DLG, IDM_HEXCTRL_SEARCH_SEARCH } },
 		{ "CMD_SEARCH_NEXT", { CMD_SEARCH_NEXT, IDM_HEXCTRL_SEARCH_NEXT } },
 		{ "CMD_SEARCH_PREV", { CMD_SEARCH_PREV, IDM_HEXCTRL_SEARCH_PREV } },
-		{ "CMD_NAV_GOTO_DLG", { CMD_NAV_GOTO_DLG, IDM_HEXCTRL_NAV_DLGGOTO } },
+		{ "CMD_NAV_GOTO_DLG", { CMD_NAV_GOTO_DLG, IDM_HEXCTRL_NAV_GOTO } },
 		{ "CMD_NAV_REPFWD", { CMD_NAV_REPFWD, IDM_HEXCTRL_NAV_REPFWD } },
 		{ "CMD_NAV_REPBKW", { CMD_NAV_REPBKW, IDM_HEXCTRL_NAV_REPBKW } },
 		{ "CMD_NAV_DATABEG", { CMD_NAV_DATABEG, IDM_HEXCTRL_NAV_DATABEG } },
@@ -5505,18 +5645,18 @@ bool CHexCtrl::SetConfigImpl(std::wstring_view wsvPath)
 		{ "CMD_NAV_PAGEEND", { CMD_NAV_PAGEEND, IDM_HEXCTRL_NAV_PAGEEND } },
 		{ "CMD_NAV_LINEBEG", { CMD_NAV_LINEBEG, IDM_HEXCTRL_NAV_LINEBEG } },
 		{ "CMD_NAV_LINEEND", { CMD_NAV_LINEEND, IDM_HEXCTRL_NAV_LINEEND } },
-		{ "CMD_GROUPDATA_BYTE", { CMD_GROUPDATA_BYTE, IDM_HEXCTRL_GROUPDATA_BYTE } },
-		{ "CMD_GROUPDATA_WORD", { CMD_GROUPDATA_WORD, IDM_HEXCTRL_GROUPDATA_WORD } },
-		{ "CMD_GROUPDATA_DWORD", { CMD_GROUPDATA_DWORD, IDM_HEXCTRL_GROUPDATA_DWORD } },
-		{ "CMD_GROUPDATA_QWORD", { CMD_GROUPDATA_QWORD, IDM_HEXCTRL_GROUPDATA_QWORD } },
+		{ "CMD_GROUPDATA_BYTE", { CMD_GROUPDATA_BYTE, IDM_HEXCTRL_GROUPDATA_1BYTE } },
+		{ "CMD_GROUPDATA_WORD", { CMD_GROUPDATA_WORD, IDM_HEXCTRL_GROUPDATA_2BYTE } },
+		{ "CMD_GROUPDATA_DWORD", { CMD_GROUPDATA_DWORD, IDM_HEXCTRL_GROUPDATA_4BYTE } },
+		{ "CMD_GROUPDATA_QWORD", { CMD_GROUPDATA_QWORD, IDM_HEXCTRL_GROUPDATA_8BYTE } },
 		{ "CMD_GROUPDATA_INC", { CMD_GROUPDATA_INC, IDM_HEXCTRL_GROUPDATA_INC } },
 		{ "CMD_GROUPDATA_DEC", { CMD_GROUPDATA_DEC, IDM_HEXCTRL_GROUPDATA_DEC } },
 		{ "CMD_BKM_ADD", { CMD_BKM_ADD, IDM_HEXCTRL_BKM_ADD } },
 		{ "CMD_BKM_REMOVE", { CMD_BKM_REMOVE, IDM_HEXCTRL_BKM_REMOVE } },
-		{ "CMD_BKM_NEXT", { CMD_BKM_NEXT, IDM_HEXCTRL_BKM_NEXT } },
-		{ "CMD_BKM_PREV", { CMD_BKM_PREV, IDM_HEXCTRL_BKM_PREV } },
+		{ "CMD_BKM_NEXT", { CMD_BKM_NEXT, IDM_HEXCTRL_BKM_GONEXT } },
+		{ "CMD_BKM_PREV", { CMD_BKM_PREV, IDM_HEXCTRL_BKM_GOPREV } },
 		{ "CMD_BKM_REMOVEALL", { CMD_BKM_REMOVEALL, IDM_HEXCTRL_BKM_REMOVEALL } },
-		{ "CMD_BKM_DLG_MGR", { CMD_BKM_DLG_MGR, IDM_HEXCTRL_BKM_DLGMGR } },
+		{ "CMD_BKM_DLG_MGR", { CMD_BKM_DLG_MGR, IDM_HEXCTRL_BKM_BKMMGR } },
 		{ "CMD_CLPBRD_COPY_HEX", { CMD_CLPBRD_COPY_HEX, IDM_HEXCTRL_CLPBRD_COPYHEX } },
 		{ "CMD_CLPBRD_COPY_HEXLE", { CMD_CLPBRD_COPY_HEXLE, IDM_HEXCTRL_CLPBRD_COPYHEXLE } },
 		{ "CMD_CLPBRD_COPY_HEXFMT", { CMD_CLPBRD_COPY_HEXFMT, IDM_HEXCTRL_CLPBRD_COPYHEXFMT } },
@@ -5525,13 +5665,13 @@ bool CHexCtrl::SetConfigImpl(std::wstring_view wsvPath)
 		{ "CMD_CLPBRD_COPY_CARR", { CMD_CLPBRD_COPY_CARR, IDM_HEXCTRL_CLPBRD_COPYCARR } },
 		{ "CMD_CLPBRD_COPY_GREPHEX", { CMD_CLPBRD_COPY_GREPHEX, IDM_HEXCTRL_CLPBRD_COPYGREPHEX } },
 		{ "CMD_CLPBRD_COPY_PRNTSCRN", { CMD_CLPBRD_COPY_PRNTSCRN, IDM_HEXCTRL_CLPBRD_COPYPRNTSCRN } },
-		{ "CMD_CLPBRD_COPY_OFFSET", { CMD_CLPBRD_COPY_OFFSET, IDM_HEXCTRL_CLPBRD_COPYOFFSET } },
+		{ "CMD_CLPBRD_COPY_OFFSET", { CMD_CLPBRD_COPY_OFFSET, IDM_HEXCTRL_CLPBRD_COPYCAROFF } },
 		{ "CMD_CLPBRD_PASTE_HEX", { CMD_CLPBRD_PASTE_HEX, IDM_HEXCTRL_CLPBRD_PASTEHEX } },
-		{ "CMD_CLPBRD_PASTE_TEXTUTF16", { CMD_CLPBRD_PASTE_TEXTUTF16, IDM_HEXCTRL_CLPBRD_PASTETEXTUTF16 } },
+		{ "CMD_CLPBRD_PASTE_TEXTUTF16", { CMD_CLPBRD_PASTE_TEXTUTF16, IDM_HEXCTRL_CLPBRD_PASTEUTF16 } },
 		{ "CMD_CLPBRD_PASTE_TEXTCP", { CMD_CLPBRD_PASTE_TEXTCP, IDM_HEXCTRL_CLPBRD_PASTETEXTCP } },
-		{ "CMD_MODIFY_OPERS_DLG", { CMD_MODIFY_OPERS_DLG, IDM_HEXCTRL_MODIFY_DLGOPERS } },
+		{ "CMD_MODIFY_OPERS_DLG", { CMD_MODIFY_OPERS_DLG, IDM_HEXCTRL_MODIFY_OPERS } },
 		{ "CMD_MODIFY_FILLZEROS", { CMD_MODIFY_FILLZEROS, IDM_HEXCTRL_MODIFY_FILLZEROS } },
-		{ "CMD_MODIFY_FILLDATA_DLG", { CMD_MODIFY_FILLDATA_DLG, IDM_HEXCTRL_MODIFY_DLGFILLDATA } },
+		{ "CMD_MODIFY_FILLDATA_DLG", { CMD_MODIFY_FILLDATA_DLG, IDM_HEXCTRL_MODIFY_FILLDATA } },
 		{ "CMD_MODIFY_UNDO", { CMD_MODIFY_UNDO, IDM_HEXCTRL_MODIFY_UNDO } },
 		{ "CMD_MODIFY_REDO", { CMD_MODIFY_REDO, IDM_HEXCTRL_MODIFY_REDO } },
 		{ "CMD_SEL_MARKSTARTEND", { CMD_SEL_MARKSTARTEND, IDM_HEXCTRL_SEL_MARKSTARTEND } },
@@ -5540,15 +5680,15 @@ bool CHexCtrl::SetConfigImpl(std::wstring_view wsvPath)
 		{ "CMD_SEL_ADDRIGHT", { CMD_SEL_ADDRIGHT, 0 } },
 		{ "CMD_SEL_ADDUP", { CMD_SEL_ADDUP, 0 } },
 		{ "CMD_SEL_ADDDOWN", { CMD_SEL_ADDDOWN, 0 } },
-		{ "CMD_DATAINTERP_DLG", { CMD_DATAINTERP_DLG, IDM_HEXCTRL_DLGDATAINTERP } },
-		{ "CMD_CODEPAGE_DLG", { CMD_CODEPAGE_DLG, IDM_HEXCTRL_DLGCODEPAGE } },
-		{ "CMD_APPEAR_FONT_DLG", { CMD_APPEAR_FONT_DLG, IDM_HEXCTRL_APPEAR_DLGFONT } },
-		{ "CMD_APPEAR_FONTINC", { CMD_APPEAR_FONTINC, IDM_HEXCTRL_APPEAR_FONTINC } },
-		{ "CMD_APPEAR_FONTDEC", { CMD_APPEAR_FONTDEC, IDM_HEXCTRL_APPEAR_FONTDEC } },
-		{ "CMD_APPEAR_CAPACINC", { CMD_APPEAR_CAPACINC, IDM_HEXCTRL_APPEAR_CAPACINC } },
-		{ "CMD_APPEAR_CAPACDEC", { CMD_APPEAR_CAPACDEC, IDM_HEXCTRL_APPEAR_CAPACDEC } },
-		{ "CMD_PRINT_DLG", { CMD_PRINT_DLG, IDM_HEXCTRL_OTHER_DLGPRINT } },
-		{ "CMD_ABOUT_DLG", { CMD_ABOUT_DLG, IDM_HEXCTRL_OTHER_DLGABOUT } },
+		{ "CMD_DATAINTERP_DLG", { CMD_DATAINTERP_DLG, IDM_HEXCTRL_DATAINTERP } },
+		{ "CMD_CODEPAGE_DLG", { CMD_CODEPAGE_DLG, IDM_HEXCTRL_TEXTCODEPAGE } },
+		{ "CMD_APPEAR_FONT_DLG", { CMD_APPEAR_FONT_DLG, IDM_HEXCTRL_APPEAR_CHOOSEFONT } },
+		{ "CMD_APPEAR_FONTINC", { CMD_APPEAR_FONTINC, IDM_HEXCTRL_APPEAR_INCFONT } },
+		{ "CMD_APPEAR_FONTDEC", { CMD_APPEAR_FONTDEC, IDM_HEXCTRL_APPEAR_DECFONT } },
+		{ "CMD_APPEAR_CAPACINC", { CMD_APPEAR_CAPACINC, IDM_HEXCTRL_APPEAR_INCCAPAC } },
+		{ "CMD_APPEAR_CAPACDEC", { CMD_APPEAR_CAPACDEC, IDM_HEXCTRL_APPEAR_DECCAPAC } },
+		{ "CMD_PRINT_DLG", { CMD_PRINT_DLG, IDM_HEXCTRL_OTHER_PRINT } },
+		{ "CMD_ABOUT_DLG", { CMD_ABOUT_DLG, IDM_HEXCTRL_OTHER_ABOUT } },
 		{ "CMD_CARET_LEFT", { CMD_CARET_LEFT, 0 } },
 		{ "CMD_CARET_RIGHT", { CMD_CARET_RIGHT, 0 } },
 		{ "CMD_CARET_UP", { CMD_CARET_UP, 0 } },
@@ -5558,8 +5698,8 @@ bool CHexCtrl::SetConfigImpl(std::wstring_view wsvPath)
 		{ "CMD_SCROLL_PAGEDOWN", { CMD_SCROLL_PAGEDOWN, 0 } },
 		{ "CMD_TEMPL_APPLYCURR", { CMD_TEMPL_APPLYCURR, IDM_HEXCTRL_TEMPL_APPLYCURR } },
 		{ "CMD_TEMPL_DISAPPLY", { CMD_TEMPL_DISAPPLY, IDM_HEXCTRL_TEMPL_DISAPPLY } },
-		{ "CMD_TEMPL_DISAPPALL", { CMD_TEMPL_DISAPPALL, IDM_HEXCTRL_TEMPL_DISAPPALL } },
-		{ "CMD_TEMPL_DLG_MGR", { CMD_TEMPL_DLG_MGR, IDM_HEXCTRL_TEMPL_DLGMGR } }
+		{ "CMD_TEMPL_DISAPPALL", { CMD_TEMPL_DISAPPALL, IDM_HEXCTRL_TEMPL_DISAPPLYALL } },
+		{ "CMD_TEMPL_DLG_MGR", { CMD_TEMPL_DLG_MGR, IDM_HEXCTRL_TEMPL_TEMPLMGR } }
 	};
 
 	//Mapping between JSON-data commands and actual keyboard codes, with names that appear in the menu.
@@ -5811,9 +5951,9 @@ void CHexCtrl::SetGroupSizeImpl(DWORD dwSize, bool fRedraw, bool fNotify)
 	const auto menuMain = m_MenuMain.GetSubMenu(0);
 	HMENU hMenuGroupData { };
 	for (auto i = 0; i < menuMain.GetItemsCount(); ++i) {
-		//Searching through all submenus whose first menuID is IDM_HEXCTRL_GROUPDATA_BYTE.
+		//Searching through all submenus whose first menuID is IDM_HEXCTRL_GROUPDATA_1BYTE.
 		if (auto menuSub = menuMain.GetSubMenu(i); menuSub.IsMenu()) {
-			if (menuSub.GetItemID(0) == IDM_HEXCTRL_GROUPDATA_BYTE) {
+			if (menuSub.GetItemID(0) == IDM_HEXCTRL_GROUPDATA_1BYTE) {
 				hMenuGroupData = menuSub.GetHMENU();
 				break;
 			}
@@ -5830,16 +5970,16 @@ void CHexCtrl::SetGroupSizeImpl(DWORD dwSize, bool fRedraw, bool fNotify)
 		UINT uIDToCheck { 0 };
 		switch (dwSize) {
 		case 1:
-			uIDToCheck = IDM_HEXCTRL_GROUPDATA_BYTE;
+			uIDToCheck = IDM_HEXCTRL_GROUPDATA_1BYTE;
 			break;
 		case 2:
-			uIDToCheck = IDM_HEXCTRL_GROUPDATA_WORD;
+			uIDToCheck = IDM_HEXCTRL_GROUPDATA_2BYTE;
 			break;
 		case 4:
-			uIDToCheck = IDM_HEXCTRL_GROUPDATA_DWORD;
+			uIDToCheck = IDM_HEXCTRL_GROUPDATA_4BYTE;
 			break;
 		case 8:
-			uIDToCheck = IDM_HEXCTRL_GROUPDATA_QWORD;
+			uIDToCheck = IDM_HEXCTRL_GROUPDATA_8BYTE;
 			break;
 		default:
 			break;

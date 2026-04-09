@@ -72,6 +72,7 @@
   * [SetFont](#setfont)
   * [SetGroupSize](#setgroupsize)
   * [SetHexCharsCase](#sethexcharscase)
+  * [SetMenuItem](#setmenuitem)
   * [SetMutable](#setmutable)
   * [SetOffsetMode](#setoffsetmode)
   * [SetPageSize](#setpagesize)
@@ -108,6 +109,7 @@
   * [EHexCmd](#ehexcmd)
   * [EHexDataType](#ehexdatatype)
   * [EHexDlgItem](#ehexdlgitem)
+  * [EHexMenuItem](#ehexmenuitem)
   * [EHexModifyMode](#ehexmodifymode)
   * [EHexOperMode](#ehexopermode)
   * [EHexWnd](#ehexwnd)
@@ -158,8 +160,6 @@
 * Utilizes **AVX/AVX2** instruction set for best performance
 * Supports compiling for the **ARM64** architecture
 * Written with the **/std:c++20** standard conformance
-
-![](docs/img/HexCtrl_Operations.jpg)
 
 ## [](#)How To Build
 `git clone https://github.com/jovibor/HexCtrl.git`  
@@ -748,6 +748,12 @@ void SetHexCharsCase(bool fUpper);
 ```
 Sets printed hex chars to an UPPER or lower case.
 
+### [](#)SetMenuItem
+```cpp
+void SetMenuItem(EHexMenuItem eItem, const MENUITEMINFOW& mii);
+```
+Sets a standard Windows [`MENUITEMINFOW`](https://learn.microsoft.com/windows/win32/api/winuser/ns-winuser-menuiteminfow) struct data to one of the **HexCtrl** menu item.
+
 ### [](#)SetMutable
 ```cpp
 void SetMutable(bool fMutable);
@@ -1141,72 +1147,24 @@ Internally **HexCtrl** operates with flat data offsets. If you set data of 1MB s
 
 ### [](#)EHexCmd
 Enum of commands that can be executed within **HexCtrl**.
-```cpp
-enum class EHexCmd : std::uint8_t {
-    CMD_SEARCH_DLG = 0x01, CMD_SEARCH_NEXT, CMD_SEARCH_PREV,
-    CMD_NAV_GOTO_DLG, CMD_NAV_REPFWD, CMD_NAV_REPBKW, CMD_NAV_DATABEG, CMD_NAV_DATAEND,
-    CMD_NAV_PAGEBEG, CMD_NAV_PAGEEND, CMD_NAV_LINEBEG, CMD_NAV_LINEEND, CMD_GROUPDATA_BYTE,
-    CMD_GROUPDATA_WORD, CMD_GROUPDATA_DWORD, CMD_GROUPDATA_QWORD, CMD_GROUPDATA_INC, CMD_GROUPDATA_DEC,
-    CMD_BKM_ADD, CMD_BKM_REMOVE, CMD_BKM_NEXT, CMD_BKM_PREV, CMD_BKM_REMOVEALL, CMD_BKM_DLG_MGR,
-    CMD_CLPBRD_COPY_HEX, CMD_CLPBRD_COPY_HEXLE, CMD_CLPBRD_COPY_HEXFMT, CMD_CLPBRD_COPY_TEXTCP,
-    CMD_CLPBRD_COPY_BASE64, CMD_CLPBRD_COPY_CARR, CMD_CLPBRD_COPY_GREPHEX, CMD_CLPBRD_COPY_PRNTSCRN,
-    CMD_CLPBRD_COPY_OFFSET, CMD_CLPBRD_PASTE_HEX, CMD_CLPBRD_PASTE_TEXTUTF16, CMD_CLPBRD_PASTE_TEXTCP,
-    CMD_MODIFY_OPERS_DLG, CMD_MODIFY_FILLZEROS, CMD_MODIFY_FILLDATA_DLG, CMD_MODIFY_UNDO, CMD_MODIFY_REDO,
-    CMD_SEL_MARKSTARTEND, CMD_SEL_ALL, CMD_SEL_ADDLEFT, CMD_SEL_ADDRIGHT, CMD_SEL_ADDUP,
-    CMD_SEL_ADDDOWN, CMD_DATAINTERP_DLG, CMD_CODEPAGE_DLG, CMD_APPEAR_FONT_DLG, CMD_APPEAR_FONTINC,
-    CMD_APPEAR_FONTDEC, CMD_APPEAR_CAPACINC, CMD_APPEAR_CAPACDEC, CMD_PRINT_DLG, CMD_ABOUT_DLG,
-    CMD_CARET_LEFT, CMD_CARET_RIGHT, CMD_CARET_UP, CMD_CARET_DOWN,
-    CMD_SCROLL_CURSOR, CMD_SCROLL_PAGEUP, CMD_SCROLL_PAGEDOWN,
-    CMD_TEMPL_APPLYCURR, CMD_TEMPL_DISAPPLY, CMD_TEMPL_DISAPPALL, CMD_TEMPL_DLG_MGR
-};
-```
 
 ### [](#)EHexDataType
 Enum of the data type used in the [`HEXMODIFY`](#hexmodify) struct with the `EHexModifyMode::MODIFY_OPERATION` mode.
-```cpp
-enum class EHexDataType : std::uint8_t {
-    DATA_INT8, DATA_UINT8, DATA_INT16, DATA_UINT16, DATA_INT32,
-    DATA_UINT32, DATA_INT64, DATA_UINT64, DATA_FLOAT, DATA_DOUBLE
-};
-```
 
 ### [](#)EHexDlgItem
 Enum of all **HexCtrl**'s internal dialogs' items. Used in the [`GetDlgItemHandle`](#getdlgitemhandle).
-```cpp
-enum class EHexDlgItem : std::uint8_t {
-    BKMMGR_CHK_HEX, BKMMGR_CHK_TT, DATAINTERP_CHK_HEX, DATAINTERP_CHK_BE, TEMPLMGR_CHK_MIN,
-    TEMPLMGR_CHK_TT, TEMPLMGR_CHK_HGL, TEMPLMGR_CHK_HEX, TEMPLMGR_CHK_SWAP, SEARCH_COMBO_FIND,
-    SEARCH_COMBO_REPLACE, SEARCH_EDIT_START, SEARCH_EDIT_STEP, SEARCH_EDIT_RNGBEG,
-    SEARCH_EDIT_RNGEND, SEARCH_EDIT_LIMIT, SEARCH_EDIT_WILDCARD, FILLDATA_COMBO_DATA
-};
-```
+
+### [](#)EHexMenuItem
+Enum of all **HexCtrl**'s menu items.
 
 ### [](#)EHexModifyMode
 Enum of the data modification modes, used in [`HEXMODIFY`](#hexmodify).
-```cpp
-enum class EHexModifyMode : std::uint8_t {
-    MODIFY_ONCE, MODIFY_REPEAT, MODIFY_OPERATION, MODIFY_RAND_MT19937, MODIFY_RAND_FAST
-};
-```
 
 ### [](#)EHexOperMode
-Enum of the data operation modes, used in [`HEXMODIFY`](#hexmodify) when `HEXMODIFY::enModifyMode` is set to `MODIFY_OPERATION`.
-```cpp
-enum class EHexOperMode : std::uint8_t {
-    OPER_ASSIGN, OPER_ADD, OPER_SUB, OPER_MUL, OPER_DIV, OPER_CEIL, OPER_FLOOR, OPER_OR,
-    OPER_XOR, OPER_AND, OPER_NOT, OPER_SHL, OPER_SHR, OPER_ROTL, OPER_ROTR, OPER_SWAP,
-    OPER_BITREV
-};
-```
+Enum of the data operation modes, used in [`HEXMODIFY`](#hexmodify) when the `HEXMODIFY::enModifyMode` is set to `MODIFY_OPERATION`.
 
 ### [](#)EHexWnd
 Enum of all **HexCtrl**'s internal windows, used in the [`GetWndHandle`](#getwndhandle) method. 
-```cpp
-enum class EHexWnd : std::uint8_t {
-    WND_MAIN, DLG_BKMMGR, DLG_DATAINTERP, DLG_MODIFY,
-    DLG_SEARCH, DLG_ENCODING, DLG_GOTO, DLG_TEMPLMGR
-};
-```
 
 ## [](#)Notification Messages
 During its work the **HexCtrl** sends notification messages to its parent window through **[WM_NOTIFY](https://docs.microsoft.com/en-us/windows/win32/controls/wm-notify)** mechanism.  
