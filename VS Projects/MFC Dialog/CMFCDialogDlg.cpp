@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <random>
 import HexCtrl_StrToNum;
+import GDIUtility;
 
 namespace stn = HEXCTRL::stn;
 
@@ -26,7 +27,93 @@ BEGIN_MESSAGE_MAP(CMFCDialogDlg, CDialogEx)
 	ON_WM_DROPFILES()
 END_MESSAGE_MAP()
 
+void CMFCDialogDlg::SetStartupFile(LPCWSTR pwszFile)
+{
+	m_wstrStartupFile = pwszFile;
+}
+
+auto CMFCDialogDlg::LnkToPath(LPCWSTR pwszLnk)->std::wstring
+{
+	CComPtr<IShellLinkW> psl;
+	psl.CoCreateInstance(CLSID_ShellLink, nullptr, CLSCTX_INPROC_SERVER);
+	CComPtr<IPersistFile> ppf;
+	psl->QueryInterface(IID_PPV_ARGS(&ppf));
+	ppf->Load(pwszLnk, STGM_READ);
+
+	std::wstring wstrPath(MAX_PATH, L'\0');
+	psl->GetPath(wstrPath.data(), MAX_PATH, nullptr, 0);
+
+	return wstrPath;
+}
+
+
+//Private methods.
+
 CMFCDialogDlg::CMFCDialogDlg(CWnd* pParent) : CDialogEx(IDD_HEXCTRL_SAMPLE, pParent) { }
+
+void CMFCDialogDlg::CreateHexPopup()
+{
+	if (m_pHexPopup->IsCreated())
+		return;
+
+	constexpr auto dwStyle = WS_POPUP | WS_OVERLAPPEDWINDOW;
+	constexpr auto dwExStyle = WS_EX_APPWINDOW; //To force entry to the taskbar.
+
+	m_pHexPopup->Create({ .hWndParent { m_hWnd }, .dwStyle { dwStyle }, .dwExStyle { dwExStyle } });
+	m_hds.fMutable = IsRW();
+	if (!m_hds.spnData.empty()) {
+		m_pHexPopup->SetData(m_hds);
+	}
+
+	SetIconsForHexCtrl(*m_pHexPopup);
+
+	const auto hWndHex = m_pHexPopup->GetWndHandle(EHexWnd::WND_MAIN);
+	const auto iWidthActual = m_pHexPopup->GetActualWidth() + GetSystemMetrics(SM_CXVSCROLL);
+	CRect rcHex(0, 0, iWidthActual, iWidthActual); //Square window.
+	AdjustWindowRectEx(rcHex, dwStyle, FALSE, dwExStyle);
+	const auto iWidth = rcHex.Width();
+	const auto iHeight = rcHex.Height() - rcHex.Height() / 3;
+	const auto iPosX = GetSystemMetrics(SM_CXSCREEN) / 2 - iWidth / 2;
+	const auto iPosY = GetSystemMetrics(SM_CYSCREEN) / 2 - iHeight / 2;
+	m_pHexPopup->SetWindowPos(m_hWnd, iPosX, iPosY, iWidth, iHeight, SWP_NOACTIVATE);
+
+	const auto hIconSmall = static_cast<HICON>(LoadImageW(AfxGetInstanceHandle(),
+		MAKEINTRESOURCEW(IDR_MAINFRAME), IMAGE_ICON, 0, 0, 0));
+	const auto hIconBig = static_cast<HICON>(LoadImageW(AfxGetInstanceHandle(),
+		MAKEINTRESOURCEW(IDR_MAINFRAME), IMAGE_ICON, 96, 96, 0));
+	if (hIconSmall != nullptr) {
+		::SendMessageW(hWndHex, WM_SETICON, ICON_SMALL, reinterpret_cast<LPARAM>(hIconSmall));
+		::SendMessageW(hWndHex, WM_SETICON, ICON_BIG, reinterpret_cast<LPARAM>(hIconBig));
+	}
+}
+
+void CMFCDialogDlg::CreateIconsForHexCtrl()
+{
+	using enum HEXCTRL::EHexMenuItem;
+	m_vecHexIcons.clear();
+	const auto flDPIScale = GDIUT::GetDPIScaleForHWND(m_hWnd);
+	const auto iSizeIcon = static_cast<int>(16 * flDPIScale);
+
+	auto hBitmap = GDIUT::SVGToHBITMAP(IDSVG_SEARCH, iSizeIcon, iSizeIcon);
+	m_vecHexIcons.emplace_back(IDM_SEARCH_POPUP, hBitmap);
+	m_vecHexIcons.emplace_back(IDM_SEARCH_SEARCH, hBitmap);
+	hBitmap = GDIUT::SVGToHBITMAP(IDSVG_GROUP, iSizeIcon, iSizeIcon);
+	m_vecHexIcons.emplace_back(IDM_GROUPDATA_POPUP, hBitmap);
+	hBitmap = GDIUT::SVGToHBITMAP(IDSVG_BKM, iSizeIcon, iSizeIcon);
+	m_vecHexIcons.emplace_back(IDM_BKM_POPUP, hBitmap);
+	m_vecHexIcons.emplace_back(IDM_BKM_ADD, hBitmap);
+	hBitmap = GDIUT::SVGToHBITMAP(IDSVG_CLPBRD_COPYHEX, iSizeIcon, iSizeIcon);
+	m_vecHexIcons.emplace_back(IDM_CLPBRD_POPUP, hBitmap);
+	m_vecHexIcons.emplace_back(IDM_CLPBRD_COPYHEX, hBitmap);
+	hBitmap = GDIUT::SVGToHBITMAP(IDSVG_CLPBRD_PASTEHEX, iSizeIcon, iSizeIcon);
+	m_vecHexIcons.emplace_back(IDM_CLPBRD_PASTEHEX, hBitmap);
+	hBitmap = GDIUT::SVGToHBITMAP(IDSVG_MODIFY, iSizeIcon, iSizeIcon);
+	m_vecHexIcons.emplace_back(IDM_MODIFY_POPUP, hBitmap);
+	hBitmap = GDIUT::SVGToHBITMAP(IDSVG_MODIFY_FILLZEROS, iSizeIcon, iSizeIcon);
+	m_vecHexIcons.emplace_back(IDM_MODIFY_FILLZEROS, hBitmap);
+	hBitmap = GDIUT::SVGToHBITMAP(IDSVG_FONTCHOOSE, iSizeIcon, iSizeIcon);
+	m_vecHexIcons.emplace_back(IDM_APPEAR_CHOOSEFONT, hBitmap);
+}
 
 void CMFCDialogDlg::DoDataExchange(CDataExchange* pDX)
 {
@@ -36,47 +123,85 @@ void CMFCDialogDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_EDIT_DATASIZE, m_editDataSize);
 }
 
-BOOL CMFCDialogDlg::OnInitDialog()
+void CMFCDialogDlg::FileOpen(std::wstring_view wsvPath, bool fResolveLnk)
 {
-	CDialogEx::OnInitDialog();
+	FileClose();
 
-	CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
-
-	const auto hIcon = AfxGetApp()->LoadIconW(IDR_MAINFRAME);
-	SetIcon(hIcon, TRUE);  //Set big icon
-	SetIcon(hIcon, FALSE); //Set small icon
-	m_editDataSize.SetWindowTextW(L"0x4000");
-	m_chkRW.SetCheck(BST_CHECKED);
-
-	//For Drag'n Drop to work in elevated mode.
-	//https://helgeklein.com/blog/how-to-enable-drag-and-drop-for-an-elevated-mfc-application-on-vistawindows-7/
-	ChangeWindowMessageFilterEx(m_hWnd, WM_DROPFILES, MSGFLT_ALLOW, nullptr);
-	ChangeWindowMessageFilterEx(m_hWnd, WM_COPYDATA, MSGFLT_ALLOW, nullptr);
-	ChangeWindowMessageFilterEx(m_hWnd, 0x0049, MSGFLT_ALLOW, nullptr);
-	DragAcceptFiles(TRUE);
-
-	m_pHexDlg->CreateDialogCtrl(IDC_MY_HEX, m_hWnd);
-	m_pHexDlg->SetScrollRatio(2, true); //Two lines scroll with mouse-wheel.
-	m_pHexDlg->SetPageSize(64);
-	//m_pHexDlg->SetDlgProperties(EHexWnd::DLG_CODEPAGE, HEXCTRL_FLAG_DLG_NOESC);
-	//m_pHexDlg->SetCharsExtraSpace(2);
-
-	LoadTemplates(&*m_pHexDlg);
-	//OnBnSetRndData();
-	//m_pHexDlg->ExecuteCmd(EHexCmd::CMD_BKM_DLG_MGR);
-
-	//m_hds.pHexVirtColors = this;
-	//m_hds.fHighLatency = true;
-
-	m_chkLnk.SetCheck(BST_CHECKED);
-
-	if (!m_wstrStartupFile.empty()) {
-		FileOpen(m_wstrStartupFile, IsLnk());
+	std::wstring wstrPath(wsvPath);
+	if (fResolveLnk && wstrPath.ends_with(L".lnk")) {
+		wstrPath = LnkToPath(wstrPath.data());
 	}
 
-	GetDynamicLayout()->SetMinSize({ 0, 0 });
+	if (m_hFile = CreateFileW(wstrPath.data(), GENERIC_READ | GENERIC_WRITE,
+		FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr); m_hFile == INVALID_HANDLE_VALUE) {
+		const std::wstring wstr = L"CreateFileW failed.\r\n" + GetLastErrorWstr();
+		MessageBoxW(wstr.data(), L"Error", MB_ICONERROR);
+		return;
+	}
 
-	return TRUE;
+	if (m_hMapObject = CreateFileMappingW(m_hFile, nullptr, PAGE_READWRITE, 0, 0, nullptr); !m_hMapObject) {
+		CloseHandle(m_hFile);
+		const std::wstring wstr = L"CreateFileMappingW failed.\r\n" + GetLastErrorWstr();
+		MessageBoxW(wstr.data(), L"Error", MB_ICONERROR);
+		return;
+	}
+
+	if (m_lpBase = MapViewOfFile(m_hMapObject, FILE_MAP_WRITE, 0, 0, 0); !m_lpBase) {
+		const std::wstring wstr = L"MapViewOfFileW failed.\r\n" + GetLastErrorWstr();
+		MessageBoxW(wstr.data(), L"Error", MB_ICONERROR);
+		CloseHandle(m_hMapObject);
+		CloseHandle(m_hFile);
+		return;
+	}
+
+	m_fFileOpen = true;
+	LARGE_INTEGER stFileSize;
+	::GetFileSizeEx(m_hFile, &stFileSize);
+	m_hds.spnData = { static_cast<std::byte*>(m_lpBase), static_cast<std::size_t>(stFileSize.QuadPart) };
+	m_hds.fMutable = IsRW();
+	m_pHexDlg->SetData(m_hds);
+	if (m_pHexPopup->IsCreated()) {
+		m_pHexPopup->SetData(m_hds);
+		::SetWindowTextW(m_pHexPopup->GetWndHandle(EHexWnd::WND_MAIN), wstrPath.data());
+	}
+
+	m_pData.reset();
+	SetWindowTextW(wstrPath.data());
+}
+
+void CMFCDialogDlg::FileClose()
+{
+	if (!IsFileOpen())
+		return;
+
+	m_pHexDlg->ClearData();
+	if (m_pHexPopup->IsCreated()) {
+		m_pHexPopup->ClearData();
+	}
+
+	if (m_lpBase)
+		UnmapViewOfFile(m_lpBase);
+	if (m_hMapObject)
+		CloseHandle(m_hMapObject);
+	if (m_hFile)
+		CloseHandle(m_hFile);
+
+	m_fFileOpen = false;
+}
+
+bool CMFCDialogDlg::IsFileOpen()const
+{
+	return m_fFileOpen;
+}
+
+bool CMFCDialogDlg::IsLnk()const
+{
+	return m_chkLnk.GetCheck() == BST_CHECKED;
+}
+
+bool CMFCDialogDlg::IsRW()const
+{
+	return m_chkRW.GetCheck() == BST_CHECKED;
 }
 
 void CMFCDialogDlg::OnBnClearData()
@@ -181,6 +306,10 @@ auto CMFCDialogDlg::OnDPIChanged(WPARAM /*wParam*/, LPARAM /*lParam*/)->LRESULT
 	LoadDynamicLayoutResource(MAKEINTRESOURCEW(IDD_HEXCTRL_SAMPLE));
 	GetDynamicLayout()->SetMinSize({ 0, 0 });
 
+	CreateIconsForHexCtrl();
+	SetIconsForHexCtrl(*m_pHexDlg);
+	SetIconsForHexCtrl(*m_pHexPopup);
+
 	return ret;
 }
 
@@ -207,16 +336,6 @@ auto CMFCDialogDlg::OnGetDPIScaledSize(WPARAM /*wParam*/, LPARAM /*lParam*/)->LR
 	EnableDynamicLayout(FALSE);
 
 	return CDialogEx::Default();
-}
-
-BOOL CMFCDialogDlg::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
-{
-	const auto pNMHDR = reinterpret_cast<PHEXMENUINFO>(lParam);
-	if (pNMHDR->hdr.idFrom == IDC_MY_HEX && pNMHDR->hdr.code == HEXCTRL_MSG_CONTEXTMENU) {
-		// pNMHDR->fShow = false; //Ability to disable HexCtrl context menu.
-	}
-
-	return CDialogEx::OnNotify(wParam, lParam, pResult);
 }
 
 bool CMFCDialogDlg::OnHexGetColor(HEXCOLORINFO& hci)
@@ -251,114 +370,93 @@ bool CMFCDialogDlg::OnHexGetColor(HEXCOLORINFO& hci)
 	return false;
 }
 
-void CMFCDialogDlg::SetStartupFile(LPCWSTR pwszFile)
+BOOL CMFCDialogDlg::OnInitDialog()
 {
-	m_wstrStartupFile = pwszFile;
+	CDialogEx::OnInitDialog();
+
+	CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
+
+	const auto hIcon = AfxGetApp()->LoadIconW(IDR_MAINFRAME);
+	SetIcon(hIcon, TRUE);  //Set big icon
+	SetIcon(hIcon, FALSE); //Set small icon
+	m_editDataSize.SetWindowTextW(L"0x4000");
+	m_chkRW.SetCheck(BST_CHECKED);
+
+	//For Drag'n Drop to work in elevated mode.
+	//https://helgeklein.com/blog/how-to-enable-drag-and-drop-for-an-elevated-mfc-application-on-vistawindows-7/
+	ChangeWindowMessageFilterEx(m_hWnd, WM_DROPFILES, MSGFLT_ALLOW, nullptr);
+	ChangeWindowMessageFilterEx(m_hWnd, WM_COPYDATA, MSGFLT_ALLOW, nullptr);
+	ChangeWindowMessageFilterEx(m_hWnd, 0x0049, MSGFLT_ALLOW, nullptr);
+	DragAcceptFiles(TRUE);
+
+	m_pHexDlg->CreateDialogCtrl(IDC_MY_HEX, m_hWnd);
+	m_pHexDlg->SetScrollRatio(2, true); //Two lines scroll with mouse-wheel.
+	m_pHexDlg->SetPageSize(64);
+	//m_pHexDlg->SetDlgProperties(EHexWnd::DLG_CODEPAGE, HEXCTRL_FLAG_DLG_NOESC);
+	//m_pHexDlg->SetCharsExtraSpace(2);
+
+	LoadTemplates(&*m_pHexDlg);
+	//OnBnSetRndData();
+	//m_pHexDlg->ExecuteCmd(EHexCmd::CMD_BKM_DLG_MGR);
+
+	//m_hds.pHexVirtColors = this;
+	//m_hds.fHighLatency = true;
+
+	m_chkLnk.SetCheck(BST_CHECKED);
+
+	if (!m_wstrStartupFile.empty()) {
+		FileOpen(m_wstrStartupFile, IsLnk());
+	}
+
+	GetDynamicLayout()->SetMinSize({ 0, 0 });
+	CreateIconsForHexCtrl();
+	SetIconsForHexCtrl(*m_pHexDlg);
+
+	return TRUE;
 }
 
-void CMFCDialogDlg::CreateHexPopup()
+BOOL CMFCDialogDlg::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 {
-	if (m_pHexPopup->IsCreated())
-		return;
-
-	constexpr auto dwStyle = WS_POPUP | WS_OVERLAPPEDWINDOW;
-	constexpr auto dwExStyle = WS_EX_APPWINDOW; //To force entry to the taskbar.
-
-	m_pHexPopup->Create({ .hWndParent { m_hWnd }, .dwStyle { dwStyle }, .dwExStyle { dwExStyle } });
-	m_hds.fMutable = IsRW();
-	if (!m_hds.spnData.empty()) {
-		m_pHexPopup->SetData(m_hds);
+	const auto pNMHDR = reinterpret_cast<PHEXMENUINFO>(lParam);
+	if (pNMHDR->hdr.idFrom == IDC_MY_HEX && pNMHDR->hdr.code == HEXCTRL_MSG_CONTEXTMENU) {
+		// pNMHDR->fShow = false; //Ability to disable HexCtrl context menu.
 	}
 
-	const auto hWndHex = m_pHexPopup->GetWndHandle(EHexWnd::WND_MAIN);
-	const auto iWidthActual = m_pHexPopup->GetActualWidth() + GetSystemMetrics(SM_CXVSCROLL);
-	CRect rcHex(0, 0, iWidthActual, iWidthActual); //Square window.
-	AdjustWindowRectEx(rcHex, dwStyle, FALSE, dwExStyle);
-	const auto iWidth = rcHex.Width();
-	const auto iHeight = rcHex.Height() - rcHex.Height() / 3;
-	const auto iPosX = GetSystemMetrics(SM_CXSCREEN) / 2 - iWidth / 2;
-	const auto iPosY = GetSystemMetrics(SM_CYSCREEN) / 2 - iHeight / 2;
-	m_pHexPopup->SetWindowPos(m_hWnd, iPosX, iPosY, iWidth, iHeight, SWP_NOACTIVATE);
+	return CDialogEx::OnNotify(wParam, lParam, pResult);
+}
 
-	const auto hIconSmall = static_cast<HICON>(LoadImageW(AfxGetInstanceHandle(),
-		MAKEINTRESOURCEW(IDR_MAINFRAME), IMAGE_ICON, 0, 0, 0));
-	const auto hIconBig = static_cast<HICON>(LoadImageW(AfxGetInstanceHandle(),
-		MAKEINTRESOURCEW(IDR_MAINFRAME), IMAGE_ICON, 96, 96, 0));
-	if (hIconSmall != nullptr) {
-		::SendMessageW(hWndHex, WM_SETICON, ICON_SMALL, reinterpret_cast<LPARAM>(hIconSmall));
-		::SendMessageW(hWndHex, WM_SETICON, ICON_BIG, reinterpret_cast<LPARAM>(hIconBig));
+BOOL CMFCDialogDlg::PreTranslateMessage(MSG* pMsg)
+{
+	if ((m_pHexDlg->IsCreated() && m_pHexDlg->PreTranslateMsg(pMsg))
+		|| (m_pHexPopup->IsCreated() && m_pHexPopup->PreTranslateMsg(pMsg))) {
+		return TRUE;
+	}
+
+	return CDialogEx::PreTranslateMessage(pMsg);
+}
+
+void CMFCDialogDlg::SetIconsForHexCtrl(IHexCtrl& HexCtrl)
+{
+	if (!HexCtrl.IsCreated()) {
+		return;
+	}
+
+	MENUITEMINFOW mii { .cbSize { sizeof(MENUITEMINFOW) }, .fMask { MIIM_BITMAP } };
+	for (const auto& vec : m_vecHexIcons) {
+		mii.hbmpItem = vec.hBitmap;
+		HexCtrl.SetMenuItem(vec.eItem, mii);
 	}
 }
 
-bool CMFCDialogDlg::IsFileOpen()const
+
+//Static functions.
+
+auto CMFCDialogDlg::GetLastErrorWstr()->std::wstring
 {
-	return m_fFileOpen;
-}
-
-void CMFCDialogDlg::FileOpen(std::wstring_view wsvPath, bool fResolveLnk)
-{
-	FileClose();
-
-	std::wstring wstrPath(wsvPath);
-	if (fResolveLnk && wstrPath.ends_with(L".lnk")) {
-		wstrPath = LnkToPath(wstrPath.data());
-	}
-
-	if (m_hFile = CreateFileW(wstrPath.data(), GENERIC_READ | GENERIC_WRITE,
-		FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr); m_hFile == INVALID_HANDLE_VALUE) {
-		const std::wstring wstr = L"CreateFileW failed.\r\n" + GetLastErrorWstr();
-		MessageBoxW(wstr.data(), L"Error", MB_ICONERROR);
-		return;
-	}
-
-	if (m_hMapObject = CreateFileMappingW(m_hFile, nullptr, PAGE_READWRITE, 0, 0, nullptr); !m_hMapObject) {
-		CloseHandle(m_hFile);
-		const std::wstring wstr = L"CreateFileMappingW failed.\r\n" + GetLastErrorWstr();
-		MessageBoxW(wstr.data(), L"Error", MB_ICONERROR);
-		return;
-	}
-
-	if (m_lpBase = MapViewOfFile(m_hMapObject, FILE_MAP_WRITE, 0, 0, 0); !m_lpBase) {
-		const std::wstring wstr = L"MapViewOfFileW failed.\r\n" + GetLastErrorWstr();
-		MessageBoxW(wstr.data(), L"Error", MB_ICONERROR);
-		CloseHandle(m_hMapObject);
-		CloseHandle(m_hFile);
-		return;
-	}
-
-	m_fFileOpen = true;
-	LARGE_INTEGER stFileSize;
-	::GetFileSizeEx(m_hFile, &stFileSize);
-	m_hds.spnData = { static_cast<std::byte*>(m_lpBase), static_cast<std::size_t>(stFileSize.QuadPart) };
-	m_hds.fMutable = IsRW();
-	m_pHexDlg->SetData(m_hds);
-	if (m_pHexPopup->IsCreated()) {
-		m_pHexPopup->SetData(m_hds);
-		::SetWindowTextW(m_pHexPopup->GetWndHandle(EHexWnd::WND_MAIN), wstrPath.data());
-	}
-
-	m_pData.reset();
-	SetWindowTextW(wstrPath.data());
-}
-
-void CMFCDialogDlg::FileClose()
-{
-	if (!IsFileOpen())
-		return;
-
-	m_pHexDlg->ClearData();
-	if (m_pHexPopup->IsCreated()) {
-		m_pHexPopup->ClearData();
-	}
-
-	if (m_lpBase)
-		UnmapViewOfFile(m_lpBase);
-	if (m_hMapObject)
-		CloseHandle(m_hMapObject);
-	if (m_hFile)
-		CloseHandle(m_hFile);
-
-	m_fFileOpen = false;
+	wchar_t wbuff[MAX_PATH];
+	FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, nullptr,
+		::GetLastError(), 0, wbuff, MAX_PATH, nullptr);
+	return wbuff;
 }
 
 void CMFCDialogDlg::LoadTemplates(IHexCtrl* pHexCtrl)
@@ -381,40 +479,6 @@ void CMFCDialogDlg::LoadTemplates(IHexCtrl* pHexCtrl)
 			}
 		}
 	}
-}
-
-bool CMFCDialogDlg::IsRW()const
-{
-	return m_chkRW.GetCheck() == BST_CHECKED;
-}
-
-bool CMFCDialogDlg::IsLnk() const
-{
-	return m_chkLnk.GetCheck() == BST_CHECKED;
-}
-
-BOOL CMFCDialogDlg::PreTranslateMessage(MSG* pMsg)
-{
-	if ((m_pHexDlg->IsCreated() && m_pHexDlg->PreTranslateMsg(pMsg))
-		|| (m_pHexPopup->IsCreated() && m_pHexPopup->PreTranslateMsg(pMsg))) {
-		return TRUE;
-	}
-
-	return CDialogEx::PreTranslateMessage(pMsg);
-}
-
-std::wstring CMFCDialogDlg::LnkToPath(LPCWSTR pwszLnk)
-{
-	CComPtr<IShellLinkW> psl;
-	psl.CoCreateInstance(CLSID_ShellLink, nullptr, CLSCTX_INPROC_SERVER);
-	CComPtr<IPersistFile> ppf;
-	psl->QueryInterface(IID_PPV_ARGS(&ppf));
-	ppf->Load(pwszLnk, STGM_READ);
-
-	std::wstring wstrPath(MAX_PATH, L'\0');
-	psl->GetPath(wstrPath.data(), MAX_PATH, nullptr, 0);
-
-	return wstrPath;
 }
 
 auto CMFCDialogDlg::OpenFileDlg()->std::vector<std::wstring>
@@ -442,12 +506,4 @@ auto CMFCDialogDlg::OpenFileDlg()->std::vector<std::wstring>
 	}
 
 	return vecFiles;
-}
-
-auto CMFCDialogDlg::GetLastErrorWstr()->std::wstring
-{
-	wchar_t wbuff[MAX_PATH];
-	FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, nullptr,
-		::GetLastError(), 0, wbuff, MAX_PATH, nullptr);
-	return wbuff;
 }

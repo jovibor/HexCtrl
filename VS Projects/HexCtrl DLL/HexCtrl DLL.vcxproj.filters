@@ -14,16 +14,16 @@
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
     <Filter Include="HexCtrl">
-      <UniqueIdentifier>{8b40e28d-bd97-4bad-803e-f4604deaba66}</UniqueIdentifier>
+      <UniqueIdentifier>{809f77e8-ebec-4860-bde5-477dcbba29b1}</UniqueIdentifier>
     </Filter>
     <Filter Include="HexCtrl\src">
-      <UniqueIdentifier>{c2907191-ce39-42ab-b27e-00e4ffd253ef}</UniqueIdentifier>
+      <UniqueIdentifier>{3696ae9e-548f-47a9-92bb-12555ab311ea}</UniqueIdentifier>
     </Filter>
     <Filter Include="HexCtrl\src\res">
-      <UniqueIdentifier>{4747f142-8bad-4738-9011-a3d157770b0b}</UniqueIdentifier>
+      <UniqueIdentifier>{ceae43cf-0250-43d4-a403-7aae71225ec6}</UniqueIdentifier>
     </Filter>
     <Filter Include="HexCtrl\src\dep">
-      <UniqueIdentifier>{68e80a74-60c8-464e-9d6d-caeb596e6991}</UniqueIdentifier>
+      <UniqueIdentifier>{3299d6f9-3e55-4310-9b6e-47b5749896b3}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -84,31 +84,7 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="..\..\HexCtrl\src\res\IDB_HEXCTRL_BKMS.bmp">
-      <Filter>HexCtrl\src\res</Filter>
-    </Image>
-    <Image Include="..\..\HexCtrl\src\res\IDB_HEXCTRL_CLPBRD_COPYHEX.bmp">
-      <Filter>HexCtrl\src\res</Filter>
-    </Image>
-    <Image Include="..\..\HexCtrl\src\res\IDB_HEXCTRL_CLPBRD_PASTEHEX.bmp">
-      <Filter>HexCtrl\src\res</Filter>
-    </Image>
-    <Image Include="..\..\HexCtrl\src\res\IDB_HEXCTRL_FONTCHOOSE.bmp">
-      <Filter>HexCtrl\src\res</Filter>
-    </Image>
-    <Image Include="..\..\HexCtrl\src\res\IDB_HEXCTRL_GROUP.bmp">
-      <Filter>HexCtrl\src\res</Filter>
-    </Image>
     <Image Include="..\..\HexCtrl\src\res\IDB_HEXCTRL_LOGO.bmp">
-      <Filter>HexCtrl\src\res</Filter>
-    </Image>
-    <Image Include="..\..\HexCtrl\src\res\IDB_HEXCTRL_MODIFY.bmp">
-      <Filter>HexCtrl\src\res</Filter>
-    </Image>
-    <Image Include="..\..\HexCtrl\src\res\IDB_HEXCTRL_MODIFY_FILLZEROS.bmp">
-      <Filter>HexCtrl\src\res</Filter>
-    </Image>
-    <Image Include="..\..\HexCtrl\src\res\IDB_HEXCTRL_SEARCH.bmp">
       <Filter>HexCtrl\src\res</Filter>
     </Image>
   </ItemGroup>

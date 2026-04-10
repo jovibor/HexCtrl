@@ -287,23 +287,7 @@ END
 // Bitmap
 //
 
-IDB_HEXCTRL_CLPBRD_COPYHEX BITMAP                  "IDB_HEXCTRL_CLPBRD_COPYHEX.bmp"
-
-IDB_HEXCTRL_CLPBRD_PASTEHEX BITMAP                  "IDB_HEXCTRL_CLPBRD_PASTEHEX.bmp"
-
 IDB_HEXCTRL_LOGO        BITMAP                  "IDB_HEXCTRL_LOGO.bmp"
-
-IDB_HEXCTRL_MODIFY_FILLZEROS BITMAP                  "IDB_HEXCTRL_MODIFY_FILLZEROS.bmp"
-
-IDB_HEXCTRL_SEARCH      BITMAP                  "IDB_HEXCTRL_SEARCH.bmp"
-
-IDB_HEXCTRL_BKMS        BITMAP                  "IDB_HEXCTRL_BKMS.bmp"
-
-IDB_HEXCTRL_MODIFY      BITMAP                  "IDB_HEXCTRL_MODIFY.bmp"
-
-IDB_HEXCTRL_GROUP       BITMAP                  "IDB_HEXCTRL_GROUP.bmp"
-
-IDB_HEXCTRL_FONTCHOOSE  BITMAP                  "IDB_HEXCTRL_FONTCHOOSE.bmp"
 
 
 /////////////////////////////////////////////////////////////////////////////

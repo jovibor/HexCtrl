@@ -151,15 +151,7 @@
     <ResourceCompile Include="..\..\HexCtrl\src\res\HexCtrl.rc" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="..\..\HexCtrl\src\res\IDB_HEXCTRL_BKMS.bmp" />
-    <Image Include="..\..\HexCtrl\src\res\IDB_HEXCTRL_CLPBRD_COPYHEX.bmp" />
-    <Image Include="..\..\HexCtrl\src\res\IDB_HEXCTRL_CLPBRD_PASTEHEX.bmp" />
-    <Image Include="..\..\HexCtrl\src\res\IDB_HEXCTRL_FONTCHOOSE.bmp" />
-    <Image Include="..\..\HexCtrl\src\res\IDB_HEXCTRL_GROUP.bmp" />
     <Image Include="..\..\HexCtrl\src\res\IDB_HEXCTRL_LOGO.bmp" />
-    <Image Include="..\..\HexCtrl\src\res\IDB_HEXCTRL_MODIFY.bmp" />
-    <Image Include="..\..\HexCtrl\src\res\IDB_HEXCTRL_MODIFY_FILLZEROS.bmp" />
-    <Image Include="..\..\HexCtrl\src\res\IDB_HEXCTRL_SEARCH.bmp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\HexCtrl\src\res\IDJ_HEXCTRL_KEYBIND.json" />

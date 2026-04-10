@@ -469,6 +469,14 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="GDIUtility.ixx">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
@@ -529,18 +537,18 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\HexCtrl\src\res\IDJ_HEXCTRL_KEYBIND.json" />
+    <None Include="res\IDSVG_BKM.svg" />
+    <None Include="res\IDSVG_CLPBRD_COPYHEX.svg" />
+    <None Include="res\IDSVG_CLPBRD_PASTEHEX.svg" />
+    <None Include="res\IDSVG_FONTCHOOSE.svg" />
+    <None Include="res\IDSVG_GROUP.svg" />
+    <None Include="res\IDSVG_MODIFY.svg" />
+    <None Include="res\IDSVG_MODIFY_FILLZEROS.svg" />
+    <None Include="res\IDSVG_SEARCH.svg" />
     <None Include="res\MFCDialog.rc2" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="..\..\HexCtrl\src\res\IDB_HEXCTRL_BKMS.bmp" />
-    <Image Include="..\..\HexCtrl\src\res\IDB_HEXCTRL_CLPBRD_COPYHEX.bmp" />
-    <Image Include="..\..\HexCtrl\src\res\IDB_HEXCTRL_CLPBRD_PASTEHEX.bmp" />
-    <Image Include="..\..\HexCtrl\src\res\IDB_HEXCTRL_FONTCHOOSE.bmp" />
-    <Image Include="..\..\HexCtrl\src\res\IDB_HEXCTRL_GROUP.bmp" />
     <Image Include="..\..\HexCtrl\src\res\IDB_HEXCTRL_LOGO.bmp" />
-    <Image Include="..\..\HexCtrl\src\res\IDB_HEXCTRL_MODIFY.bmp" />
-    <Image Include="..\..\HexCtrl\src\res\IDB_HEXCTRL_MODIFY_FILLZEROS.bmp" />
-    <Image Include="..\..\HexCtrl\src\res\IDB_HEXCTRL_SEARCH.bmp" />
     <Image Include="res\MFCDialog.ico" />
   </ItemGroup>
   <ItemGroup>

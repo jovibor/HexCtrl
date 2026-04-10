@@ -98,6 +98,9 @@
     <ClCompile Include="..\..\HexCtrl\src\dep\HexCtrl_StrToNum.ixx">
       <Filter>HexCtrl\src\dep</Filter>
     </ClCompile>
+    <ClCompile Include="GDIUtility.ixx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="MFCDialog.rc">
@@ -114,36 +117,36 @@
     <None Include="..\..\HexCtrl\src\res\IDJ_HEXCTRL_KEYBIND.json">
       <Filter>HexCtrl\src\res</Filter>
     </None>
+    <None Include="res\IDSVG_BKM.svg">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="res\IDSVG_CLPBRD_COPYHEX.svg">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="res\IDSVG_CLPBRD_PASTEHEX.svg">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="res\IDSVG_FONTCHOOSE.svg">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="res\IDSVG_GROUP.svg">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="res\IDSVG_MODIFY.svg">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="res\IDSVG_MODIFY_FILLZEROS.svg">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="res\IDSVG_SEARCH.svg">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Image Include="res\MFCDialog.ico">
       <Filter>Resource Files</Filter>
     </Image>
-    <Image Include="..\..\HexCtrl\src\res\IDB_HEXCTRL_BKMS.bmp">
-      <Filter>HexCtrl\src\res</Filter>
-    </Image>
-    <Image Include="..\..\HexCtrl\src\res\IDB_HEXCTRL_CLPBRD_COPYHEX.bmp">
-      <Filter>HexCtrl\src\res</Filter>
-    </Image>
-    <Image Include="..\..\HexCtrl\src\res\IDB_HEXCTRL_CLPBRD_PASTEHEX.bmp">
-      <Filter>HexCtrl\src\res</Filter>
-    </Image>
-    <Image Include="..\..\HexCtrl\src\res\IDB_HEXCTRL_FONTCHOOSE.bmp">
-      <Filter>HexCtrl\src\res</Filter>
-    </Image>
-    <Image Include="..\..\HexCtrl\src\res\IDB_HEXCTRL_GROUP.bmp">
-      <Filter>HexCtrl\src\res</Filter>
-    </Image>
     <Image Include="..\..\HexCtrl\src\res\IDB_HEXCTRL_LOGO.bmp">
-      <Filter>HexCtrl\src\res</Filter>
-    </Image>
-    <Image Include="..\..\HexCtrl\src\res\IDB_HEXCTRL_MODIFY.bmp">
-      <Filter>HexCtrl\src\res</Filter>
-    </Image>
-    <Image Include="..\..\HexCtrl\src\res\IDB_HEXCTRL_MODIFY_FILLZEROS.bmp">
-      <Filter>HexCtrl\src\res</Filter>
-    </Image>
-    <Image Include="..\..\HexCtrl\src\res\IDB_HEXCTRL_SEARCH.bmp">
       <Filter>HexCtrl\src\res</Filter>
     </Image>
   </ItemGroup>

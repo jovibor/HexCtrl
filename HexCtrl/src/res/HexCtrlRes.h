@@ -3,14 +3,6 @@
 // Used by HexCtrl.rc
 //
 #define IDB_HEXCTRL_LOGO                9001
-#define IDB_HEXCTRL_CLPBRD_COPYHEX      9002
-#define IDB_HEXCTRL_CLPBRD_PASTEHEX     9003
-#define IDB_HEXCTRL_MODIFY_FILLZEROS    9004
-#define IDB_HEXCTRL_SEARCH              9005
-#define IDB_HEXCTRL_BKMS                9006
-#define IDB_HEXCTRL_MODIFY              9007
-#define IDB_HEXCTRL_GROUP               9008
-#define IDB_HEXCTRL_FONTCHOOSE          9009
 #define IDD_HEXCTRL_PROGRESS            9010
 #define IDD_HEXCTRL_SEARCH              9011
 #define IDD_HEXCTRL_GOTO                9012

@@ -14,16 +14,16 @@
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
     <Filter Include="HexCtrl">
-      <UniqueIdentifier>{ecfdd163-afd9-4fe3-960c-d5e0c0c020f0}</UniqueIdentifier>
+      <UniqueIdentifier>{e170fbce-ce5d-4f49-a106-089f364c7787}</UniqueIdentifier>
     </Filter>
     <Filter Include="HexCtrl\src">
-      <UniqueIdentifier>{35fa6df7-1754-479f-97d5-d8b2efb7da93}</UniqueIdentifier>
+      <UniqueIdentifier>{8072b901-fd2c-4478-a727-402d44788a03}</UniqueIdentifier>
     </Filter>
     <Filter Include="HexCtrl\src\res">
-      <UniqueIdentifier>{f66c74f0-3686-4644-81af-9dd690440348}</UniqueIdentifier>
+      <UniqueIdentifier>{a0e89472-1f80-4529-99b0-10138f73f8b2}</UniqueIdentifier>
     </Filter>
     <Filter Include="HexCtrl\src\dep">
-      <UniqueIdentifier>{11634114-b3b9-4a4b-8e2b-d93f02ba5b51}</UniqueIdentifier>
+      <UniqueIdentifier>{a74ae6b7-bbb2-4fc4-8f14-d9df14fa0a61}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -114,40 +114,16 @@
     <Image Include="Win32 App.ico">
       <Filter>Resource Files</Filter>
     </Image>
-    <Image Include="..\..\HexCtrl\src\res\IDB_HEXCTRL_BKMS.bmp">
-      <Filter>HexCtrl\src\res</Filter>
-    </Image>
-    <Image Include="..\..\HexCtrl\src\res\IDB_HEXCTRL_CLPBRD_COPYHEX.bmp">
-      <Filter>HexCtrl\src\res</Filter>
-    </Image>
-    <Image Include="..\..\HexCtrl\src\res\IDB_HEXCTRL_CLPBRD_PASTEHEX.bmp">
-      <Filter>HexCtrl\src\res</Filter>
-    </Image>
-    <Image Include="..\..\HexCtrl\src\res\IDB_HEXCTRL_FONTCHOOSE.bmp">
-      <Filter>HexCtrl\src\res</Filter>
-    </Image>
-    <Image Include="..\..\HexCtrl\src\res\IDB_HEXCTRL_GROUP.bmp">
-      <Filter>HexCtrl\src\res</Filter>
-    </Image>
     <Image Include="..\..\HexCtrl\src\res\IDB_HEXCTRL_LOGO.bmp">
       <Filter>HexCtrl\src\res</Filter>
     </Image>
-    <Image Include="..\..\HexCtrl\src\res\IDB_HEXCTRL_MODIFY.bmp">
-      <Filter>HexCtrl\src\res</Filter>
-    </Image>
-    <Image Include="..\..\HexCtrl\src\res\IDB_HEXCTRL_MODIFY_FILLZEROS.bmp">
-      <Filter>HexCtrl\src\res</Filter>
-    </Image>
-    <Image Include="..\..\HexCtrl\src\res\IDB_HEXCTRL_SEARCH.bmp">
-      <Filter>HexCtrl\src\res</Filter>
-    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <Manifest Include=".manifest" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\HexCtrl\src\res\IDJ_HEXCTRL_KEYBIND.json">
       <Filter>HexCtrl\src\res</Filter>
     </None>
-  </ItemGroup>
-  <ItemGroup>
-    <Manifest Include=".manifest" />
   </ItemGroup>
 </Project>
