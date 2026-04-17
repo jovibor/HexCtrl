@@ -1276,7 +1276,7 @@ auto CHexDlgSearch::OnCommand(const MSG& msg)->INT_PTR
 				const HEXBKM hbs { .vecSpan { HEXSPAN { m_vecSearchRes.at(static_cast<std::size_t>(iItem)),
 					m_fReplace ? GetReplaceDataSize() : GetSearchDataSize() } }, .wstrDesc { m_wstrSearch },
 					.stClr { GetHexCtrl()->GetColors().clrBkBkm, GetHexCtrl()->GetColors().clrFontBkm } };
-				GetHexCtrl()->GetBookmarks()->AddBkm(hbs, false);
+				GetHexCtrl()->GetBookmarks()->AddBkm(hbs);
 			}
 			GetHexCtrl()->Redraw();
 		}

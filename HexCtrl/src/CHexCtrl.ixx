@@ -802,10 +802,12 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 	case CMD_BKM_ADD:
 		m_DlgBkmMgr.AddBkm(HEXBKM { .vecSpan { HasSelection() ? GetSelection()
 			: VecSpan { { GetCaretPosImpl(), 1 } } },
-			.stClr { .clrBk { GetColors().clrBkBkm }, .clrText { GetColors().clrFontBkm } } }, true);
+			.stClr { .clrBk { GetColors().clrBkBkm }, .clrText { GetColors().clrFontBkm } } });
+		RedrawImpl();
 		break;
 	case CMD_BKM_REMOVE:
 		m_DlgBkmMgr.RemoveByOffset(GetCaretPosImpl());
+		RedrawImpl();
 		break;
 	case CMD_BKM_NEXT:
 		m_DlgBkmMgr.GoNext();
@@ -815,6 +817,7 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 		break;
 	case CMD_BKM_REMOVEALL:
 		m_DlgBkmMgr.RemoveAll();
+		RedrawImpl();
 		break;
 	case CMD_BKM_DLG_MGR:
 		ParentNotify(HEXCTRL_MSG_DLGBKMMGR);
@@ -1283,7 +1286,7 @@ bool CHexCtrl::IsCmdAvail(EHexCmd eCmd)const
 	using enum EHexCmd;
 	switch (eCmd) {
 	case CMD_BKM_REMOVE:
-		fAvail = fDataSet && m_DlgBkmMgr.HasBookmark(GetCaretPosImpl());
+		fAvail = fDataSet && m_DlgBkmMgr.HasBkmAtOffset(GetCaretPosImpl());
 		break;
 	case CMD_BKM_NEXT:
 	case CMD_BKM_PREV:
