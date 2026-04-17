@@ -950,12 +950,15 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 		break;
 	case CMD_TEMPL_APPLYCURR:
 		m_DlgTemplMgr.ApplyCurr(GetCaretPosImpl());
+		RedrawImpl();
 		break;
 	case CMD_TEMPL_DISAPPLY:
 		m_DlgTemplMgr.DisapplyByOffset(GetCaretPosImpl());
+		RedrawImpl();
 		break;
 	case CMD_TEMPL_DISAPPALL:
 		m_DlgTemplMgr.DisapplyAll();
+		RedrawImpl();
 		break;
 	case CMD_TEMPL_DLG_MGR:
 		ParentNotify(HEXCTRL_MSG_DLGTEMPLMGR);

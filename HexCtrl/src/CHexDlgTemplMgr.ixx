@@ -268,8 +268,6 @@ int CHexDlgTemplMgr::ApplyTemplate(ULONGLONG ullOffset, int iTemplateID)
 		};
 	lmbFill(hTreeRootNode, pTemplate->vecFields);
 
-	RedrawHexCtrl();
-
 	return iAppliedID;
 }
 
@@ -302,8 +300,6 @@ void CHexDlgTemplMgr::DisapplyAll()
 	m_pVecFieldsCurr = nullptr;
 	m_hTreeCurrParent = nullptr;
 	m_vecTemplatesAppl.clear();
-
-	RedrawHexCtrl();
 }
 
 void CHexDlgTemplMgr::DisapplyByID(int iAppliedID)
@@ -313,7 +309,6 @@ void CHexDlgTemplMgr::DisapplyByID(int iAppliedID)
 		it != m_vecTemplatesAppl.end()) {
 		RemoveNodeWithAppliedID(iAppliedID);
 		m_vecTemplatesAppl.erase(it);
-		RedrawHexCtrl();
 	}
 }
 
@@ -325,7 +320,6 @@ void CHexDlgTemplMgr::DisapplyByOffset(ULONGLONG ullOffset)
 			rit != m_vecTemplatesAppl.rend()) {
 		RemoveNodeWithAppliedID(rit->get()->iAppliedID);
 		m_vecTemplatesAppl.erase(std::next(rit).base());
-		RedrawHexCtrl();
 	}
 }
 
@@ -486,8 +480,6 @@ void CHexDlgTemplMgr::UnloadAll()
 		OnTemplateLoadUnload(pTemplate->iTemplateID, false);
 	}
 	m_vecTemplates.clear();
-
-	RedrawHexCtrl();
 }
 
 void CHexDlgTemplMgr::UpdateData()
@@ -644,6 +636,7 @@ void CHexDlgTemplMgr::OnBnUnloadTemplate()
 	if (const auto iIndex = m_WndCmbTempl.GetCurSel(); iIndex != CB_ERR) {
 		const auto iTemplateID = static_cast<int>(m_WndCmbTempl.GetItemData(iIndex));
 		UnloadTemplate(iTemplateID);
+		RedrawHexCtrl();
 	}
 }
 
@@ -652,6 +645,8 @@ void CHexDlgTemplMgr::OnBnRandomizeColors()
 	if (const auto iIndex = m_WndCmbTempl.GetCurSel(); iIndex != CB_ERR) {
 		const auto iTemplateID = static_cast<int>(m_WndCmbTempl.GetItemData(iIndex));
 		RandomizeTemplateColors(iTemplateID);
+		m_ListEx.RedrawWindow();
+		RedrawHexCtrl();
 	}
 }
 
@@ -678,6 +673,7 @@ void CHexDlgTemplMgr::OnBnApply()
 
 	const auto iTemplateID = static_cast<int>(m_WndCmbTempl.GetItemData(iIndex));
 	ApplyTemplate(GetHexCtrl()->GetOffset(*optOffset, false), iTemplateID);
+	RedrawHexCtrl();
 }
 
 void CHexDlgTemplMgr::OnCancel()
@@ -778,9 +774,13 @@ auto CHexDlgTemplMgr::OnCommand(const MSG& msg)->INT_PTR
 		case IDM_TREE_DISAPPLY:
 			if (const auto pApplied = GetAppliedFromItem(m_WndTree.GetSelectedItem()); pApplied != nullptr) {
 				DisapplyByID(pApplied->iAppliedID);
+				RedrawHexCtrl();
 			}
 			break;
-		case IDM_TREE_DISAPPLYALL:DisapplyAll(); break;
+		case IDM_TREE_DISAPPLYALL:
+			DisapplyAll();
+			RedrawHexCtrl();
+			break;
 		case IDM_LIST_HDR_TYPE:
 		case IDM_LIST_HDR_NAME:
 		case IDM_LIST_HDR_OFFSET:
@@ -1624,8 +1624,6 @@ void CHexDlgTemplMgr::RandomizeTemplateColors(int iTemplateID)
 		};
 
 	lmbRndColors(pTemplate->vecFields);
-	m_ListEx.RedrawWindow();
-	RedrawHexCtrl();
 }
 
 void CHexDlgTemplMgr::RedrawHexCtrl()
@@ -2079,10 +2077,8 @@ void CHexDlgTemplMgr::UnloadTemplate(int iTemplateID)
 		return;
 
 	//Remove all applied templates from m_vecTemplatesAppl, if any, with the given iTemplateID.
-	if (std::erase_if(m_vecTemplatesAppl, [pTemplate](const std::unique_ptr<TEMPLAPPLIED>& pData) {
-		return pData->pTemplate == pTemplate; }) > 0) {
-		RedrawHexCtrl();
-	}
+	std::erase_if(m_vecTemplatesAppl, [pTemplate](const std::unique_ptr<TEMPLAPPLIED>& pData) {
+		return pData->pTemplate == pTemplate; });
 
 	std::erase_if(m_vecTemplates, [iTemplateID](const std::unique_ptr<HEXTEMPLATE>& pData) {
 		return pData->iTemplateID == iTemplateID; }); //Remove template itself.
