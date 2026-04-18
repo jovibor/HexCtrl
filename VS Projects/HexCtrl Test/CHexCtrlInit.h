@@ -111,14 +111,6 @@ namespace TestHexCtrl {
 		}
 	}
 
-	template<typename T>
-	void ModifyOperTData(EHexOperMode eOperMode, T tData, bool fBigEndian, HEXSPAN hsp) {
-		const HEXMODIFY hms { .eModifyMode { MODIFY_OPERATION }, .eOperMode { eOperMode },
-			.eDataType { TypeToEHexDataType<T>() }, .spnData { reinterpret_cast<const std::byte*>(&tData),
-			sizeof(tData) }, .vecSpan { hsp }, .fBigEndian { fBigEndian } };
-		GetHexCtrl()->ModifyData(hms);
-	}
-
 	template<typename T> concept TSize1248 = (sizeof(T) == 1 || sizeof(T) == 2 || sizeof(T) == 4 || sizeof(T) == 8);
 
 	template<TSize1248 T>
@@ -170,10 +162,14 @@ namespace TestHexCtrl {
 	}
 
 	template<typename T>
-	void OperDataForType(EHexOperMode eOperMode, T tOper = { }, bool fBigEndian = false) {
-		ModifyOperTData(eOperMode, tOper, fBigEndian, { .ullOffset { 0 }, .ullSize { GetTestDataSize() } }); //Operate on whole HexCtrl's data.
+	void ModifyHexCtrlAndRefData(EHexOperMode eOperMode, T tOperData = { }, bool fBigEndian = false) {
+		//Modify HexCtrl's data.
+		const HEXMODIFY hms { .eModifyMode { MODIFY_OPERATION }, .eOperMode { eOperMode },
+			.eDataType { TypeToEHexDataType<T>() }, .spnData { reinterpret_cast<const std::byte*>(&tOperData),
+			sizeof(tOperData) }, .vecSpan { { .ullOffset { 0 }, .ullSize { GetTestDataSize() } } }, .fBigEndian { fBigEndian } };
+		GetHexCtrl()->ModifyData(hms);
 
-		//Filling the reference data with the same operand, to compare with the HexCtrl's results.
+		//Modify reference data, to compare then with the HexCtrl's modified data.
 		constexpr auto u32DataChunks = GetTestDataSize() / sizeof(T);
 		for (auto i { 0U }; i < u32DataChunks; ++i) {
 			auto tData = reinterpret_cast<const T*>(GetDataReference())[i];
@@ -182,28 +178,28 @@ namespace TestHexCtrl {
 			if constexpr (std::is_integral_v<T>) { //Operations only for integral types.
 				switch (eOperMode) {
 				case OPER_OR:
-					tData |= tOper;
+					tData |= tOperData;
 					break;
 				case OPER_XOR:
-					tData ^= tOper;
+					tData ^= tOperData;
 					break;
 				case OPER_AND:
-					tData &= tOper;
+					tData &= tOperData;
 					break;
 				case OPER_NOT:
 					tData = ~tData;
 					break;
 				case OPER_SHL:
-					tData <<= tOper;
+					tData <<= tOperData;
 					break;
 				case OPER_SHR:
-					tData >>= tOper;
+					tData >>= tOperData;
 					break;
 				case OPER_ROTL:
-					tData = std::rotl(static_cast<std::make_unsigned_t<T>>(tData), static_cast<const int>(tOper));
+					tData = std::rotl(static_cast<std::make_unsigned_t<T>>(tData), static_cast<const int>(tOperData));
 					break;
 				case OPER_ROTR:
-					tData = std::rotr(static_cast<std::make_unsigned_t<T>>(tData), static_cast<const int>(tOper));
+					tData = std::rotr(static_cast<std::make_unsigned_t<T>>(tData), static_cast<const int>(tOperData));
 					break;
 				case OPER_BITREV:
 					tData = BitReverse(tData);
@@ -215,35 +211,35 @@ namespace TestHexCtrl {
 
 			switch (eOperMode) { //Operations for integral and floating types.
 			case OPER_ASSIGN:
-				tData = tOper;
+				tData = tOperData;
 				break;
 			case OPER_ADD:
-				tData += tOper;
+				tData += tOperData;
 				break;
 			case OPER_SUB:
-				tData -= tOper;
+				tData -= tOperData;
 				break;
 			case OPER_MUL:
-				tData *= tOper;
+				tData *= tOperData;
 				break;
 			case OPER_DIV:
-				assert(tOper > 0);
-				tData /= tOper;
+				assert(tOperData > 0);
+				tData /= tOperData;
 				break;
 			case OPER_MIN:
 				if constexpr (std::is_floating_point_v<T>) {
-					tData = std::fmax(tData, tOper);
+					tData = std::fmax(tData, tOperData);
 				}
 				else {
-					tData = (std::max)(tData, tOper);
+					tData = (std::max)(tData, tOperData);
 				}
 				break;
 			case OPER_MAX:
 				if constexpr (std::is_floating_point_v<T>) {
-					tData = std::fmin(tData, tOper);
+					tData = std::fmin(tData, tOperData);
 				}
 				else {
-					tData = (std::min)(tData, tOper);
+					tData = (std::min)(tData, tOperData);
 				}
 				break;
 			case OPER_SWAP:
@@ -253,13 +249,16 @@ namespace TestHexCtrl {
 				break;
 			}
 
-			if (fBigEndian) { tData = ByteSwap(tData); }
+			if (fBigEndian) {
+				tData = ByteSwap(tData);
+			}
+
 			reinterpret_cast<T*>(GetDataReference())[i] = tData;
 		}
 	}
 
 	template<typename T>
-	void VerifyDataForType() {
+	void CompareHexCtrlAndRefData() {
 		constexpr auto u32DataChunks = GetTestDataSize() / sizeof(T);
 		for (auto i { 0U }; i < u32DataChunks; ++i) {
 			const auto tDataRef = reinterpret_cast<const T*>(GetDataReference())[i];
