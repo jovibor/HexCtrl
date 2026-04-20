@@ -1068,6 +1068,7 @@ auto CHexCtrl::GetDlgItemHandle(EHexDlgItem eItem)const->HWND
 	using enum EHexDlgItem;
 	switch (eItem) {
 	case BKMMGR_CHK_HEX:
+	case BKMMGR_CHK_TT:
 		return m_DlgBkmMgr.GetDlgItemHandle(eItem);
 	case DATAINTERP_CHK_HEX: case DATAINTERP_CHK_BE:
 		return m_DlgDataInterp.GetDlgItemHandle(eItem);
@@ -1081,6 +1082,7 @@ auto CHexCtrl::GetDlgItemHandle(EHexDlgItem eItem)const->HWND
 	case TEMPLMGR_CHK_HEX: case TEMPLMGR_CHK_SWAP:
 		return m_DlgTemplMgr.GetDlgItemHandle(eItem);
 	default:
+		ut::DBG_REPORT(L"Unsupported EHexDlgItem.");
 		return { };
 	};
 }
