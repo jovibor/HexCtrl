@@ -1033,19 +1033,7 @@ struct HEXVISION {
 ## [](#)Interfaces
 
 ### [](#)IHexBookmarks
-The `IHexBookmarks` interface responds for the **HexCtrl**'s bookmarks machinery. To obtain pointer to this interface use the [`GetBookmarks`](#getbookmarks) method.
-```cpp
-class IHexBookmarks {
-public:
-    virtual auto AddBkm(const HEXBKM& hbs, bool fRedraw = true) -> ULONGLONG = 0; //Add new bookmark, returns the new bookmark's ID.
-    [[nodiscard]] virtual auto GetByID(ULONGLONG ullID) -> PHEXBKM = 0;           //Get bookmark by ID.
-    [[nodiscard]] virtual auto GetByIndex(ULONGLONG ullIndex) -> PHEXBKM = 0;     //Get bookmark by index.
-    [[nodiscard]] virtual auto GetCount() -> ULONGLONG = 0;                       //Get bookmarks count.
-    [[nodiscard]] virtual auto HitTest(ULONGLONG ullOffset) -> PHEXBKM = 0;       //HitTest for given offset.
-    virtual void RemoveAll() = 0;                                                 //Remove all bookmarks.
-    virtual void RemoveByID(ULONGLONG ullID) = 0;                                 //Remove by a given ID.
-};
-```
+This interface is responsible for the **HexCtrl**'s bookmarks machinery. To obtain a pointer to this interface use the [`GetBookmarks`](#getbookmarks) method.
 
 #### [](#)IHexBookmarks::AddBkm
 ```cpp
@@ -1100,21 +1088,7 @@ void RemoveByID(ULONGLONG ullID);
 Removes bookmark with the given ID.
 
 ### [](#)IHexTemplates
-```cpp
-class IHexTemplates {
-public:
-    virtual auto AddTemplate(const HEXTEMPLATE& hts) -> int = 0; //Adds existing template.
-    virtual auto ApplyTemplate(ULONGLONG ullOffset, int iTemplateID) -> int = 0; //Applies template to offset, returns AppliedID.
-    virtual void DisapplyAll() = 0;
-    virtual void DisapplyByID(int iAppliedID) = 0;
-    virtual void DisapplyByOffset(ULONGLONG ullOffset) = 0;
-    virtual auto LoadTemplate(const wchar_t* pFilePath) -> int = 0; //Returns TemplateID on success, null otherwise.
-    virtual void ShowTooltips(bool fShow) = 0;
-    virtual void UnloadAll() = 0;                     //Unload all templates.
-    virtual void UnloadTemplate(int iTemplateID) = 0; //Unload/remove loaded template from memory.
-    [[nodiscard]] static HEXCTRLAPI auto __cdecl LoadFromFile(const wchar_t* pFilePath)->std::unique_ptr<HEXTEMPLATE>;
-};
-```
+This interface is responsible for templates machinery in the **HexCtrl**. It can be obtained using the [`GetTemplates`](#gettemplates) method.
 
 #### [](#)LoadFromFile
 ```cpp

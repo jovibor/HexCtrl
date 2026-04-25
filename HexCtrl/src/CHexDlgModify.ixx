@@ -427,7 +427,7 @@ void CHexDlgOpers::OnOK()
 	if (!fFillOk)
 		return;
 
-	VecSpan vecSpan;
+	VecHexSpan vecSpan;
 	const auto iRadioAllOrSel = m_Wnd.GetCheckedRadioButton(IDC_HEXCTRL_OPERS_RAD_ALL, IDC_HEXCTRL_OPERS_RAD_SEL);
 	if (iRadioAllOrSel == IDC_HEXCTRL_OPERS_RAD_ALL) {
 		if (::MessageBoxW(m_Wnd, L"You are about to modify the entire data region.\r\nAre you sure?",
@@ -799,7 +799,7 @@ void CHexDlgFillData::OnOK()
 		}
 	}
 
-	VecSpan vecSpan;
+	VecHexSpan vecSpan;
 	const auto iRadioAllOrSel = m_Wnd.GetCheckedRadioButton(IDC_HEXCTRL_FILLDATA_RAD_ALL, IDC_HEXCTRL_FILLDATA_RAD_SEL);
 	if (iRadioAllOrSel == IDC_HEXCTRL_FILLDATA_RAD_ALL) {
 		if (::MessageBoxW(m_Wnd, L"You are about to modify the entire data region.\r\nAre you sure?", L"Modify all data?",

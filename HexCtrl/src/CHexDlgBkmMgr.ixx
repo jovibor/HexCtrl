@@ -24,7 +24,7 @@ namespace HEXCTRL::INTERNAL {
 		auto AddBkm(const HEXBKM& bkm) -> ULONGLONG override;
 		void CreateDlg()const;
 		void DestroyDlg();
-		[[nodiscard]] auto GetAllAsArray() -> std::span<HEXBKM> override;
+		[[nodiscard]] auto GetAllAsArray() -> SpnHexBkm override;
 		[[nodiscard]] auto GetByID(ULONGLONG ullID) -> PHEXBKM override;
 		[[nodiscard]] auto GetByIndex(ULONGLONG ullIndex) -> PHEXBKM override;
 		[[nodiscard]] auto GetCount() -> ULONGLONG override;

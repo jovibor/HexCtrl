@@ -266,7 +266,7 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] auto GetPagePos()const -> ULONGLONG override;
 		[[nodiscard]] auto GetPageSize()const -> DWORD override;
 		[[nodiscard]] auto GetScrollRatio()const -> std::tuple<float, bool> override;
-		[[nodiscard]] auto GetSelection()const -> VecSpan override;
+		[[nodiscard]] auto GetSelection()const -> VecHexSpan override;
 		[[nodiscard]] auto GetTemplates() -> IHexTemplates* override;
 		[[nodiscard]] auto GetUnprintableChar()const -> wchar_t override;
 		[[nodiscard]] auto GetWndHandle(EHexWnd eWnd, bool fCreate)const -> HWND override;
@@ -304,7 +304,7 @@ namespace HEXCTRL::INTERNAL {
 		void SetPageSize(DWORD dwSize, std::wstring_view wsvName)override;
 		void SetRedraw(bool fRedraw)override;
 		void SetScrollRatio(float flRatio, bool fLines)override;
-		void SetSelection(const VecSpan& vecSel, bool fRedraw = true, bool fHighlight = false)override;
+		void SetSelection(const VecHexSpan& vecSel, bool fRedraw = true, bool fHighlight = false)override;
 		void SetUnprintableChar(wchar_t wch)override;
 		void SetVirtualBkm(IHexBookmarks* pVirtBkm)override;
 		void SetWindowPos(HWND hWndAfter, int iX, int iY, int iWidth, int iHeight, UINT uFlags)override;
@@ -442,7 +442,7 @@ namespace HEXCTRL::INTERNAL {
 		void SetGroupSizeImpl(DWORD dwSize, bool fRedraw = true, bool fNotify = true);
 		void SetScrollCursor(bool fSet);
 		void SetUnprintableCharImpl(wchar_t wch, bool fRedraw = true);
-		void SnapshotUndo(const VecSpan& vecSpan); //Takes currently modifiable data snapshot.
+		void SnapshotUndo(const VecHexSpan& vecSpan); //Takes currently modifiable data snapshot.
 		void TextChunkPoint(ULONGLONG ullOffset, int& iCx, int& iCy)const; //Point of the text chunk.
 		void TTTrackShow(bool fShow, bool fTimer, const wchar_t* pwszText = nullptr);
 		void Undo();
@@ -801,7 +801,7 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 		break;
 	case CMD_BKM_ADD:
 		m_DlgBkmMgr.AddBkm(HEXBKM { .vecSpan { HasSelection() ? GetSelection()
-			: VecSpan { { GetCaretPosImpl(), 1 } } },
+			: VecHexSpan { { GetCaretPosImpl(), 1 } } },
 			.stClr { .clrBk { GetColors().clrBkBkm }, .clrText { GetColors().clrFontBkm } } });
 		RedrawImpl();
 		break;
@@ -1149,7 +1149,7 @@ auto CHexCtrl::GetScrollRatio()const->std::tuple<float, bool>
 	return { m_flScrollRatio, m_fScrollLines };
 }
 
-auto CHexCtrl::GetSelection()const->VecSpan
+auto CHexCtrl::GetSelection()const->VecHexSpan
 {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return { }; }
 	if (!IsDataSetImpl()) { ut::DBG_REPORT_NO_DATA_SET(); return { }; }
@@ -2009,7 +2009,7 @@ void CHexCtrl::SetScrollRatio(float flRatio, bool fLines)
 	m_ScrollV.SetScrollPageSize(GetScrollPageSize());
 }
 
-void CHexCtrl::SetSelection(const VecSpan& vecSel, bool fRedraw, bool fHighlight)
+void CHexCtrl::SetSelection(const VecHexSpan& vecSel, bool fRedraw, bool fHighlight)
 {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return; }
 	if (!IsDataSetImpl()) { ut::DBG_REPORT_NO_DATA_SET(); return; }
@@ -4549,7 +4549,7 @@ auto CHexCtrl::OnLButtonDown(const MSG& msg)->LRESULT
 	m_fClickWithAlt = ::GetAsyncKeyState(VK_MENU) < 0;
 	m_Wnd.SetCapture();
 
-	VecSpan vecSel;
+	VecHexSpan vecSel;
 	if (msg.wParam & MK_SHIFT) {
 		ULONGLONG ullSelStart;
 		ULONGLONG ullSelEnd;
@@ -4694,7 +4694,7 @@ auto CHexCtrl::OnMouseMove(const MSG& msg)->LRESULT
 
 		m_ullCursorPrev = ullClick;
 		m_ullCaretPos = ullStart;
-		VecSpan vecSel;
+		VecHexSpan vecSel;
 		vecSel.reserve(static_cast<std::size_t>(ullLines));
 		for (auto itLine = 0ULL; itLine < ullLines; ++itLine) {
 			vecSel.emplace_back(ullStart + (dwCapacity * itLine), ullSize);
@@ -5194,7 +5194,7 @@ void CHexCtrl::Redo()
 		return;
 
 	const auto& uptrRedo = m_vecRedo.back();
-	VecSpan vecSpan;
+	VecHexSpan vecSpan;
 	vecSpan.reserve(uptrRedo->size());
 	std::transform(uptrRedo->begin(), uptrRedo->end(), std::back_inserter(vecSpan),
 		[](UNDO& undo) { return HEXSPAN { undo.ullOffset, undo.vecData.size() }; });
@@ -5970,7 +5970,7 @@ void CHexCtrl::SetUnprintableCharImpl(wchar_t wch, bool fRedraw)
 	if (fRedraw) { RedrawImpl(); }
 }
 
-void CHexCtrl::SnapshotUndo(const VecSpan& vecSpan)
+void CHexCtrl::SnapshotUndo(const VecHexSpan& vecSpan)
 {
 	constexpr auto dwUndoMax { 512U }; //Undo's max limit.
 	const auto ullTotalSize = std::reduce(vecSpan.begin(), vecSpan.end(), 0ULL,

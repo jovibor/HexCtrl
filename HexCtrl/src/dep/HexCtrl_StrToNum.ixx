@@ -1,9 +1,9 @@
+/*****************************************************************
+* Copyright © 2022-present Jovibor https://github.com/jovibor/   *
+* Official git repository: https://github.com/jovibor/StrToNum   *
+* SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception        *
+*****************************************************************/
 module;
-/******************************************************************
-* SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception         *
-* Copyright © 2022-present Jovibor https://github.com/jovibor/    *
-* StrToNum library, https://github.com/jovibor/StrToNum           *
-******************************************************************/
 #include <algorithm>
 #include <bit>
 #include <cassert>
@@ -1756,7 +1756,7 @@ namespace HEXCTRL::stn::impl {
 export namespace HEXCTRL::stn {
 	template<typename IntegralT> requires std::is_integral_v<IntegralT>
 	[[nodiscard]] constexpr auto StrToNum(std::string_view sv, int iBase = 0)noexcept
-		->STN_RETURN_TYPE(IntegralT, char) {
+		-> STN_RETURN_TYPE(IntegralT, char) {
 		IntegralT TData;
 		const auto result = impl::Integer_from_chars(sv.data(), sv.data() + sv.size(), TData, iBase);
 		return result ? STN_RETURN_TYPE(IntegralT, char) { TData } : STN_RETURN_NULL(result);
@@ -1764,7 +1764,7 @@ export namespace HEXCTRL::stn {
 
 	template<typename IntegralT> requires std::is_integral_v<IntegralT>
 	[[nodiscard]] constexpr auto StrToNum(std::wstring_view wsv, int iBase = 0)noexcept
-		->STN_RETURN_TYPE(IntegralT, wchar_t) {
+		-> STN_RETURN_TYPE(IntegralT, wchar_t) {
 		IntegralT TData;
 		const auto result = impl::Integer_from_chars(wsv.data(), wsv.data() + wsv.size(), TData, iBase);
 		return result ? STN_RETURN_TYPE(IntegralT, wchar_t) { TData } : STN_RETURN_NULL(result);
@@ -1772,7 +1772,7 @@ export namespace HEXCTRL::stn {
 
 	template<typename FloatingT> requires std::is_floating_point_v<FloatingT>
 	[[nodiscard]] constexpr auto StrToNum(std::string_view sv, chars_format fmt = chars_format::general)noexcept
-		->STN_RETURN_TYPE(FloatingT, char) {
+		-> STN_RETURN_TYPE(FloatingT, char) {
 		FloatingT TData;
 		const auto result = impl::Floating_from_chars(sv.data(), sv.data() + sv.size(), TData, fmt);
 		return result ? STN_RETURN_TYPE(FloatingT, char) { TData } : STN_RETURN_NULL(result);
@@ -1780,7 +1780,7 @@ export namespace HEXCTRL::stn {
 
 	template<typename FloatingT> requires std::is_floating_point_v<FloatingT>
 	[[nodiscard]] constexpr auto StrToNum(std::wstring_view wsv, chars_format fmt = chars_format::general)noexcept
-		->STN_RETURN_TYPE(FloatingT, wchar_t) {
+		-> STN_RETURN_TYPE(FloatingT, wchar_t) {
 		FloatingT TData;
 		const auto result = impl::Floating_from_chars(wsv.data(), wsv.data() + wsv.size(), TData, fmt);
 		return result ? STN_RETURN_TYPE(FloatingT, wchar_t) { TData } : STN_RETURN_NULL(result);
@@ -1790,102 +1790,102 @@ export namespace HEXCTRL::stn {
 	//Aliases with predefined types, for convenience.
 
 	[[nodiscard]] constexpr auto StrToInt8(std::string_view sv, int iBase = 0)noexcept
-		->STN_RETURN_TYPE(std::int8_t, char) {
+		-> STN_RETURN_TYPE(std::int8_t, char) {
 		return StrToNum<std::int8_t>(sv, iBase);
 	}
 
 	[[nodiscard]] constexpr auto StrToInt8(std::wstring_view wsv, int iBase = 0)noexcept
-		->STN_RETURN_TYPE(std::int8_t, wchar_t) {
+		-> STN_RETURN_TYPE(std::int8_t, wchar_t) {
 		return StrToNum<std::int8_t>(wsv, iBase);
 	}
 
 	[[nodiscard]] constexpr auto StrToUInt8(std::string_view sv, int iBase = 0)noexcept
-		->STN_RETURN_TYPE(std::uint8_t, char) {
+		-> STN_RETURN_TYPE(std::uint8_t, char) {
 		return StrToNum<std::uint8_t>(sv, iBase);
 	}
 
 	[[nodiscard]] constexpr auto StrToUInt8(std::wstring_view wsv, int iBase = 0)noexcept
-		->STN_RETURN_TYPE(std::uint8_t, wchar_t) {
+		-> STN_RETURN_TYPE(std::uint8_t, wchar_t) {
 		return StrToNum<std::uint8_t>(wsv, iBase);
 	}
 
 	[[nodiscard]] constexpr auto StrToInt16(std::string_view sv, int iBase = 0)noexcept
-		->STN_RETURN_TYPE(std::int16_t, char) {
+		-> STN_RETURN_TYPE(std::int16_t, char) {
 		return StrToNum<std::int16_t>(sv, iBase);
 	}
 
 	[[nodiscard]] constexpr auto StrToInt16(std::wstring_view wsv, int iBase = 0)noexcept
-		->STN_RETURN_TYPE(std::int16_t, wchar_t) {
+		-> STN_RETURN_TYPE(std::int16_t, wchar_t) {
 		return StrToNum<std::int16_t>(wsv, iBase);
 	}
 
 	[[nodiscard]] constexpr auto StrToUInt16(std::string_view sv, int iBase = 0)noexcept
-		->STN_RETURN_TYPE(std::uint16_t, char) {
+		-> STN_RETURN_TYPE(std::uint16_t, char) {
 		return StrToNum<std::uint16_t>(sv, iBase);
 	}
 
 	[[nodiscard]] constexpr auto StrToUInt16(std::wstring_view wsv, int iBase = 0)noexcept
-		->STN_RETURN_TYPE(std::uint16_t, wchar_t) {
+		-> STN_RETURN_TYPE(std::uint16_t, wchar_t) {
 		return StrToNum<std::uint16_t>(wsv, iBase);
 	}
 
 	[[nodiscard]] constexpr auto StrToInt32(std::string_view sv, int iBase = 0)noexcept
-		->STN_RETURN_TYPE(std::int32_t, char) {
+		-> STN_RETURN_TYPE(std::int32_t, char) {
 		return StrToNum<std::int32_t>(sv, iBase);
 	}
 
 	[[nodiscard]] constexpr auto StrToInt32(std::wstring_view wsv, int iBase = 0)noexcept
-		->STN_RETURN_TYPE(std::int32_t, wchar_t) {
+		-> STN_RETURN_TYPE(std::int32_t, wchar_t) {
 		return StrToNum<std::int32_t>(wsv, iBase);
 	}
 
 	[[nodiscard]] constexpr auto StrToUInt32(std::string_view sv, int iBase = 0)noexcept
-		->STN_RETURN_TYPE(std::uint32_t, char) {
+		-> STN_RETURN_TYPE(std::uint32_t, char) {
 		return StrToNum<std::uint32_t>(sv, iBase);
 	}
 
 	[[nodiscard]] constexpr auto StrToUInt32(std::wstring_view wsv, int iBase = 0)noexcept
-		->STN_RETURN_TYPE(std::uint32_t, wchar_t) {
+		-> STN_RETURN_TYPE(std::uint32_t, wchar_t) {
 		return StrToNum<std::uint32_t>(wsv, iBase);
 	}
 
 	[[nodiscard]] constexpr auto StrToInt64(std::string_view sv, int iBase = 0)noexcept
-		->STN_RETURN_TYPE(std::int64_t, char) {
+		-> STN_RETURN_TYPE(std::int64_t, char) {
 		return StrToNum<std::int64_t>(sv, iBase);
 	}
 
 	[[nodiscard]] constexpr auto StrToInt64(std::wstring_view wsv, int iBase = 0)noexcept
-		->STN_RETURN_TYPE(std::int64_t, wchar_t) {
+		-> STN_RETURN_TYPE(std::int64_t, wchar_t) {
 		return StrToNum<std::int64_t>(wsv, iBase);
 	}
 
 	[[nodiscard]] constexpr auto StrToUInt64(std::string_view sv, int iBase = 0)noexcept
-		->STN_RETURN_TYPE(std::uint64_t, char) {
+		-> STN_RETURN_TYPE(std::uint64_t, char) {
 		return StrToNum<std::uint64_t>(sv, iBase);
 	}
 
 	[[nodiscard]] constexpr auto StrToUInt64(std::wstring_view wsv, int iBase = 0)noexcept
-		->STN_RETURN_TYPE(std::uint64_t, wchar_t) {
+		-> STN_RETURN_TYPE(std::uint64_t, wchar_t) {
 		return StrToNum<std::uint64_t>(wsv, iBase);
 	}
 
 	[[nodiscard]] constexpr auto StrToFloat(std::string_view sv, chars_format fmt = chars_format::general)noexcept
-		->STN_RETURN_TYPE(float, char) {
+		-> STN_RETURN_TYPE(float, char) {
 		return StrToNum<float>(sv, fmt);
 	}
 
 	[[nodiscard]] constexpr auto StrToFloat(std::wstring_view wsv, chars_format fmt = chars_format::general)noexcept
-		->STN_RETURN_TYPE(float, wchar_t) {
+		-> STN_RETURN_TYPE(float, wchar_t) {
 		return StrToNum<float>(wsv, fmt);
 	}
 
 	[[nodiscard]] constexpr auto StrToDouble(std::string_view sv, chars_format fmt = chars_format::general)noexcept
-		->STN_RETURN_TYPE(double, char) {
+		-> STN_RETURN_TYPE(double, char) {
 		return StrToNum<double>(sv, fmt);
 	}
 
 	[[nodiscard]] constexpr auto StrToDouble(std::wstring_view wsv, chars_format fmt = chars_format::general)noexcept
-		->STN_RETURN_TYPE(double, wchar_t) {
+		-> STN_RETURN_TYPE(double, wchar_t) {
 		return StrToNum<double>(wsv, fmt);
 	}
 };

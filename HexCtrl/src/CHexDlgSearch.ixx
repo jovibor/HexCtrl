@@ -82,7 +82,7 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] auto GetStartFrom()const -> ULONGLONG; //Start search from.
 		[[nodiscard]] auto GetStep()const -> ULONGLONG;
 		[[nodiscard]] auto GetWildcard()const -> std::byte;
-		void HexCtrlHighlight(const VecSpan& vecSel); //Highlight found occurence in the HexCtrl.
+		void HexCtrlHighlight(const VecHexSpan& vecSel); //Highlight found occurence in the HexCtrl.
 		[[nodiscard]] bool IsBigEndian()const;
 		[[nodiscard]] bool IsForward()const;
 		[[nodiscard]] bool IsFreshSearch()const;
@@ -979,7 +979,7 @@ auto CHexDlgSearch::GetWildcard()const->std::byte
 	return static_cast<std::byte>(m_WndEditWC.GetWndText()[0]); //Use only the first character.
 }
 
-void CHexDlgSearch::HexCtrlHighlight(const VecSpan& vecSel)
+void CHexDlgSearch::HexCtrlHighlight(const VecHexSpan& vecSel)
 {
 	const auto pHexCtrl = GetHexCtrl();
 	pHexCtrl->SetSelection(vecSel, true, IsSelection()); //Highlight selection?
@@ -1489,7 +1489,7 @@ void CHexDlgSearch::OnNotifyListItemChanged(NMHDR* pNMHDR)
 	if (pNMI->iItem < 0 || pNMI->iSubItem < 0 || !(pNMI->uNewState & LVIS_SELECTED))
 		return;
 
-	VecSpan vecSpan;
+	VecHexSpan vecSpan;
 	int iItem = -1;
 	for (auto i = 0UL; i < m_ListEx.GetSelectedCount(); ++i) {
 		iItem = m_ListEx.GetNextItem(iItem, LVNI_SELECTED);

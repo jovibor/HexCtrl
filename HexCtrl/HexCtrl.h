@@ -99,7 +99,7 @@ namespace HEXCTRL {
 		ULONGLONG ullOffset { };
 		ULONGLONG ullSize { };
 	};
-	using VecSpan = std::vector<HEXSPAN>;
+	using VecHexSpan = std::vector<HEXSPAN>;
 
 	/********************************************************************************************
 	* HEXCOLOR: Background and Text color struct.                                               *
@@ -135,13 +135,14 @@ namespace HEXCTRL {
 	* HEXBKM: Bookmarks main struct.                                                            *
 	********************************************************************************************/
 	struct HEXBKM {
-		VecSpan      vecSpan;     //Vector of offsets and sizes.
+		VecHexSpan   vecSpan;     //Vector of offsets and sizes.
 		std::wstring wstrDesc;    //Bookmark description.
 		ULONGLONG    ullID { };   //Bookmark ID, assigned internally by framework.
 		ULONGLONG    ullData { }; //User defined custom data.
 		HEXCOLOR     stClr;       //Bookmark bk/text color.
 	};
 	using PHEXBKM = HEXBKM*;
+	using SpnHexBkm = std::span<HEXBKM>;
 
 	/********************************************************************************************
 	* IHexBookmarks: Pure abstract bookmarks' interface, for the HexCtrl bookmarks machinery.   *
@@ -149,7 +150,7 @@ namespace HEXCTRL {
 	class IHexBookmarks {
 	public:
 		virtual auto AddBkm(const HEXBKM& bkm) -> ULONGLONG = 0;                  //Adds new bookmark, returns the new bookmark's ID.
-		[[nodiscard]] virtual auto GetAllAsArray() -> std::span<HEXBKM> = 0;      //Returns array of all bookmarks.
+		[[nodiscard]] virtual auto GetAllAsArray() -> SpnHexBkm = 0;              //Returns array of all bookmarks.
 		[[nodiscard]] virtual auto GetByID(ULONGLONG ullID) -> PHEXBKM = 0;       //Get bookmark by ID.
 		[[nodiscard]] virtual auto GetByIndex(ULONGLONG ullIndex) -> PHEXBKM = 0; //Get bookmark by index.
 		[[nodiscard]] virtual auto GetCount() -> ULONGLONG = 0;                   //Get bookmarks count.
@@ -199,8 +200,8 @@ namespace HEXCTRL {
 	* Templates related data structures, enums, and aliases                                     *
 	********************************************************************************************/
 	struct HEXTEMPLFIELD;
-	using HexPtrField = std::unique_ptr<HEXTEMPLFIELD>;
-	using HexVecFields = std::vector<HexPtrField>; //Vector for the Fields.
+	using PtrHexField = std::unique_ptr<HEXTEMPLFIELD>;
+	using VecHexFields = std::vector<PtrHexField>; //Vector for the Fields.
 	using PCHEXTEMPLFIELD = const HEXTEMPLFIELD*;
 
 	//Predefined types of a field.
@@ -216,7 +217,7 @@ namespace HEXCTRL {
 		std::wstring wstrTypeName; //Custom type name.
 		std::uint8_t uTypeID { };  //Custom type ID.
 	};
-	using VecCT = std::vector<HEXCUSTOMTYPE>;
+	using VecHexCT = std::vector<HEXCUSTOMTYPE>;
 
 	//Template's field main struct.
 	struct HEXTEMPLFIELD {
@@ -225,7 +226,7 @@ namespace HEXCTRL {
 		int             iOffset { };          //Field offset relative to the Template's beginning.
 		int             iSize { };            //Field size.
 		HEXCOLOR        stClr;                //Field Bk and Text color.
-		HexVecFields    vecNested;            //Vector for nested fields.
+		VecHexFields    vecNested;            //Vector for nested fields.
 		PCHEXTEMPLFIELD pFieldParent { };     //Parent field, in case of nested.
 		EHexFieldType   eType { };            //Field type.
 		std::uint8_t    uTypeID { };          //Field type ID if, it's a custom type.
@@ -235,12 +236,20 @@ namespace HEXCTRL {
 	//Template main struct.
 	struct HEXTEMPLATE {
 		std::wstring wstrName;      //Template name.
-		HexVecFields vecFields;     //Template fields.
-		VecCT        vecCustomType; //Custom types of this template.
+		VecHexFields vecFields;     //Template fields.
+		VecHexCT     vecCustomType; //Custom types of this template.
 		int          iSizeTotal;    //Total size of all Template's fields, assigned internally by framework.
 		int          iTemplateID;   //Template ID, assigned by framework.
 	};
 	using PCHEXTEMPLATE = const HEXTEMPLATE*;
+
+	//Applied templates.
+	struct HEXTEMPLAPPLIED {
+		ULONGLONG     ullOffset { };  //Offset, where to apply a template.
+		PCHEXTEMPLATE pTemplate { };  //Template pointer.
+		int           iAppliedID { }; //AppliedID assigned by framework. Any template can be applied many times.
+	};
+	using SpnHexTemplApplied = std::span<HEXTEMPLAPPLIED>;
 
 	/********************************************************************************************
 	* IHexTemplates: Pure abstract base interface for HexCtrl templates.                        *
@@ -248,10 +257,12 @@ namespace HEXCTRL {
 	class IHexTemplates {
 	public:
 		virtual auto AddTemplate(const HEXTEMPLATE& hts) -> int = 0; //Adds existing template.
-		virtual auto ApplyTemplate(ULONGLONG ullOffset, int iTemplateID) -> int = 0; //Applies template to offset, returns AppliedID.
+		virtual auto ApplyTemplate(ULONGLONG ullOffset, int iTemplateID) -> int = 0; //Applies template by ID, returns AppliedID.
+		virtual auto ApplyTemplate(ULONGLONG ullOffset, std::wstring_view wsvTemplateName) -> int = 0; //Applies template by name.
 		virtual void DisapplyAll() = 0;
 		virtual void DisapplyByID(int iAppliedID) = 0;
 		virtual void DisapplyByOffset(ULONGLONG ullOffset) = 0;
+		[[nodiscard]] virtual auto GetAllApplied() -> SpnHexTemplApplied = 0; //All currently applied templates.
 		virtual auto LoadTemplate(const wchar_t* pFilePath) -> int = 0; //Returns TemplateID on success, null otherwise.
 		virtual void ShowTooltips(bool fShow) = 0;
 		virtual void UnloadAll() = 0;                     //Unload all templates.
@@ -388,7 +399,7 @@ namespace HEXCTRL {
 		EHexOperMode   eOperMode { };        //Operation mode, used if eModifyMode == MODIFY_OPERATION.
 		EHexDataType   eDataType { };        //Data type of the underlying data, used if eModifyMode == MODIFY_OPERATION.
 		SpanCByte      spnData;              //Span of the data to modify with.
-		VecSpan        vecSpan;              //Vector of data offsets and sizes to modify.
+		VecHexSpan     vecSpan;              //Vector of data offsets and sizes to modify.
 		bool           fBigEndian { false }; //Treat data as the big endian, used if eModifyMode == MODIFY_OPERATION.
 	};
 
@@ -430,7 +441,7 @@ namespace HEXCTRL {
 		[[nodiscard]] virtual auto GetPagePos()const -> ULONGLONG = 0;         //Get a page number that the cursor stays at.
 		[[nodiscard]] virtual auto GetPageSize()const -> DWORD = 0;            //Current page size.
 		[[nodiscard]] virtual auto GetScrollRatio()const -> std::tuple<float, bool> = 0; //Get current scroll ratio.
-		[[nodiscard]] virtual auto GetSelection()const -> VecSpan = 0;         //Get current selection.
+		[[nodiscard]] virtual auto GetSelection()const -> VecHexSpan = 0;      //Get current selection.
 		[[nodiscard]] virtual auto GetTemplates() -> IHexTemplates* = 0;       //Get Templates interface.
 		[[nodiscard]] virtual auto GetUnprintableChar()const -> wchar_t = 0;   //Get unprintable replacement character.
 		[[nodiscard]] virtual auto GetWndHandle(EHexWnd eWnd, bool fCreate = true)const -> HWND = 0; //Get HWND of internal window/dialogs.
@@ -467,7 +478,7 @@ namespace HEXCTRL {
 		virtual void SetPageSize(DWORD dwSize, std::wstring_view wsvName = L"Page") = 0; //Set page size and name to draw the lines in-between.
 		virtual void SetRedraw(bool fRedraw) = 0;              //Handle WM_PAINT message or not.
 		virtual void SetScrollRatio(float flRatio, bool fLines) = 0; //Set mouse-wheel scroll ratio in screens or in lines.
-		virtual void SetSelection(const VecSpan& vecSel, bool fRedraw = true, bool fHighlight = false) = 0; //Set current selection.
+		virtual void SetSelection(const VecHexSpan& vecSel, bool fRedraw = true, bool fHighlight = false) = 0; //Set current selection.
 		virtual void SetUnprintableChar(wchar_t wch) = 0;      //Set unprintable replacement character.
 		virtual void SetVirtualBkm(IHexBookmarks* pVirtBkm) = 0; //Set pointer for Bookmarks Virtual Mode.
 		virtual void SetWindowPos(HWND hWndAfter, int iX, int iY, int iWidth, int iHeight, UINT uFlags = SWP_NOACTIVATE | SWP_NOZORDER) = 0;
