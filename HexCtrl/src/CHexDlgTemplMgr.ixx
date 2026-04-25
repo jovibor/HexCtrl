@@ -64,8 +64,6 @@ namespace HEXCTRL::INTERNAL {
 		void UnloadAll()override;
 		void UpdateData();
 		void UnloadTemplate(int iTemplateID)override; //Unload/remove loaded template from memory.
-
-		//Static functions.
 		[[nodiscard]] static bool JSONParseFields(IterJSONMember itFieldsArray, VecHexFields& vecFields,
 			const FIELDSDEFPROPS& defProps, UmapCustomTypes& umapCustomT, int* pOffset = nullptr);
 		[[nodiscard]] static auto JSONEndianness(const rapidjson::Value& value) -> std::optional<bool>;
@@ -76,13 +74,9 @@ namespace HEXCTRL::INTERNAL {
 	private:
 		void CreateArrows();
 		[[nodiscard]] auto GetAppliedIDFromTree(HTREEITEM hTreeItem) -> int;
-		[[nodiscard]] auto GetAppliedByID(int iAppliedID) -> PCTEMPLAPPLIED;
-		[[nodiscard]] auto GetAppliedByOffset(ULONGLONG ullOffset) -> PCTEMPLAPPLIED;
 		[[nodiscard]] auto GetHexCtrl()const -> IHexCtrl*;
-		[[nodiscard]] auto GetIDForNewTemplate()const -> int;
 		[[nodiscard]] auto GetSelectedApplied() -> PCTEMPLAPPLIED; //Currently selected Applied ptr in the Tree.
 		[[nodiscard]] auto GetSelectedAppliedID() -> int; //Currently selected AppliedID in the Tree.
-		[[nodiscard]] auto GetTemplate(int iTemplateID)const -> PCHEXTEMPLATE;
 		[[nodiscard]] bool IsHglSel()const;
 		[[nodiscard]] bool IsMinimized()const;
 		[[nodiscard]] bool IsNoEsc()const;
@@ -95,11 +89,11 @@ namespace HEXCTRL::INTERNAL {
 		void OnBnApply();
 		void OnCancel();
 		auto OnCommand(const MSG& msg) -> INT_PTR;
-		auto OnCtlClrStatic(const MSG& msg) -> INT_PTR;
 		void OnCheckHex();
 		void OnCheckSwapEndian();
 		void OnCheckMin();
 		auto OnClose() -> INT_PTR;
+		auto OnCtlClrStatic(const MSG& msg) -> INT_PTR;
 		auto OnDestroy() -> INT_PTR;
 		auto OnDPIChanged(const MSG& msg) -> INT_PTR;
 		auto OnDrawItem(const MSG& msg) -> INT_PTR;
@@ -125,12 +119,11 @@ namespace HEXCTRL::INTERNAL {
 		void OnNotifyTreeRClick(NMHDR* pNMHDR);
 		void OnOK();
 		auto OnSize(const MSG& msg) -> INT_PTR;
+		void OnTemplateApplyDisapply(int iAppliedID, bool fApply);
 		void OnTemplateLoadUnload(int iTemplateID, bool fLoad);
 		void RandomizeTemplateColors(int iTemplateID);
 		void RedrawHexCtrl();
-		void RemoveAppliedByID(int iAppliedID);
-		void RemoveTreesWithTemplateID(int iTemplateID);
-		void RemoveTreeWithAppliedID(int iAppliedID);
+		void RemoveTreeNodesWithTemplateID(int iTemplateID);
 		[[nodiscard]] bool SetDataBool(LPCWSTR pwszText, ULONGLONG ullOffset)const;
 		template<typename T> requires ut::TSize1248<T>
 		[[nodiscard]] bool SetDataNUMBER(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const;
@@ -150,6 +143,11 @@ namespace HEXCTRL::INTERNAL {
 		void ShowListDataFILETIME(LPWSTR pwsz, FILETIME stFTime, bool fShouldSwap)const;
 		void ShowListDataSYSTEMTIME(LPWSTR pwsz, SYSTEMTIME stSTime, bool fShouldSwap)const;
 		void ShowListDataGUID(LPWSTR pwsz, GUID stGUID, bool fShouldSwap)const;
+		[[nodiscard]] auto TMPLGetAppliedByID(int iAppliedID)const -> PCTEMPLAPPLIED;
+		[[nodiscard]] auto TMPLGetAppliedByOffset(ULONGLONG ullOffset)const -> PCTEMPLAPPLIED;
+		[[nodiscard]] auto TMPLGetIDForNewTemplate()const -> int;
+		[[nodiscard]] auto TMPLGetTemplate(int iTemplateID)const -> PCHEXTEMPLATE;
+		void TMPLRemoveApplied(int iAppliedID);
 		[[nodiscard]] auto TreeItemFromListItem(int iListItem)const -> HTREEITEM;
 		void UpdateDateTimeFormat();
 		void UpdateStaticText();
@@ -172,7 +170,7 @@ namespace HEXCTRL::INTERNAL {
 		GDIUT::CDynLayout m_DynLayout;
 		LISTEX::CListEx m_ListEx;
 		std::vector<std::unique_ptr<HEXTEMPLATE>> m_vecTemplates; //Loaded Templates.
-		std::vector<HEXTEMPLAPPLIED> m_vecTemplatesAppl; //Currently Applied Templates.
+		std::vector<HEXTEMPLAPPLIED> m_vecTemplApplied; //Currently Applied Templates.
 		IHexCtrl* m_pHexCtrl { };
 		PCVecFields m_pVecFieldsCurr { };  //Currently selected Fields vector.
 		HTREEITEM m_hTreeCurrParent { };   //Currently selected Tree node's parent.
@@ -210,7 +208,7 @@ struct CHexDlgTemplMgr::FIELDSDEFPROPS { //Helper struct for convenient argument
 auto CHexDlgTemplMgr::AddTemplate(const HEXTEMPLATE& stTempl)->int
 {
 	auto pClonedTemplate = CloneTemplate(&stTempl);
-	const auto iNewTemplateID = GetIDForNewTemplate();
+	const auto iNewTemplateID = TMPLGetIDForNewTemplate();
 	pClonedTemplate->iTemplateID = iNewTemplateID;
 	m_vecTemplates.emplace_back(std::move(pClonedTemplate));
 	OnTemplateLoadUnload(iNewTemplateID, true);
@@ -233,41 +231,20 @@ void CHexDlgTemplMgr::ApplyCurr(ULONGLONG ullOffset)
 
 int CHexDlgTemplMgr::ApplyTemplate(ULONGLONG ullOffset, int iTemplateID)
 {
-	const auto pTemplate = GetTemplate(iTemplateID);
+	const auto pTemplate = TMPLGetTemplate(iTemplateID);
 	if (pTemplate == nullptr)
 		return -1;
 
 	int iAppliedID = 1; //AppliedID starts at 1.
-	if (const auto it = std::max_element(m_vecTemplatesAppl.begin(), m_vecTemplatesAppl.end(),
+	if (const auto it = std::max_element(m_vecTemplApplied.begin(), m_vecTemplApplied.end(),
 		[](const HEXTEMPLAPPLIED& ta1, const HEXTEMPLAPPLIED& ta2) {
-			return ta1.iAppliedID < ta2.iAppliedID; }); it != m_vecTemplatesAppl.end()) {
+			return ta1.iAppliedID < ta2.iAppliedID; }); it != m_vecTemplApplied.end()) {
 		iAppliedID = it->iAppliedID + 1; //Increasing next AppliedID by 1.
 	}
 
-	m_vecTemplatesAppl.emplace_back(HEXTEMPLAPPLIED { .ullOffset { ullOffset }, .pTemplate { pTemplate },
+	m_vecTemplApplied.emplace_back(HEXTEMPLAPPLIED { .ullOffset { ullOffset }, .pTemplate { pTemplate },
 		.iAppliedID { iAppliedID } });
-
-	//Tree root node.
-	TVINSERTSTRUCTW tvi { .hParent { TVI_ROOT }, .itemex { .mask { TVIF_CHILDREN | TVIF_TEXT | TVIF_PARAM },
-		.pszText { LPSTR_TEXTCALLBACK }, .cChildren { static_cast<int>(pTemplate->vecFields.size()) },
-		.lParam { iAppliedID } } }; //Tree root node has iAppliedID in lParam.
-	const auto hTreeRootNode = m_WndTree.InsertItem(&tvi);
-
-	const auto lmbFill = [&](HTREEITEM hTreeRoot, const VecHexFields& vecFields)->void {
-		const auto _lmbFill = [&](const auto& lmbSelf, HTREEITEM hTreeRoot, const VecHexFields& vecFields)->void {
-			for (const auto& pField : vecFields) {
-				tvi.hParent = hTreeRoot;
-				tvi.itemex.cChildren = static_cast<int>(pField->vecNested.size());
-				tvi.itemex.lParam = reinterpret_cast<LPARAM>(pField.get()); //Tree child nodes have PCHEXTEMPLFIELD.
-				const auto hCurrentRoot = m_WndTree.InsertItem(&tvi);
-				if (tvi.itemex.cChildren > 0) {
-					lmbSelf(lmbSelf, hCurrentRoot, pField->vecNested);
-				}
-			}
-			};
-		_lmbFill(_lmbFill, hTreeRoot, vecFields);
-		};
-	lmbFill(hTreeRootNode, pTemplate->vecFields);
+	OnTemplateApplyDisapply(iAppliedID, true);
 
 	return iAppliedID;
 }
@@ -275,7 +252,7 @@ int CHexDlgTemplMgr::ApplyTemplate(ULONGLONG ullOffset, int iTemplateID)
 auto CHexDlgTemplMgr::ApplyTemplate(ULONGLONG ullOffset, std::wstring_view wsvTemplateName)->int
 {
 	const auto it = std::find_if(m_vecTemplates.begin(), m_vecTemplates.end(),
-		[wsvTemplateName](const std::unique_ptr<HEXTEMPLATE>& pData) { return pData->wstrName == wsvTemplateName; });
+		[wsvTemplateName](const std::unique_ptr<HEXTEMPLATE>& pTempl) { return pTempl->wstrName == wsvTemplateName; });
 	return it != m_vecTemplates.end() ? ApplyTemplate(ullOffset, it->get()->iTemplateID) : -1;
 }
 
@@ -306,28 +283,24 @@ void CHexDlgTemplMgr::DisapplyAll()
 
 	m_pVecFieldsCurr = nullptr;
 	m_hTreeCurrParent = nullptr;
-	m_vecTemplatesAppl.clear();
+	m_vecTemplApplied.clear();
 }
 
 void CHexDlgTemplMgr::DisapplyByID(int iAppliedID)
 {
-	if (GetAppliedByID(iAppliedID) != nullptr) {
-		RemoveTreeWithAppliedID(iAppliedID);
-		RemoveAppliedByID(iAppliedID);
-	}
+	TMPLRemoveApplied(iAppliedID);
 }
 
 void CHexDlgTemplMgr::DisapplyByOffset(ULONGLONG ullOffset)
 {
-	if (const auto pAppl = GetAppliedByOffset(ullOffset); pAppl != nullptr) {
-		RemoveTreeWithAppliedID(pAppl->iAppliedID);
-		RemoveAppliedByID(pAppl->iAppliedID);
+	if (const auto pAppl = TMPLGetAppliedByOffset(ullOffset); pAppl != nullptr) {
+		TMPLRemoveApplied(pAppl->iAppliedID);
 	}
 }
 
 auto CHexDlgTemplMgr::GetAllApplied()->SpnHexTemplApplied
 {
-	return m_vecTemplatesAppl;
+	return m_vecTemplApplied;
 }
 
 auto CHexDlgTemplMgr::GetDlgItemHandle(EHexDlgItem eItem)const->HWND
@@ -354,7 +327,7 @@ auto CHexDlgTemplMgr::GetHWND()const->HWND
 
 bool CHexDlgTemplMgr::HasApplied()const
 {
-	return !m_vecTemplatesAppl.empty();
+	return !m_vecTemplApplied.empty();
 }
 
 bool CHexDlgTemplMgr::HasCurrent()const
@@ -369,10 +342,10 @@ bool CHexDlgTemplMgr::HasTemplates()const
 
 auto CHexDlgTemplMgr::HitTest(ULONGLONG ullOffset)const->PCHEXTEMPLFIELD
 {
-	const auto rit = std::find_if(m_vecTemplatesAppl.rbegin(), m_vecTemplatesAppl.rend(),
+	const auto rit = std::find_if(m_vecTemplApplied.rbegin(), m_vecTemplApplied.rend(),
 		[ullOffset](const HEXTEMPLAPPLIED& ta) {
 			return ullOffset >= ta.ullOffset && ullOffset < ta.ullOffset + ta.pTemplate->iSizeTotal; });
-	if (rit == m_vecTemplatesAppl.rend()) {
+	if (rit == m_vecTemplApplied.rend()) {
 		return nullptr;
 	}
 
@@ -423,7 +396,7 @@ int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 		return 0;
 	}
 
-	const auto iNewTemplateID = GetIDForNewTemplate();
+	const auto iNewTemplateID = TMPLGetIDForNewTemplate();
 	pTemplate->iTemplateID = iNewTemplateID;
 	m_vecTemplates.emplace_back(std::move(pTemplate));
 	OnTemplateLoadUnload(iNewTemplateID, true);
@@ -502,12 +475,12 @@ void CHexDlgTemplMgr::UnloadTemplate(int iTemplateID)
 {
 	OnTemplateLoadUnload(iTemplateID, false); //All the GUI stuff first, only then delete template.
 
-	const auto pTemplate = GetTemplate(iTemplateID);
+	const auto pTemplate = TMPLGetTemplate(iTemplateID);
 	if (pTemplate == nullptr)
 		return;
 
-	//Remove all applied templates from m_vecTemplatesAppl, if any, with the given iTemplateID.
-	std::erase_if(m_vecTemplatesAppl, [pTemplate](const HEXTEMPLAPPLIED& ta) {
+	//Remove all applied templates from m_vecTemplApplied, if any, with the given iTemplateID.
+	std::erase_if(m_vecTemplApplied, [pTemplate](const HEXTEMPLAPPLIED& ta) {
 		return ta.pTemplate == pTemplate; });
 
 	std::erase_if(m_vecTemplates, [iTemplateID](const std::unique_ptr<HEXTEMPLATE>& pData) {
@@ -545,53 +518,19 @@ auto CHexDlgTemplMgr::GetAppliedIDFromTree(HTREEITEM hTreeItem)->int
 	return static_cast<int>(m_WndTree.GetItemData(hTreeItem));
 }
 
-auto CHexDlgTemplMgr::GetAppliedByID(int iAppliedID)->PCTEMPLAPPLIED
-{
-	const auto it = std::find_if(m_vecTemplatesAppl.begin(), m_vecTemplatesAppl.end(),
-		[iAppliedID](const HEXTEMPLAPPLIED& ta) { return ta.iAppliedID == iAppliedID; });
-	return it != m_vecTemplatesAppl.end() ? &*it : nullptr;
-}
-
-auto CHexDlgTemplMgr::GetAppliedByOffset(ULONGLONG ullOffset)->PCTEMPLAPPLIED
-{
-	const auto rit = std::find_if(m_vecTemplatesAppl.rbegin(), m_vecTemplatesAppl.rend(),
-		[ullOffset](const HEXTEMPLAPPLIED& ta) {
-			return ullOffset >= ta.ullOffset && ullOffset < (ta.ullOffset + ta.pTemplate->iSizeTotal); });
-	return rit != m_vecTemplatesAppl.rend() ? &*rit : nullptr;
-}
-
 auto CHexDlgTemplMgr::GetHexCtrl()const->IHexCtrl*
 {
 	return m_pHexCtrl;
 }
 
-auto CHexDlgTemplMgr::GetIDForNewTemplate()const->int
-{
-	auto iTemplateID = 1; //TemplateID starts at 1.
-	if (const auto it = std::max_element(m_vecTemplates.begin(), m_vecTemplates.end(),
-		[](const std::unique_ptr<HEXTEMPLATE>& p1, const std::unique_ptr<HEXTEMPLATE>& p2) {
-			return p1->iTemplateID < p2->iTemplateID; }); it != m_vecTemplates.end()) {
-		iTemplateID = it->get()->iTemplateID + 1; //Increasing next Template's ID by 1.
-	}
-
-	return iTemplateID;
-}
-
 auto CHexDlgTemplMgr::GetSelectedApplied()->PCTEMPLAPPLIED
 {
-	return GetAppliedByID(GetSelectedAppliedID());
+	return TMPLGetAppliedByID(GetSelectedAppliedID());
 }
 
 auto CHexDlgTemplMgr::GetSelectedAppliedID()->int
 {
 	return GetAppliedIDFromTree(m_WndTree.GetSelectedItem());
-}
-
-auto CHexDlgTemplMgr::GetTemplate(int iTemplateID)const->PCHEXTEMPLATE
-{
-	const auto it = std::find_if(m_vecTemplates.begin(), m_vecTemplates.end(),
-		[iTemplateID](const std::unique_ptr<HEXTEMPLATE>& pData) { return pData->iTemplateID == iTemplateID; });
-	return it != m_vecTemplates.end() ? it->get() : nullptr;
 }
 
 bool CHexDlgTemplMgr::IsHglSel()const
@@ -977,6 +916,10 @@ auto CHexDlgTemplMgr::OnInitDialog(const MSG& msg)->INT_PTR
 
 	for (const auto& pTemplate : m_vecTemplates) {
 		OnTemplateLoadUnload(pTemplate->iTemplateID, true);
+	}
+
+	for (const auto& applied : m_vecTemplApplied) {
+		OnTemplateApplyDisapply(applied.iAppliedID, true);
 	}
 
 	CreateArrows();
@@ -1498,7 +1441,7 @@ void CHexDlgTemplMgr::OnNotifyTreeGetDispInfo(NMHDR* pNMHDR)
 	const std::wstring* pwstr;
 	const auto uzItemData = m_WndTree.GetItemData(pItem->hItem);
 	if (m_WndTree.GetParentItem(pItem->hItem) == nullptr) { //Root node.
-		pwstr = &GetAppliedByID(static_cast<int>(uzItemData))->pTemplate->wstrName;
+		pwstr = &TMPLGetAppliedByID(static_cast<int>(uzItemData))->pTemplate->wstrName;
 	}
 	else {
 		pwstr = &reinterpret_cast<PCHEXTEMPLFIELD>(uzItemData)->wstrName;
@@ -1625,13 +1568,67 @@ auto CHexDlgTemplMgr::OnSize(const MSG& msg)->INT_PTR
 	return TRUE;
 }
 
+void CHexDlgTemplMgr::OnTemplateApplyDisapply(int iAppliedID, bool fApply)
+{
+	if (!m_Wnd.IsWindow()) //Only if dialog window is created and alive we proceed with its members.
+		return;
+
+	const auto pApplied = TMPLGetAppliedByID(iAppliedID);
+	if (pApplied == nullptr)
+		return;
+
+	if (fApply) {
+		const auto pTemplate = pApplied->pTemplate;
+
+		//Tree root node.
+		TVINSERTSTRUCTW tvi { .hParent { TVI_ROOT }, .itemex { .mask { TVIF_CHILDREN | TVIF_TEXT | TVIF_PARAM },
+			.pszText { LPSTR_TEXTCALLBACK }, .cChildren { static_cast<int>(pTemplate->vecFields.size()) },
+			.lParam { iAppliedID } } }; //Tree root node has iAppliedID in lParam.
+		const auto hTreeRootNode = m_WndTree.InsertItem(&tvi);
+
+		const auto lmbFill = [&](HTREEITEM hTreeRoot, const VecHexFields& vecFields)->void {
+			const auto _lmbFill = [&](const auto& lmbSelf, HTREEITEM hTreeRoot, const VecHexFields& vecFields)->void {
+				for (const auto& pField : vecFields) {
+					tvi.hParent = hTreeRoot;
+					tvi.itemex.cChildren = static_cast<int>(pField->vecNested.size());
+					tvi.itemex.lParam = reinterpret_cast<LPARAM>(pField.get()); //Tree child nodes have PCHEXTEMPLFIELD.
+					const auto hCurrentRoot = m_WndTree.InsertItem(&tvi);
+					if (tvi.itemex.cChildren > 0) {
+						lmbSelf(lmbSelf, hCurrentRoot, pField->vecNested);
+					}
+				}
+				};
+			_lmbFill(_lmbFill, hTreeRoot, vecFields);
+			};
+		lmbFill(hTreeRootNode, pTemplate->vecFields);
+	}
+	else {
+		auto hItem = m_WndTree.GetRootItem();
+		while (hItem != nullptr) {
+			if (const auto iID = GetAppliedIDFromTree(hItem); iID == iAppliedID) {
+				if (iID == GetSelectedAppliedID()) {
+					m_ListEx.SetItemCountEx(0);
+					m_ListEx.RedrawWindow();
+					m_pVecFieldsCurr = nullptr;
+					m_hTreeCurrParent = nullptr;
+				}
+				m_WndTree.DeleteItem(hItem);
+				UpdateStaticText();
+				break;
+			}
+
+			hItem = m_WndTree.GetNextItem(hItem, TVGN_NEXT); //Get next Root sibling item.
+		}
+	}
+}
+
 void CHexDlgTemplMgr::OnTemplateLoadUnload(int iTemplateID, bool fLoad)
 {
 	if (!m_Wnd.IsWindow()) //Only if dialog window is created and alive we proceed with its members.
 		return;
 
 	if (fLoad) {
-		const auto pTemplate = GetTemplate(iTemplateID);
+		const auto pTemplate = TMPLGetTemplate(iTemplateID);
 		if (pTemplate == nullptr)
 			return;
 
@@ -1641,7 +1638,7 @@ void CHexDlgTemplMgr::OnTemplateLoadUnload(int iTemplateID, bool fLoad)
 		SetDlgButtonsState();
 	}
 	else {
-		RemoveTreesWithTemplateID(iTemplateID);
+		RemoveTreeNodesWithTemplateID(iTemplateID);
 
 		for (auto iIndex = 0; iIndex < m_WndCmbTempl.GetCount(); ++iIndex) { //Remove Template name from ComboBox.
 			if (const auto iItemData = static_cast<int>(m_WndCmbTempl.GetItemData(iIndex)); iItemData == iTemplateID) {
@@ -1657,13 +1654,12 @@ void CHexDlgTemplMgr::OnTemplateLoadUnload(int iTemplateID, bool fLoad)
 
 void CHexDlgTemplMgr::RandomizeTemplateColors(int iTemplateID)
 {
-	const auto pTemplate = GetTemplate(iTemplateID);
+	const auto pTemplate = TMPLGetTemplate(iTemplateID);
 	if (pTemplate == nullptr)
 		return;
 
 	std::mt19937 gen(std::random_device { }());
 	std::uniform_int_distribution<unsigned int> distrib(50, 230);
-
 	const auto lmbRndColors = [&distrib, &gen](const VecHexFields& vecFields) {
 		const auto _lmbCount = [&distrib, &gen](const auto& lmbSelf, const VecHexFields& vecFields)->void {
 			for (const auto& pField : vecFields) {
@@ -1675,7 +1671,6 @@ void CHexDlgTemplMgr::RandomizeTemplateColors(int iTemplateID)
 			};
 		return _lmbCount(_lmbCount, vecFields);
 		};
-
 	lmbRndColors(pTemplate->vecFields);
 }
 
@@ -1686,18 +1681,16 @@ void CHexDlgTemplMgr::RedrawHexCtrl()
 	}
 }
 
-void CHexDlgTemplMgr::RemoveAppliedByID(int iAppliedID)
+void CHexDlgTemplMgr::RemoveTreeNodesWithTemplateID(int iTemplateID)
 {
-	std::erase_if(m_vecTemplatesAppl, [iAppliedID](const HEXTEMPLAPPLIED& ta) {
-		return ta.iAppliedID == iAppliedID; });
-}
+	if (!m_Wnd.IsWindow()) {
+		return;
+	}
 
-void CHexDlgTemplMgr::RemoveTreesWithTemplateID(int iTemplateID)
-{
 	std::vector<HTREEITEM> vecToRemove;
 	auto hItem = m_WndTree.GetRootItem();
 	while (hItem != nullptr) {
-		const auto pApplied = GetAppliedByID(GetAppliedIDFromTree(hItem));
+		const auto pApplied = TMPLGetAppliedByID(GetAppliedIDFromTree(hItem));
 		if (pApplied->pTemplate->iTemplateID == iTemplateID) {
 			vecToRemove.emplace_back(hItem);
 		}
@@ -1716,26 +1709,6 @@ void CHexDlgTemplMgr::RemoveTreesWithTemplateID(int iTemplateID)
 	}
 
 	UpdateStaticText();
-}
-
-void CHexDlgTemplMgr::RemoveTreeWithAppliedID(int iAppliedID)
-{
-	auto hItem = m_WndTree.GetRootItem();
-	while (hItem != nullptr) {
-		if (const auto iID = GetAppliedIDFromTree(hItem); iID == iAppliedID) {
-			if (iID == GetSelectedAppliedID()) {
-				m_ListEx.SetItemCountEx(0);
-				m_ListEx.RedrawWindow();
-				m_pVecFieldsCurr = nullptr;
-				m_hTreeCurrParent = nullptr;
-			}
-			m_WndTree.DeleteItem(hItem);
-			UpdateStaticText();
-			break;
-		}
-
-		hItem = m_WndTree.GetNextItem(hItem, TVGN_NEXT); //Get next Root sibling item.
-	}
 }
 
 bool CHexDlgTemplMgr::SetDataBool(LPCWSTR pwszText, ULONGLONG ullOffset) const
@@ -2115,6 +2088,47 @@ void CHexDlgTemplMgr::ShowListDataGUID(LPWSTR pwsz, GUID stGUID, bool fShouldSwa
 	*std::format_to(pwsz, L"{{{:08X}-{:04X}-{:04X}-{:02X}{:02X}-{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}}}",
 		stGUID.Data1, stGUID.Data2, stGUID.Data3, stGUID.Data4[0], stGUID.Data4[1], stGUID.Data4[2],
 		stGUID.Data4[3], stGUID.Data4[4], stGUID.Data4[5], stGUID.Data4[6], stGUID.Data4[7]) = L'\0';
+}
+
+auto CHexDlgTemplMgr::TMPLGetAppliedByID(int iAppliedID)const->PCTEMPLAPPLIED
+{
+	const auto it = std::find_if(m_vecTemplApplied.begin(), m_vecTemplApplied.end(),
+		[iAppliedID](const HEXTEMPLAPPLIED& ta) { return ta.iAppliedID == iAppliedID; });
+	return it != m_vecTemplApplied.end() ? &*it : nullptr;
+}
+
+auto CHexDlgTemplMgr::TMPLGetAppliedByOffset(ULONGLONG ullOffset)const->PCTEMPLAPPLIED
+{
+	const auto rit = std::find_if(m_vecTemplApplied.rbegin(), m_vecTemplApplied.rend(),
+		[ullOffset](const HEXTEMPLAPPLIED& ta) {
+			return ullOffset >= ta.ullOffset && ullOffset < (ta.ullOffset + ta.pTemplate->iSizeTotal); });
+	return rit != m_vecTemplApplied.rend() ? &*rit : nullptr;
+}
+
+auto CHexDlgTemplMgr::TMPLGetIDForNewTemplate()const->int
+{
+	auto iTemplateID = 1; //TemplateID starts at 1.
+	if (const auto it = std::max_element(m_vecTemplates.begin(), m_vecTemplates.end(),
+		[](const std::unique_ptr<HEXTEMPLATE>& p1, const std::unique_ptr<HEXTEMPLATE>& p2) {
+			return p1->iTemplateID < p2->iTemplateID; }); it != m_vecTemplates.end()) {
+		iTemplateID = it->get()->iTemplateID + 1; //Increasing next Template's ID by 1.
+	}
+
+	return iTemplateID;
+}
+
+auto CHexDlgTemplMgr::TMPLGetTemplate(int iTemplateID)const->PCHEXTEMPLATE
+{
+	const auto it = std::find_if(m_vecTemplates.begin(), m_vecTemplates.end(),
+		[iTemplateID](const std::unique_ptr<HEXTEMPLATE>& pData) { return pData->iTemplateID == iTemplateID; });
+	return it != m_vecTemplates.end() ? it->get() : nullptr;
+}
+
+void CHexDlgTemplMgr::TMPLRemoveApplied(int iAppliedID)
+{
+	OnTemplateApplyDisapply(iAppliedID, false);
+	std::erase_if(m_vecTemplApplied, [iAppliedID](const HEXTEMPLAPPLIED& ta) {
+		return ta.iAppliedID == iAppliedID; });
 }
 
 auto CHexDlgTemplMgr::TreeItemFromListItem(int iListItem)const->HTREEITEM
