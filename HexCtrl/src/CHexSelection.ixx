@@ -29,7 +29,7 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] bool HitTestHighlight(ULONGLONG ullOffset)const; //Is given offset within highlighted selection.
 		[[nodiscard]] bool HitTestRange(const HEXSPAN& hss)const;      //Is there any selection within given range.
 		void SetMarkStartEnd(ULONGLONG ullOffset);
-		void SetSelection(const VecHexSpan& vecSel, bool fHighlight);     //Set a selection or selection highlight.
+		void SetSelection(SpanHexSpan spnSel, bool fHighlight);        //Set a selection or selection highlight.
 	private:
 		VecHexSpan m_vecSelection;    //Selection data.
 		VecHexSpan m_vecSelHighlight; //Selection highlight data.
@@ -154,17 +154,18 @@ void CHexSelection::SetMarkStartEnd(ULONGLONG ullOffset)
 
 	const auto ullStart = (std::min)(m_ullMarkStartEnd, ullOffset);
 	const auto ullSize = (std::max)(m_ullMarkStartEnd, ullOffset) - ullStart + 1;
-	SetSelection({ { .ullOffset { ullStart }, .ullSize { ullSize } } }, false);
+	const HEXSPAN hs { .ullOffset { ullStart }, .ullSize { ullSize } };
+	SetSelection({ &hs, 1 }, false);
 	m_ullMarkStartEnd = (std::numeric_limits<std::uint64_t>::max)(); //Reset back to default.
 }
 
-void CHexSelection::SetSelection(const VecHexSpan& vecSel, bool fHighlight)
+void CHexSelection::SetSelection(SpanHexSpan spnSel, bool fHighlight)
 {
 	if (fHighlight) {
-		m_vecSelHighlight = vecSel;
+		m_vecSelHighlight.assign(spnSel.begin(), spnSel.end());
 	}
 	else {
 		m_vecSelHighlight.clear(); //On new selection clear all highlights.
-		m_vecSelection = vecSel;
+		m_vecSelection.assign(spnSel.begin(), spnSel.end());
 	}
 }

@@ -24,7 +24,7 @@ namespace HEXCTRL::INTERNAL {
 		auto AddBkm(const HEXBKM& bkm) -> ULONGLONG override;
 		void CreateDlg()const;
 		void DestroyDlg();
-		[[nodiscard]] auto GetAllAsArray() -> SpnHexBkm override;
+		[[nodiscard]] auto GetAllBkms() -> SpanHexBkm override;
 		[[nodiscard]] auto GetByID(ULONGLONG ullID) -> PHEXBKM override;
 		[[nodiscard]] auto GetByIndex(ULONGLONG ullIndex) -> PHEXBKM override;
 		[[nodiscard]] auto GetCount() -> ULONGLONG override;
@@ -47,7 +47,7 @@ namespace HEXCTRL::INTERNAL {
 		void RemoveByOffset(ULONGLONG ullOffset);
 		void RemoveByID(ULONGLONG ullID)override;
 		void SetDlgProperties(std::uint64_t u64Flags);
-		void SetVirtual(IHexBookmarks* pVirtBkm);
+		void SetVirtualBkm(IHexBookmarks* pVirtBkm)override;
 		void ShowWindow(int iCmdShow);
 		void Update(ULONGLONG ullID, const HEXBKM& bkm);
 	private:
@@ -137,10 +137,10 @@ void CHexDlgBkmMgr::DestroyDlg()
 	}
 }
 
-auto CHexDlgBkmMgr::GetAllAsArray()->std::span<HEXBKM>
+auto CHexDlgBkmMgr::GetAllBkms()->SpanHexBkm
 {
 	if (IsVirtual()) {
-		return m_pVirtual->GetAllAsArray();
+		return m_pVirtual->GetAllBkms();
 	}
 
 	return m_vecBookmarks;
@@ -379,7 +379,7 @@ void CHexDlgBkmMgr::SetDlgProperties(std::uint64_t u64Flags)
 	m_u64Flags = u64Flags;
 }
 
-void CHexDlgBkmMgr::SetVirtual(IHexBookmarks* pVirtBkm)
+void CHexDlgBkmMgr::SetVirtualBkm(IHexBookmarks* pVirtBkm)
 {
 	if (pVirtBkm == this) { //To avoid setting self as a Virtual Bookmarks handler.
 		ut::DBG_REPORT(L"pVirtBkm == this");
@@ -561,13 +561,13 @@ auto CHexDlgBkmMgr::OnInitDialog(const MSG& msg)->INT_PTR
 	m_WndBtnHex.SetCheck(true);
 	m_WndBtnTT.SetCheck(true);
 
-	UpdateListCount();
-
 	m_DynLayout.SetHost(m_Wnd);
 	m_DynLayout.AddItem(IDC_HEXCTRL_BKMMGR_LIST, GDIUT::CDynLayout::MoveNone(), GDIUT::CDynLayout::SizeHorzAndVert(100, 100));
 	m_DynLayout.AddItem(IDC_HEXCTRL_BKMMGR_CHK_HEX, GDIUT::CDynLayout::MoveVert(100), GDIUT::CDynLayout::SizeNone());
 	m_DynLayout.AddItem(IDC_HEXCTRL_BKMMGR_CHK_TT, GDIUT::CDynLayout::MoveVert(100), GDIUT::CDynLayout::SizeNone());
 	m_DynLayout.Enable(true);
+
+	UpdateListCount();
 
 	return TRUE;
 }
@@ -855,7 +855,7 @@ void CHexDlgBkmMgr::RemoveBkmByID(std::uint64_t ullID)
 
 void CHexDlgBkmMgr::UpdateListCount(bool fPreserveSelected)
 {
-	if (!::IsWindow(m_ListEx.GetHWND())) {
+	if (!m_Wnd.IsWindow()) {
 		return;
 	}
 

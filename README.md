@@ -80,7 +80,6 @@
   * [SetScrollRatio](#setscrollratio)
   * [SetSelection](#setselection)
   * [SetUnprintableChar](#setunprintablechar)
-  * [SetVirtualBkm](#setvirtualbkm)
   * [SetWindowPos](#setwindowpos)
   * [ShowInfoBar](#showinfobar)
    </details>
@@ -269,7 +268,8 @@ Then provide a pointer to the created object of this derived class through the `
 ## [](#)Virtual Bookmarks
 **HexCtrl** has innate functional to work with any amount of bookmarked regions. These regions can be assigned with individual background and text colors and description.
 
-But if you have big and complicated data logic and want to handle all these bookmarks yourself, you can do it with the help of the **Virtual Bookmarks** mode. In this mode all bookmark's burden is handled by yourself, by implementing the [`IHexBookmarks`](#ihexbookmarks) interface and providing pointer to this implementation to the **HexCtrl** by calling the [`SetVirtualBkm`](#setvirtualbkm) method.
+But if you have big and complicated data logic and want to handle all these bookmarks yourself, you can do it using the **Virtual Bookmarks** mode.  
+In this mode all bookmark's burden is handled by yourself, by implementing the [`IHexBookmarks`](#ihexbookmarks) interface, and providing pointer to this implementation to the **HexCtrl** by calling the [`IHexBookmarks::SetVirtualBkm`](#ihexbookmarks) method.
 
 ## [](#)Custom Colors
 If you'd like to colorize data regions with your own custom colors, use the [`IHexVirtColors`](#ihexvirtcolors) interface.
@@ -797,12 +797,6 @@ void SetUnprintableChar(wchar_t wch);
 ```
 Sets replacement char for unprintable characters.
 
-### [](#)SetVirtualBkm
-```cpp
-void SetVirtualBkm(IHexBookmarks* pVirtBkm);
-```
-Sets a pointer for the [Virtual Bookmarks](#virtual-bookmarks) mode, or disables this mode if `nullptr` is set.
-
 ### [](#)SetWindowPos
 ```cpp
 void SetWindowPos(HWND hWndAfter, int iX, int iY, int iWidth, int iHeight, UINT uFlags);
@@ -1086,6 +1080,13 @@ Removes all bookmarks.
 void RemoveByID(ULONGLONG ullID);
 ```
 Removes bookmark with the given ID.
+
+#### [](#)IHexBookmarks::SetVirtualBkm
+```cpp
+void SetVirtualBkm(IHexBookmarks* pVirtBkm);
+```
+Sets a pointer for the [Virtual Bookmarks](#virtual-bookmarks) mode, or disables this mode if `nullptr` is set.
+
 
 ### [](#)IHexTemplates
 This interface is responsible for templates machinery in the **HexCtrl**. It can be obtained using the [`GetTemplates`](#gettemplates) method.

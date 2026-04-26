@@ -304,9 +304,8 @@ namespace HEXCTRL::INTERNAL {
 		void SetPageSize(DWORD dwSize, std::wstring_view wsvName)override;
 		void SetRedraw(bool fRedraw)override;
 		void SetScrollRatio(float flRatio, bool fLines)override;
-		void SetSelection(const VecHexSpan& vecSel, bool fRedraw = true, bool fHighlight = false)override;
+		void SetSelection(SpanHexSpan spnSel, bool fRedraw = true, bool fHighlight = false)override;
 		void SetUnprintableChar(wchar_t wch)override;
-		void SetVirtualBkm(IHexBookmarks* pVirtBkm)override;
 		void SetWindowPos(HWND hWndAfter, int iX, int iY, int iWidth, int iHeight, UINT uFlags)override;
 		void ShowInfoBar(bool fShow)override;
 	private:
@@ -2009,12 +2008,12 @@ void CHexCtrl::SetScrollRatio(float flRatio, bool fLines)
 	m_ScrollV.SetScrollPageSize(GetScrollPageSize());
 }
 
-void CHexCtrl::SetSelection(const VecHexSpan& vecSel, bool fRedraw, bool fHighlight)
+void CHexCtrl::SetSelection(SpanHexSpan spnSel, bool fRedraw, bool fHighlight)
 {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return; }
 	if (!IsDataSetImpl()) { ut::DBG_REPORT_NO_DATA_SET(); return; }
 
-	m_Selection.SetSelection(vecSel, fHighlight);
+	m_Selection.SetSelection(spnSel, fHighlight);
 
 	if (fRedraw) {
 		RedrawImpl();
@@ -2028,13 +2027,6 @@ void CHexCtrl::SetUnprintableChar(wchar_t wch)
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return; }
 
 	SetUnprintableCharImpl(wch);
-}
-
-void CHexCtrl::SetVirtualBkm(IHexBookmarks* pVirtBkm)
-{
-	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return; }
-
-	m_DlgBkmMgr.SetVirtual(pVirtBkm);
 }
 
 void CHexCtrl::SetWindowPos(HWND hWndAfter, int iX, int iY, int iWidth, int iHeight, UINT uFlags)
@@ -4517,7 +4509,7 @@ auto CHexCtrl::OnLButtonDblClk(const MSG& msg)->LRESULT
 			hs.ullOffset = m_ullCaretPos;
 			hs.ullSize = 1ULL;
 		}
-		SetSelection({ hs });
+		SetSelection({ &hs, 1 });
 		m_Wnd.SetCapture();
 	}
 
@@ -5277,7 +5269,8 @@ void CHexCtrl::SelAll()
 	if (!IsDataSetImpl())
 		return;
 
-	SetSelection({ { 0, GetDataSizeImpl() } }); //Select all.
+	const HEXSPAN hs { .ullOffset { 0 }, .ullSize { GetDataSizeImpl() } };
+	SetSelection({ &hs, 1 }); //Select all.
 }
 
 void CHexCtrl::SelAddDown()
@@ -5329,7 +5322,8 @@ void CHexCtrl::SelAddDown()
 	if (ullSize > 0) {
 		m_ullCaretPos = ullStart;
 		m_ullCursorPrev = ullClick;
-		SetSelection({ { ullStart, ullSize } }, false);
+		const HEXSPAN hs { .ullOffset { ullStart }, .ullSize { ullSize } };
+		SetSelection({ &hs, 1 }, false);
 
 		const auto stOld = IsOffsetVisible(ullOldPos);
 		const auto stNew = IsOffsetVisible(ullNewPos);
@@ -5380,7 +5374,8 @@ void CHexCtrl::SelAddLeft()
 	if (ullSize > 0) {
 		m_ullCaretPos = ullStart;
 		m_ullCursorPrev = ullClick;
-		SetSelection({ { ullStart, ullSize } }, false);
+		const HEXSPAN hs { .ullOffset { ullStart }, .ullSize { ullSize } };
+		SetSelection({ &hs, 1 }, false);
 
 		const auto stOld = IsOffsetVisible(ullOldPos);
 		const auto stNew = IsOffsetVisible(ullNewPos);
@@ -5441,7 +5436,8 @@ void CHexCtrl::SelAddRight()
 	if (ullSize > 0) {
 		m_ullCaretPos = ullStart;
 		m_ullCursorPrev = ullClick;
-		SetSelection({ { ullStart, ullSize } }, false);
+		const HEXSPAN hs { .ullOffset { ullStart }, .ullSize { ullSize } };
+		SetSelection({ &hs, 1 }, false);
 
 		const auto stOld = IsOffsetVisible(ullOldPos);
 		const auto stNew = IsOffsetVisible(ullNewPos);
@@ -5516,11 +5512,12 @@ void CHexCtrl::SelAddUp()
 	if (ullSize > 0) {
 		m_ullCaretPos = ullStart;
 		m_ullCursorPrev = ullClick;
-		SetSelection({ { ullStart, ullSize } }, false);
+		const HEXSPAN hs { .ullOffset { ullStart }, .ullSize { ullSize } };
+		SetSelection({ &hs, 1 }, false);
 
-		const auto stOld = IsOffsetVisible(ullOldPos);
-		const auto stNew = IsOffsetVisible(ullNewPos);
-		if (stNew.i8Vert != 0 && stOld.i8Vert == 0) {
+		const auto hvOld = IsOffsetVisible(ullOldPos);
+		const auto hvNew = IsOffsetVisible(ullNewPos);
+		if (hvNew.i8Vert != 0 && hvOld.i8Vert == 0) {
 			m_ScrollV.ScrollLineUp();
 		}
 

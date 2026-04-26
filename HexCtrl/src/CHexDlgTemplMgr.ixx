@@ -46,7 +46,7 @@ namespace HEXCTRL::INTERNAL {
 		void DisapplyAll()override;
 		void DisapplyByID(int iAppliedID)override; //Disapply template with the given AppliedID.
 		void DisapplyByOffset(ULONGLONG ullOffset)override;
-		[[nodiscard]] auto GetAllApplied() -> SpnHexTemplApplied override;
+		[[nodiscard]] auto GetAllApplied() -> SpanHexTemplApplied override;
 		[[nodiscard]] auto GetDlgItemHandle(EHexDlgItem eItem)const -> HWND;
 		[[nodiscard]] auto GetHWND()const -> HWND;
 		[[nodiscard]] bool HasApplied()const;
@@ -298,7 +298,7 @@ void CHexDlgTemplMgr::DisapplyByOffset(ULONGLONG ullOffset)
 	}
 }
 
-auto CHexDlgTemplMgr::GetAllApplied()->SpnHexTemplApplied
+auto CHexDlgTemplMgr::GetAllApplied()->SpanHexTemplApplied
 {
 	return m_vecTemplApplied;
 }
@@ -1921,8 +1921,8 @@ void CHexDlgTemplMgr::SetHexSelByField(PCHEXTEMPLFIELD pField)
 
 	const auto ullOffset = pApplied->ullOffset + pField->iOffset;
 	const auto ullSize = static_cast<ULONGLONG>(pField->iSize);
-
-	m_pHexCtrl->SetSelection({ { ullOffset, ullSize } });
+	const HEXSPAN hs { .ullOffset { ullOffset }, .ullSize { ullSize } };
+	m_pHexCtrl->SetSelection({ &hs, 1 });
 	if (!m_pHexCtrl->IsOffsetVisible(ullOffset)) {
 		m_pHexCtrl->GoToOffset(ullOffset, -1);
 	}

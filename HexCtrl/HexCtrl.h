@@ -100,6 +100,7 @@ namespace HEXCTRL {
 		ULONGLONG ullSize { };
 	};
 	using VecHexSpan = std::vector<HEXSPAN>;
+	using SpanHexSpan = std::span<const HEXSPAN>;
 
 	/********************************************************************************************
 	* HEXCOLOR: Background and Text color struct.                                               *
@@ -142,7 +143,7 @@ namespace HEXCTRL {
 		HEXCOLOR     stClr;       //Bookmark bk/text color.
 	};
 	using PHEXBKM = HEXBKM*;
-	using SpnHexBkm = std::span<HEXBKM>;
+	using SpanHexBkm = std::span<const HEXBKM>;
 
 	/********************************************************************************************
 	* IHexBookmarks: Pure abstract bookmarks' interface, for the HexCtrl bookmarks machinery.   *
@@ -150,13 +151,14 @@ namespace HEXCTRL {
 	class IHexBookmarks {
 	public:
 		virtual auto AddBkm(const HEXBKM& bkm) -> ULONGLONG = 0;                  //Adds new bookmark, returns the new bookmark's ID.
-		[[nodiscard]] virtual auto GetAllAsArray() -> SpnHexBkm = 0;              //Returns array of all bookmarks.
+		[[nodiscard]] virtual auto GetAllBkms() -> SpanHexBkm = 0;                //Returns array of all bookmarks.
 		[[nodiscard]] virtual auto GetByID(ULONGLONG ullID) -> PHEXBKM = 0;       //Get bookmark by ID.
 		[[nodiscard]] virtual auto GetByIndex(ULONGLONG ullIndex) -> PHEXBKM = 0; //Get bookmark by index.
 		[[nodiscard]] virtual auto GetCount() -> ULONGLONG = 0;                   //Get bookmarks count.
 		[[nodiscard]] virtual auto HitTest(ULONGLONG ullOffset) -> PHEXBKM = 0;   //HitTest for the given offset.
 		virtual void RemoveAll() = 0;                                             //Remove all bookmarks.
 		virtual void RemoveByID(ULONGLONG ullID) = 0;                             //Remove by the given ID.
+		virtual void SetVirtualBkm(IHexBookmarks* pVirtBkm) = 0;                  //Sets the Virtual Bookmarks pointer.
 	};
 
 	/********************************************************************************************
@@ -249,7 +251,7 @@ namespace HEXCTRL {
 		PCHEXTEMPLATE pTemplate { };  //Template pointer.
 		int           iAppliedID { }; //AppliedID assigned by framework. Any template can be applied many times.
 	};
-	using SpnHexTemplApplied = std::span<HEXTEMPLAPPLIED>;
+	using SpanHexTemplApplied = std::span<const HEXTEMPLAPPLIED>;
 
 	/********************************************************************************************
 	* IHexTemplates: Pure abstract base interface for HexCtrl templates.                        *
@@ -262,7 +264,7 @@ namespace HEXCTRL {
 		virtual void DisapplyAll() = 0;
 		virtual void DisapplyByID(int iAppliedID) = 0;
 		virtual void DisapplyByOffset(ULONGLONG ullOffset) = 0;
-		[[nodiscard]] virtual auto GetAllApplied() -> SpnHexTemplApplied = 0; //All currently applied templates.
+		[[nodiscard]] virtual auto GetAllApplied() -> SpanHexTemplApplied = 0; //All currently applied templates.
 		virtual auto LoadTemplate(const wchar_t* pFilePath) -> int = 0; //Returns TemplateID on success, null otherwise.
 		virtual void ShowTooltips(bool fShow) = 0;
 		virtual void UnloadAll() = 0;                     //Unload all templates.
@@ -478,9 +480,8 @@ namespace HEXCTRL {
 		virtual void SetPageSize(DWORD dwSize, std::wstring_view wsvName = L"Page") = 0; //Set page size and name to draw the lines in-between.
 		virtual void SetRedraw(bool fRedraw) = 0;              //Handle WM_PAINT message or not.
 		virtual void SetScrollRatio(float flRatio, bool fLines) = 0; //Set mouse-wheel scroll ratio in screens or in lines.
-		virtual void SetSelection(const VecHexSpan& vecSel, bool fRedraw = true, bool fHighlight = false) = 0; //Set current selection.
+		virtual void SetSelection(SpanHexSpan spnSel, bool fRedraw = true, bool fHighlight = false) = 0; //Set current selection.
 		virtual void SetUnprintableChar(wchar_t wch) = 0;      //Set unprintable replacement character.
-		virtual void SetVirtualBkm(IHexBookmarks* pVirtBkm) = 0; //Set pointer for Bookmarks Virtual Mode.
 		virtual void SetWindowPos(HWND hWndAfter, int iX, int iY, int iWidth, int iHeight, UINT uFlags = SWP_NOACTIVATE | SWP_NOZORDER) = 0;
 		virtual void ShowInfoBar(bool fShow) = 0;              //Show/hide bottom Info bar.
 	};
