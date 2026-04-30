@@ -34,7 +34,7 @@ namespace HEXCTRL::INTERNAL {
 		struct FIELDSDEFPROPS; //Forward declarations.
 		enum class EMenuID : std::uint16_t;
 		using IterJSONMember = rapidjson::Value::ConstMemberIterator;
-		using UmapCustomTypes = std::unordered_map<std::uint8_t, VecHexFields>;
+		using UmapCustomTypes = std::unordered_map<int, VecHexFields>;
 		using PCVecFields = const VecHexFields*;
 		using PCTEMPLAPPLIED = const HEXTEMPLAPPLIED*;
 		auto AddTemplate(const HEXTEMPLATE& stTempl) -> int override;
@@ -1103,7 +1103,7 @@ void CHexDlgTemplMgr::OnNotifyListGetColor(NMHDR* pNMHDR)
 		pLCI->stClr.clrBk = clrBkGreyish;
 		if (pLCI->iSubItem == COL_TYPE) {
 			if (eType == type_custom) {
-				if (pField->uTypeID > 0) {
+				if (pField->iCustomTypeID > 0) {
 					pLCI->stClr.clrText = clrTextGreenish;
 				}
 			}
@@ -1161,8 +1161,8 @@ void CHexDlgTemplMgr::OnNotifyListGetDispInfo(NMHDR* pNMHDR)
 		if (pField->eType == type_custom) {
 			const auto& vecCT = pAppliedCurr->pTemplate->vecCustomType;
 			if (const auto it = std::find_if(vecCT.begin(), vecCT.end(),
-				[uTypeID = pField->uTypeID](const HEXCUSTOMTYPE& ct) {
-					return ct.uTypeID == uTypeID; }); it != vecCT.end()) {
+				[iCustomTypeID = pField->iCustomTypeID](const HEXCUSTOMTYPE& ct) {
+					return ct.iTypeID == iCustomTypeID; }); it != vecCT.end()) {
 				pItem->pszText = const_cast<LPWSTR>(it->wstrTypeName.data());
 			}
 			else {
@@ -2191,7 +2191,7 @@ auto CHexDlgTemplMgr::CloneTemplate(PCHEXTEMPLATE pTemplate)->std::unique_ptr<HE
 					pNewField->stClr = pOldField->stClr;
 					pNewField->pFieldParent = pFieldParent;
 					pNewField->eType = pOldField->eType;
-					pNewField->uTypeID = pOldField->uTypeID;
+					pNewField->iCustomTypeID = pOldField->iCustomTypeID;
 					pNewField->fBigEndian = pOldField->fBigEndian;
 					lmbSelf(lmbSelf, pNewField->vecNested, pOldField->vecNested, pNewField.get());
 				}
@@ -2324,7 +2324,7 @@ bool CHexDlgTemplMgr::JSONParseFields(const IterJSONMember itFieldsArray, VecHex
 						return false;
 					}
 
-					pNewField->uTypeID = itVecCT->uTypeID; //Custom type ID.
+					pNewField->iCustomTypeID = itVecCT->iTypeID; //Custom type ID.
 					pNewField->eType = type_custom;
 					const auto lmbCopyCustomType = [](const VecHexFields& vecCustomFields,
 						const PtrHexField& pField, int& iOffset)->void {
@@ -2341,7 +2341,7 @@ bool CHexDlgTemplMgr::JSONParseFields(const IterJSONMember itFieldsArray, VecHex
 										pNewField->stClr.clrText = CFClr.clrText == -1 ? pField->stClr.clrText : CFClr.clrText;
 										pNewField->pFieldParent = pField.get();
 										pNewField->eType = pCustomField->eType;
-										pNewField->uTypeID = pCustomField->uTypeID;
+										pNewField->iCustomTypeID = pCustomField->iCustomTypeID;
 										pNewField->fBigEndian = pCustomField->fBigEndian;
 
 										if (pCustomField->vecNested.empty()) {
@@ -2357,7 +2357,7 @@ bool CHexDlgTemplMgr::JSONParseFields(const IterJSONMember itFieldsArray, VecHex
 
 					auto iOffsetCustomType = *pOffset;
 					if (iArraySize <= 1) {
-						lmbCopyCustomType(umapCustomT[itVecCT->uTypeID], pNewField, iOffsetCustomType);
+						lmbCopyCustomType(umapCustomT[itVecCT->iTypeID], pNewField, iOffsetCustomType);
 					}
 					else { //Creating array of Custom Types.
 						for (int iArrIndex = 0; iArrIndex < iArraySize; ++iArrIndex) {
@@ -2367,11 +2367,11 @@ bool CHexDlgTemplMgr::JSONParseFields(const IterJSONMember itFieldsArray, VecHex
 							pFieldArray->stClr = pNewField->stClr;
 							pFieldArray->pFieldParent = pNewField.get();
 							pFieldArray->eType = pNewField->eType;
-							pFieldArray->uTypeID = pNewField->uTypeID;
+							pFieldArray->iCustomTypeID = pNewField->iCustomTypeID;
 							pFieldArray->fBigEndian = pNewField->fBigEndian;
 
 							//Copy Custom Type fields into the pFieldArray->vecNested.
-							lmbCopyCustomType(umapCustomT[itVecCT->uTypeID], pFieldArray, iOffsetCustomType);
+							lmbCopyCustomType(umapCustomT[itVecCT->iTypeID], pFieldArray, iOffsetCustomType);
 							pFieldArray->iSize = lmbTotalSize(pFieldArray->vecNested);
 						}
 						pNewField->wstrName = std::format(L"{}[{}]", wstrNameField, iArraySize);
@@ -2411,7 +2411,7 @@ bool CHexDlgTemplMgr::JSONParseFields(const IterJSONMember itFieldsArray, VecHex
 					pFieldArray->stClr = pNewField->stClr;
 					pFieldArray->pFieldParent = pNewField.get();
 					pFieldArray->eType = pNewField->eType;
-					pFieldArray->uTypeID = pNewField->uTypeID;
+					pFieldArray->iCustomTypeID = pNewField->iCustomTypeID;
 					pFieldArray->fBigEndian = pNewField->fBigEndian;
 				}
 				pNewField->wstrName = std::format(L"{}[{}]", wstrNameField, iArraySize);

@@ -25,8 +25,8 @@
 
 namespace HEXCTRL {
 	constexpr auto HEXCTRL_VERSION_MAJOR = 3;
-	constexpr auto HEXCTRL_VERSION_MINOR = 8;
-	constexpr auto HEXCTRL_VERSION_PATCH = 1;
+	constexpr auto HEXCTRL_VERSION_MINOR = 9;
+	constexpr auto HEXCTRL_VERSION_PATCH = 0;
 
 	using SpanByte = std::span<std::byte>;
 	using SpanCByte = std::span<const std::byte>;
@@ -217,7 +217,7 @@ namespace HEXCTRL {
 	//Custom type of a field.
 	struct HEXCUSTOMTYPE {
 		std::wstring wstrTypeName; //Custom type name.
-		std::uint8_t uTypeID { };  //Custom type ID.
+		int          iTypeID { };  //Custom type ID.
 	};
 	using VecHexCT = std::vector<HEXCUSTOMTYPE>;
 
@@ -225,13 +225,13 @@ namespace HEXCTRL {
 	struct HEXTEMPLFIELD {
 		std::wstring    wstrName;             //Field name.
 		std::wstring    wstrDescr;            //Field description.
+		VecHexFields    vecNested;            //Vector for nested fields.
+		HEXCOLOR        stClr;                //Field Bk and Text color.
+		PCHEXTEMPLFIELD pFieldParent { };     //Parent field, in case of nested.
 		int             iOffset { };          //Field offset relative to the Template's beginning.
 		int             iSize { };            //Field size.
-		HEXCOLOR        stClr;                //Field Bk and Text color.
-		VecHexFields    vecNested;            //Vector for nested fields.
-		PCHEXTEMPLFIELD pFieldParent { };     //Parent field, in case of nested.
+		int             iCustomTypeID { };    //Field custom-type ID, if eType==type_custom.
 		EHexFieldType   eType { };            //Field type.
-		std::uint8_t    uTypeID { };          //Field type ID if, it's a custom type.
 		bool            fBigEndian { false }; //Field endianness.
 	};
 
