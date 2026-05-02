@@ -468,7 +468,7 @@ namespace HEXCTRL {
 		virtual void SetCodepage(int iCodepage) = 0;           //Codepage for text area.
 		virtual void SetColors(const HEXCOLORS& hcs) = 0;      //Set HexCtrl's colors.
 		virtual bool SetConfig(std::wstring_view wsvPath) = 0; //Set configuration file, or "" for defaults.
-		virtual void SetData(const HEXDATA& hds, bool fAdjust = false) = 0; //Main method to set data for HexCtrl.
+		virtual void SetData(const HEXDATA& hd, bool fAdjust = false) = 0; //Main method to set data for HexCtrl.
 		virtual void SetDateInfo(DWORD dwFormat, wchar_t wchSepar) = 0; //Set date format and date separator.
 		virtual void SetDlgProperties(EHexWnd eWnd, std::uint64_t u64Flags) = 0; //Properties for the internal dialogs.
 		virtual void SetFont(const LOGFONTW& lf, bool fMain = true) = 0; //Set main/infobar font.

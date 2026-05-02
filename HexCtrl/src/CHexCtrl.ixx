@@ -22,6 +22,7 @@ module;
 #include <numeric>
 #include <optional>
 #include <random>
+#include <ranges>
 #include <string>
 #include <thread>
 #include <unordered_map>
@@ -292,7 +293,7 @@ namespace HEXCTRL::INTERNAL {
 		void SetCodepage(int iCodepage)override;
 		void SetColors(const HEXCOLORS& hcs)override;
 		bool SetConfig(std::wstring_view wsvPath)override;
-		void SetData(const HEXDATA& hds, bool fAdjust)override;
+		void SetData(const HEXDATA& hd, bool fAdjust)override;
 		void SetDateInfo(DWORD dwFormat, wchar_t wchSepar)override;
 		void SetDlgProperties(EHexWnd eWnd, std::uint64_t u64Flags)override;
 		void SetFont(const LOGFONTW& lf, bool fMain = true)override;
@@ -468,6 +469,8 @@ namespace HEXCTRL::INTERNAL {
 		CHexSelection m_Selection;            //Selection class.
 		CHexScroll m_ScrollV;                 //Vertical scroll bar.
 		CHexScroll m_ScrollH;                 //Horizontal scroll bar.
+		HEXCOLORS m_stColors;                 //All HexCtrl colors.
+		HEXDATA m_stData;                     //Main data struct.
 		HINSTANCE m_hInstRes { };             //Hinstance of the HexCtrl resources.
 		GDIUT::CWnd m_Wnd;                    //Main window.
 		GDIUT::CWnd m_WndTT;                  //Tooltip window.
@@ -483,10 +486,6 @@ namespace HEXCTRL::INTERNAL {
 		HFONT m_hFntInfoBar { };              //Font for bottom Info bar.
 		HPEN m_hPenLinesMain { };             //Pen for main lines.
 		HPEN m_hPenLinesTempl { };            //Pen for templates' fields (vertical lines).
-		HEXCOLORS m_stColors;                 //All HexCtrl colors.
-		IHexVirtData* m_pHexVirtData { };     //Data handler pointer for Virtual mode.
-		IHexVirtColors* m_pHexVirtColors { }; //Pointer for custom colors class.
-		SpanByte m_spnData;                   //Main data span.
 		const wchar_t* m_pwszTTText { };      //Current tooltip text.
 		std::chrono::steady_clock::time_point m_tmTT; //Start time of the tooltip.
 		ULONGLONG m_ullCaretPos { };          //Current caret position.
@@ -501,7 +500,6 @@ namespace HEXCTRL::INTERNAL {
 		DWORD m_dwDigitsOffsetDec { 10UL };   //Amount of digits for "Offset" in Decimal mode, 10 is max for 32bit number.
 		DWORD m_dwDigitsOffsetHex { 8UL };    //Amount of digits for "Offset" in Hex mode, 8 is max for 32bit number.
 		DWORD m_dwPageSize { };               //Size of a page to print additional lines between.
-		DWORD m_dwCacheSize { };              //Data cache size for VirtualData mode.
 		DWORD m_dwDateFormat { };             //Current date format. See https://docs.microsoft.com/en-gb/windows/win32/intl/locale-idate
 		DWORD m_dwCharsExtraSpace { };        //Extra space between chars.
 		int m_iSizeFirstHalfPx { };           //Size in px of the first half of the capacity.
@@ -533,14 +531,12 @@ namespace HEXCTRL::INTERNAL {
 		wchar_t m_wchDateSepar { };           //Date separator.
 		bool m_fCreated { false };            //Is control created or not.
 		bool m_fDataSet { false };            //Is data set or not.
-		bool m_fMutable { false };            //Does control work in Edit or ReadOnly mode.
 		bool m_fInfoBar { true };             //Show bottom Info window or not.
 		bool m_fCaretHigh { true };           //Caret's High or Low bits position (first or last digit in hex chunk).
 		bool m_fCursorTextArea { false };     //Whether last focus was set at ASCII or Hex chunks area.
 		bool m_fLMousePressed { false };      //Is left mouse button pressed.
 		bool m_fClickWithAlt { false };       //Mouse click was with Alt pressed.
 		bool m_fOffsetHex { false };          //Print offset numbers as Hex or as Decimals.
-		bool m_fHighLatency { false };        //Reflects HEXDATA::fHighLatency.
 		bool m_fRedraw { true };              //Should WM_PAINT be handled or not.
 		bool m_fScrollLines { false };        //Page scroll in "Screen * m_flScrollRatio" or in lines.
 		bool m_fHexCharsUpper { true };       //Hex chars printed in UPPER or lower case.
@@ -607,12 +603,8 @@ void CHexCtrl::ClearData()
 {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return; }
 
-	m_spnData = { };
+	m_stData = { };
 	m_fDataSet = false;
-	m_fMutable = false;
-	m_pHexVirtData = nullptr;
-	m_pHexVirtColors = nullptr;
-	m_fHighLatency = false;
 	m_ullCursorPrev = 0;
 	m_ullCaretPos = 0;
 	m_ullCursorNow = 0;
@@ -985,7 +977,7 @@ auto CHexCtrl::GetCacheSize()const->DWORD
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return { }; }
 	if (!IsDataSetImpl()) { ut::DBG_REPORT_NO_DATA_SET(); return { }; }
 
-	return m_dwCacheSize;
+	return m_stData.dwCacheSize;
 }
 
 auto CHexCtrl::GetCapacity()const->DWORD
@@ -1033,13 +1025,13 @@ auto CHexCtrl::GetData(HEXSPAN hss)const->SpanByte
 	SpanByte spnData;
 	if (!IsVirtualImpl()) {
 		if (hss.ullOffset + hss.ullSize <= GetDataSizeImpl()) {
-			spnData = { m_spnData.data() + hss.ullOffset, static_cast<std::size_t>(hss.ullSize) };
+			spnData = { m_stData.spnData.data() + hss.ullOffset, static_cast<std::size_t>(hss.ullSize) };
 		}
 	}
 	else {
 		assert(hss.ullSize <= GetCacheSize());
 		HEXDATAINFO hdi { .hdr { m_Wnd, static_cast<UINT>(m_Wnd.GetDlgCtrlID()) }, .stHexSpan { hss } };
-		m_pHexVirtData->OnHexGetData(hdi);
+		m_stData.pHexVirtData->OnHexGetData(hdi);
 		spnData = hdi.spnData;
 	}
 
@@ -1802,10 +1794,10 @@ bool CHexCtrl::SetConfig(std::wstring_view wsvPath)
 	return SetConfigImpl(wsvPath);
 }
 
-void CHexCtrl::SetData(const HEXDATA& hds, bool fAdjust)
+void CHexCtrl::SetData(const HEXDATA& hd, bool fAdjust)
 {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return; }
-	if (hds.spnData.empty()) { ut::DBG_REPORT(L"Data size can't be zero."); return; }
+	if (hd.spnData.empty()) { ut::DBG_REPORT(L"Data size can't be zero."); return; }
 
 	if (fAdjust) {
 		if (!IsDataSetImpl()) {
@@ -1813,7 +1805,7 @@ void CHexCtrl::SetData(const HEXDATA& hds, bool fAdjust)
 			return;
 		}
 
-		if (hds.spnData.size() != GetDataSizeImpl()) {
+		if (hd.spnData.size() != GetDataSizeImpl()) {
 			ut::DBG_REPORT(L"Data size must be equal to the prior data size.");
 			return;
 		}
@@ -1822,15 +1814,11 @@ void CHexCtrl::SetData(const HEXDATA& hds, bool fAdjust)
 		ClearData();
 	}
 
-	m_spnData = hds.spnData;
-	m_pHexVirtData = hds.pHexVirtData;
-	m_pHexVirtColors = hds.pHexVirtColors;
-	m_dwCacheSize = (std::max)(hds.dwCacheSize, 1024UL * 64UL); //Minimum cache size for VirtualData mode.
-	m_fMutable = hds.fMutable;
-	m_fHighLatency = hds.fHighLatency;
+	m_stData = hd;
+	m_stData.dwCacheSize = (std::max)(hd.dwCacheSize, 1024UL * 64UL); //Minimum cache size for VirtualData mode.
 
-	const auto ullDataSize = hds.pHexVirtData ? (std::max)(hds.ullMaxVirtOffset,
-		static_cast<ULONGLONG>(hds.spnData.size())) : hds.spnData.size();
+	const auto ullDataSize = hd.pHexVirtData ?
+		(std::max)(hd.ullMaxVirtOffset, static_cast<ULONGLONG>(hd.spnData.size())) : hd.spnData.size();
 	if (ullDataSize <= 0xFFFFFFFFUL) {
 		m_dwDigitsOffsetDec = 10UL;
 		m_dwDigitsOffsetHex = 8UL;
@@ -1968,7 +1956,7 @@ void CHexCtrl::SetMutable(bool fMutable)
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return; }
 	if (!IsDataSetImpl()) { ut::DBG_REPORT_NO_DATA_SET(); return; }
 
-	m_fMutable = fMutable;
+	m_stData.fMutable = fMutable;
 	RedrawImpl();
 }
 
@@ -2935,19 +2923,19 @@ void CHexCtrl::DrawWindow(HDC hDC)const
 
 void CHexCtrl::DrawInfoBar(HDC hDC)const
 {
-	if (!HasInfoBar() || !IsDataSetImpl())
+	if (!IsDataSetImpl() || !HasInfoBar())
 		return;
 
 	const auto ullCaretPos = GetVirtualOffset(GetCaretPosImpl());
 
 	//^ (caret) - encloses a data name, ` (tilda) - encloses the data itself.
-	auto wstrInfoBar = std::vformat(ut::GetLocale(), IsOffsetAsHexImpl() ? L"^Caret: ^`0x{:X}`" : L"^Caret: ^`{:L}`",
+	auto wstrInfoBar = std::vformat(ut::GetLocale(), IsOffsetAsHexImpl() ? L"^Caret: ^`0x{:X}`|" : L"^Caret: ^`{:L}`|",
 		std::make_wformat_args(ullCaretPos));
 
 	if (IsPageVisible()) { //Page/Sector.
 		const auto ullPagePos = GetPagePosImpl();
 		const auto ullPagesCount = GetPagesCountImpl();
-		wstrInfoBar += std::vformat(ut::GetLocale(), IsOffsetAsHexImpl() ? L"^{}: ^`0x{:X}/0x{:X}`" : L"^{}: ^`{:L}/{:L}`",
+		wstrInfoBar += std::vformat(ut::GetLocale(), IsOffsetAsHexImpl() ? L"^{}: ^`0x{:X}/0x{:X}`|" : L"^{}: ^`{:L}/{:L}`|",
 			std::make_wformat_args(m_wstrPageName, ullPagePos, ullPagesCount));
 	}
 
@@ -2955,17 +2943,34 @@ void CHexCtrl::DrawInfoBar(HDC hDC)const
 		const auto ullSelStart = GetVirtualOffset(m_Selection.GetSelStart());
 		const auto ullSelSize = m_Selection.GetSelSize();
 		if (ullSelSize == 1) { //In case of just one byte selected.
-			wstrInfoBar += std::vformat(ut::GetLocale(), IsOffsetAsHexImpl() ? L"^Selected: ^`0x{:X} [0x{:X}]`" :
-				L"^Selected: ^`{} [{:L}]`", std::make_wformat_args(ullSelSize, ullSelStart));
+			wstrInfoBar += std::vformat(ut::GetLocale(), IsOffsetAsHexImpl() ? L"^Selected: ^`0x{:X} [0x{:X}]`|" :
+				L"^Selected: ^`{} [{:L}]`|", std::make_wformat_args(ullSelSize, ullSelStart));
 		}
 		else {
 			const auto ullSelEnd = m_Selection.GetSelEnd();
-			wstrInfoBar += std::vformat(ut::GetLocale(), IsOffsetAsHexImpl() ? L"^Selected: ^`0x{:X} [0x{:X}-0x{:X}]`" :
-				L"^Selected: ^`{:L} [{:L}-{:L}]`", std::make_wformat_args(ullSelSize, ullSelStart, ullSelEnd));
+			wstrInfoBar += std::vformat(ut::GetLocale(), IsOffsetAsHexImpl() ? L"^Selected: ^`0x{:X} [0x{:X}-0x{:X}]`|" :
+				L"^Selected: ^`{:L} [{:L}-{:L}]`|", std::make_wformat_args(ullSelSize, ullSelStart, ullSelEnd));
 		}
 	}
 
-	wstrInfoBar += IsMutableImpl() ? L"^RW^" : L"^RO^"; //RW/RO mode.
+	wstrInfoBar += IsMutableImpl() ? L"^RW^|" : L"^RO^|"; //RW/RO mode.
+
+	constexpr auto uBInKB { 1024U };          //Bytes in KB.
+	constexpr auto uBInMB { uBInKB * 1024U }; //Bytes in MB.
+	constexpr auto uBInGB { uBInMB * 1024U }; //Bytes in GB.
+	const auto ullDataSize = GetDataSizeImpl();
+	if (ullDataSize < uBInKB) {
+		wstrInfoBar += std::format(L"^{}B^|", ullDataSize);
+	}
+	else if (ullDataSize < uBInMB) {
+		wstrInfoBar += std::format(L"^{}KB^|", ullDataSize / uBInKB);
+	}
+	else if (ullDataSize < uBInGB) {
+		wstrInfoBar += std::format(L"^{:.1f}MB^|", ullDataSize / static_cast<float>(uBInMB));
+	}
+	else { //More than or equal to 1 GB/s.
+		wstrInfoBar += std::format(L"^{:.1f}GB^|", ullDataSize / static_cast<float>(uBInGB));
+	}
 
 	struct POLYINFODATA { //InfoBar text, colors, and vertical lines.
 		POLYTEXTW stPoly { };
@@ -2973,7 +2978,7 @@ void CHexCtrl::DrawInfoBar(HDC hDC)const
 		int       iVertLineX { };
 	};
 	std::vector<POLYINFODATA> vecInfoData;
-	vecInfoData.reserve(4);
+	vecInfoData.reserve(6);
 
 	const auto iScrollH = static_cast<int>(m_ScrollH.GetScrollPos());
 	GDIUT::CRect rcInfoBar(m_iFirstVertLinePx + 1 - iScrollH, m_iThirdHorzLinePx + 1,
@@ -2982,34 +2987,30 @@ void CHexCtrl::DrawInfoBar(HDC hDC)const
 	rcInfoBarText.left = m_iFirstVertLinePx + 5; //Draw the text beginning with little indent.
 	rcInfoBarText.right = m_iFirstVertLinePx + m_iWidthClientAreaPx; //Draw text to the end of the client area, even if it passes iFourthHorizLine.
 
-	std::size_t uzCurrPosBegin { };
-	while (true) {
-		const auto uzParamPosBegin = wstrInfoBar.find_first_of('^', uzCurrPosBegin);
-		if (uzParamPosBegin == std::wstring::npos)
-			break;
-
-		const auto uzParamPosEnd = wstrInfoBar.find_first_of('^', uzParamPosBegin + 1);
-		if (uzParamPosEnd == std::wstring::npos)
-			break;
-
-		const auto uParamSize = static_cast<UINT>(uzParamPosEnd - uzParamPosBegin - 1);
-		vecInfoData.emplace_back(POLYTEXTW { .n { uParamSize }, .lpstr { wstrInfoBar.data() + uzParamPosBegin + 1 },
-			.rcl { rcInfoBarText } }, m_stColors.clrFontInfoParam);
-		rcInfoBarText.left += uParamSize * m_sizeFontInfo.cx; //Increase rect left offset by string size.
-		uzCurrPosBegin = uzParamPosEnd + 1;
-
-		if (const auto uzDataPosBegin = wstrInfoBar.find_first_of('`', uzCurrPosBegin);
-			uzDataPosBegin != std::wstring::npos) {
-			if (const auto uzDataPosEnd = wstrInfoBar.find_first_of('`', uzDataPosBegin + 1);
-				uzDataPosEnd != std::wstring::npos) {
-				const auto iDataSize = static_cast<UINT>(uzDataPosEnd - uzDataPosBegin - 1);
-				vecInfoData.emplace_back(POLYTEXTW { .n { iDataSize }, .lpstr { wstrInfoBar.data() + uzDataPosBegin + 1 },
-					.rcl { rcInfoBarText } }, m_stColors.clrFontInfoData);
-				rcInfoBarText.left += iDataSize * m_sizeFontInfo.cx;
-				uzCurrPosBegin = uzDataPosEnd + 1;
+	for (const auto subStr : std::views::split(wstrInfoBar, L'|')) {
+		auto wsvSub = std::wstring_view(subStr.data(), subStr.size());
+		std::size_t uzPosCurr { };
+		while (true) {
+			const auto uzParamPosBegin = wsvSub.find(L'^', uzPosCurr);
+			const auto uzDataPosBegin = wsvSub.find(L'`', uzPosCurr);
+			if (uzParamPosBegin == std::wstring_view::npos && uzDataPosBegin == std::wstring_view::npos) {
+				break; //Found nothing.
 			}
-		}
 
+			const bool fIsParam = uzParamPosBegin < uzDataPosBegin;
+			const auto uzPosBegin = fIsParam ? uzParamPosBegin : uzDataPosBegin;
+			const auto uzPosEnd = wsvSub.find(fIsParam ? L'^' : L'`', uzPosBegin + 1);
+			if (uzPosEnd == std::wstring_view::npos) {
+				ut::DBG_REPORT(L"Wrong formatting.");
+				break;
+			}
+
+			const auto uStringSize = static_cast<UINT>(uzPosEnd - uzPosBegin - 1);
+			vecInfoData.emplace_back(POLYTEXTW { .n { uStringSize }, .lpstr { wsvSub.data() + uzPosBegin + 1 },
+				.rcl { rcInfoBarText } }, fIsParam ? m_stColors.clrFontInfoParam : m_stColors.clrFontInfoData);
+			rcInfoBarText.left += uStringSize * m_sizeFontInfo.cx; //Increase rect left offset by string size.
+			uzPosCurr = uzPosEnd + 1;
+		}
 		rcInfoBarText.left += m_sizeFontInfo.cx; //Additional space to the next rect's left side.
 		vecInfoData.back().iVertLineX = rcInfoBarText.left - (m_sizeFontInfo.cx / 2); //Vertical line after current rect.
 	}
@@ -3121,9 +3122,9 @@ void CHexCtrl::DrawHexText(HDC hDC, ULONGLONG ullStartLine, int iLines, std::wst
 
 		//Main loop for printing Hex chunks and Text chars.
 		for (auto itChunk { 0U }; itChunk < GetCapacity() && uzIndexToPrint < wsvText.size(); ++itChunk, ++uzIndexToPrint) {
-			if (m_pHexVirtColors != nullptr) {
+			if (m_stData.pHexVirtColors != nullptr) {
 				hci.ullOffset = ullStartOffset + uzIndexToPrint;
-				if (m_pHexVirtColors->OnHexGetColor(hci)) {
+				if (m_stData.pHexVirtColors->OnHexGetColor(hci)) {
 					stClrTextArea = hci.stClr; //Text area color is now equal to the Hex area color.
 				}
 				else {
@@ -3865,7 +3866,7 @@ auto CHexCtrl::GetCommandFromMenu(WORD wMenuID)const->std::optional<EHexCmd>
 
 auto CHexCtrl::GetDataSizeImpl()const->std::uint64_t
 {
-	return m_spnData.size();
+	return m_stData.spnData.size();
 }
 
 auto CHexCtrl::GetDigitsOffset()const->DWORD
@@ -3892,7 +3893,7 @@ auto CHexCtrl::GetOffsetImpl(std::uint64_t u64Offset, bool fGetVirt) const -> st
 {
 	if (IsVirtualImpl()) {
 		HEXDATAINFO hdi { .hdr { m_Wnd, static_cast<UINT>(m_Wnd.GetDlgCtrlID()) }, .stHexSpan { .ullOffset { u64Offset } } };
-		m_pHexVirtData->OnHexGetOffset(hdi, fGetVirt);
+		m_stData.pHexVirtData->OnHexGetOffset(hdi, fGetVirt);
 		return hdi.stHexSpan.ullOffset;
 	}
 
@@ -4047,7 +4048,7 @@ bool CHexCtrl::IsDrawable()const
 
 bool CHexCtrl::IsMutableImpl()const
 {
-	return m_fMutable;
+	return m_stData.fMutable;
 }
 
 bool CHexCtrl::IsOffsetAsHexImpl()const
@@ -4067,7 +4068,7 @@ bool CHexCtrl::IsScrollCursor()const
 
 bool CHexCtrl::IsVirtualImpl()const
 {
-	return m_pHexVirtData != nullptr;
+	return m_stData.pHexVirtData != nullptr;
 }
 
 void CHexCtrl::ModifyWorker(const HEXCTRL::HEXMODIFY& hms, const auto& FuncWorker, const HEXCTRL::SpanCByte spnOper)const
@@ -4922,7 +4923,7 @@ auto CHexCtrl::OnTimer(const MSG& msg)->LRESULT
 auto CHexCtrl::OnVScroll([[maybe_unused]] const MSG& msg)->LRESULT
 {
 	bool fRedraw { true };
-	if (m_fHighLatency) {
+	if (m_stData.fHighLatency) {
 		fRedraw = m_ScrollV.IsThumbReleased();
 		if (!fRedraw) {
 			const auto wstrOffset = (IsOffsetAsHexImpl() ? L"Offset: 0x" : L"Offset: ") + OffsetToWstr(GetTopLine() * GetCapacity());
@@ -5858,7 +5859,7 @@ void CHexCtrl::SetDataVirtual(SpanByte spnData, const HEXSPAN& hss)const
 	if (!IsVirtualImpl())
 		return;
 
-	m_pHexVirtData->OnHexSetData({ .hdr { m_Wnd, static_cast<UINT>(m_Wnd.GetDlgCtrlID()) },
+	m_stData.pHexVirtData->OnHexSetData({ .hdr { m_Wnd, static_cast<UINT>(m_Wnd.GetDlgCtrlID()) },
 		.stHexSpan { hss }, .spnData { spnData } });
 }
 
