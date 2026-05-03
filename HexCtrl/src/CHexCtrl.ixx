@@ -442,7 +442,7 @@ namespace HEXCTRL::INTERNAL {
 		void SetGroupSizeImpl(DWORD dwSize, bool fRedraw = true, bool fNotify = true);
 		void SetScrollCursor(bool fSet);
 		void SetUnprintableCharImpl(wchar_t wch, bool fRedraw = true);
-		void SnapshotUndo(const VecHexSpan& vecSpan); //Takes currently modifiable data snapshot.
+		void SnapshotUndo(SpanHexSpan spnHexSpan); //Takes currently modifiable data snapshot.
 		void TextChunkPoint(ULONGLONG ullOffset, int& iCx, int& iCy)const; //Point of the text chunk.
 		void TTTrackShow(bool fShow, bool fTimer, const wchar_t* pwszText = nullptr);
 		void Undo();
@@ -477,8 +477,8 @@ namespace HEXCTRL::INTERNAL {
 		GDIUT::CMenu m_MenuMain;              //Main popup menu.
 		GDIUT::CPoint m_ptScrollCursorClick;  //Scroll cursor click coordinates.
 		std::wstring m_wstrPageName;          //Name of the sector/page.
-		std::vector<std::unique_ptr<std::vector<UNDO>>> m_vecUndo; //Undo data.
-		std::vector<std::unique_ptr<std::vector<UNDO>>> m_vecRedo; //Redo data.
+		std::vector<std::vector<UNDO>> m_vecUndo; //Undo data.
+		std::vector<std::vector<UNDO>> m_vecRedo; //Redo data.
 		std::vector<KEYBIND> m_vecKeyBind;    //Vector of key bindings.
 		std::vector<int> m_vecCharsWidth;     //Vector of chars widths.
 		std::unordered_map<EHexMenuItem, MENUITEM> m_umapMenuItems; //m_MenuMain items.
@@ -5186,14 +5186,14 @@ void CHexCtrl::Redo()
 	if (m_vecRedo.empty())
 		return;
 
-	const auto& uptrRedo = m_vecRedo.back();
+	const auto& vecRedo = m_vecRedo.back();
 	VecHexSpan vecSpan;
-	vecSpan.reserve(uptrRedo->size());
-	std::transform(uptrRedo->begin(), uptrRedo->end(), std::back_inserter(vecSpan),
-		[](UNDO& undo) { return HEXSPAN { undo.ullOffset, undo.vecData.size() }; });
+	vecSpan.reserve(vecRedo.size());
+	std::transform(vecRedo.begin(), vecRedo.end(), std::back_inserter(vecSpan), [](const UNDO& undo) {
+		return HEXSPAN { undo.ullOffset, undo.vecData.size() }; });
 	SnapshotUndo(vecSpan); //Creating new Undo data snapshot.
 
-	for (const auto& redo : *uptrRedo) {
+	for (const auto& redo : vecRedo) {
 		const auto& vecRedoData = redo.vecData;
 
 		if (IsVirtualImpl() && vecRedoData.size() > GetCacheSize()) { //In VirtualData mode processing data chunk by chunk.
@@ -5968,10 +5968,10 @@ void CHexCtrl::SetUnprintableCharImpl(wchar_t wch, bool fRedraw)
 	if (fRedraw) { RedrawImpl(); }
 }
 
-void CHexCtrl::SnapshotUndo(const VecHexSpan& vecSpan)
+void CHexCtrl::SnapshotUndo(SpanHexSpan spnHexSpan)
 {
 	constexpr auto dwUndoMax { 512U }; //Undo's max limit.
-	const auto ullTotalSize = std::reduce(vecSpan.begin(), vecSpan.end(), 0ULL,
+	const auto ullTotalSize = std::reduce(spnHexSpan.begin(), spnHexSpan.end(), 0ULL,
 		[](ULONGLONG ullSumm, const HEXSPAN& hs) { return ullSumm + hs.ullSize; });
 
 	//Check for very big undo size.
@@ -5986,12 +5986,12 @@ void CHexCtrl::SnapshotUndo(const VecHexSpan& vecSpan)
 	}
 
 	//Making new Undo data snapshot.
-	const auto& uptrVec = m_vecUndo.emplace_back(std::make_unique<std::vector<UNDO>>());
+	auto& vecUndo = m_vecUndo.emplace_back();
 
 	//Bad alloc may happen here!!!
 	try {
-		for (const auto& hs : vecSpan) { //vecSpan.size() amount of continuous areas to preserve.
-			auto& undo = uptrVec->emplace_back(UNDO { hs.ullOffset, { } });
+		for (const auto& hs : spnHexSpan) { //spnHexSpan.size() is the amount of continuous areas to preserve.
+			auto& undo = vecUndo.emplace_back(UNDO { hs.ullOffset, { } });
 			undo.vecData.resize(static_cast<std::size_t>(hs.ullSize));
 
 			//In VirtualData mode processing data chunk by chunk.
@@ -6069,9 +6069,9 @@ void CHexCtrl::Undo()
 	//Bad alloc may happen here! If there is no more free memory, just clear the vec and return.
 	try {
 		//Creating new Redo data snapshot.
-		const auto& uptrVec = m_vecRedo.emplace_back(std::make_unique<std::vector<UNDO>>());
-		for (const auto& undo : *m_vecUndo.back()) {
-			auto& redo = uptrVec->emplace_back(UNDO { undo.ullOffset, { } });
+		auto& vecRedo = m_vecRedo.emplace_back();
+		for (const auto& undo : m_vecUndo.back()) {
+			auto& redo = vecRedo.emplace_back(UNDO { undo.ullOffset, { } });
 			redo.vecData.resize(undo.vecData.size());
 			const auto& vecUndoData = undo.vecData;
 

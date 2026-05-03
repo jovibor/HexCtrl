@@ -349,12 +349,9 @@ auto CHexDlgTemplMgr::HitTest(ULONGLONG ullOffset)const->PCHEXTEMPLFIELD
 		return nullptr;
 	}
 
-	const auto pApplied = rit;
-	const auto ullOffsetApplied = pApplied->ullOffset;
-	const auto& vecFields = pApplied->pTemplate->vecFields;
-
-	const auto lmbFind = [ullOffset, ullOffsetApplied]
-	(const VecHexFields& vecFields)->PCHEXTEMPLFIELD {
+	const auto ullOffsetApplied = rit->ullOffset;
+	const auto& vecFields = rit->pTemplate->vecFields;
+	const auto lmbFind = [ullOffset, ullOffsetApplied](const VecHexFields& vecFields)->PCHEXTEMPLFIELD {
 		const auto _lmbFind = [ullOffset, ullOffsetApplied]
 		(const auto& lmbSelf, const VecHexFields& vecFields)->PCHEXTEMPLFIELD {
 			for (const auto& pField : vecFields) {
