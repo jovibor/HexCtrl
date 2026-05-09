@@ -153,6 +153,8 @@ namespace HEXCTRL::INTERNAL {
 		void UpdateStaticText();
 	private:
 		enum EListColumns : std::int8_t;
+		GDIUT::CSplitter m_SplitHorz;
+		GDIUT::CDynLayout m_DynLayout;
 		HINSTANCE m_hInstRes { };
 		GDIUT::CWnd m_Wnd;
 		GDIUT::CWnd m_WndStatOffset;     //Static text "Template offset:".
@@ -167,7 +169,6 @@ namespace HEXCTRL::INTERNAL {
 		GDIUT::CWndTree m_WndTree;       //Tree control.
 		GDIUT::CMenu m_MenuTree;         //Menu for the tree control.
 		GDIUT::CMenu m_MenuHdr;          //Menu for the list header.
-		GDIUT::CDynLayout m_DynLayout;
 		LISTEX::CListEx m_ListEx;
 		std::vector<std::unique_ptr<HEXTEMPLATE>> m_vecTemplates; //Loaded Templates.
 		std::vector<HEXTEMPLAPPLIED> m_vecTemplApplied; //Currently Applied Templates.
@@ -179,8 +180,6 @@ namespace HEXCTRL::INTERNAL {
 		std::uint64_t m_u64Flags { };      //Data from SetDlgProperties.
 		DWORD m_dwDateFormat { };          //Date format.
 		wchar_t m_wchDateSepar { };        //Date separator.
-		bool m_fCurInSplitter { };         //Indicates that mouse cursor is in the splitter area.
-		bool m_fLMDownResize { };          //Left mouse pressed in splitter area to resize.
 		bool m_fListGuardEvent { false };  //To not proceed with OnListItemChanged, same as pTree->action == TVC_UNKNOWN.
 	};
 }
@@ -901,6 +900,10 @@ auto CHexDlgTemplMgr::OnInitDialog(const MSG& msg)->INT_PTR
 	m_WndBtnHglSel.SetCheck(IsHglSel());
 	m_WndBtnHex.SetCheck(IsShowAsHex());
 
+	m_SplitHorz.Initialize(m_Wnd, m_ListEx, GDIUT::CSplitter::EAnchorSide::SIDE_LEFT);
+	m_SplitHorz.AddItem(m_WndTree, true);
+	m_SplitHorz.SetEdges(100, m_Wnd.GetClientRect().Width() - 10);
+
 	m_DynLayout.SetHost(m_Wnd);
 	m_DynLayout.AddItem(IDC_HEXCTRL_TEMPLMGR_LIST, GDIUT::CDynLayout::MoveNone(), GDIUT::CDynLayout::SizeHorzAndVert(100, 100));
 	m_DynLayout.AddItem(IDC_HEXCTRL_TEMPLMGR_TREE, GDIUT::CDynLayout::MoveNone(), GDIUT::CDynLayout::SizeVert(100));
@@ -927,9 +930,8 @@ auto CHexDlgTemplMgr::OnInitDialog(const MSG& msg)->INT_PTR
 
 auto CHexDlgTemplMgr::OnLButtonDown([[maybe_unused]] const MSG& msg)->INT_PTR
 {
-	if (m_fCurInSplitter) {
-		m_fLMDownResize = true;
-		m_Wnd.SetCapture();
+	m_SplitHorz.WMLButtonDown(ut::GetXLPARAM(msg.lParam), ut::GetYLPARAM(msg.lParam));
+	if (m_SplitHorz.IsSplitting()) {
 		m_DynLayout.Enable(false);
 	}
 
@@ -938,8 +940,7 @@ auto CHexDlgTemplMgr::OnLButtonDown([[maybe_unused]] const MSG& msg)->INT_PTR
 
 auto CHexDlgTemplMgr::OnLButtonUp([[maybe_unused]] const MSG& msg)->INT_PTR
 {
-	m_fLMDownResize = false;
-	::ReleaseCapture();
+	m_SplitHorz.WMLButtonUp();
 	m_DynLayout.Enable(true);
 
 	return TRUE;
@@ -966,42 +967,7 @@ auto CHexDlgTemplMgr::OnMouseActivate([[maybe_unused]] const MSG& msg)->INT_PTR
 
 auto CHexDlgTemplMgr::OnMouseMove(const MSG& msg)->INT_PTR
 {
-	constexpr auto iResAreaHalfWidth = 15;       //Area where cursor turns into resizable (IDC_SIZEWE).
-	constexpr auto iWidthBetweenTreeAndList = 1; //Width between tree and list after resizing.
-	constexpr auto iMinTreeWidth = 100;          //Tree control minimum allowed width.
-	static const auto hCurResize = static_cast<HCURSOR>(::LoadImageW(nullptr, IDC_SIZEWE, IMAGE_CURSOR, 0, 0, LR_SHARED));
-	const POINT pt { .x { ut::GetXLPARAM(msg.lParam) }, .y { ut::GetYLPARAM(msg.lParam) } };
-	const auto wndList = GDIUT::CWnd::FromHandle(m_ListEx.GetHWND());
-	auto rcList = wndList.GetWindowRect();
-	m_Wnd.ScreenToClient(rcList);
-
-	if (m_fLMDownResize) {
-		auto rcTree = m_WndTree.GetWindowRect();
-		m_Wnd.ScreenToClient(rcTree);
-		rcTree.right = pt.x - iWidthBetweenTreeAndList;
-		rcList.left = pt.x;
-		if (rcTree.Width() >= iMinTreeWidth) {
-			auto hdwp = ::BeginDeferWindowPos(2); //Simultaneously resizing list and tree.
-			hdwp = ::DeferWindowPos(hdwp, m_WndTree, nullptr, rcTree.left, rcTree.top,
-				rcTree.Width(), rcTree.Height(), SWP_NOACTIVATE | SWP_NOZORDER);
-			hdwp = ::DeferWindowPos(hdwp, wndList, nullptr, rcList.left, rcList.top,
-				rcList.Width(), rcList.Height(), SWP_NOACTIVATE | SWP_NOZORDER);
-			::EndDeferWindowPos(hdwp);
-		}
-	}
-	else {
-		if (const GDIUT::CRect rcSplitter(rcList.left - iResAreaHalfWidth, rcList.top, rcList.left + iResAreaHalfWidth,
-			rcList.bottom);
-			rcSplitter.PtInRect(pt)) {
-			m_fCurInSplitter = true;
-			::SetCursor(hCurResize);
-			m_Wnd.SetCapture();
-		}
-		else {
-			m_fCurInSplitter = false;
-			::ReleaseCapture();
-		}
-	}
+	m_SplitHorz.WMMouseMove(ut::GetXLPARAM(msg.lParam), ut::GetYLPARAM(msg.lParam));
 
 	return TRUE;
 }
@@ -1562,6 +1528,8 @@ auto CHexDlgTemplMgr::OnSize(const MSG& msg)->INT_PTR
 	const auto wWidth = LOWORD(msg.lParam);
 	const auto wHeight = HIWORD(msg.lParam);
 	m_DynLayout.OnSize(wWidth, wHeight);
+	m_SplitHorz.SetEdges(100, wWidth - 10);
+
 	return TRUE;
 }
 

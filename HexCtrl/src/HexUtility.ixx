@@ -485,166 +485,6 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 		return hBMPArrow;
 	}
 
-	class CDynLayout final {
-	public:
-		//Ratio settings, for how much to move or to resize child item when parent is resized.
-		struct ItemRatio {
-			[[nodiscard]] bool IsNull()const { return flXRatio == 0.F && flYRatio == 0.F; };
-			float flXRatio { }; float flYRatio { };
-		};
-		struct MoveRatio : public ItemRatio { }; //To differentiate move from size in the AddItem.
-		struct SizeRatio : public ItemRatio { };
-
-		CDynLayout() = default;
-		CDynLayout(HWND hWndHost) : m_hWndHost(hWndHost) { }
-		void AddItem(int iIDItem, MoveRatio move, SizeRatio size);
-		void AddItem(HWND hWndItem, MoveRatio move, SizeRatio size);
-		void Enable(bool fTrack);
-		bool LoadFromResource(HINSTANCE hInstRes, const wchar_t* pwszNameResource);
-		bool LoadFromResource(HINSTANCE hInstRes, UINT uNameResource);
-		void OnSize(int iWidth, int iHeight)const; //Should be hooked into the host window's WM_SIZE handler.
-		void RemoveAll() { m_vecItems.clear(); }
-		void SetHost(HWND hWnd) { assert(hWnd != nullptr); m_hWndHost = hWnd; }
-
-		//Static helper methods to use in the AddItem.
-		[[nodiscard]] static MoveRatio MoveNone() { return { }; }
-		[[nodiscard]] static MoveRatio MoveHorz(int iXRatio) {
-			return { { .flXRatio { ToFlRatio(iXRatio) } } };
-		}
-		[[nodiscard]] static MoveRatio MoveVert(int iYRatio) {
-			return { { .flYRatio { ToFlRatio(iYRatio) } } };
-		}
-		[[nodiscard]] static MoveRatio MoveHorzAndVert(int iXRatio, int iYRatio) {
-			return { { .flXRatio { ToFlRatio(iXRatio) }, .flYRatio { ToFlRatio(iYRatio) } } };
-		}
-		[[nodiscard]] static SizeRatio SizeNone() { return { }; }
-		[[nodiscard]] static SizeRatio SizeHorz(int iXRatio) {
-			return { { .flXRatio { ToFlRatio(iXRatio) } } };
-		}
-		[[nodiscard]] static SizeRatio SizeVert(int iYRatio) {
-			return { { .flYRatio { ToFlRatio(iYRatio) } } };
-		}
-		[[nodiscard]] static SizeRatio SizeHorzAndVert(int iXRatio, int iYRatio) {
-			return { { .flXRatio { ToFlRatio(iXRatio) }, .flYRatio { ToFlRatio(iYRatio) } } };
-		}
-	private:
-		[[nodiscard]] static auto ToFlRatio(int iRatio) -> float {
-			return std::clamp(iRatio, 0, 100) / 100.F;
-		}
-		struct ItemData {
-			HWND hWnd { };   //Item window.
-			RECT rcOrig { }; //Item original window rect after EnableTrack(true).
-			MoveRatio move;  //How much to move the item.
-			SizeRatio size;  //How much to resize the item.
-		};
-		HWND m_hWndHost { };   //Host window.
-		RECT m_rcHostOrig { }; //Host original client area rect after EnableTrack(true).
-		std::vector<ItemData> m_vecItems; //All items to resize/move.
-		bool m_fTrack { };
-	};
-
-	void CDynLayout::AddItem(int iIDItem, MoveRatio move, SizeRatio size) {
-		AddItem(::GetDlgItem(m_hWndHost, iIDItem), move, size);
-	}
-
-	void CDynLayout::AddItem(HWND hWndItem, MoveRatio move, SizeRatio size) {
-		assert(hWndItem != nullptr);
-		if (hWndItem == nullptr)
-			return;
-
-		if (move.IsNull() && size.IsNull())
-			return;
-
-		m_vecItems.emplace_back(ItemData { .hWnd { hWndItem }, .move { move }, .size { size } });
-	}
-
-	void CDynLayout::Enable(bool fTrack) {
-		m_fTrack = fTrack;
-		if (m_fTrack) {
-			::GetClientRect(m_hWndHost, &m_rcHostOrig);
-			for (auto& [hWnd, rc, move, size] : m_vecItems) {
-				::GetWindowRect(hWnd, &rc);
-				::ScreenToClient(m_hWndHost, reinterpret_cast<LPPOINT>(&rc));
-				::ScreenToClient(m_hWndHost, reinterpret_cast<LPPOINT>(&rc) + 1);
-			}
-		}
-	}
-
-	bool CDynLayout::LoadFromResource(HINSTANCE hInstRes, const wchar_t* pwszNameResource) {
-		assert(pwszNameResource != nullptr);
-		if (pwszNameResource == nullptr)
-			return false;
-
-		assert(m_hWndHost != nullptr);
-		if (m_hWndHost == nullptr)
-			return false;
-
-		const auto hDlgLayout = ::FindResourceW(hInstRes, pwszNameResource, L"AFX_DIALOG_LAYOUT");
-		if (hDlgLayout == nullptr) { //No such resource found in the hInstRes.
-			return false;
-		}
-
-		const auto hResData = ::LoadResource(hInstRes, hDlgLayout);
-		assert(hResData != nullptr);
-		if (hResData == nullptr)
-			return false;
-
-		const auto pResData = ::LockResource(hResData);
-		assert(pResData != nullptr);
-		if (pResData == nullptr)
-			return false;
-
-		const auto dwSizeRes = ::SizeofResource(hInstRes, hDlgLayout);
-		const auto* pDataBegin = reinterpret_cast<WORD*>(pResData);
-		const auto* const pDataEnd = reinterpret_cast<WORD*>(reinterpret_cast<std::byte*>(pResData) + dwSizeRes);
-
-		assert(*pDataBegin == 0);
-		if (*pDataBegin != 0) //First WORD must be zero, it's a header (version number).
-			return false;
-
-		++pDataBegin; //Past first WORD is the actual data.
-		auto hWndChild = ::GetWindow(m_hWndHost, GW_CHILD); //First child window in the host window.
-		while (pDataBegin + 4 <= pDataEnd) { //Actual AFX_DIALOG_LAYOUT data.
-			if (hWndChild == nullptr)
-				break;
-
-			const auto wXMoveRatio = *pDataBegin++;
-			const auto wYMoveRatio = *pDataBegin++;
-			const auto wXSizeRatio = *pDataBegin++;
-			const auto wYSizeRatio = *pDataBegin++;
-			AddItem(hWndChild, MoveHorzAndVert(wXMoveRatio, wYMoveRatio), SizeHorzAndVert(wXSizeRatio, wYSizeRatio));
-			hWndChild = ::GetWindow(hWndChild, GW_HWNDNEXT);
-		}
-
-		return true;
-	}
-
-	bool CDynLayout::LoadFromResource(HINSTANCE hInstRes, UINT uNameResource) {
-		return LoadFromResource(hInstRes, MAKEINTRESOURCEW(uNameResource));
-	}
-
-	void CDynLayout::OnSize(int iWidth, int iHeight)const {
-		if (!m_fTrack)
-			return;
-
-		const auto iHostWidth = m_rcHostOrig.right - m_rcHostOrig.left;
-		const auto iHostHeight = m_rcHostOrig.bottom - m_rcHostOrig.top;
-		const auto iDeltaX = iWidth - iHostWidth;
-		const auto iDeltaY = iHeight - iHostHeight;
-
-		const auto hDWP = ::BeginDeferWindowPos(static_cast<int>(m_vecItems.size()));
-		for (const auto& [hWnd, rc, move, size] : m_vecItems) {
-			const auto iNewLeft = static_cast<int>(rc.left + (iDeltaX * move.flXRatio));
-			const auto iNewTop = static_cast<int>(rc.top + (iDeltaY * move.flYRatio));
-			const auto iOrigWidth = rc.right - rc.left;
-			const auto iOrigHeight = rc.bottom - rc.top;
-			const auto iNewWidth = static_cast<int>(iOrigWidth + (iDeltaX * size.flXRatio));
-			const auto iNewHeight = static_cast<int>(iOrigHeight + (iDeltaY * size.flYRatio));
-			::DeferWindowPos(hDWP, hWnd, nullptr, iNewLeft, iNewTop, iNewWidth, iNewHeight, SWP_NOZORDER | SWP_NOACTIVATE);
-		}
-		::EndDeferWindowPos(hDWP);
-	}
-
 	class CPoint final : public POINT {
 	public:
 		CPoint() : POINT { } { }
@@ -696,6 +536,437 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 		[[nodiscard]] auto TopLeft()const -> CPoint { return { { .x { left }, .y { top } } }; };
 		[[nodiscard]] int Width()const { return right - left; }
 	};
+
+	class CSplitter final {
+	public:
+		enum class EAnchorSide : std::uint8_t { SIDE_LEFT, SIDE_TOP, SIDE_RIGHT, SIDE_BOTTOM };
+		void AddItem(HWND hWndItem, bool fIsResize);
+		void AddItem(int iItemID, bool fIsResize);
+		void Initialize(HWND hWndHost, HWND hWndAnchor, EAnchorSide eAnchorSide, std::uint32_t u32SplitterWidth = 30);
+		void Initialize(HWND hWndHost, int iAnchorID, EAnchorSide eAnchorSide, std::uint32_t u32SplitterWidth = 30);
+		[[nodiscard]] bool IsSplitting()const; //Is splitting is going on atm.
+		void SetEdges(int iMinEdge, int iMaxEdge);
+
+		//These WM* handlers must be placed into the respective host window handlers.
+		void WMMouseMove(int iX, int iY);
+		void WMLButtonDown(int iX, int iY);
+		void WMLButtonUp();
+	private:
+		[[nodiscard]] bool IsLock()const;
+		void Lock();
+		void Unlock();
+	private:
+		inline static CSplitter* m_pSplitterCurrentlyInUse { }; //The currently active splitter.
+		struct ItemData {
+			HWND hWnd { };      //Item window.
+			bool fIsResize { }; //Is resize or move.
+		};
+		std::vector<ItemData> m_vecItems; //All items to resize/move.
+		HWND m_hWndHost { };   //Host window.
+		HWND m_hWndAnchor { }; //Anchor window, to work as a splitter basepoint.
+		std::uint32_t m_u32WidthHalf { }; //Distance from the anchor-window's edge, where a cursor turns into a splitter (<->).
+		POINT m_ptCurr;     //Current cursor coordinates under the splitter area.
+		int m_iMinEdge { }; //Minimum distance from the left (or top) side to stop splitting.
+		int m_iMaxEdge { 0x7FFFFFFF }; //Maximum distance from the left (or top) side to stop splitting.
+		EAnchorSide m_eAnchorSide;
+		bool m_fCurInSplitter { }; //Is cursor under the splitter area.
+		bool m_fSplitting { };     //Left mouse is down for resize atm.
+	};
+
+	void CSplitter::AddItem(HWND hWndItem, bool fIsResize) {
+		assert(hWndItem != nullptr);
+		if (hWndItem == nullptr)
+			return;
+
+		m_vecItems.emplace_back(hWndItem, fIsResize);
+	}
+
+	void CSplitter::AddItem(int iItemID, bool fIsResize) {
+		AddItem(::GetDlgItem(m_hWndHost, iItemID), fIsResize);
+	}
+
+	void CSplitter::Initialize(HWND hWndHost, HWND hWndAnchor, EAnchorSide eAnchorSide, std::uint32_t u32SplitterWidth) {
+		assert(hWndHost != nullptr);
+		assert(hWndAnchor != nullptr);
+		m_hWndHost = hWndHost;
+		m_hWndAnchor = hWndAnchor;
+		m_eAnchorSide = eAnchorSide;
+		m_u32WidthHalf = u32SplitterWidth / 2;
+	}
+
+	void CSplitter::Initialize(HWND hWndHost, int iAnchorID, EAnchorSide eAnchorSide, std::uint32_t u32SplitterWidth) {
+		Initialize(hWndHost, ::GetDlgItem(hWndHost, iAnchorID), eAnchorSide, u32SplitterWidth);
+	}
+
+	bool CSplitter::IsSplitting()const {
+		return m_fSplitting;
+	}
+
+	void CSplitter::SetEdges(int iMinEdge, int iMaxEdge) {
+		m_iMinEdge = iMinEdge;
+		m_iMaxEdge = iMaxEdge;
+	}
+
+	void CSplitter::WMLButtonDown(int iX, int iY) {
+		if (IsLock()) {
+			return;
+		}
+
+		if (m_fCurInSplitter) {
+			m_ptCurr = POINT(iX, iY);
+			m_fSplitting = true;
+			Lock();
+			::SetCapture(m_hWndHost);
+		}
+	}
+
+	void CSplitter::WMLButtonUp() {
+		if (IsLock()) {
+			return;
+		}
+
+		if (m_fSplitting) {
+			m_fSplitting = false;
+			::ReleaseCapture();
+			Unlock();
+		}
+	}
+
+	void CSplitter::WMMouseMove(int iX, int iY) {
+		if (IsLock()) {
+			return;
+		}
+
+		const POINT pt { .x { iX }, .y { iY } };
+		CRect rcAnchorClient;
+		::GetWindowRect(m_hWndAnchor, &rcAnchorClient);
+		::ScreenToClient(m_hWndHost, reinterpret_cast<LPPOINT>(&rcAnchorClient));
+		::ScreenToClient(m_hWndHost, reinterpret_cast<LPPOINT>(&rcAnchorClient) + 1);
+		using enum EAnchorSide;
+
+		if (m_fSplitting) {
+			const auto iOffsetX = iX - m_ptCurr.x;
+			const auto iOffsetY = iY - m_ptCurr.y;
+			bool fAllowSplit { };
+
+			switch (m_eAnchorSide) {
+			case SIDE_LEFT:
+				rcAnchorClient.left += iOffsetX;
+				fAllowSplit = (rcAnchorClient.left >= m_iMinEdge) && (rcAnchorClient.left <= m_iMaxEdge);
+				break;
+			case SIDE_TOP:
+				rcAnchorClient.top += iOffsetY;
+				fAllowSplit = (rcAnchorClient.top >= m_iMinEdge) && (rcAnchorClient.top <= m_iMaxEdge);
+				break;
+			case SIDE_RIGHT:
+				rcAnchorClient.right += iOffsetX;
+				fAllowSplit = (rcAnchorClient.right >= m_iMinEdge) && (rcAnchorClient.right <= m_iMaxEdge);
+				break;
+			case SIDE_BOTTOM:
+				rcAnchorClient.bottom += iOffsetY;
+				fAllowSplit = (rcAnchorClient.bottom >= m_iMinEdge) && (rcAnchorClient.bottom <= m_iMaxEdge);
+				break;
+			default:
+				break;
+			}
+
+			if (fAllowSplit) {
+				auto hdwp = ::BeginDeferWindowPos(static_cast<int>(m_vecItems.size() + 1)); //+1 is the m_hWndAnchor itself.
+				hdwp = ::DeferWindowPos(hdwp, m_hWndAnchor, nullptr, rcAnchorClient.left, rcAnchorClient.top,
+					rcAnchorClient.Width(), rcAnchorClient.Height(), SWP_NOACTIVATE | SWP_NOZORDER);
+
+				for (const auto& [hWnd, fIsResize] : m_vecItems) {
+					CRect rcWnd;
+					::GetWindowRect(hWnd, &rcWnd);
+					::ScreenToClient(m_hWndHost, reinterpret_cast<LPPOINT>(&rcWnd));
+					::ScreenToClient(m_hWndHost, reinterpret_cast<LPPOINT>(&rcWnd) + 1);
+
+					switch (m_eAnchorSide) {
+					case SIDE_LEFT:
+						if (fIsResize) {
+							rcWnd.right += iOffsetX;
+						}
+						else {
+							rcWnd.OffsetRect(iOffsetX, 0);
+						}
+						break;
+					case SIDE_TOP:
+						if (fIsResize) {
+							rcWnd.bottom += iOffsetY;
+						}
+						else {
+							rcWnd.OffsetRect(0, iOffsetY);
+						}
+						break;
+					case SIDE_RIGHT:
+						if (fIsResize) {
+							rcWnd.left += iOffsetX;
+						}
+						else {
+							rcWnd.OffsetRect(iOffsetX, 0);
+						}
+						break;
+					case SIDE_BOTTOM:
+						if (fIsResize) {
+							rcWnd.top += iOffsetY;
+						}
+						else {
+							rcWnd.OffsetRect(0, iOffsetY);
+						}
+						break;
+					default:
+						break;
+					}
+
+					hdwp = ::DeferWindowPos(hdwp, hWnd, nullptr, rcWnd.left, rcWnd.top,
+								rcWnd.Width(), rcWnd.Height(), SWP_NOACTIVATE | SWP_NOZORDER);
+				}
+
+				m_ptCurr = POINT(iX, iY);
+				::EndDeferWindowPos(hdwp);
+			}
+		}
+		else {
+			CRect rcSplitter;
+			bool fCursorWE { };
+			switch (m_eAnchorSide) {
+			case SIDE_LEFT:
+				rcSplitter.SetRect(rcAnchorClient.left - m_u32WidthHalf, rcAnchorClient.top,
+				rcAnchorClient.left + m_u32WidthHalf, rcAnchorClient.bottom);
+				fCursorWE = true;
+				break;
+			case SIDE_TOP:
+				rcSplitter.SetRect(rcAnchorClient.left, rcAnchorClient.top - m_u32WidthHalf,
+					rcAnchorClient.right, rcAnchorClient.top + m_u32WidthHalf);
+				fCursorWE = false;
+				break;
+			case SIDE_RIGHT:
+				rcSplitter.SetRect(rcAnchorClient.right - m_u32WidthHalf, rcAnchorClient.top,
+					rcAnchorClient.right + m_u32WidthHalf, rcAnchorClient.bottom);
+				fCursorWE = true;
+				break;
+			case SIDE_BOTTOM:
+				rcSplitter.SetRect(rcAnchorClient.left, rcAnchorClient.bottom - m_u32WidthHalf,
+					rcAnchorClient.right, rcAnchorClient.bottom + m_u32WidthHalf);
+				fCursorWE = false;
+				break;
+			default:
+				break;
+			}
+
+			if (rcSplitter.PtInRect(pt)) {
+				static const auto hCurResizeWE =
+					static_cast<HCURSOR>(::LoadImageW(nullptr, IDC_SIZEWE, IMAGE_CURSOR, 0, 0, LR_SHARED));
+				static const auto hCurResizeNS =
+					static_cast<HCURSOR>(::LoadImageW(nullptr, IDC_SIZENS, IMAGE_CURSOR, 0, 0, LR_SHARED));
+				m_fCurInSplitter = true;
+
+				//The cursor must be set here and not in the WM_SETCURSOR handler,
+				//because the WM_SETCURSOR message doesn't fire when in SetCapture mode.
+				::SetCursor(fCursorWE ? hCurResizeWE : hCurResizeNS);
+				::SetCapture(m_hWndHost);
+			}
+			else {
+				if (m_fCurInSplitter) {
+					m_fCurInSplitter = false;
+					::ReleaseCapture();
+				}
+			}
+		}
+	}
+
+	//Private methods.
+
+	bool CSplitter::IsLock()const {
+		//Locking mechanism is needed to avoid Set/ReleaseCapture interference 
+		//between two or more splitters in the same window.
+		return m_pSplitterCurrentlyInUse != nullptr && m_pSplitterCurrentlyInUse != this;
+	}
+
+	void CSplitter::Lock() {
+		m_pSplitterCurrentlyInUse = this;
+	}
+
+	void CSplitter::Unlock() {
+		m_pSplitterCurrentlyInUse = nullptr;
+	}
+
+	class CDynLayout final {
+	public:
+		//Ratio settings, for how much to move or to resize child item when parent is resized.
+		struct ItemRatio {
+			[[nodiscard]] bool IsNull()const { return flXRatio == 0.F && flYRatio == 0.F; };
+			float flXRatio { }; float flYRatio { };
+		};
+		struct MoveRatio : public ItemRatio { }; //To differentiate move from size in the AddItem.
+		struct SizeRatio : public ItemRatio { };
+
+		CDynLayout() = default;
+		CDynLayout(HWND hWndHost) : m_hWndHost(hWndHost) { }
+		void AddItem(int iItemID, MoveRatio move, SizeRatio size);
+		void AddItem(HWND hWndItem, MoveRatio move, SizeRatio size);
+		void Enable(bool fTrack);
+		bool LoadFromResource(HINSTANCE hInstRes, const wchar_t* pwszResName);
+		bool LoadFromResource(HINSTANCE hInstRes, UINT uResID);
+		void OnSize(int iWidth, int iHeight)const; //Should be hooked into the host window's WM_SIZE handler.
+		void RemoveAll() { m_vecItems.clear(); }
+		void SetHost(HWND hWnd) { assert(hWnd != nullptr); m_hWndHost = hWnd; }
+		void UpdateItem(int iItemID, MoveRatio move, SizeRatio size);
+		void UpdateItem(HWND hWndItem, MoveRatio move, SizeRatio size);
+
+		//Static helper methods to use in the AddItem.
+		[[nodiscard]] static MoveRatio MoveNone() { return { }; }
+		[[nodiscard]] static MoveRatio MoveHorz(int iXRatio) {
+			return { { .flXRatio { ToFlRatio(iXRatio) } } };
+		}
+		[[nodiscard]] static MoveRatio MoveVert(int iYRatio) {
+			return { { .flYRatio { ToFlRatio(iYRatio) } } };
+		}
+		[[nodiscard]] static MoveRatio MoveHorzAndVert(int iXRatio, int iYRatio) {
+			return { { .flXRatio { ToFlRatio(iXRatio) }, .flYRatio { ToFlRatio(iYRatio) } } };
+		}
+		[[nodiscard]] static SizeRatio SizeNone() { return { }; }
+		[[nodiscard]] static SizeRatio SizeHorz(int iXRatio) {
+			return { { .flXRatio { ToFlRatio(iXRatio) } } };
+		}
+		[[nodiscard]] static SizeRatio SizeVert(int iYRatio) {
+			return { { .flYRatio { ToFlRatio(iYRatio) } } };
+		}
+		[[nodiscard]] static SizeRatio SizeHorzAndVert(int iXRatio, int iYRatio) {
+			return { { .flXRatio { ToFlRatio(iXRatio) }, .flYRatio { ToFlRatio(iYRatio) } } };
+		}
+	private:
+		[[nodiscard]] static auto ToFlRatio(int iRatio) -> float {
+			return std::clamp(iRatio, 0, 100) / 100.F;
+		}
+		struct ItemData {
+			HWND hWnd { };   //Item window.
+			RECT rcOrig { }; //Item original window rect after EnableTrack(true).
+			MoveRatio move;  //How much to move the item.
+			SizeRatio size;  //How much to resize the item.
+		};
+		HWND m_hWndHost { };   //Host window.
+		RECT m_rcHostOrig { }; //Host original client area rect after EnableTrack(true).
+		std::vector<ItemData> m_vecItems; //All items to resize/move.
+		bool m_fTrack { };
+	};
+
+	void CDynLayout::AddItem(int iItemID, MoveRatio move, SizeRatio size) {
+		AddItem(::GetDlgItem(m_hWndHost, iItemID), move, size);
+	}
+
+	void CDynLayout::AddItem(HWND hWndItem, MoveRatio move, SizeRatio size) {
+		assert(hWndItem != nullptr);
+		if (hWndItem == nullptr)
+			return;
+
+		m_vecItems.emplace_back(ItemData { .hWnd { hWndItem }, .move { move }, .size { size } });
+	}
+
+	void CDynLayout::Enable(bool fTrack) {
+		m_fTrack = fTrack;
+		if (m_fTrack) {
+			::GetClientRect(m_hWndHost, &m_rcHostOrig);
+			for (auto& [hWnd, rc, move, size] : m_vecItems) {
+				::GetWindowRect(hWnd, &rc);
+				::ScreenToClient(m_hWndHost, reinterpret_cast<LPPOINT>(&rc));
+				::ScreenToClient(m_hWndHost, reinterpret_cast<LPPOINT>(&rc) + 1);
+			}
+		}
+	}
+
+	bool CDynLayout::LoadFromResource(HINSTANCE hInstRes, const wchar_t* pwszResName) {
+		assert(pwszResName != nullptr);
+		if (pwszResName == nullptr)
+			return false;
+
+		assert(m_hWndHost != nullptr);
+		if (m_hWndHost == nullptr)
+			return false;
+
+		const auto hDlgLayout = ::FindResourceW(hInstRes, pwszResName, L"AFX_DIALOG_LAYOUT");
+		if (hDlgLayout == nullptr) { //No such resource found in the hInstRes.
+			return false;
+		}
+
+		const auto hResData = ::LoadResource(hInstRes, hDlgLayout);
+		assert(hResData != nullptr);
+		if (hResData == nullptr)
+			return false;
+
+		const auto pResData = ::LockResource(hResData);
+		assert(pResData != nullptr);
+		if (pResData == nullptr)
+			return false;
+
+		const auto dwSizeRes = ::SizeofResource(hInstRes, hDlgLayout);
+		const auto* pDataBegin = reinterpret_cast<WORD*>(pResData);
+		const auto* const pDataEnd = reinterpret_cast<WORD*>(reinterpret_cast<std::byte*>(pResData) + dwSizeRes);
+
+		assert(*pDataBegin == 0);
+		if (*pDataBegin != 0) //First WORD must be zero, it's a header (version number).
+			return false;
+
+		++pDataBegin; //Past first WORD is the actual data.
+		auto hWndChild = ::GetWindow(m_hWndHost, GW_CHILD); //First child window in the host window.
+		while (pDataBegin + 4 <= pDataEnd) { //Actual AFX_DIALOG_LAYOUT data.
+			if (hWndChild == nullptr)
+				break;
+
+			const auto wXMoveRatio = *pDataBegin++;
+			const auto wYMoveRatio = *pDataBegin++;
+			const auto wXSizeRatio = *pDataBegin++;
+			const auto wYSizeRatio = *pDataBegin++;
+			AddItem(hWndChild, MoveHorzAndVert(wXMoveRatio, wYMoveRatio), SizeHorzAndVert(wXSizeRatio, wYSizeRatio));
+			hWndChild = ::GetWindow(hWndChild, GW_HWNDNEXT);
+		}
+
+		return true;
+	}
+
+	bool CDynLayout::LoadFromResource(HINSTANCE hInstRes, UINT uResID) {
+		return LoadFromResource(hInstRes, MAKEINTRESOURCEW(uResID));
+	}
+
+	void CDynLayout::OnSize(int iWidth, int iHeight)const {
+		if (!m_fTrack)
+			return;
+
+		const auto iHostWidth = m_rcHostOrig.right - m_rcHostOrig.left;
+		const auto iHostHeight = m_rcHostOrig.bottom - m_rcHostOrig.top;
+		const auto iDeltaX = iWidth - iHostWidth;
+		const auto iDeltaY = iHeight - iHostHeight;
+
+		const auto hDWP = ::BeginDeferWindowPos(static_cast<int>(m_vecItems.size()));
+		for (const auto& [hWnd, rc, move, size] : m_vecItems) {
+			const auto iNewLeft = static_cast<int>(rc.left + (iDeltaX * move.flXRatio));
+			const auto iNewTop = static_cast<int>(rc.top + (iDeltaY * move.flYRatio));
+			const auto iOrigWidth = rc.right - rc.left;
+			const auto iOrigHeight = rc.bottom - rc.top;
+			const auto iNewWidth = static_cast<int>(iOrigWidth + (iDeltaX * size.flXRatio));
+			const auto iNewHeight = static_cast<int>(iOrigHeight + (iDeltaY * size.flYRatio));
+			::DeferWindowPos(hDWP, hWnd, nullptr, iNewLeft, iNewTop, iNewWidth, iNewHeight, SWP_NOZORDER | SWP_NOACTIVATE);
+		}
+		::EndDeferWindowPos(hDWP);
+	}
+
+	void CDynLayout::UpdateItem(int iItemID, MoveRatio move, SizeRatio size) {
+		UpdateItem(::GetDlgItem(m_hWndHost, iItemID), move, size);
+	}
+
+	void CDynLayout::UpdateItem(HWND hWndItem, MoveRatio move, SizeRatio size) {
+		assert(hWndItem != nullptr);
+		if (hWndItem == nullptr)
+			return;
+
+		auto it = std::find_if(m_vecItems.begin(), m_vecItems.end(), [=](const ItemData& id) {
+			return id.hWnd == hWndItem; });
+		assert(it != m_vecItems.end());
+		if (it != m_vecItems.end()) {
+			it->move = move;
+			it->size = size;
+		}
+	}
 
 	class CDC {
 	public:

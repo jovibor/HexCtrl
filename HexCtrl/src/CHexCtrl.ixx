@@ -502,7 +502,6 @@ namespace HEXCTRL::INTERNAL {
 		DWORD m_dwPageSize { };               //Size of a page to print additional lines between.
 		DWORD m_dwDateFormat { };             //Current date format. See https://docs.microsoft.com/en-gb/windows/win32/intl/locale-idate
 		DWORD m_dwCharsExtraSpace { };        //Extra space between chars.
-		int m_iSizeFirstHalfPx { };           //Size in px of the first half of the capacity.
 		int m_iSizeHexBytePx { };             //Size in px of two hex letters representing one byte.
 		int m_iIndentTextXPx { };             //Indent in px of the text beginning.
 		int m_iIndentFirstHexChunkXPx { };    //First hex chunk indent in px.
@@ -5148,8 +5147,6 @@ void CHexCtrl::RecalcAll(bool fPrinter, HDC hDCPrinter, LPCRECT pRCPrinter)
 	m_iDistanceBetweenCharsPx = iCharWidthExt;
 	m_iFourthVertLinePx = m_iIndentTextXPx + (m_iDistanceBetweenCharsPx * dwCapacity) + iCharWidth;
 	m_iIndentFirstHexChunkXPx = m_iSecondVertLinePx + iCharWidth;
-	m_iSizeFirstHalfPx = m_iIndentFirstHexChunkXPx + m_dwCapacityBlockSize * (iCharWidthExt * 2) +
-		(m_dwCapacityBlockSize / m_dwGroupSize - 1) * iCharWidthExt;
 	m_iHeightTopRectPx = std::lround(m_sizeFontMain.cy * 1.5);
 	m_iStartWorkAreaYPx = m_iFirstHorzLinePx + m_iHeightTopRectPx;
 	m_iSecondHorzLinePx = m_iStartWorkAreaYPx - 1;
