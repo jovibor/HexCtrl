@@ -5733,7 +5733,7 @@ bool CHexCtrl::SetConfigImpl(std::wstring_view wsvPath)
 		if (sv.empty())
 			return { };
 
-		KEYBIND stKB;
+		KEYBIND kb;
 		const auto uzSize = sv.size();
 		std::size_t uzPosStart { 0 }; //Next position to start search for '+' sign.
 		const auto zSubWords = std::count(sv.begin(), sv.end(), '+') + 1; //How many sub-words (divided by '+')?
@@ -5744,26 +5744,26 @@ bool CHexCtrl::SetConfigImpl(std::wstring_view wsvPath)
 			uzPosStart = uzPosNext + 1;
 
 			if (svSubWord.size() == 1) {
-				stKB.uKey = static_cast<UCHAR>(std::toupper(svSubWord[0])); //Binding keys are in uppercase.
+				kb.uKey = static_cast<UCHAR>(std::toupper(svSubWord[0])); //Binding keys are in uppercase.
 			}
 			else if (const auto itKey = umapKeys.find(svSubWord); itKey != umapKeys.end()) {
 				switch (const auto uChar = itKey->second.first; uChar) {
 				case VK_CONTROL:
-					stKB.fCtrl = true;
+					kb.fCtrl = true;
 					break;
 				case VK_SHIFT:
-					stKB.fShift = true;
+					kb.fShift = true;
 					break;
 				case VK_MENU:
-					stKB.fAlt = true;
+					kb.fAlt = true;
 					break;
 				default:
-					stKB.uKey = uChar;
+					kb.uKey = uChar;
 				}
 			}
 		}
 
-		return stKB;
+		return kb;
 		};
 
 	for (auto itMembers = docJSON.MemberBegin(); itMembers != docJSON.MemberEnd(); ++itMembers) { //JSON data iterating.

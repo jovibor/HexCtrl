@@ -493,9 +493,9 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 		~CPoint() = default;
 		operator LPPOINT() { return this; }
 		operator const POINT*()const { return this; }
-		bool operator==(CPoint rhs)const { return x == rhs.x && y == rhs.y; }
-		bool operator==(POINT pt)const { return x == pt.x && y == pt.y; }
-		friend bool operator==(POINT pt, CPoint rhs) { return rhs == pt; }
+		[[nodiscard]] bool operator==(CPoint rhs)const { return x == rhs.x && y == rhs.y; }
+		[[nodiscard]] bool operator==(POINT rhs)const { return x == rhs.x && y == rhs.y; }
+		[[nodiscard]] friend bool operator==(POINT lhs, CPoint rhs) { return rhs == lhs; }
 		CPoint operator+(POINT pt)const { return { x + pt.x, y + pt.y }; }
 		CPoint operator-(POINT pt)const { return { x - pt.x, y - pt.y }; }
 		void Offset(int iX, int iY) { x += iX; y += iY; }
@@ -507,7 +507,7 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 		CRect() : RECT { } { }
 		CRect(int iLeft, int iTop, int iRight, int iBottom) : RECT { .left { iLeft }, .top { iTop },
 			.right { iRight }, .bottom { iBottom } } { }
-		CRect(RECT rc) { ::CopyRect(this, &rc); }
+		CRect(const RECT& rc) { ::CopyRect(this, &rc); }
 		CRect(LPCRECT pRC) { ::CopyRect(this, pRC); }
 		CRect(POINT pt, SIZE size) : RECT { .left { pt.x }, .top { pt.y }, .right { pt.x + size.cx },
 			.bottom { pt.y + size.cy } } { }
@@ -516,10 +516,11 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 		~CRect() = default;
 		operator LPRECT() { return this; }
 		operator LPCRECT()const { return this; }
-		bool operator==(CRect rhs)const { return ::EqualRect(this, rhs); }
-		bool operator==(RECT rc)const { return ::EqualRect(this, &rc); }
-		friend bool operator==(RECT rc, CRect rhs) { return rhs == rc; }
-		CRect& operator=(RECT rc) { ::CopyRect(this, &rc); return *this; }
+		[[nodiscard]] bool operator==(const CRect& rhs)const { return ::EqualRect(this, rhs); }
+		[[nodiscard]] bool operator==(const RECT& rhs)const { return ::EqualRect(this, &rhs); }
+		[[nodiscard]] friend bool operator==(const RECT& lhs, const CRect& rhs) { return rhs == lhs; }
+		CRect& operator=(const RECT& rhs) { ::CopyRect(this, &rhs); return *this; }
+		CRect& operator=(const CRect& rhs) { ::CopyRect(this, &rhs); return *this; }
 		[[nodiscard]] auto BottomRight()const -> CPoint { return { { .x { right }, .y { bottom } } }; };
 		void DeflateRect(int x, int y) { ::InflateRect(this, -x, -y); }
 		void DeflateRect(SIZE size) { ::InflateRect(this, -size.cx, -size.cy); }
@@ -1091,11 +1092,11 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 		CWnd() = default;
 		CWnd(HWND hWnd) { Attach(hWnd); }
 		~CWnd() = default;
-		CWnd& operator=(HWND hWnd) { Attach(hWnd); return *this; };
-		CWnd& operator=(CWnd) = delete;
+		CWnd& operator=(HWND rhs) { Attach(rhs); return *this; };
+		CWnd& operator=(CWnd rhs) { Attach(rhs); return *this; };
 		operator HWND()const { return m_hWnd; }
-		[[nodiscard]] bool operator==(const CWnd& rhs)const { return m_hWnd == rhs.m_hWnd; }
-		[[nodiscard]] bool operator==(HWND hWnd)const { return m_hWnd == hWnd; }
+		[[nodiscard]] bool operator==(CWnd rhs)const { return m_hWnd == rhs.m_hWnd; }
+		[[nodiscard]] bool operator==(HWND rhs)const { return m_hWnd == rhs; }
 		void Attach(HWND hWnd) { m_hWnd = hWnd; } //Can attach to nullptr as well.
 		void CheckRadioButton(int iIDFirst, int iIDLast, int iIDCheck)const {
 			assert(IsWindow()); ::CheckRadioButton(m_hWnd, iIDFirst, iIDLast, iIDCheck);
@@ -1203,7 +1204,6 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 		void SetWndText(const std::wstring& wstr)const { SetWndText(wstr.data()); }
 		void SetRedraw(bool fRedraw)const { assert(IsWindow()); SendMsg(WM_SETREDRAW, fRedraw, 0); }
 		bool ShowWindow(int iCmdShow)const { assert(IsWindow()); return ::ShowWindow(m_hWnd, iCmdShow); }
-		[[nodiscard]] static auto FromHandle(HWND hWnd) -> CWnd { return hWnd; }
 		[[nodiscard]] static auto GetFocus() -> CWnd { return ::GetFocus(); }
 	protected:
 		HWND m_hWnd { }; //Windows window handle.
