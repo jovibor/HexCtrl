@@ -267,12 +267,7 @@ auto CHexDlgCodepage::OnMeasureItem(const MSG& msg)->INT_PTR
 	return TRUE;
 }
 
-auto CHexDlgCodepage::OnMouseActivate([[maybe_unused]] const MSG& msg)->INT_PTR
-{
-	if (const auto pHex = GetHexCtrl(); pHex != nullptr && pHex->IsCreated() && pHex->IsDataSet()) {
-		UpdateListSelection();
-	}
-
+auto CHexDlgCodepage::OnMouseActivate([[maybe_unused]] const MSG& msg)->INT_PTR {
 	return MA_ACTIVATE;
 }
 
