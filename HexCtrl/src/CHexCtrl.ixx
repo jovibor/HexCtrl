@@ -2986,8 +2986,12 @@ void CHexCtrl::DrawInfoBar(HDC hDC)const
 	rcInfoBarText.left = m_iFirstVertLinePx + 5; //Draw the text beginning with little indent.
 	rcInfoBarText.right = m_iFirstVertLinePx + m_iWidthClientAreaPx; //Draw text to the end of the client area, even if it passes iFourthHorizLine.
 
-	for (const auto subStr : std::views::split(wstrInfoBar, L'|')) {
-		auto wsvSub = std::wstring_view(subStr.data(), subStr.size());
+	for (const auto subrWstr : std::views::split(wstrInfoBar, L'|')) {
+		if (subrWstr.empty()) {
+			continue;
+		}
+
+		auto wsvSub = std::wstring_view(subrWstr.data(), subrWstr.size());
 		std::size_t uzPosCurr { };
 		while (true) {
 			const auto uzParamPosBegin = wsvSub.find(L'^', uzPosCurr);

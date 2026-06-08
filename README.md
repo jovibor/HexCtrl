@@ -372,19 +372,19 @@ The **HexCtrl** has plenty of methods that you can use to manage its behavior.
 ```cpp
 void ClearData();
 ```
-Clears data from the **HexCtrl** view, not touching data itself.
+Clears data from the **HexCtrl** view, not touching the data itself.
 
 ### [](#)Create
 ```cpp
-bool Create(const HEXCREATE& hcs);
+bool Create(const HEXCREATE& hc);
 ```
-Main initialization method. Takes the [`HEXCREATE`](#hexcreate) struct as argument. Returns `true` if created successfully, `false` otherwise.
+This is the main initialization method. It takes a [`HEXCREATE`](#hexcreate) struct as an argument and returns `true` on success.
 
 ### [](#)CreateDialogCtrl
 ```cpp
 bool CreateDialogCtrl(UINT uCtrlID, HWND hwndDlg);
 ```
-Creates **HexCtrl** from a **Custom Control** dialog's template. Takes control **id**, and dialog's window **handle** as arguments. See **[Creating](#in-dialog)** section for more info.
+Creates **HexCtrl** from a **Custom Control** dialog's template. It takes the control ID and dialog's window handle as arguments. See **[Creating](#in-dialog)** section for more info.
 
 ### [](#)Delete
 ```cpp
@@ -417,7 +417,7 @@ Returns the width of the **HexCtrl** bounding rectangle, i.e. the width of the d
 ```cpp
 [[nodiscard]] auto GetBookmarks()->IHexBookmarks*;
 ```
-Returns pointer to the [`IHexBookmarks`](#ihexbookmarks) interface, which responds for the bookmarks machinery.
+Returns a pointer to the [`IHexBookmarks`](#ihexbookmarks) interface, which responds for the bookmarks machinery.
 
 ### [](#)GetCacheSize
 ```cpp
@@ -435,13 +435,13 @@ Returns current capacity.
 ```cpp
 [[nodiscard]] auto GetCaretPos()const->ULONGLNG;
 ```
-Retrieves current caret position offset.
+Returns the caret's position.
 
 ### [](#)GetCharsExtraSpace
 ```cpp
 [[nodiscard]] auto GetCharsExtraSpace()const->DWORD;
 ```
-Get extra space between chars, in pixels. This extra space can be set with the [`SetCharsExtraSpace`](#setcharsextraspace) method.
+Returns extra space between chars, in pixels. This extra space can be set with the [`SetCharsExtraSpace`](#setcharsextraspace) method.
 
 ### [](#)GetColors
 ```cpp
@@ -498,9 +498,9 @@ Returns current data grouping size.
 ```cpp
 [[nodiscard]] auto GetMenuHandle()const->HMENU;
 ```
-Returns the `HMENU` handle of the **HexCtrl** context menu. You can use this handle to customize menu for your needs.  
+Returns a `HMENU` handle of the **HexCtrl** context menu. You can use this handle to customize menu for your needs.  
 **HexCtrl**'s internal menu uses `ID`s starting from `0x8001`. So if you wish to add your own new menu, assign menu `ID` starting from `0x9000` to not interfere.  
-When a user clicks custom menu, control sends `WM_NOTIFY` message to its parent window with `LPARAM` pointing to [`HEXMENUINFO`](#hexmenuinfo) with its `hdr.code` member set to `HEXCTRL_MSG_MENUCLICK`, and `wMenuID` field containing `ID` of the menu clicked.
+When the user clicks custom menu, control sends `WM_NOTIFY` message to its parent window with `LPARAM` pointing to [`HEXMENUINFO`](#hexmenuinfo) with its `hdr.code` member set to `HEXCTRL_MSG_MENUCLICK` and `wMenuID` field containing `ID` of the menu clicked.
 
 ### [](#)GetOffset
 ```cpp
@@ -752,19 +752,19 @@ Sets printed hex chars to an UPPER or lower case.
 ```cpp
 void SetMenuItem(EHexMenuItem eItem, const MENUITEMINFOW& mii);
 ```
-Sets a standard Windows [`MENUITEMINFOW`](https://learn.microsoft.com/windows/win32/api/winuser/ns-winuser-menuiteminfow) struct data to one of the **HexCtrl** menu item.
+Sets a standard Windows [`MENUITEMINFOW`](https://learn.microsoft.com/windows/win32/api/winuser/ns-winuser-menuiteminfow) struct data to one of the **HexCtrl** menu items.
 
 ### [](#)SetMutable
 ```cpp
 void SetMutable(bool fMutable);
 ```
-Enables or disables mutable mode. In the mutable mode all the data can be modified.
+Enables or disables mutable mode, in which all data can be modified.
 
 ### [](#)SetOffsetMode
 ```cpp
 void SetOffsetMode(bool fHex);
 ```
-Sets offset area being shown as Hex (`fHex=true`) or as Decimal (`fHex=false`).
+Sets the hex or decimal data format for the offset area.
 
 ### [](#)SetPageSize
 ```cpp
