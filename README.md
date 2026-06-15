@@ -101,6 +101,7 @@
 * [Interfaces](#interfaces) <details><summary>_Expand_</summary>
   * [IHexBookmarks](#ihexbookmarks)
   * [IHexTemplates](#ihextemplates)
+  * [IHexVirtBookmarks](#ihexvirtbookmarks)
   * [IHexVirtColors](#ihexvirtcolors)
   * [IHexVirtData](#ihexvirtdata)
   </details>
@@ -268,8 +269,8 @@ Then provide a pointer to the created object of this derived class through the `
 ## [](#)Virtual Bookmarks
 **HexCtrl** has innate functional to work with any amount of bookmarked regions. These regions can be assigned with individual background and text colors and description.
 
-But if you have big and complicated data logic and want to handle all these bookmarks yourself, you can do it using the **Virtual Bookmarks** mode.  
-In this mode all bookmark's burden is handled by yourself, by implementing the [`IHexBookmarks`](#ihexbookmarks) interface, and providing pointer to this implementation to the **HexCtrl** by calling the [`IHexBookmarks::SetVirtualBkm`](#ihexbookmarks) method.
+But if you have big and complicated data logic and want to handle all these bookmarks yourself, you can do it using the **Virtual Bookmarks** approach.  
+In this mode all bookmarks' burden is handled by yourself by implementing the [`IHexVirtBookmarks`](#ihexvirtbookmarks) interface, and providing a pointer to this implementation to the **HexCtrl** by calling the [`IHexBookmarks::SetVirtualBkm`](#ihexbookmarks) method.
 
 ## [](#)Custom Colors
 If you'd like to colorize data regions with your own custom colors, use the [`IHexVirtColors`](#ihexvirtcolors) interface.
@@ -1083,9 +1084,9 @@ Removes bookmark with the given ID.
 
 #### [](#)IHexBookmarks::SetVirtualBkm
 ```cpp
-void SetVirtualBkm(IHexBookmarks* pVirtBkm);
+void SetVirtualBkm(IHexVirtBookmarks* pVirtBkm);
 ```
-Sets a pointer for the [Virtual Bookmarks](#virtual-bookmarks) mode, or disables this mode if `nullptr` is set.
+Sets a pointer for working in the [Virtual Bookmarks](#virtual-bookmarks) mode. To disable this mode and revert back to classical approach set the `nullptr`.
 
 
 ### [](#)IHexTemplates
@@ -1096,6 +1097,9 @@ This interface is responsible for templates machinery in the **HexCtrl**. It can
 [[nodiscard]] static auto LoadFromFile(const wchar_t* pFilePath)->std::unique_ptr<HEXTEMPLATE>;
 ```
 This `static` method can be used to upfront load a template from a file. The loaded template can then be added to multiple **HexCtrl** instances, through the `IHexTemplates::AddTemplate` method. This approach allows to avoid loading the same template from the disk multiple times if multiple **HexCtrl**s would load it through the `IHexTemplates::LoadTemplate`, each  individually.
+
+### [](#)IHexVirtBookmarks
+This interface is used in the `IHexBookmarks::SetVirtualBkm` method, to enable [Virtual Bookmarks](#virtual-bookmarks) mode.
 
 ### [](#)IHexVirtColors
 ```cpp

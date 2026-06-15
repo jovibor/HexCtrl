@@ -47,7 +47,7 @@ namespace HEXCTRL::INTERNAL {
 		void RemoveByOffset(ULONGLONG ullOffset);
 		void RemoveByID(ULONGLONG ullID)override;
 		void SetDlgProperties(std::uint64_t u64Flags);
-		void SetVirtualBkm(IHexBookmarks* pVirtBkm)override;
+		void SetVirtualBkm(IHexVirtBookmarks* pVirtBkm)override;
 		void ShowWindow(int iCmdShow);
 		void Update(ULONGLONG ullID, const HEXBKM& bkm);
 	private:
@@ -87,7 +87,7 @@ namespace HEXCTRL::INTERNAL {
 		std::vector<HEXBKM> m_vecBookmarks; //Bookmarks data.
 		LISTEX::CListEx m_ListEx;
 		IHexCtrl* m_pHexCtrl { };
-		IHexBookmarks* m_pVirtual { };
+		IHexVirtBookmarks* m_pVirtBkm { };
 		std::uint64_t m_u64IndexCurr { }; //Current bookmark's position index, to move next/prev.
 		std::uint64_t m_u64Flags { }; //Data from SetDlgProperties.
 	};
@@ -103,7 +103,7 @@ auto CHexDlgBkmMgr::AddBkm(const HEXBKM& bkm)->ULONGLONG
 {
 	ULONGLONG ullID;
 	if (IsVirtual()) {
-		ullID = m_pVirtual->AddBkm(bkm);
+		ullID = m_pVirtBkm->OnHexBkmAdd(bkm);
 	}
 	else {
 		ullID = 1; //Bookmarks' ID starts from 1.
@@ -140,7 +140,7 @@ void CHexDlgBkmMgr::DestroyDlg()
 auto CHexDlgBkmMgr::GetAllBkms()->SpanHexBkm
 {
 	if (IsVirtual()) {
-		return m_pVirtual->GetAllBkms();
+		return { };
 	}
 
 	return m_vecBookmarks;
@@ -149,7 +149,7 @@ auto CHexDlgBkmMgr::GetAllBkms()->SpanHexBkm
 auto CHexDlgBkmMgr::GetByID(ULONGLONG ullID)->PHEXBKM
 {
 	if (IsVirtual()) {
-		return m_pVirtual->GetByID(ullID);
+		return m_pVirtBkm->OnHexBkmGetByID(ullID);
 	}
 
 	if (const auto it = std::find_if(m_vecBookmarks.begin(), m_vecBookmarks.end(),
@@ -163,7 +163,7 @@ auto CHexDlgBkmMgr::GetByID(ULONGLONG ullID)->PHEXBKM
 auto CHexDlgBkmMgr::GetByIndex(ULONGLONG ullIndex)->PHEXBKM
 {
 	if (IsVirtual()) {
-		return m_pVirtual->GetByIndex(ullIndex);
+		return m_pVirtBkm->OnHexBkmGetByIndex(ullIndex);
 	}
 
 	if (ullIndex < m_vecBookmarks.size()) {
@@ -175,7 +175,7 @@ auto CHexDlgBkmMgr::GetByIndex(ULONGLONG ullIndex)->PHEXBKM
 
 auto CHexDlgBkmMgr::GetCount()->ULONGLONG
 {
-	return IsVirtual() ? m_pVirtual->GetCount() : m_vecBookmarks.size();
+	return IsVirtual() ? m_pVirtBkm->OnHexBkmGetCount() : m_vecBookmarks.size();
 }
 
 auto CHexDlgBkmMgr::GetCurrent()const->ULONGLONG
@@ -266,13 +266,13 @@ bool CHexDlgBkmMgr::HasBkmAtOffset(ULONGLONG ullOffset)const
 
 bool CHexDlgBkmMgr::HasBookmarks()const
 {
-	return IsVirtual() ? m_pVirtual->GetCount() > 0 : !m_vecBookmarks.empty();
+	return IsVirtual() ? m_pVirtBkm->OnHexBkmGetCount() > 0 : !m_vecBookmarks.empty();
 }
 
 auto CHexDlgBkmMgr::HitTest(ULONGLONG ullOffset)->PHEXBKM
 {
 	if (IsVirtual()) {
-		return m_pVirtual->HitTest(ullOffset);
+		return m_pVirtBkm->OnHexBkmHitTest(ullOffset);
 	}
 
 	if (const auto rit = std::find_if(m_vecBookmarks.rbegin(), m_vecBookmarks.rend(),
@@ -304,7 +304,7 @@ bool CHexDlgBkmMgr::IsShowTooltips()const
 
 bool CHexDlgBkmMgr::IsVirtual()const
 {
-	return m_pVirtual != nullptr;
+	return m_pVirtBkm != nullptr;
 }
 
 bool CHexDlgBkmMgr::PreTranslateMsg(MSG* pMsg)
@@ -332,15 +332,15 @@ auto CHexDlgBkmMgr::ProcessMsg(const MSG& msg)->INT_PTR
 
 void CHexDlgBkmMgr::RemoveAll()
 {
-	IsVirtual() ? m_pVirtual->RemoveAll() : m_vecBookmarks.clear();
+	IsVirtual() ? m_pVirtBkm->OnHexBkmRemoveAll() : m_vecBookmarks.clear();
 	UpdateListCount();
 }
 
 void CHexDlgBkmMgr::RemoveByOffset(ULONGLONG ullOffset)
 {
 	if (IsVirtual()) {
-		if (const auto* const pBkm = m_pVirtual->HitTest(ullOffset); pBkm != nullptr) {
-			m_pVirtual->RemoveByID(pBkm->ullID);
+		if (const auto* const pBkm = m_pVirtBkm->OnHexBkmHitTest(ullOffset); pBkm != nullptr) {
+			m_pVirtBkm->OnHexBkmRemoveByID(pBkm->ullID);
 		}
 	}
 	else {
@@ -363,7 +363,7 @@ void CHexDlgBkmMgr::RemoveByOffset(ULONGLONG ullOffset)
 void CHexDlgBkmMgr::RemoveByID(ULONGLONG ullID)
 {
 	if (IsVirtual()) {
-		m_pVirtual->RemoveByID(ullID);
+		m_pVirtBkm->OnHexBkmRemoveByID(ullID);
 	}
 	else {
 		if (const auto pBkm = GetByID(ullID); pBkm != nullptr) {
@@ -379,14 +379,10 @@ void CHexDlgBkmMgr::SetDlgProperties(std::uint64_t u64Flags)
 	m_u64Flags = u64Flags;
 }
 
-void CHexDlgBkmMgr::SetVirtualBkm(IHexBookmarks* pVirtBkm)
+void CHexDlgBkmMgr::SetVirtualBkm(IHexVirtBookmarks* pVirtBkm)
 {
-	if (pVirtBkm == this) { //To avoid setting self as a Virtual Bookmarks handler.
-		ut::DBG_REPORT(L"pVirtBkm == this");
-		return;
-	}
-
-	m_pVirtual = pVirtBkm;
+	m_pVirtBkm = pVirtBkm;
+	UpdateListCount();
 }
 
 void CHexDlgBkmMgr::ShowWindow(int iCmdShow)

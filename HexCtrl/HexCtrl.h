@@ -25,7 +25,7 @@
 
 namespace HEXCTRL {
 	constexpr auto HEXCTRL_VERSION_MAJOR = 3;
-	constexpr auto HEXCTRL_VERSION_MINOR = 9;
+	constexpr auto HEXCTRL_VERSION_MINOR = 10;
 	constexpr auto HEXCTRL_VERSION_PATCH = 0;
 
 	using SpanByte = std::span<std::byte>;
@@ -138,7 +138,7 @@ namespace HEXCTRL {
 	struct HEXBKM {
 		VecHexSpan   vecSpan;     //Vector of offsets and sizes.
 		std::wstring wstrDesc;    //Bookmark description.
-		ULONGLONG    ullID { };   //Bookmark ID, assigned internally by framework.
+		ULONGLONG    ullID { };   //Bookmark ID, assigned internally on creation by framework.
 		ULONGLONG    ullData { }; //User defined custom data.
 		HEXCOLOR     stClr;       //Bookmark bk/text color.
 	};
@@ -146,11 +146,25 @@ namespace HEXCTRL {
 	using SpanHexBkm = std::span<const HEXBKM>;
 
 	/********************************************************************************************
-	* IHexBookmarks: Pure abstract bookmarks' interface, for the HexCtrl bookmarks machinery.   *
+	* IHexVirtBookmarks: HexCtrl Virtual Bookmarks interface                                    *
+	********************************************************************************************/
+	class IHexVirtBookmarks {
+	public:
+		virtual auto OnHexBkmAdd(const HEXBKM& bkm) -> std::uint64_t = 0;
+		[[nodiscard]] virtual auto OnHexBkmGetByID(std::uint64_t u64ID) -> PHEXBKM = 0;
+		[[nodiscard]] virtual auto OnHexBkmGetByIndex(std::uint64_t u64Index) -> PHEXBKM = 0;
+		[[nodiscard]] virtual auto OnHexBkmGetCount() -> std::uint64_t = 0;
+		[[nodiscard]] virtual auto OnHexBkmHitTest(std::uint64_t u64Offset) -> PHEXBKM = 0;
+		virtual void OnHexBkmRemoveAll() = 0;
+		virtual void OnHexBkmRemoveByID(std::uint64_t u64ID) = 0;
+	};
+
+	/********************************************************************************************
+	* IHexBookmarks: HexCtrl bookmarks interface, used in the IHexCtrl::GetBookmarks.           *
 	********************************************************************************************/
 	class IHexBookmarks {
 	public:
-		virtual auto AddBkm(const HEXBKM& bkm) -> ULONGLONG = 0;                  //Adds new bookmark, returns the new bookmark's ID.
+		virtual auto AddBkm(const HEXBKM& bkm) -> ULONGLONG = 0;                  //Creates a new bookmark and returns its ID.
 		[[nodiscard]] virtual auto GetAllBkms() -> SpanHexBkm = 0;                //Returns array of all bookmarks.
 		[[nodiscard]] virtual auto GetByID(ULONGLONG ullID) -> PHEXBKM = 0;       //Get bookmark by ID.
 		[[nodiscard]] virtual auto GetByIndex(ULONGLONG ullIndex) -> PHEXBKM = 0; //Get bookmark by index.
@@ -158,7 +172,7 @@ namespace HEXCTRL {
 		[[nodiscard]] virtual auto HitTest(ULONGLONG ullOffset) -> PHEXBKM = 0;   //HitTest for the given offset.
 		virtual void RemoveAll() = 0;                                             //Remove all bookmarks.
 		virtual void RemoveByID(ULONGLONG ullID) = 0;                             //Remove by the given ID.
-		virtual void SetVirtualBkm(IHexBookmarks* pVirtBkm) = 0;                  //Sets the Virtual Bookmarks pointer.
+		virtual void SetVirtualBkm(IHexVirtBookmarks* pVirtBkm) = 0;              //Sets the Virtual Bookmarks pointer.
 	};
 
 	/********************************************************************************************
