@@ -56,27 +56,27 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] bool IsNoEsc()const;
 		[[nodiscard]] bool IsShowAsHex()const;
 		void OnCancel();
-		auto OnClose() -> INT_PTR;
-		auto OnCommand(const MSG& msg) -> INT_PTR;
 		void OnCheckHex();
-		auto OnDestroy() -> INT_PTR;
-		auto OnDPIChanged(const MSG& msg) -> INT_PTR;
-		auto OnDrawItem(const MSG& msg) -> INT_PTR;
-		auto OnGetDPIScaledSize(const MSG& msg) -> INT_PTR;
-		auto OnInitDialog(const MSG& msg) -> INT_PTR;
-		auto OnMeasureItem(const MSG& msg) -> INT_PTR;
-		auto OnNotify(const MSG& msg) -> INT_PTR;
-		void OnNotifyListColumnClick();
-		void OnNotifyListDblClick(NMHDR* pNMHDR);
-		void OnNotifyListGetColor(NMHDR* pNMHDR);
-		void OnNotifyListGetDispInfo(NMHDR* pNMHDR);
-		void OnNotifyListItemChanged(NMHDR* pNMHDR);
-		void OnNotifyListRClick(NMHDR* pNMHDR);
-		void OnNotifyListSetData(NMHDR* pNMHDR);
-		auto OnSize(const MSG& msg) -> INT_PTR;
 		void RedrawHexCtrl();
 		void RemoveBkmByID(std::uint64_t ullID);
 		void UpdateListCount(bool fPreserveSelected = false);
+		auto WMClose() -> INT_PTR;
+		auto WMCommand(const MSG& msg) -> INT_PTR;
+		auto WMDestroy() -> INT_PTR;
+		auto WMDPIChanged(const MSG& msg) -> INT_PTR;
+		auto WMDrawItem(const MSG& msg) -> INT_PTR;
+		auto WMGetDPIScaledSize(const MSG& msg) -> INT_PTR;
+		auto WMInitDialog(const MSG& msg) -> INT_PTR;
+		auto WMMeasureItem(const MSG& msg) -> INT_PTR;
+		auto WMNotify(const MSG& msg) -> INT_PTR;
+		void WMNotifyListColumnClick();
+		void WMNotifyListDblClick(NMHDR* pNMHDR);
+		void WMNotifyListGetColor(NMHDR* pNMHDR);
+		void WMNotifyListGetDispInfo(NMHDR* pNMHDR);
+		void WMNotifyListItemChanged(NMHDR* pNMHDR);
+		void WMNotifyListRClick(NMHDR* pNMHDR);
+		void WMNotifyListSetData(NMHDR* pNMHDR);
+		auto WMSize(const MSG& msg) -> INT_PTR;
 	private:
 		HINSTANCE m_hInstRes { };
 		GDIUT::CWnd m_Wnd;
@@ -122,7 +122,7 @@ auto CHexDlgBkmMgr::AddBkm(const HEXBKM& bkm)->ULONGLONG
 
 void CHexDlgBkmMgr::CreateDlg()const
 {
-	//m_Wnd is set in the OnInitDialog().
+	//m_Wnd is set in the WMInitDialog().
 	if (const auto hWnd = ::CreateDialogParamW(m_hInstRes, MAKEINTRESOURCEW(IDD_HEXCTRL_BKMMGR),
 		m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN), GDIUT::DlgProc<CHexDlgBkmMgr>, reinterpret_cast<LPARAM>(this));
 		hWnd == nullptr) {
@@ -315,16 +315,16 @@ bool CHexDlgBkmMgr::PreTranslateMsg(MSG* pMsg)
 auto CHexDlgBkmMgr::ProcessMsg(const MSG& msg)->INT_PTR
 {
 	switch (msg.message) {
-	case WM_CLOSE: return OnClose();
-	case WM_COMMAND: return OnCommand(msg);
-	case WM_DESTROY: return OnDestroy();
-	case WM_DPICHANGED: return OnDPIChanged(msg);
-	case WM_DRAWITEM: return OnDrawItem(msg);
-	case WM_GETDPISCALEDSIZE: return OnGetDPIScaledSize(msg);
-	case WM_INITDIALOG: return OnInitDialog(msg);
-	case WM_MEASUREITEM: return OnMeasureItem(msg);
-	case WM_NOTIFY: return OnNotify(msg);
-	case WM_SIZE: return OnSize(msg);
+	case WM_CLOSE: return WMClose();
+	case WM_COMMAND: return WMCommand(msg);
+	case WM_DESTROY: return WMDestroy();
+	case WM_DPICHANGED: return WMDPIChanged(msg);
+	case WM_DRAWITEM: return WMDrawItem(msg);
+	case WM_GETDPISCALEDSIZE: return WMGetDPIScaledSize(msg);
+	case WM_INITDIALOG: return WMInitDialog(msg);
+	case WM_MEASUREITEM: return WMMeasureItem(msg);
+	case WM_NOTIFY: return WMNotify(msg);
+	case WM_SIZE: return WMSize(msg);
 	default:
 		return 0;
 	}
@@ -430,16 +430,53 @@ void CHexDlgBkmMgr::OnCancel()
 	if (IsNoEsc()) //Not closing Dialog on Escape key.
 		return;
 
-	OnClose();
+	WMClose();
 }
 
-auto CHexDlgBkmMgr::OnClose()->INT_PTR
+void CHexDlgBkmMgr::OnCheckHex()
+{
+	m_ListEx.RedrawWindow();
+}
+void CHexDlgBkmMgr::RedrawHexCtrl()
+{
+	if (m_pHexCtrl != nullptr && m_pHexCtrl->IsDataSet()) {
+		m_pHexCtrl->Redraw();
+	}
+}
+
+void CHexDlgBkmMgr::RemoveBkmByID(std::uint64_t ullID)
+{
+	if (const auto it = std::find_if(m_vecBookmarks.begin(), m_vecBookmarks.end(),
+		[ullID](const HEXBKM& bkm) { return ullID == bkm.ullID; }); it != m_vecBookmarks.end()) {
+		m_vecBookmarks.erase(it);
+	}
+}
+
+void CHexDlgBkmMgr::UpdateListCount(bool fPreserveSelected)
+{
+	if (!m_Wnd.IsWindow()) {
+		return;
+	}
+
+	m_ListEx.SetItemState(-1, 0, LVIS_SELECTED);
+	m_ListEx.SetItemCountEx(static_cast<int>(GetCount()), LVSICF_NOSCROLL);
+
+	if (fPreserveSelected) {
+		if (GetCount() > 0) {
+			const auto iCurrent = static_cast<int>(GetCurrent());
+			m_ListEx.SetItemState(iCurrent, LVIS_SELECTED, LVIS_SELECTED);
+			m_ListEx.EnsureVisible(iCurrent, FALSE);
+		}
+	}
+}
+
+auto CHexDlgBkmMgr::WMClose()->INT_PTR
 {
 	ShowWindow(SW_HIDE);
 	return TRUE;
 }
 
-auto CHexDlgBkmMgr::OnCommand(const MSG& msg) -> INT_PTR
+auto CHexDlgBkmMgr::WMCommand(const MSG& msg) -> INT_PTR
 {
 	const auto uCtrlID = LOWORD(msg.wParam); //Control ID or menu ID.
 	const auto uCode = HIWORD(msg.wParam);   //Control code, zero for menu.
@@ -490,12 +527,7 @@ auto CHexDlgBkmMgr::OnCommand(const MSG& msg) -> INT_PTR
 	return TRUE;
 }
 
-void CHexDlgBkmMgr::OnCheckHex()
-{
-	m_ListEx.RedrawWindow();
-}
-
-auto CHexDlgBkmMgr::OnDestroy()->INT_PTR
+auto CHexDlgBkmMgr::WMDestroy()->INT_PTR
 {
 	RemoveAll();
 	m_menuList.DestroyMenu();
@@ -505,13 +537,13 @@ auto CHexDlgBkmMgr::OnDestroy()->INT_PTR
 	return TRUE;
 }
 
-auto CHexDlgBkmMgr::OnDPIChanged([[maybe_unused]] const MSG& msg)->INT_PTR
+auto CHexDlgBkmMgr::WMDPIChanged([[maybe_unused]] const MSG& msg)->INT_PTR
 {
 	m_DynLayout.Enable(true);
 	return 0;
 }
 
-auto CHexDlgBkmMgr::OnDrawItem(const MSG& msg)->INT_PTR
+auto CHexDlgBkmMgr::WMDrawItem(const MSG& msg)->INT_PTR
 {
 	const auto pDIS = reinterpret_cast<LPDRAWITEMSTRUCT>(msg.lParam);
 	if (pDIS->CtlID == static_cast<UINT>(IDC_HEXCTRL_BKMMGR_LIST)) {
@@ -521,7 +553,7 @@ auto CHexDlgBkmMgr::OnDrawItem(const MSG& msg)->INT_PTR
 	return TRUE;
 }
 
-auto CHexDlgBkmMgr::OnGetDPIScaledSize([[maybe_unused]] const MSG& msg)->INT_PTR
+auto CHexDlgBkmMgr::WMGetDPIScaledSize([[maybe_unused]] const MSG& msg)->INT_PTR
 {
 	//This message is sent to top-level windows with a DPI_AWARENESS_CONTEXT
 	//of Per Monitor v2 before a WM_DPICHANGED message is sent.
@@ -532,7 +564,7 @@ auto CHexDlgBkmMgr::OnGetDPIScaledSize([[maybe_unused]] const MSG& msg)->INT_PTR
 	return 0;
 }
 
-auto CHexDlgBkmMgr::OnInitDialog(const MSG& msg)->INT_PTR
+auto CHexDlgBkmMgr::WMInitDialog(const MSG& msg)->INT_PTR
 {
 	m_Wnd.Attach(msg.hwnd);
 	m_WndBtnHex.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_BKMMGR_CHK_HEX));
@@ -568,7 +600,7 @@ auto CHexDlgBkmMgr::OnInitDialog(const MSG& msg)->INT_PTR
 	return TRUE;
 }
 
-auto CHexDlgBkmMgr::OnMeasureItem(const MSG& msg)->INT_PTR
+auto CHexDlgBkmMgr::WMMeasureItem(const MSG& msg)->INT_PTR
 {
 	const auto pMIS = reinterpret_cast<LPMEASUREITEMSTRUCT>(msg.lParam);
 	if (pMIS->CtlID == static_cast<UINT>(IDC_HEXCTRL_BKMMGR_LIST)) {
@@ -578,19 +610,19 @@ auto CHexDlgBkmMgr::OnMeasureItem(const MSG& msg)->INT_PTR
 	return TRUE;
 }
 
-auto CHexDlgBkmMgr::OnNotify(const MSG& msg)->INT_PTR
+auto CHexDlgBkmMgr::WMNotify(const MSG& msg)->INT_PTR
 {
 	const auto pNMHDR = reinterpret_cast<NMHDR*>(msg.lParam);
 	switch (pNMHDR->idFrom) {
 	case IDC_HEXCTRL_BKMMGR_LIST:
 		switch (pNMHDR->code) {
-		case LVN_COLUMNCLICK: OnNotifyListColumnClick(); break;
-		case LVN_GETDISPINFOW: OnNotifyListGetDispInfo(pNMHDR); break;
-		case LVN_ITEMCHANGED: OnNotifyListItemChanged(pNMHDR); break;
-		case NM_DBLCLK: OnNotifyListDblClick(pNMHDR); break;
-		case NM_RCLICK: OnNotifyListRClick(pNMHDR); break;
-		case LISTEX::LISTEX_MSG_GETCOLOR: OnNotifyListGetColor(pNMHDR); break;
-		case LISTEX::LISTEX_MSG_SETDATA: OnNotifyListSetData(pNMHDR); break;
+		case LVN_COLUMNCLICK: WMNotifyListColumnClick(); break;
+		case LVN_GETDISPINFOW: WMNotifyListGetDispInfo(pNMHDR); break;
+		case LVN_ITEMCHANGED: WMNotifyListItemChanged(pNMHDR); break;
+		case NM_DBLCLK: WMNotifyListDblClick(pNMHDR); break;
+		case NM_RCLICK: WMNotifyListRClick(pNMHDR); break;
+		case LISTEX::LISTEX_MSG_GETCOLOR: WMNotifyListGetColor(pNMHDR); break;
+		case LISTEX::LISTEX_MSG_SETDATA: WMNotifyListSetData(pNMHDR); break;
 		default: break;
 		}
 	default: break;
@@ -599,7 +631,7 @@ auto CHexDlgBkmMgr::OnNotify(const MSG& msg)->INT_PTR
 	return TRUE;
 }
 
-void CHexDlgBkmMgr::OnNotifyListColumnClick()
+void CHexDlgBkmMgr::WMNotifyListColumnClick()
 {
 	if (IsVirtual())
 		return;
@@ -644,7 +676,7 @@ void CHexDlgBkmMgr::OnNotifyListColumnClick()
 	}
 }
 
-void CHexDlgBkmMgr::OnNotifyListDblClick(NMHDR* pNMHDR)
+void CHexDlgBkmMgr::WMNotifyListDblClick(NMHDR* pNMHDR)
 {
 	const auto* const pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
 	if (pNMI->iSubItem != 4 && pNMI->iSubItem != 5) {
@@ -679,7 +711,7 @@ void CHexDlgBkmMgr::OnNotifyListDblClick(NMHDR* pNMHDR)
 	m_pHexCtrl->Redraw();
 }
 
-void CHexDlgBkmMgr::OnNotifyListGetColor(NMHDR* pNMHDR)
+void CHexDlgBkmMgr::WMNotifyListGetColor(NMHDR* pNMHDR)
 {
 	const auto pLCI = reinterpret_cast<LISTEX::PLISTEXCOLORINFO>(pNMHDR);
 
@@ -701,7 +733,7 @@ void CHexDlgBkmMgr::OnNotifyListGetColor(NMHDR* pNMHDR)
 	}
 }
 
-void CHexDlgBkmMgr::OnNotifyListGetDispInfo(NMHDR* pNMHDR)
+void CHexDlgBkmMgr::WMNotifyListGetDispInfo(NMHDR* pNMHDR)
 {
 	const auto pDispInfo = reinterpret_cast<NMLVDISPINFOW*>(pNMHDR);
 	const auto pItem = &pDispInfo->item;
@@ -740,7 +772,7 @@ void CHexDlgBkmMgr::OnNotifyListGetDispInfo(NMHDR* pNMHDR)
 	}
 }
 
-void CHexDlgBkmMgr::OnNotifyListItemChanged(NMHDR* pNMHDR)
+void CHexDlgBkmMgr::WMNotifyListItemChanged(NMHDR* pNMHDR)
 {
 	//Go selected bookmark only with keyboard arrows and LMouse clicks.
 	//Does not trigger (LVN_ITEMCHANGED event) when updating bookmark: !(pLCI->uNewState & LVIS_SELECTED)
@@ -750,7 +782,7 @@ void CHexDlgBkmMgr::OnNotifyListItemChanged(NMHDR* pNMHDR)
 	}
 }
 
-void CHexDlgBkmMgr::OnNotifyListRClick(NMHDR* pNMHDR)
+void CHexDlgBkmMgr::WMNotifyListRClick(NMHDR* pNMHDR)
 {
 	bool fEnabled { false };
 	if (const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
@@ -767,7 +799,7 @@ void CHexDlgBkmMgr::OnNotifyListRClick(NMHDR* pNMHDR)
 	m_menuList.TrackPopupMenu(pt.x, pt.y, m_Wnd);
 }
 
-void CHexDlgBkmMgr::OnNotifyListSetData(NMHDR* pNMHDR)
+void CHexDlgBkmMgr::WMNotifyListSetData(NMHDR* pNMHDR)
 {
 	const auto pLDI = reinterpret_cast<LISTEX::PLISTEXDATAINFO>(pNMHDR);
 	const auto pBkm = GetByIndex(static_cast<std::size_t>(pLDI->iItem));
@@ -826,43 +858,10 @@ void CHexDlgBkmMgr::OnNotifyListSetData(NMHDR* pNMHDR)
 	m_pHexCtrl->Redraw();
 }
 
-auto CHexDlgBkmMgr::OnSize(const MSG& msg)->INT_PTR
+auto CHexDlgBkmMgr::WMSize(const MSG& msg)->INT_PTR
 {
 	const auto wWidth = LOWORD(msg.lParam);
 	const auto wHeight = HIWORD(msg.lParam);
-	m_DynLayout.OnSize(wWidth, wHeight);
+	m_DynLayout.WMSize(wWidth, wHeight);
 	return TRUE;
-}
-
-void CHexDlgBkmMgr::RedrawHexCtrl()
-{
-	if (m_pHexCtrl != nullptr && m_pHexCtrl->IsDataSet()) {
-		m_pHexCtrl->Redraw();
-	}
-}
-
-void CHexDlgBkmMgr::RemoveBkmByID(std::uint64_t ullID)
-{
-	if (const auto it = std::find_if(m_vecBookmarks.begin(), m_vecBookmarks.end(),
-		[ullID](const HEXBKM& bkm) { return ullID == bkm.ullID; }); it != m_vecBookmarks.end()) {
-		m_vecBookmarks.erase(it);
-	}
-}
-
-void CHexDlgBkmMgr::UpdateListCount(bool fPreserveSelected)
-{
-	if (!m_Wnd.IsWindow()) {
-		return;
-	}
-
-	m_ListEx.SetItemState(-1, 0, LVIS_SELECTED);
-	m_ListEx.SetItemCountEx(static_cast<int>(GetCount()), LVSICF_NOSCROLL);
-
-	if (fPreserveSelected) {
-		if (GetCount() > 0) {
-			const auto iCurrent = static_cast<int>(GetCurrent());
-			m_ListEx.SetItemState(iCurrent, LVIS_SELECTED, LVIS_SELECTED);
-			m_ListEx.EnsureVisible(iCurrent, FALSE);
-		}
-	}
 }

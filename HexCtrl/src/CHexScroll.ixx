@@ -28,22 +28,6 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] auto GetScrollPageSize()const -> ULONGLONG;
 		[[nodiscard]] auto IsThumbReleased()const -> bool;
 		[[nodiscard]] auto IsVisible()const -> bool;
-
-		/************************************************************************************
-		* CALLBACK METHODS:                                                                 *
-		* These methods must be called from the corresponding methods of the parent window. *
-		************************************************************************************/
-		void OnDPIChangedAfterParent(); //Handler of the WM_DPICHANGED_AFTERPARENT message.
-		void OnLButtonUp();
-		void OnMouseMove(POINT pt);
-		void OnNCActivate()const;
-		void OnNCCalcSize(NCCALCSIZE_PARAMS* pCSP);
-		void OnNCPaint()const;
-		void OnSetCursor(UINT uHitTest, UINT uMsg);
-		/************************************************************************************
-		* END OF THE CALLBACK METHODS.                                                      *
-		************************************************************************************/
-
 		[[nodiscard]] auto ProcessMsg(const MSG& msg) -> LRESULT;
 		void SetColors(COLORREF clrBar, COLORREF clrThumb, COLORREF clrArrow);
 		auto SetScrollPos(ULONGLONG ullNewPos) -> ULONGLONG;
@@ -61,6 +45,21 @@ namespace HEXCTRL::INTERNAL {
 		void ScrollPageRight();
 		void ScrollHome();
 		void SetScrollPageSize(ULONGLONG ullSize);
+
+		/************************************************************************************
+		* CALLBACK METHODS:                                                                 *
+		* These methods must be called from the corresponding methods of the parent window. *
+		************************************************************************************/
+		void WMDPIChangedAfterParent(); //Handler of the WM_DPICHANGED_AFTERPARENT message.
+		void WMLButtonUp();
+		void WMMouseMove(POINT pt);
+		void WMNCActivate()const;
+		void WMNCCalcSize(NCCALCSIZE_PARAMS* pCSP);
+		void WMNCPaint()const;
+		void WMSetCursor(UINT uHitTest, UINT uMsg);
+		/************************************************************************************
+		* END OF THE CALLBACK METHODS.                                                      *
+		************************************************************************************/
 	private:
 		void CreateArrows();
 		void DrawScrollBar()const;     //Draw the whole Scrollbar.
@@ -85,12 +84,12 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] bool IsVert()const;           //Is vertical or horizontal scrollbar.
 		[[nodiscard]] bool IsThumbDragging()const;  //Is the thumb currently dragged by mouse.
 		[[nodiscard]] bool IsSiblingVisible()const; //Is sibling scrollbar currently visible or not.
-		auto OnDestroy(const MSG& msg) -> LRESULT;
-		auto OnTimer(const MSG& msg) -> LRESULT;
 		void RedrawNC()const;
 		void SendParentScrollMsg()const;            //Sends the WM_(V/H)SCROLL to the parent window.
 		void SetThumbPos(int iPos);
 		void UpdateScrollBarSizeForDPI();
+		auto WMDestroy(const MSG& msg) -> LRESULT;
+		auto WMTimer(const MSG& msg) -> LRESULT;
 	private:
 		enum class EState : std::uint8_t;
 		enum class ETimer : std::uint16_t;
@@ -226,189 +225,11 @@ auto CHexScroll::IsVisible()const->bool
 	return m_fVisible;
 }
 
-void CHexScroll::OnDPIChangedAfterParent()
-{
-	UpdateScrollBarSizeForDPI();
-	CreateArrows();
-	DrawScrollBar();
-	RedrawNC();
-}
-
-void CHexScroll::OnLButtonUp()
-{
-	assert(m_fCreated);
-	if (!m_fCreated || m_eState == EState::STATE_DEFAULT) { return; }
-
-	m_eState = EState::STATE_DEFAULT;
-	SendParentScrollMsg(); //For parent to check IsThumbReleased.
-	m_Wnd.KillTimer(static_cast<UINT_PTR>(ETimer::IDT_FIRSTCLICK));
-	m_Wnd.KillTimer(static_cast<UINT_PTR>(ETimer::IDT_CLICKREPEAT));
-	::ReleaseCapture();
-	DrawScrollBar();
-}
-
-void CHexScroll::OnMouseMove(POINT pt)
-{
-	assert(m_fCreated);
-	if (!m_fCreated || !IsThumbDragging()) { return; }
-
-	const auto rc = GetScrollWorkAreaRect(true);
-	const auto iCurrPos = GetThumbPos();
-	int iNewPos;
-
-	if (IsVert()) {
-		if (pt.y < rc.top) {
-			iNewPos = 0;
-			m_ptCursorCurr.y = rc.top;
-		}
-		else if (pt.y > rc.bottom) {
-			iNewPos = (std::numeric_limits<int>::max)();
-			m_ptCursorCurr.y = rc.bottom;
-		}
-		else {
-			iNewPos = iCurrPos + (pt.y - m_ptCursorCurr.y);
-			m_ptCursorCurr.y = pt.y;
-		}
-	}
-	else {
-		if (pt.x < rc.left) {
-			iNewPos = 0;
-			m_ptCursorCurr.x = rc.left;
-		}
-		else if (pt.x > rc.right) {
-			iNewPos = (std::numeric_limits<int>::max)();
-			m_ptCursorCurr.x = rc.right;
-		}
-		else {
-			iNewPos = iCurrPos + (pt.x - m_ptCursorCurr.x);
-			m_ptCursorCurr.x = pt.x;
-		}
-	}
-
-	if (iNewPos != iCurrPos) {  //Set new thumb pos only if it has been changed.
-		SetThumbPos(iNewPos);
-	}
-}
-
-void CHexScroll::OnNCActivate()const
-{
-	if (!m_fCreated) { return; }
-
-	RedrawNC(); //To repaint NC area.
-}
-
-void CHexScroll::OnNCCalcSize(NCCALCSIZE_PARAMS* pCSP)
-{
-	if (!m_fCreated) { return; }
-
-	const GDIUT::CRect rc = pCSP->rgrc[0];
-	const auto ullCurPos = GetScrollPos();
-	if (IsVert()) {
-		const UINT uiHeight { IsSiblingVisible() ? rc.Height() - m_dwBarSizeWH : rc.Height() };
-		if (uiHeight < m_ullSizeMax) {
-			m_fVisible = true;
-			if (ullCurPos + uiHeight > m_ullSizeMax) {
-				SetScrollPos(m_ullSizeMax - uiHeight);
-			}
-			else {
-				DrawScrollBar();
-			}
-			pCSP->rgrc[0].right -= m_dwBarSizeWH;
-		}
-		else {
-			SetScrollPos(0ULL);
-			m_fVisible = false;
-		}
-	}
-	else {
-		const UINT uiWidth { IsSiblingVisible() ? rc.Width() - m_dwBarSizeWH : rc.Width() };
-		if (uiWidth < m_ullSizeMax) {
-			m_fVisible = true;
-			if (ullCurPos + uiWidth > m_ullSizeMax) {
-				SetScrollPos(m_ullSizeMax - uiWidth);
-			}
-			else {
-				DrawScrollBar();
-			}
-			pCSP->rgrc[0].bottom -= m_dwBarSizeWH;
-		}
-		else {
-			SetScrollPos(0ULL);
-			m_fVisible = false;
-		}
-	}
-}
-
-void CHexScroll::OnNCPaint()const
-{
-	if (!m_fCreated) { return; }
-
-	DrawScrollBar();
-}
-
-void CHexScroll::OnSetCursor(UINT uHitTest, UINT uMsg)
-{
-	assert(m_fCreated);
-	if (!m_fCreated) { return; }
-
-	if (uHitTest == HTTOPLEFT || uHitTest == HTLEFT || uHitTest == HTBOTTOMLEFT
-		|| uHitTest == HTTOPRIGHT || uHitTest == HTRIGHT || uHitTest == HTBOTTOMRIGHT
-		|| uHitTest == HTBOTTOM || uHitTest == HTSIZE || !IsVisible()) {
-		return;
-	}
-
-	switch (uMsg) {
-	case WM_LBUTTONDOWN:
-	{
-		constexpr auto uTimerFirstClick { 200U }; //Milliseconds for WM_TIMER for first channel click.
-		using enum EState; using enum ETimer;
-		POINT pt;
-		::GetCursorPos(&pt);
-		const auto wndParent = GetParent();
-		wndParent.ScreenToClient(pt);
-		wndParent.SetFocus();
-
-		if (GetThumbRect(true).PtInRect(pt)) {
-			m_ptCursorCurr = pt;
-			m_eState = THUMB_CLICK;
-			wndParent.SetCapture();
-		}
-		else if (GetFirstArrowRect(true).PtInRect(pt)) {
-			ScrollLineUp();
-			m_eState = FIRSTARROW_CLICK;
-			wndParent.SetCapture();
-			m_Wnd.SetTimer(static_cast<UINT_PTR>(IDT_FIRSTCLICK), uTimerFirstClick, nullptr);
-		}
-		else if (GetLastArrowRect(true).PtInRect(pt)) {
-			ScrollLineDown();
-			m_eState = LASTARROW_CLICK;
-			wndParent.SetCapture();
-			m_Wnd.SetTimer(static_cast<UINT_PTR>(IDT_FIRSTCLICK), uTimerFirstClick, nullptr);
-		}
-		else if (GetFirstChannelRect(true).PtInRect(pt)) {
-			ScrollPageUp();
-			m_eState = FIRSTCHANNEL_CLICK;
-			wndParent.SetCapture();
-			m_Wnd.SetTimer(static_cast<UINT_PTR>(IDT_FIRSTCLICK), uTimerFirstClick, nullptr);
-		}
-		else if (GetLastChannelRect(true).PtInRect(pt)) {
-			ScrollPageDown();
-			m_eState = LASTCHANNEL_CLICK;
-			wndParent.SetCapture();
-			m_Wnd.SetTimer(static_cast<UINT_PTR>(IDT_FIRSTCLICK), uTimerFirstClick, nullptr);
-		}
-	}
-	break;
-	default:
-		break;
-	}
-}
-
 auto CHexScroll::ProcessMsg(const MSG& msg)->LRESULT
 {
 	switch (msg.message) {
-	case WM_DESTROY: return OnDestroy(msg);
-	case WM_TIMER: return OnTimer(msg);
+	case WM_DESTROY: return WMDestroy(msg);
+	case WM_TIMER: return WMTimer(msg);
 	default: return GDIUT::DefWndProc(msg);
 	}
 }
@@ -560,6 +381,184 @@ void CHexScroll::SetScrollPageSize(ULONGLONG ullSize)
 	if (!m_fCreated) { return; }
 
 	m_ullPage = ullSize;
+}
+
+void CHexScroll::WMDPIChangedAfterParent()
+{
+	UpdateScrollBarSizeForDPI();
+	CreateArrows();
+	DrawScrollBar();
+	RedrawNC();
+}
+
+void CHexScroll::WMLButtonUp()
+{
+	assert(m_fCreated);
+	if (!m_fCreated || m_eState == EState::STATE_DEFAULT) { return; }
+
+	m_eState = EState::STATE_DEFAULT;
+	SendParentScrollMsg(); //For parent to check IsThumbReleased.
+	m_Wnd.KillTimer(static_cast<UINT_PTR>(ETimer::IDT_FIRSTCLICK));
+	m_Wnd.KillTimer(static_cast<UINT_PTR>(ETimer::IDT_CLICKREPEAT));
+	::ReleaseCapture();
+	DrawScrollBar();
+}
+
+void CHexScroll::WMMouseMove(POINT pt)
+{
+	assert(m_fCreated);
+	if (!m_fCreated || !IsThumbDragging()) { return; }
+
+	const auto rc = GetScrollWorkAreaRect(true);
+	const auto iCurrPos = GetThumbPos();
+	int iNewPos;
+
+	if (IsVert()) {
+		if (pt.y < rc.top) {
+			iNewPos = 0;
+			m_ptCursorCurr.y = rc.top;
+		}
+		else if (pt.y > rc.bottom) {
+			iNewPos = (std::numeric_limits<int>::max)();
+			m_ptCursorCurr.y = rc.bottom;
+		}
+		else {
+			iNewPos = iCurrPos + (pt.y - m_ptCursorCurr.y);
+			m_ptCursorCurr.y = pt.y;
+		}
+	}
+	else {
+		if (pt.x < rc.left) {
+			iNewPos = 0;
+			m_ptCursorCurr.x = rc.left;
+		}
+		else if (pt.x > rc.right) {
+			iNewPos = (std::numeric_limits<int>::max)();
+			m_ptCursorCurr.x = rc.right;
+		}
+		else {
+			iNewPos = iCurrPos + (pt.x - m_ptCursorCurr.x);
+			m_ptCursorCurr.x = pt.x;
+		}
+	}
+
+	if (iNewPos != iCurrPos) {  //Set new thumb pos only if it has been changed.
+		SetThumbPos(iNewPos);
+	}
+}
+
+void CHexScroll::WMNCActivate()const
+{
+	if (!m_fCreated) { return; }
+
+	RedrawNC(); //To repaint NC area.
+}
+
+void CHexScroll::WMNCCalcSize(NCCALCSIZE_PARAMS* pCSP)
+{
+	if (!m_fCreated) { return; }
+
+	const GDIUT::CRect rc = pCSP->rgrc[0];
+	const auto ullCurPos = GetScrollPos();
+	if (IsVert()) {
+		const UINT uiHeight { IsSiblingVisible() ? rc.Height() - m_dwBarSizeWH : rc.Height() };
+		if (uiHeight < m_ullSizeMax) {
+			m_fVisible = true;
+			if (ullCurPos + uiHeight > m_ullSizeMax) {
+				SetScrollPos(m_ullSizeMax - uiHeight);
+			}
+			else {
+				DrawScrollBar();
+			}
+			pCSP->rgrc[0].right -= m_dwBarSizeWH;
+		}
+		else {
+			SetScrollPos(0ULL);
+			m_fVisible = false;
+		}
+	}
+	else {
+		const UINT uiWidth { IsSiblingVisible() ? rc.Width() - m_dwBarSizeWH : rc.Width() };
+		if (uiWidth < m_ullSizeMax) {
+			m_fVisible = true;
+			if (ullCurPos + uiWidth > m_ullSizeMax) {
+				SetScrollPos(m_ullSizeMax - uiWidth);
+			}
+			else {
+				DrawScrollBar();
+			}
+			pCSP->rgrc[0].bottom -= m_dwBarSizeWH;
+		}
+		else {
+			SetScrollPos(0ULL);
+			m_fVisible = false;
+		}
+	}
+}
+
+void CHexScroll::WMNCPaint()const
+{
+	if (!m_fCreated) { return; }
+
+	DrawScrollBar();
+}
+
+void CHexScroll::WMSetCursor(UINT uHitTest, UINT uMsg)
+{
+	assert(m_fCreated);
+	if (!m_fCreated) { return; }
+
+	if (uHitTest == HTTOPLEFT || uHitTest == HTLEFT || uHitTest == HTBOTTOMLEFT
+		|| uHitTest == HTTOPRIGHT || uHitTest == HTRIGHT || uHitTest == HTBOTTOMRIGHT
+		|| uHitTest == HTBOTTOM || uHitTest == HTSIZE || !IsVisible()) {
+		return;
+	}
+
+	switch (uMsg) {
+	case WM_LBUTTONDOWN:
+	{
+		constexpr auto uTimerFirstClick { 200U }; //Milliseconds for WM_TIMER for first channel click.
+		using enum EState; using enum ETimer;
+		POINT pt;
+		::GetCursorPos(&pt);
+		const auto wndParent = GetParent();
+		wndParent.ScreenToClient(pt);
+		wndParent.SetFocus();
+
+		if (GetThumbRect(true).PtInRect(pt)) {
+			m_ptCursorCurr = pt;
+			m_eState = THUMB_CLICK;
+			wndParent.SetCapture();
+		}
+		else if (GetFirstArrowRect(true).PtInRect(pt)) {
+			ScrollLineUp();
+			m_eState = FIRSTARROW_CLICK;
+			wndParent.SetCapture();
+			m_Wnd.SetTimer(static_cast<UINT_PTR>(IDT_FIRSTCLICK), uTimerFirstClick, nullptr);
+		}
+		else if (GetLastArrowRect(true).PtInRect(pt)) {
+			ScrollLineDown();
+			m_eState = LASTARROW_CLICK;
+			wndParent.SetCapture();
+			m_Wnd.SetTimer(static_cast<UINT_PTR>(IDT_FIRSTCLICK), uTimerFirstClick, nullptr);
+		}
+		else if (GetFirstChannelRect(true).PtInRect(pt)) {
+			ScrollPageUp();
+			m_eState = FIRSTCHANNEL_CLICK;
+			wndParent.SetCapture();
+			m_Wnd.SetTimer(static_cast<UINT_PTR>(IDT_FIRSTCLICK), uTimerFirstClick, nullptr);
+		}
+		else if (GetLastChannelRect(true).PtInRect(pt)) {
+			ScrollPageDown();
+			m_eState = LASTCHANNEL_CLICK;
+			wndParent.SetCapture();
+			m_Wnd.SetTimer(static_cast<UINT_PTR>(IDT_FIRSTCLICK), uTimerFirstClick, nullptr);
+		}
+	}
+	break;
+	default:
+		break;
+	}
 }
 
 
@@ -861,7 +860,58 @@ bool CHexScroll::IsSiblingVisible()const
 	return m_pSibling ? m_pSibling->IsVisible() : false;
 }
 
-auto CHexScroll::OnDestroy(const MSG& msg)->LRESULT
+void CHexScroll::RedrawNC()const
+{
+	//To repaint NC area.
+	if (const auto wndParent = GetParent(); !wndParent.IsNull()) {
+		wndParent.SetWindowPos(nullptr, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
+	}
+}
+
+void CHexScroll::SendParentScrollMsg()const
+{
+	GetParent().SendMsg(IsVert() ? WM_VSCROLL : WM_HSCROLL);
+}
+
+void CHexScroll::SetThumbPos(int iPos)
+{
+	if (iPos == GetThumbPos()) {
+		return;
+	}
+
+	const auto rcWorkArea = GetScrollWorkAreaRect();
+	const auto uiThumbSize = GetThumbSizeWH();
+	ULONGLONG ullNewScrollPos;
+
+	if (iPos < 0) {
+		ullNewScrollPos = 0;
+	}
+	else if (iPos == (std::numeric_limits<int>::max)()) {
+		ullNewScrollPos = m_ullSizeMax;
+	}
+	else {
+		if (IsVert()) {
+			if (iPos + static_cast<int>(uiThumbSize) > rcWorkArea.Height()) {
+				iPos = rcWorkArea.Height() - uiThumbSize;
+			}
+		}
+		else {
+			if (iPos + static_cast<int>(uiThumbSize) > rcWorkArea.Width()) {
+				iPos = rcWorkArea.Width() - uiThumbSize;
+			}
+		}
+		ullNewScrollPos = static_cast<ULONGLONG>(std::llroundl(iPos * GetThumbScrollingSize()));
+	}
+
+	SetScrollPos(ullNewScrollPos);
+}
+
+void CHexScroll::UpdateScrollBarSizeForDPI()
+{
+	m_dwBarSizeWH = ::GetSystemMetricsForDpi(IsVert() ? SM_CXVSCROLL : SM_CXHSCROLL, ::GetDpiForWindow(m_Wnd));
+}
+
+auto CHexScroll::WMDestroy(const MSG& msg)->LRESULT
 {
 	::DeleteObject(m_hBmpArrowFirst);
 	::DeleteObject(m_hBmpArrowLast);
@@ -872,7 +922,7 @@ auto CHexScroll::OnDestroy(const MSG& msg)->LRESULT
 	return GDIUT::DefWndProc(msg);
 }
 
-auto CHexScroll::OnTimer(const MSG& msg)->LRESULT
+auto CHexScroll::WMTimer(const MSG& msg)->LRESULT
 {
 	constexpr auto uTimerRepeat { 50U }; //Milliseconds for repeat when click and hold on channel.
 	using enum EState; using enum ETimer;
@@ -935,55 +985,4 @@ auto CHexScroll::OnTimer(const MSG& msg)->LRESULT
 	}
 
 	return 0;
-}
-
-void CHexScroll::RedrawNC()const
-{
-	//To repaint NC area.
-	if (const auto wndParent = GetParent(); !wndParent.IsNull()) {
-		wndParent.SetWindowPos(nullptr, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
-	}
-}
-
-void CHexScroll::SendParentScrollMsg()const
-{
-	GetParent().SendMsg(IsVert() ? WM_VSCROLL : WM_HSCROLL);
-}
-
-void CHexScroll::SetThumbPos(int iPos)
-{
-	if (iPos == GetThumbPos()) {
-		return;
-	}
-
-	const auto rcWorkArea = GetScrollWorkAreaRect();
-	const auto uiThumbSize = GetThumbSizeWH();
-	ULONGLONG ullNewScrollPos;
-
-	if (iPos < 0) {
-		ullNewScrollPos = 0;
-	}
-	else if (iPos == (std::numeric_limits<int>::max)()) {
-		ullNewScrollPos = m_ullSizeMax;
-	}
-	else {
-		if (IsVert()) {
-			if (iPos + static_cast<int>(uiThumbSize) > rcWorkArea.Height()) {
-				iPos = rcWorkArea.Height() - uiThumbSize;
-			}
-		}
-		else {
-			if (iPos + static_cast<int>(uiThumbSize) > rcWorkArea.Width()) {
-				iPos = rcWorkArea.Width() - uiThumbSize;
-			}
-		}
-		ullNewScrollPos = static_cast<ULONGLONG>(std::llroundl(iPos * GetThumbScrollingSize()));
-	}
-
-	SetScrollPos(ullNewScrollPos);
-}
-
-void CHexScroll::UpdateScrollBarSizeForDPI()
-{
-	m_dwBarSizeWH = ::GetSystemMetricsForDpi(IsVert() ? SM_CXVSCROLL : SM_CXHSCROLL, ::GetDpiForWindow(m_Wnd));
 }

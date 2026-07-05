@@ -82,43 +82,15 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] bool IsNoEsc()const;
 		[[nodiscard]] bool IsShowAsHex()const;
 		[[nodiscard]] bool IsSwapEndian()const;
-		auto OnActivate(const MSG& msg) -> INT_PTR;
 		void OnBnLoadTemplate();
 		void OnBnUnloadTemplate();
 		void OnBnRandomizeColors();
 		void OnBnApply();
 		void OnCancel();
-		auto OnCommand(const MSG& msg) -> INT_PTR;
 		void OnCheckHex();
 		void OnCheckSwapEndian();
 		void OnCheckMin();
-		auto OnClose() -> INT_PTR;
-		auto OnCtlClrStatic(const MSG& msg) -> INT_PTR;
-		auto OnDestroy() -> INT_PTR;
-		auto OnDPIChanged(const MSG& msg) -> INT_PTR;
-		auto OnDrawItem(const MSG& msg) -> INT_PTR;
-		auto OnGetDPIScaledSize(const MSG& msg) -> INT_PTR;
-		auto OnInitDialog(const MSG& msg) -> INT_PTR;
-		auto OnLButtonDown(const MSG& msg) -> INT_PTR;
-		auto OnLButtonUp(const MSG& msg) -> INT_PTR;
-		auto OnMeasureItem(const MSG& msg) -> INT_PTR;
-		auto OnMouseActivate(const MSG& msg) -> INT_PTR;
-		auto OnMouseMove(const MSG& msg) -> INT_PTR;
-		auto OnNotify(const MSG& msg) -> INT_PTR;
-		void OnNotifyListDblClick(NMHDR* pNMHDR);
-		void OnNotifyListEditBegin(NMHDR* pNMHDR);
-		void OnNotifyListEnterPressed(NMHDR* pNMHDR);
-		void OnNotifyListGetColor(NMHDR* pNMHDR);
-		void OnNotifyListGetDispInfo(NMHDR* pNMHDR);
-		void OnNotifyListHdrRClick(NMHDR* pNMHDR);
-		void OnNotifyListItemChanged(NMHDR* pNMHDR);
-		void OnNotifyListRClick(NMHDR* pNMHDR);
-		void OnNotifyListSetData(NMHDR* pNMHDR);
-		void OnNotifyTreeGetDispInfo(NMHDR* pNMHDR);
-		void OnNotifyTreeItemChanged(NMHDR* pNMHDR);
-		void OnNotifyTreeRClick(NMHDR* pNMHDR);
 		void OnOK();
-		auto OnSize(const MSG& msg) -> INT_PTR;
 		void OnTemplateApplyDisapply(int iAppliedID, bool fApply);
 		void OnTemplateLoadUnload(int iTemplateID, bool fLoad);
 		void RandomizeTemplateColors(int iTemplateID);
@@ -151,9 +123,37 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] auto TreeItemFromListItem(int iListItem)const -> HTREEITEM;
 		void UpdateDateTimeFormat();
 		void UpdateStaticText();
+		auto WMActivate(const MSG& msg) -> INT_PTR;
+		auto WMCommand(const MSG& msg) -> INT_PTR;
+		auto WMClose() -> INT_PTR;
+		auto WMCtlColorStatic(const MSG& msg) -> INT_PTR;
+		auto WMDestroy() -> INT_PTR;
+		auto WMDPIChanged(const MSG& msg) -> INT_PTR;
+		auto WMDrawItem(const MSG& msg) -> INT_PTR;
+		auto WMGetDPIScaledSize(const MSG& msg) -> INT_PTR;
+		auto WMInitDialog(const MSG& msg) -> INT_PTR;
+		auto WMLButtonDown(const MSG& msg) -> INT_PTR;
+		auto WMLButtonUp(const MSG& msg) -> INT_PTR;
+		auto WMMeasureItem(const MSG& msg) -> INT_PTR;
+		auto WMMouseActivate(const MSG& msg) -> INT_PTR;
+		auto WMMouseMove(const MSG& msg) -> INT_PTR;
+		auto WMNotify(const MSG& msg) -> INT_PTR;
+		void WMNotifyListDblClick(NMHDR* pNMHDR);
+		void WMNotifyListEditBegin(NMHDR* pNMHDR);
+		void WMNotifyListEnterPressed(NMHDR* pNMHDR);
+		void WMNotifyListGetColor(NMHDR* pNMHDR);
+		void WMNotifyListGetDispInfo(NMHDR* pNMHDR);
+		void WMNotifyListHdrRClick(NMHDR* pNMHDR);
+		void WMNotifyListItemChanged(NMHDR* pNMHDR);
+		void WMNotifyListRClick(NMHDR* pNMHDR);
+		void WMNotifyListSetData(NMHDR* pNMHDR);
+		void WMNotifyTreeGetDispInfo(NMHDR* pNMHDR);
+		void WMNotifyTreeItemChanged(NMHDR* pNMHDR);
+		void WMNotifyTreeRClick(NMHDR* pNMHDR);
+		auto WMSize(const MSG& msg) -> INT_PTR;
 	private:
 		enum EListColumns : std::int8_t;
-		GDIUT::CSplitter m_SplitHorz;
+		GDIUT::CSplitter m_SplitVert;
 		GDIUT::CDynLayout m_DynLayout;
 		HINSTANCE m_hInstRes { };
 		GDIUT::CWnd m_Wnd;
@@ -257,7 +257,7 @@ auto CHexDlgTemplMgr::ApplyTemplate(ULONGLONG ullOffset, std::wstring_view wsvTe
 
 void CHexDlgTemplMgr::CreateDlg()const
 {
-	//m_Wnd is set in the OnInitDialog().
+	//m_Wnd is set in the WMInitDialog().
 	if (const auto hWnd = ::CreateDialogParamW(m_hInstRes, MAKEINTRESOURCEW(IDD_HEXCTRL_TEMPLMGR),
 		m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN), GDIUT::DlgProc<CHexDlgTemplMgr>, reinterpret_cast<LPARAM>(this));
 		hWnd == nullptr) {
@@ -408,22 +408,22 @@ bool CHexDlgTemplMgr::PreTranslateMsg(MSG* pMsg)
 auto CHexDlgTemplMgr::ProcessMsg(const MSG& msg)->INT_PTR
 {
 	switch (msg.message) {
-	case WM_ACTIVATE: return OnActivate(msg);
-	case WM_CLOSE: return OnClose();
-	case WM_COMMAND: return OnCommand(msg);
-	case WM_CTLCOLORSTATIC: return OnCtlClrStatic(msg);
-	case WM_DESTROY: return OnDestroy();
-	case WM_DPICHANGED: return OnDPIChanged(msg);
-	case WM_DRAWITEM: return OnDrawItem(msg);
-	case WM_GETDPISCALEDSIZE: return OnGetDPIScaledSize(msg);
-	case WM_INITDIALOG: return OnInitDialog(msg);
-	case WM_LBUTTONDOWN: return OnLButtonDown(msg);
-	case WM_LBUTTONUP: return OnLButtonUp(msg);
-	case WM_MEASUREITEM: return OnMeasureItem(msg);
-	case WM_MOUSEACTIVATE: return OnMouseActivate(msg);
-	case WM_MOUSEMOVE: return OnMouseMove(msg);
-	case WM_NOTIFY: return OnNotify(msg);
-	case WM_SIZE: return OnSize(msg);
+	case WM_ACTIVATE: return WMActivate(msg);
+	case WM_CLOSE: return WMClose();
+	case WM_COMMAND: return WMCommand(msg);
+	case WM_CTLCOLORSTATIC: return WMCtlColorStatic(msg);
+	case WM_DESTROY: return WMDestroy();
+	case WM_DPICHANGED: return WMDPIChanged(msg);
+	case WM_DRAWITEM: return WMDrawItem(msg);
+	case WM_GETDPISCALEDSIZE: return WMGetDPIScaledSize(msg);
+	case WM_INITDIALOG: return WMInitDialog(msg);
+	case WM_LBUTTONDOWN: return WMLButtonDown(msg);
+	case WM_LBUTTONUP: return WMLButtonUp(msg);
+	case WM_MEASUREITEM: return WMMeasureItem(msg);
+	case WM_MOUSEACTIVATE: return WMMouseActivate(msg);
+	case WM_MOUSEMOVE: return WMMouseMove(msg);
+	case WM_NOTIFY: return WMNotify(msg);
+	case WM_SIZE: return WMSize(msg);
 	default:
 		return 0;
 	}
@@ -554,16 +554,6 @@ bool CHexDlgTemplMgr::IsSwapEndian()const
 	return m_WndBtnEndian.IsChecked();
 }
 
-auto CHexDlgTemplMgr::OnActivate(const MSG& msg)->INT_PTR
-{
-	if (const auto pHex = GetHexCtrl();
-		pHex != nullptr && pHex->IsCreated() && pHex->IsDataSet() && LOWORD(msg.wParam) == WA_ACTIVE) {
-		UpdateDateTimeFormat();
-	}
-
-	return 0;
-}
-
 void CHexDlgTemplMgr::OnBnLoadTemplate()
 {
 	IFileOpenDialog *pIFOD { };
@@ -667,7 +657,7 @@ void CHexDlgTemplMgr::OnCancel()
 	if (IsNoEsc()) //Not closing Dialog on Escape key.
 		return;
 
-	OnClose();
+	WMClose();
 }
 
 void CHexDlgTemplMgr::OnCheckHex()
@@ -725,791 +715,6 @@ void CHexDlgTemplMgr::OnCheckMin()
 	m_WndBtnMin.SetBitmap(fMinimize ? m_hBmpMax : m_hBmpMin); //Set arrow bitmap to the min-max checkbox.
 }
 
-auto CHexDlgTemplMgr::OnClose()->INT_PTR
-{
-	ShowWindow(SW_HIDE);
-	return TRUE;
-}
-
-auto CHexDlgTemplMgr::OnCommand(const MSG& msg)->INT_PTR
-{
-	const auto uCtrlID = LOWORD(msg.wParam); //Control ID or menu ID.
-	const auto uCode = HIWORD(msg.wParam);   //Control code, zero for menu.
-	const auto hWndCtrl = reinterpret_cast<HWND>(msg.lParam); //Control HWND, zero for menu.
-
-	//IDOK and IDCANCEL don't have HWND in lParam, if send as result of
-	//IsDialogMessage and no button with such ID presents in the dialog.
-	if (hWndCtrl != nullptr || uCtrlID == IDOK || uCtrlID == IDCANCEL) { //Notifications from controls.
-		if (uCode != BN_CLICKED) { return FALSE; }
-		switch (uCtrlID) {
-		case IDOK: OnOK(); break;
-		case IDCANCEL: OnCancel(); break;
-		case IDC_HEXCTRL_TEMPLMGR_BTN_APPLY: OnBnApply(); break;
-		case IDC_HEXCTRL_TEMPLMGR_BTN_LOAD: OnBnLoadTemplate(); break;
-		case IDC_HEXCTRL_TEMPLMGR_BTN_UNLOAD: OnBnUnloadTemplate(); break;
-		case IDC_HEXCTRL_TEMPLMGR_BTN_RNDCLR: OnBnRandomizeColors(); break;
-		case IDC_HEXCTRL_TEMPLMGR_CHK_HEX: OnCheckHex(); break;
-		case IDC_HEXCTRL_TEMPLMGR_CHK_SWAP: OnCheckSwapEndian(); break;
-		case IDC_HEXCTRL_TEMPLMGR_CHK_MIN: OnCheckMin(); break;
-		default: return FALSE;
-		}
-	}
-	else { //Notifications from menus.
-		using enum EMenuID;
-		switch (static_cast<EMenuID>(uCtrlID)) {
-		case IDM_TREE_DISAPPLY:
-			if (const auto iAppliedID = GetSelectedAppliedID(); iAppliedID > 0) {
-				DisapplyByID(iAppliedID);
-				RedrawHexCtrl();
-			}
-			break;
-		case IDM_TREE_DISAPPLYALL:
-			DisapplyAll();
-			RedrawHexCtrl();
-			break;
-		case IDM_LIST_HDR_TYPE:
-		case IDM_LIST_HDR_NAME:
-		case IDM_LIST_HDR_OFFSET:
-		case IDM_LIST_HDR_SIZE:
-		case IDM_LIST_HDR_DATA:
-		case IDM_LIST_HDR_ENDIANNESS:
-		case IDM_LIST_HDR_DESCRIPTION:
-		case IDM_LIST_HDR_COLORS:
-		{
-			const auto fChecked = m_MenuHdr.IsItemChecked(uCtrlID);
-			m_ListEx.HideColumn(uCtrlID - static_cast<int>(IDM_LIST_HDR_TYPE), fChecked);
-			m_MenuHdr.SetItemCheck(uCtrlID, !fChecked);
-		}
-		break;
-		default: return FALSE;
-		}
-	}
-
-	return TRUE;
-}
-
-auto CHexDlgTemplMgr::OnCtlClrStatic(const MSG& msg)->INT_PTR
-{
-	if (const auto hWndFrom = reinterpret_cast<HWND>(msg.lParam);
-		hWndFrom == m_WndStatOffset || hWndFrom == m_WndStatSize) {
-		const auto hDC = reinterpret_cast<HDC>(msg.wParam);
-		::SetTextColor(hDC, RGB(0, 50, 250));
-		::SetBkColor(hDC, ::GetSysColor(COLOR_3DFACE));
-		return reinterpret_cast<INT_PTR>(::GetSysColorBrush(COLOR_3DFACE));
-	}
-
-	return FALSE; //Default handler.
-}
-
-auto CHexDlgTemplMgr::OnDestroy()->INT_PTR
-{
-	m_MenuTree.DestroyMenu();
-	m_MenuHdr.DestroyMenu();
-	m_pVecFieldsCurr = nullptr;
-	m_hTreeCurrParent = nullptr;
-	m_pHexCtrl = nullptr;
-	m_u64Flags = { };
-	m_DynLayout.RemoveAll();
-	::DeleteObject(m_hBmpMin);
-	::DeleteObject(m_hBmpMax);
-
-	return TRUE;
-}
-
-auto CHexDlgTemplMgr::OnDPIChanged([[maybe_unused]] const MSG& msg)->INT_PTR
-{
-	CreateArrows();
-	m_DynLayout.Enable(true);
-
-	return 0;
-}
-
-auto CHexDlgTemplMgr::OnDrawItem(const MSG& msg)->INT_PTR
-{
-	const auto pDIS = reinterpret_cast<LPDRAWITEMSTRUCT>(msg.lParam);
-	if (pDIS->CtlID == static_cast<UINT>(IDC_HEXCTRL_TEMPLMGR_LIST)) {
-		m_ListEx.DrawItem(pDIS);
-	}
-
-	return TRUE;
-}
-
-auto CHexDlgTemplMgr::OnGetDPIScaledSize([[maybe_unused]] const MSG& msg)->INT_PTR
-{
-	//This message is sent to top-level windows with a DPI_AWARENESS_CONTEXT
-	//of Per Monitor v2 before a WM_DPICHANGED message is sent.
-	//We use it to temporarily disable all dynamic layout resizes,
-	//to re-enable it later in the WM_DPICHANGED handler.
-
-	m_DynLayout.Enable(false);
-	return 0;
-}
-
-auto CHexDlgTemplMgr::OnInitDialog(const MSG& msg)->INT_PTR
-{
-	m_Wnd.Attach(msg.hwnd);
-	m_WndStatOffset.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_TEMPLMGR_STAT_OFFSETNUM));
-	m_WndStatSize.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_TEMPLMGR_STAT_SIZENUM));
-	m_WndEditOffset.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_TEMPLMGR_EDIT_OFFSET));
-	m_WndBtnTT.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_TEMPLMGR_CHK_TT));
-	m_WndBtnMin.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_TEMPLMGR_CHK_MIN));
-	m_WndBtnHglSel.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_TEMPLMGR_CHK_HGL));
-	m_WndBtnHex.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_TEMPLMGR_CHK_HEX));
-	m_WndBtnEndian.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_TEMPLMGR_CHK_SWAP));
-	m_WndCmbTempl.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_TEMPLMGR_COMBO_TEMPLATES));
-	m_WndTree.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_TEMPLMGR_TREE));
-
-	m_ListEx.Create({ .hWndParent { m_Wnd }, .uID { IDC_HEXCTRL_TEMPLMGR_LIST }, .flSizeFontList { 10.F },
-		.flSizeFontHdr { 10.F }, .fDialogCtrl { true } });
-	m_ListEx.SetExtendedStyle(LVS_EX_HEADERDRAGDROP | LVS_EX_FULLROWSELECT);
-	const auto flDPIScale = GDIUT::GetDPIScaleForHWND(m_ListEx);
-	m_ListEx.InsertColumn(COL_TYPE, L"Type", LVCFMT_LEFT, std::lround(85 * flDPIScale));
-	m_ListEx.InsertColumn(COL_NAME, L"Name", LVCFMT_LEFT, std::lround(200 * flDPIScale));
-	m_ListEx.InsertColumn(COL_OFFSET, L"Offset", LVCFMT_LEFT, std::lround(50 * flDPIScale));
-	m_ListEx.InsertColumn(COL_SIZE, L"Size", LVCFMT_LEFT, std::lround(50 * flDPIScale));
-	m_ListEx.InsertColumn(COL_DATA, L"Data", LVCFMT_LEFT, std::lround(120 * flDPIScale), -1, LVCFMT_LEFT, true);
-	m_ListEx.InsertColumn(COL_ENDIAN, L"Endianness", LVCFMT_CENTER, std::lround(75 * flDPIScale), -1, LVCFMT_CENTER);
-	m_ListEx.InsertColumn(COL_DESCR, L"Description", LVCFMT_LEFT, std::lround(100 * flDPIScale), -1, LVCFMT_LEFT, true);
-	m_ListEx.InsertColumn(COL_COLORS, L"Colors", LVCFMT_LEFT, std::lround(57 * flDPIScale));
-
-	using enum EMenuID;
-	m_MenuHdr.CreatePopupMenu();
-	m_MenuHdr.AppendString(static_cast<int>(IDM_LIST_HDR_TYPE), L"Type");
-	m_MenuHdr.SetItemCheck(static_cast<int>(IDM_LIST_HDR_TYPE), true);
-	m_MenuHdr.AppendString(static_cast<int>(IDM_LIST_HDR_NAME), L"Name");
-	m_MenuHdr.SetItemCheck(static_cast<int>(IDM_LIST_HDR_NAME), true);
-	m_MenuHdr.AppendString(static_cast<int>(IDM_LIST_HDR_OFFSET), L"Offset");
-	m_MenuHdr.SetItemCheck(static_cast<int>(IDM_LIST_HDR_OFFSET), true);
-	m_MenuHdr.AppendString(static_cast<int>(IDM_LIST_HDR_SIZE), L"Size");
-	m_MenuHdr.SetItemCheck(static_cast<int>(IDM_LIST_HDR_SIZE), true);
-	m_MenuHdr.AppendString(static_cast<int>(IDM_LIST_HDR_DATA), L"Data");
-	m_MenuHdr.SetItemCheck(static_cast<int>(IDM_LIST_HDR_DATA), true);
-	m_MenuHdr.AppendString(static_cast<int>(IDM_LIST_HDR_ENDIANNESS), L"Endianness");
-	m_MenuHdr.SetItemCheck(static_cast<int>(IDM_LIST_HDR_ENDIANNESS), true);
-	m_MenuHdr.AppendString(static_cast<int>(IDM_LIST_HDR_DESCRIPTION), L"Description");
-	m_MenuHdr.SetItemCheck(static_cast<int>(IDM_LIST_HDR_DESCRIPTION), true);
-	m_MenuHdr.AppendString(static_cast<int>(IDM_LIST_HDR_COLORS), L"Colors");
-	m_MenuHdr.SetItemCheck(static_cast<int>(IDM_LIST_HDR_COLORS), true);
-
-	m_MenuTree.CreatePopupMenu();
-	m_MenuTree.AppendString(static_cast<UINT_PTR>(IDM_TREE_DISAPPLY), L"Disapply template");
-	m_MenuTree.AppendString(static_cast<UINT_PTR>(IDM_TREE_DISAPPLYALL), L"Disapply all");
-
-	m_WndEditOffset.SetWndText(L"0x0");
-	m_WndBtnTT.SetCheck(true);
-	m_WndBtnHglSel.SetCheck(IsHglSel());
-	m_WndBtnHex.SetCheck(IsShowAsHex());
-
-	m_SplitHorz.Initialize(m_Wnd, m_ListEx, GDIUT::CSplitter::EAnchorSide::SIDE_LEFT);
-	m_SplitHorz.AddItem(m_WndTree, true);
-	m_SplitHorz.SetEdges(100, m_Wnd.GetClientRect().Width() - 10);
-
-	m_DynLayout.SetHost(m_Wnd);
-	m_DynLayout.AddItem(IDC_HEXCTRL_TEMPLMGR_LIST, GDIUT::CDynLayout::MoveNone(), GDIUT::CDynLayout::SizeHorzAndVert(100, 100));
-	m_DynLayout.AddItem(IDC_HEXCTRL_TEMPLMGR_TREE, GDIUT::CDynLayout::MoveNone(), GDIUT::CDynLayout::SizeVert(100));
-	m_DynLayout.AddItem(IDC_HEXCTRL_TEMPLMGR_GRB_TOP, GDIUT::CDynLayout::MoveNone(), GDIUT::CDynLayout::SizeHorz(100));
-	m_DynLayout.AddItem(IDC_HEXCTRL_TEMPLMGR_CHK_MIN, GDIUT::CDynLayout::MoveHorz(100), GDIUT::CDynLayout::SizeNone());
-	m_DynLayout.Enable(true);
-
-	::SetWindowSubclass(m_WndTree, TreeSubclassProc, reinterpret_cast<UINT_PTR>(this), 0);
-	SetDlgButtonsState();
-
-	for (const auto& pTemplate : m_vecTemplates) {
-		OnTemplateLoadUnload(pTemplate->iTemplateID, true);
-	}
-
-	for (const auto& applied : m_vecTemplApplied) {
-		OnTemplateApplyDisapply(applied.iAppliedID, true);
-	}
-
-	CreateArrows();
-	UpdateDateTimeFormat();
-
-	return TRUE;
-}
-
-auto CHexDlgTemplMgr::OnLButtonDown([[maybe_unused]] const MSG& msg)->INT_PTR
-{
-	m_SplitHorz.WMLButtonDown(ut::GetXLPARAM(msg.lParam), ut::GetYLPARAM(msg.lParam));
-	if (m_SplitHorz.IsSplitting()) {
-		m_DynLayout.Enable(false);
-	}
-
-	return TRUE;
-}
-
-auto CHexDlgTemplMgr::OnLButtonUp([[maybe_unused]] const MSG& msg)->INT_PTR
-{
-	m_SplitHorz.WMLButtonUp();
-	m_DynLayout.Enable(true);
-
-	return TRUE;
-}
-
-auto CHexDlgTemplMgr::OnMeasureItem(const MSG& msg)->INT_PTR
-{
-	const auto pMIS = reinterpret_cast<LPMEASUREITEMSTRUCT>(msg.lParam);
-	if (pMIS->CtlID == static_cast<UINT>(IDC_HEXCTRL_TEMPLMGR_LIST)) {
-		m_ListEx.MeasureItem(pMIS);
-	}
-
-	return TRUE;
-}
-
-auto CHexDlgTemplMgr::OnMouseActivate([[maybe_unused]] const MSG& msg)->INT_PTR
-{
-	if (const auto pHex = GetHexCtrl(); pHex != nullptr && pHex->IsCreated() && pHex->IsDataSet()) {
-		UpdateDateTimeFormat();
-	}
-
-	return MA_ACTIVATE;
-}
-
-auto CHexDlgTemplMgr::OnMouseMove(const MSG& msg)->INT_PTR
-{
-	m_SplitHorz.WMMouseMove(ut::GetXLPARAM(msg.lParam), ut::GetYLPARAM(msg.lParam));
-
-	return TRUE;
-}
-
-auto CHexDlgTemplMgr::OnNotify(const MSG& msg)->INT_PTR
-{
-	const auto pNMHDR = reinterpret_cast<NMHDR*>(msg.lParam);
-	switch (pNMHDR->idFrom) {
-	case IDC_HEXCTRL_TEMPLMGR_LIST:
-		switch (pNMHDR->code) {
-		case LVN_GETDISPINFOW: OnNotifyListGetDispInfo(pNMHDR); break;
-		case LVN_ITEMCHANGED: OnNotifyListItemChanged(pNMHDR); break;
-		case NM_DBLCLK: OnNotifyListDblClick(pNMHDR); break;
-		case NM_RCLICK: OnNotifyListRClick(pNMHDR); break;
-		case NM_RETURN: OnNotifyListEnterPressed(pNMHDR); break;
-		case LISTEX::LISTEX_MSG_EDITBEGIN: OnNotifyListEditBegin(pNMHDR); break;
-		case LISTEX::LISTEX_MSG_GETCOLOR: OnNotifyListGetColor(pNMHDR); break;
-		case LISTEX::LISTEX_MSG_HDRRBTNUP: OnNotifyListHdrRClick(pNMHDR); break;
-		case LISTEX::LISTEX_MSG_SETDATA: OnNotifyListSetData(pNMHDR); break;
-		default: break;
-		}
-	case IDC_HEXCTRL_TEMPLMGR_TREE:
-		switch (pNMHDR->code) {
-		case NM_RCLICK: OnNotifyTreeRClick(pNMHDR); break;
-		case TVN_GETDISPINFOW: OnNotifyTreeGetDispInfo(pNMHDR); break;
-		case TVN_SELCHANGEDW: OnNotifyTreeItemChanged(pNMHDR); break;
-		default: break;
-		}
-	default: break;
-	}
-
-	return TRUE;
-}
-
-void CHexDlgTemplMgr::OnNotifyListDblClick(NMHDR* pNMHDR)
-{
-	const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
-	const auto iItem = pNMI->iItem;
-	if (iItem < 0)
-		return;
-
-	const auto& vec = *m_pVecFieldsCurr;
-	if (vec[iItem]->vecNested.empty())
-		return;
-
-	m_fListGuardEvent = true; //To prevent nasty OnListItemChanged to fire after this method ends.
-	m_pVecFieldsCurr = &vec[iItem]->vecNested;
-
-	const auto hItem = TreeItemFromListItem(iItem);
-	m_hTreeCurrParent = hItem;
-	m_WndTree.Expand(hItem, TVE_EXPAND);
-
-	m_ListEx.SetItemState(-1, 0, LVIS_SELECTED | LVIS_FOCUSED); //Deselect all items.
-	m_ListEx.SetItemCountEx(static_cast<int>(m_pVecFieldsCurr->size()));
-	m_ListEx.RedrawWindow();
-	m_fListGuardEvent = false;
-}
-
-void CHexDlgTemplMgr::OnNotifyListEditBegin(NMHDR* pNMHDR)
-{
-	const auto pLDI = reinterpret_cast<LISTEX::PLISTEXDATAINFO>(pNMHDR);
-	const auto& pField = (*m_pVecFieldsCurr)[pLDI->iItem];
-
-	if (!pField->vecNested.empty() || (pField->eType == EHexFieldType::custom_size
-		&& pField->iSize != 1 && pField->iSize != 2 && pField->iSize != 4 && pField->iSize != 8)) {
-		pLDI->fAllowEdit = false; //Do not show edit-box if clicked on nested fields.
-	}
-}
-
-void CHexDlgTemplMgr::OnNotifyListEnterPressed([[maybe_unused]] NMHDR* pNMHDR)
-{
-	const auto uSelected = m_ListEx.GetSelectedCount();
-	if (uSelected != 1)
-		return;
-
-	//Simulate DblClick in List with Enter key.
-	NMITEMACTIVATE nmii { .iItem = m_ListEx.GetSelectionMark() };
-	OnNotifyListDblClick(&nmii.hdr);
-}
-
-void CHexDlgTemplMgr::OnNotifyListGetColor(NMHDR* pNMHDR)
-{
-	constexpr auto clrTextBluish { RGB(16, 42, 255) };  //Bluish text.
-	constexpr auto clrTextGreenish { RGB(0, 110, 0) };  //Green text.
-	constexpr auto clrBkGreyish { RGB(235, 235, 235) }; //Grayish bk.
-
-	const auto pLCI = reinterpret_cast<LISTEX::PLISTEXCOLORINFO>(pNMHDR);
-	const auto& pField = (*m_pVecFieldsCurr)[pLCI->iItem];
-	const auto eType = pField->eType;
-	using enum EHexFieldType;
-
-	pLCI->stClr.clrText = static_cast<COLORREF>(-1); //Default text color.
-
-	//List items with nested structs colored separately with greyish bk.
-	if (!pField->vecNested.empty() && pLCI->iSubItem != COL_COLORS) {
-		pLCI->stClr.clrBk = clrBkGreyish;
-		if (pLCI->iSubItem == COL_TYPE) {
-			if (eType == type_custom) {
-				if (pField->iCustomTypeID > 0) {
-					pLCI->stClr.clrText = clrTextGreenish;
-				}
-			}
-			else if (eType != custom_size) {
-				pLCI->stClr.clrText = clrTextBluish;
-			}
-		}
-
-		return;
-	}
-
-	switch (pLCI->iSubItem) {
-	case COL_TYPE:
-		if (eType != type_custom && eType != custom_size) {
-			pLCI->stClr.clrText = clrTextBluish;
-			pLCI->stClr.clrBk = static_cast<COLORREF>(-1); //Default bk color.
-			return;
-		}
-		break;
-	case COL_COLORS:
-		pLCI->stClr.clrBk = pField->stClr.clrBk;
-		pLCI->stClr.clrText = pField->stClr.clrText;
-		return;
-	default:
-		break;
-	}
-}
-
-void CHexDlgTemplMgr::OnNotifyListGetDispInfo(NMHDR* pNMHDR)
-{
-	const auto pDispInfo = reinterpret_cast<NMLVDISPINFOW*>(pNMHDR);
-	const auto pItem = &pDispInfo->item;
-	if ((pItem->mask & LVIF_TEXT) == 0)
-		return;
-
-	const auto& pField = (*m_pVecFieldsCurr)[pItem->iItem];
-	const auto wsvFmt = IsShowAsHex() ? L"0x{:X}" : L"{}";
-	const auto fShouldSwap = pField->fBigEndian == !IsSwapEndian();
-	using enum EHexFieldType;
-
-	//EHexFieldType converter to actual wstring for the list.
-	static const std::unordered_map<EHexFieldType, const wchar_t* const> umapETypeToWstr {
-		{ custom_size, L"custom size" }, { type_custom, L"custom type" },
-		{ type_bool, L"bool" }, { type_int8, L"int8" }, { type_uint8, L"uint8" },
-		{ type_int16, L"int16" }, { type_uint16, L"uint16" }, { type_int32, L"int32" },
-		{ type_uint32, L"uint32" }, { type_int64, L"int64" }, { type_uint64, L"uint64" },
-		{ type_float, L"float" }, { type_double, L"double" }, { type_time32, L"time32_t" },
-		{ type_time64, L"time64_t" }, { type_filetime, L"FILETIME" }, { type_systemtime, L"SYSTEMTIME" },
-		{ type_guid, L"GUID" }
-	};
-
-	const auto pAppliedCurr = GetSelectedApplied();
-	switch (pItem->iSubItem) {
-	case COL_TYPE:
-		if (pField->eType == type_custom) {
-			const auto& vecCT = pAppliedCurr->pTemplate->vecCustomType;
-			if (const auto it = std::find_if(vecCT.begin(), vecCT.end(),
-				[iCustomTypeID = pField->iCustomTypeID](const HEXCUSTOMTYPE& ct) {
-					return ct.iTypeID == iCustomTypeID; }); it != vecCT.end()) {
-				pItem->pszText = const_cast<LPWSTR>(it->wstrTypeName.data());
-			}
-			else {
-				pItem->pszText = const_cast<LPWSTR>(umapETypeToWstr.at(pField->eType));
-			}
-		}
-		else {
-			pItem->pszText = const_cast<LPWSTR>(umapETypeToWstr.at(pField->eType));
-		}
-		break;
-	case COL_NAME:
-		pItem->pszText = pField->wstrName.data();
-		break;
-	case COL_OFFSET:
-		*std::vformat_to(pItem->pszText, wsvFmt, std::make_wformat_args(pField->iOffset)) = L'\0';
-		break;
-	case COL_SIZE:
-		*std::vformat_to(pItem->pszText, wsvFmt, std::make_wformat_args(pField->iSize)) = L'\0';
-		break;
-	case COL_DATA:
-	{
-		if (!m_pHexCtrl->IsDataSet()
-			|| pAppliedCurr->ullOffset + pAppliedCurr->pTemplate->iSizeTotal > m_pHexCtrl->GetDataSize()) //Size overflow check.
-			break;
-
-		if (!pField->vecNested.empty()) {
-			break; //Doing nothing (no data fetch) for nested structs.
-		}
-
-		const auto ullOffset = pAppliedCurr->ullOffset + pField->iOffset;
-		const auto eType = pField->eType;
-		switch (eType) {
-		case custom_size: //If field of a custom size we cycling through the size field.
-			switch (pField->iSize) {
-			case 1:
-			{
-				const auto bData = ut::GetIHexTData<BYTE>(*m_pHexCtrl, ullOffset);
-				*std::vformat_to(pItem->pszText, wsvFmt, std::make_wformat_args(bData)) = L'\0';
-			}
-			break;
-			case 2:
-			{
-				auto wData = ut::GetIHexTData<WORD>(*m_pHexCtrl, ullOffset);
-				if (fShouldSwap) {
-					wData = ut::ByteSwap(wData);
-				}
-				*std::vformat_to(pItem->pszText, wsvFmt, std::make_wformat_args(wData)) = L'\0';
-			}
-			break;
-			case 4:
-			{
-				auto dwData = ut::GetIHexTData<DWORD>(*m_pHexCtrl, ullOffset);
-				if (fShouldSwap) {
-					dwData = ut::ByteSwap(dwData);
-				}
-				*std::vformat_to(pItem->pszText, wsvFmt, std::make_wformat_args(dwData)) = L'\0';
-			}
-			break;
-			case 8:
-			{
-				auto ullData = ut::GetIHexTData<std::uint64_t>(*m_pHexCtrl, ullOffset);
-				if (fShouldSwap) {
-					ullData = ut::ByteSwap(ullData);
-				}
-				*std::vformat_to(pItem->pszText, wsvFmt, std::make_wformat_args(ullData)) = L'\0';
-			}
-			break;
-			default:
-				break;
-			}
-			break;
-		case type_bool:
-			ShowListDataBool(pItem->pszText, ut::GetIHexTData<std::uint8_t>(*m_pHexCtrl, ullOffset));
-			break;
-		case type_int8:
-			ShowListDataNUMBER(pItem->pszText, ut::GetIHexTData<std::int8_t>(*m_pHexCtrl, ullOffset), false);
-			break;
-		case type_uint8:
-			ShowListDataNUMBER(pItem->pszText, ut::GetIHexTData<std::uint8_t>(*m_pHexCtrl, ullOffset), false);
-			break;
-		case type_int16:
-			ShowListDataNUMBER(pItem->pszText, ut::GetIHexTData<std::int16_t>(*m_pHexCtrl, ullOffset), fShouldSwap);
-			break;
-		case type_uint16:
-			ShowListDataNUMBER(pItem->pszText, ut::GetIHexTData<std::uint16_t>(*m_pHexCtrl, ullOffset), fShouldSwap);
-			break;
-		case type_int32:
-			ShowListDataNUMBER(pItem->pszText, ut::GetIHexTData<std::int32_t>(*m_pHexCtrl, ullOffset), fShouldSwap);
-			break;
-		case type_uint32:
-			ShowListDataNUMBER(pItem->pszText, ut::GetIHexTData<std::uint32_t>(*m_pHexCtrl, ullOffset), fShouldSwap);
-			break;
-		case type_int64:
-			ShowListDataNUMBER(pItem->pszText, ut::GetIHexTData<std::int64_t>(*m_pHexCtrl, ullOffset), fShouldSwap);
-			break;
-		case type_uint64:
-			ShowListDataNUMBER(pItem->pszText, ut::GetIHexTData<std::uint64_t>(*m_pHexCtrl, ullOffset), fShouldSwap);
-			break;
-		case type_float:
-			ShowListDataNUMBER(pItem->pszText, ut::GetIHexTData<float>(*m_pHexCtrl, ullOffset), fShouldSwap);
-			break;
-		case type_double:
-			ShowListDataNUMBER(pItem->pszText, ut::GetIHexTData<double>(*m_pHexCtrl, ullOffset), fShouldSwap);
-			break;
-		case type_time32:
-			ShowListDataTime32(pItem->pszText, ut::GetIHexTData<__time32_t>(*m_pHexCtrl, ullOffset), fShouldSwap);
-			break;
-		case type_time64:
-			ShowListDataTime64(pItem->pszText, ut::GetIHexTData<__time64_t>(*m_pHexCtrl, ullOffset), fShouldSwap);
-			break;
-		case type_filetime:
-			ShowListDataFILETIME(pItem->pszText, ut::GetIHexTData<FILETIME>(*m_pHexCtrl, ullOffset), fShouldSwap);
-			break;
-		case type_systemtime:
-			ShowListDataSYSTEMTIME(pItem->pszText, ut::GetIHexTData<SYSTEMTIME>(*m_pHexCtrl, ullOffset), fShouldSwap);
-			break;
-		case type_guid:
-			ShowListDataGUID(pItem->pszText, ut::GetIHexTData<GUID>(*m_pHexCtrl, ullOffset), fShouldSwap);
-			break;
-		default:
-			break;
-		}
-	}
-	break;
-	case COL_ENDIAN:
-		*std::vformat_to(pItem->pszText, fShouldSwap ? L"big" : L"little",
-			std::make_wformat_args()) = L'\0';
-		break;
-	case COL_DESCR:
-		*std::format_to(pItem->pszText, L"{}", pField->wstrDescr) = L'\0';
-		break;
-	case COL_COLORS:
-		*std::format_to(pItem->pszText, L"#Text") = L'\0';
-		break;
-	default:
-		break;
-	}
-}
-
-void CHexDlgTemplMgr::OnNotifyListHdrRClick([[maybe_unused]] NMHDR* pNMHDR)
-{
-	POINT ptCur;
-	::GetCursorPos(&ptCur);
-	m_MenuHdr.TrackPopupMenu(ptCur.x, ptCur.y, m_Wnd);
-}
-
-void CHexDlgTemplMgr::OnNotifyListItemChanged(NMHDR* pNMHDR)
-{
-	const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
-	const auto iItem = pNMI->iItem;
-	if (iItem < 0 || m_fListGuardEvent)
-		return;
-
-	m_WndTree.SelectItem(TreeItemFromListItem(iItem));
-}
-
-void CHexDlgTemplMgr::OnNotifyListRClick([[maybe_unused]] NMHDR* pNMHDR)
-{ }
-
-void CHexDlgTemplMgr::OnNotifyListSetData(NMHDR* pNMHDR)
-{
-	const auto pLDI = reinterpret_cast<LISTEX::PLISTEXDATAINFO>(pNMHDR);
-	const auto pwszText = pLDI->pwszData;
-	const auto& pField = (*m_pVecFieldsCurr)[pLDI->iItem];
-
-	if (pLDI->iSubItem == COL_DATA) {
-		if (!m_pHexCtrl->IsDataSet()) {
-			return;
-		}
-
-		const auto ullOffset = GetSelectedApplied()->ullOffset + pField->iOffset;
-		const auto fShouldSwap = pField->fBigEndian == !IsSwapEndian();
-
-		bool fSetRet { };
-		using enum EHexFieldType;
-		switch (pField->eType) {
-		case custom_size:
-			fSetRet = true;
-			switch (pField->iSize) {
-			case 1:
-				if (const auto opt = stn::StrToUInt8(pwszText); opt) {
-					SetTData(*opt, ullOffset, false);
-				}
-				break;
-			case 2:
-				if (const auto opt = stn::StrToUInt16(pwszText); opt) {
-					SetTData(*opt, ullOffset, false);
-				}
-				break;
-			case 4:
-				if (const auto opt = stn::StrToUInt32(pwszText); opt) {
-					SetTData(*opt, ullOffset, false);
-				}
-				break;
-			case 8:
-				if (const auto opt = stn::StrToUInt64(pwszText); opt) {
-					SetTData(*opt, ullOffset, false);
-				}
-				break;
-			default:
-				fSetRet = false;
-				break;
-			}
-			break;
-		case type_bool:
-			fSetRet = SetDataBool(pwszText, ullOffset);
-			break;
-		case type_int8:
-			fSetRet = SetDataNUMBER<std::int8_t>(pwszText, ullOffset, false);
-			break;
-		case type_uint8:
-			fSetRet = SetDataNUMBER<std::uint8_t>(pwszText, ullOffset, false);
-			break;
-		case type_int16:
-			fSetRet = SetDataNUMBER<std::int16_t>(pwszText, ullOffset, fShouldSwap);
-			break;
-		case type_uint16:
-			fSetRet = SetDataNUMBER<std::uint16_t>(pwszText, ullOffset, fShouldSwap);
-			break;
-		case type_int32:
-			fSetRet = SetDataNUMBER<std::int32_t>(pwszText, ullOffset, fShouldSwap);
-			break;
-		case type_uint32:
-			fSetRet = SetDataNUMBER<std::uint32_t>(pwszText, ullOffset, fShouldSwap);
-			break;
-		case type_int64:
-			fSetRet = SetDataNUMBER<std::int64_t>(pwszText, ullOffset, fShouldSwap);
-			break;
-		case type_uint64:
-			fSetRet = SetDataNUMBER<std::uint64_t>(pwszText, ullOffset, fShouldSwap);
-			break;
-		case type_float:
-			fSetRet = SetDataNUMBER<float>(pwszText, ullOffset, fShouldSwap);
-			break;
-		case type_double:
-			fSetRet = SetDataNUMBER<double>(pwszText, ullOffset, fShouldSwap);
-			break;
-		case type_time32:
-			fSetRet = SetDataTime32(pwszText, ullOffset, fShouldSwap);
-			break;
-		case type_time64:
-			fSetRet = SetDataTime64(pwszText, ullOffset, fShouldSwap);
-			break;
-		case type_filetime:
-			fSetRet = SetDataFILETIME(pwszText, ullOffset, fShouldSwap);
-			break;
-		case type_systemtime:
-			fSetRet = SetDataSYSTEMTIME(pwszText, ullOffset, fShouldSwap);
-			break;
-		case type_guid:
-			fSetRet = SetDataGUID(pwszText, ullOffset, fShouldSwap);
-			break;
-		default:
-			break;
-		}
-
-		if (!fSetRet) {
-			::MessageBoxW(m_Wnd, L"Incorrect input data.", L"Incorrect input", MB_ICONERROR);
-			return;
-		}
-	}
-	else if (pLDI->iSubItem == COL_DESCR) {
-		pField->wstrDescr = pwszText;
-	}
-
-	RedrawHexCtrl();
-}
-
-void CHexDlgTemplMgr::OnNotifyTreeGetDispInfo(NMHDR* pNMHDR)
-{
-	const auto pDispInfo = reinterpret_cast<NMTVDISPINFOW*>(pNMHDR);
-	const auto pItem = &pDispInfo->item;
-	if ((pItem->mask & TVIF_TEXT) == 0)
-		return;
-
-	const std::wstring* pwstr;
-	const auto uzItemData = m_WndTree.GetItemData(pItem->hItem);
-	if (m_WndTree.GetParentItem(pItem->hItem) == nullptr) { //Root node.
-		pwstr = &TMPLGetAppliedByID(static_cast<int>(uzItemData))->pTemplate->wstrName;
-	}
-	else {
-		pwstr = &reinterpret_cast<PCHEXTEMPLFIELD>(uzItemData)->wstrName;
-	}
-	std::copy(pwstr->begin(), pwstr->end(), pItem->pszText);
-}
-
-void CHexDlgTemplMgr::OnNotifyTreeItemChanged(NMHDR* pNMHDR)
-{
-	const auto pTree = reinterpret_cast<LPNMTREEVIEWW>(pNMHDR);
-	const auto pItemNew = &pTree->itemNew;
-	const auto pItemOld = &pTree->itemOld;
-	const auto hItemParent = m_WndTree.GetParentItem(pItemNew->hItem);
-	const auto uzItemData = m_WndTree.GetItemData(pItemNew->hItem);
-
-	//Item was changed by m_WndTree.SelectItem (from RClick, or list) or by m_WndTree.DeleteItem.
-	//If hItemParent==nullptr and action==TVC_UNKNOWN, it was RClick on root node.
-	if (pTree->action == TVC_UNKNOWN && hItemParent != nullptr) {
-		SetHexSelByField(reinterpret_cast<PCHEXTEMPLFIELD>(uzItemData));
-		return;
-	}
-
-	m_fListGuardEvent = true; //To not trigger OnListItemChanged on the way.
-	bool fRootNodeClick { false };
-	PCHEXTEMPLFIELD pFieldCurr { };
-	PCVecFields pVecCurrFields { };
-	const auto iAppliedIDPrev = GetAppliedIDFromTree(pItemOld->hItem);
-	const auto iAppliedIDCurr = GetAppliedIDFromTree(pItemNew->hItem);
-	const auto pAppliedCurr = GetSelectedApplied();
-	m_ListEx.SetItemState(-1, 0, LVIS_SELECTED | LVIS_FOCUSED); //Deselect all items.
-
-	if (hItemParent == nullptr) { //Root item.
-		fRootNodeClick = true;
-		pVecCurrFields = &pAppliedCurr->pTemplate->vecFields; //On Root item click, set pVecCurrFields to Template's main vecFields.
-		m_hTreeCurrParent = pItemNew->hItem;
-	}
-	else { //Child items.
-		pFieldCurr = reinterpret_cast<PCHEXTEMPLFIELD>(uzItemData);
-		if (pFieldCurr->pFieldParent == nullptr) {
-			if (pFieldCurr->vecNested.empty()) { //On first level child items, set pVecCurrFields to Template's main vecFields.
-				pVecCurrFields = &pAppliedCurr->pTemplate->vecFields;
-				m_hTreeCurrParent = hItemParent;
-			}
-			else { //If it's nested Fields vector, set pVecCurrFields to it.
-				fRootNodeClick = true;
-				pVecCurrFields = &pFieldCurr->vecNested;
-				m_hTreeCurrParent = pItemNew->hItem;
-			}
-		}
-		else { //If it's nested Field, set pVecCurrFields to parent Fields' vecNested.
-			if (pFieldCurr->vecNested.empty()) {
-				pVecCurrFields = &pFieldCurr->pFieldParent->vecNested;
-				m_hTreeCurrParent = hItemParent;
-			}
-			else {
-				fRootNodeClick = true;
-				pVecCurrFields = &pFieldCurr->vecNested;
-				m_hTreeCurrParent = pItemNew->hItem;
-			}
-		}
-	}
-
-	//To not trigger SetItemCountEx, which is slow, every time the Tree item changes.
-	//But only if Fields vector changes, or other applied template has been clicked.
-	if ((pVecCurrFields != m_pVecFieldsCurr) || (iAppliedIDPrev != iAppliedIDCurr)) {
-		m_pVecFieldsCurr = pVecCurrFields;
-		m_ListEx.SetItemCountEx(static_cast<int>(m_pVecFieldsCurr->size()), LVSICF_NOSCROLL);
-	}
-
-	UpdateStaticText();
-
-	if (!fRootNodeClick) {
-		int iIndexHighlight { 0 }; //Index to highlight in the list.
-		auto hChild = m_WndTree.GetNextItem(hItemParent, TVGN_CHILD);
-		while (hChild != pItemNew->hItem) { //Checking for currently selected item in the tree.
-			++iIndexHighlight;
-			hChild = m_WndTree.GetNextSiblingItem(hChild);
-		}
-		m_ListEx.SetItemState(iIndexHighlight, LVIS_SELECTED, LVIS_SELECTED);
-		m_ListEx.EnsureVisible(iIndexHighlight, FALSE);
-	}
-
-	SetHexSelByField(pFieldCurr);
-	m_fListGuardEvent = false;
-}
-
-void CHexDlgTemplMgr::OnNotifyTreeRClick([[maybe_unused]] NMHDR* pNMHDR)
-{
-	POINT pt;
-	::GetCursorPos(&pt);
-	POINT ptTree = pt;
-	m_WndTree.ScreenToClient(&ptTree);
-	const auto hTreeItem = m_WndTree.HitTest(ptTree);
-	const auto fHitTest = hTreeItem != nullptr;
-	const auto fHasApplied = HasApplied();
-
-	if (hTreeItem != nullptr) {
-		m_WndTree.SelectItem(hTreeItem);
-	}
-
-	m_MenuTree.EnableItem(static_cast<UINT>(EMenuID::IDM_TREE_DISAPPLY), fHasApplied && fHitTest);
-	m_MenuTree.EnableItem(static_cast<UINT>(EMenuID::IDM_TREE_DISAPPLYALL), fHasApplied);
-	m_MenuTree.TrackPopupMenu(pt.x, pt.y, m_Wnd);
-}
-
 void CHexDlgTemplMgr::OnOK()
 {
 	const auto wndFocus = GDIUT::CWnd::GetFocus();
@@ -1521,16 +726,6 @@ void CHexDlgTemplMgr::OnOK()
 	else if (wndFocus == m_WndEditOffset) { //Focus is on the "Offset" edit-box.
 		OnBnApply();
 	}
-}
-
-auto CHexDlgTemplMgr::OnSize(const MSG& msg)->INT_PTR
-{
-	const auto wWidth = LOWORD(msg.lParam);
-	const auto wHeight = HIWORD(msg.lParam);
-	m_DynLayout.OnSize(wWidth, wHeight);
-	m_SplitHorz.SetEdges(100, wWidth - 10);
-
-	return TRUE;
 }
 
 void CHexDlgTemplMgr::OnTemplateApplyDisapply(int iAppliedID, bool fApply)
@@ -2128,6 +1323,811 @@ void CHexDlgTemplMgr::UpdateStaticText()
 
 	m_WndStatOffset.SetWndText(wstrOffset);
 	m_WndStatSize.SetWndText(wstrSize);
+}
+
+auto CHexDlgTemplMgr::WMActivate(const MSG& msg)->INT_PTR
+{
+	if (const auto pHex = GetHexCtrl();
+		pHex != nullptr && pHex->IsCreated() && pHex->IsDataSet() && LOWORD(msg.wParam) == WA_ACTIVE) {
+		UpdateDateTimeFormat();
+	}
+
+	return 0;
+}
+
+auto CHexDlgTemplMgr::WMClose()->INT_PTR
+{
+	ShowWindow(SW_HIDE);
+	return TRUE;
+}
+
+auto CHexDlgTemplMgr::WMCommand(const MSG& msg)->INT_PTR
+{
+	const auto uCtrlID = LOWORD(msg.wParam); //Control ID or menu ID.
+	const auto uCode = HIWORD(msg.wParam);   //Control code, zero for menu.
+	const auto hWndCtrl = reinterpret_cast<HWND>(msg.lParam); //Control HWND, zero for menu.
+
+	//IDOK and IDCANCEL don't have HWND in lParam, if send as result of
+	//IsDialogMessage and no button with such ID presents in the dialog.
+	if (hWndCtrl != nullptr || uCtrlID == IDOK || uCtrlID == IDCANCEL) { //Notifications from controls.
+		if (uCode != BN_CLICKED) { return FALSE; }
+		switch (uCtrlID) {
+		case IDOK: OnOK(); break;
+		case IDCANCEL: OnCancel(); break;
+		case IDC_HEXCTRL_TEMPLMGR_BTN_APPLY: OnBnApply(); break;
+		case IDC_HEXCTRL_TEMPLMGR_BTN_LOAD: OnBnLoadTemplate(); break;
+		case IDC_HEXCTRL_TEMPLMGR_BTN_UNLOAD: OnBnUnloadTemplate(); break;
+		case IDC_HEXCTRL_TEMPLMGR_BTN_RNDCLR: OnBnRandomizeColors(); break;
+		case IDC_HEXCTRL_TEMPLMGR_CHK_HEX: OnCheckHex(); break;
+		case IDC_HEXCTRL_TEMPLMGR_CHK_SWAP: OnCheckSwapEndian(); break;
+		case IDC_HEXCTRL_TEMPLMGR_CHK_MIN: OnCheckMin(); break;
+		default: return FALSE;
+		}
+	}
+	else { //Notifications from menus.
+		using enum EMenuID;
+		switch (static_cast<EMenuID>(uCtrlID)) {
+		case IDM_TREE_DISAPPLY:
+			if (const auto iAppliedID = GetSelectedAppliedID(); iAppliedID > 0) {
+				DisapplyByID(iAppliedID);
+				RedrawHexCtrl();
+			}
+			break;
+		case IDM_TREE_DISAPPLYALL:
+			DisapplyAll();
+			RedrawHexCtrl();
+			break;
+		case IDM_LIST_HDR_TYPE:
+		case IDM_LIST_HDR_NAME:
+		case IDM_LIST_HDR_OFFSET:
+		case IDM_LIST_HDR_SIZE:
+		case IDM_LIST_HDR_DATA:
+		case IDM_LIST_HDR_ENDIANNESS:
+		case IDM_LIST_HDR_DESCRIPTION:
+		case IDM_LIST_HDR_COLORS:
+		{
+			const auto fChecked = m_MenuHdr.IsItemChecked(uCtrlID);
+			m_ListEx.HideColumn(uCtrlID - static_cast<int>(IDM_LIST_HDR_TYPE), fChecked);
+			m_MenuHdr.SetItemCheck(uCtrlID, !fChecked);
+		}
+		break;
+		default: return FALSE;
+		}
+	}
+
+	return TRUE;
+}
+
+auto CHexDlgTemplMgr::WMCtlColorStatic(const MSG& msg)->INT_PTR
+{
+	if (const auto hWndFrom = reinterpret_cast<HWND>(msg.lParam);
+		hWndFrom == m_WndStatOffset || hWndFrom == m_WndStatSize) {
+		const auto hDC = reinterpret_cast<HDC>(msg.wParam);
+		::SetTextColor(hDC, RGB(0, 50, 250));
+		::SetBkColor(hDC, ::GetSysColor(COLOR_3DFACE));
+		return reinterpret_cast<INT_PTR>(::GetSysColorBrush(COLOR_3DFACE));
+	}
+
+	return FALSE; //Default handler.
+}
+
+auto CHexDlgTemplMgr::WMDestroy()->INT_PTR
+{
+	m_MenuTree.DestroyMenu();
+	m_MenuHdr.DestroyMenu();
+	m_pVecFieldsCurr = nullptr;
+	m_hTreeCurrParent = nullptr;
+	m_pHexCtrl = nullptr;
+	m_u64Flags = { };
+	m_DynLayout.RemoveAll();
+	::DeleteObject(m_hBmpMin);
+	::DeleteObject(m_hBmpMax);
+
+	return TRUE;
+}
+
+auto CHexDlgTemplMgr::WMDPIChanged([[maybe_unused]] const MSG& msg)->INT_PTR
+{
+	CreateArrows();
+	m_DynLayout.Enable(true);
+
+	return 0;
+}
+
+auto CHexDlgTemplMgr::WMDrawItem(const MSG& msg)->INT_PTR
+{
+	const auto pDIS = reinterpret_cast<LPDRAWITEMSTRUCT>(msg.lParam);
+	if (pDIS->CtlID == static_cast<UINT>(IDC_HEXCTRL_TEMPLMGR_LIST)) {
+		m_ListEx.DrawItem(pDIS);
+	}
+
+	return TRUE;
+}
+
+auto CHexDlgTemplMgr::WMGetDPIScaledSize([[maybe_unused]] const MSG& msg)->INT_PTR
+{
+	//This message is sent to top-level windows with a DPI_AWARENESS_CONTEXT
+	//of Per Monitor v2 before a WM_DPICHANGED message is sent.
+	//We use it to temporarily disable all dynamic layout resizes,
+	//to re-enable it later in the WM_DPICHANGED handler.
+
+	m_DynLayout.Enable(false);
+	return 0;
+}
+
+auto CHexDlgTemplMgr::WMInitDialog(const MSG& msg)->INT_PTR
+{
+	m_Wnd.Attach(msg.hwnd);
+	m_WndStatOffset.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_TEMPLMGR_STAT_OFFSETNUM));
+	m_WndStatSize.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_TEMPLMGR_STAT_SIZENUM));
+	m_WndEditOffset.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_TEMPLMGR_EDIT_OFFSET));
+	m_WndBtnTT.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_TEMPLMGR_CHK_TT));
+	m_WndBtnMin.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_TEMPLMGR_CHK_MIN));
+	m_WndBtnHglSel.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_TEMPLMGR_CHK_HGL));
+	m_WndBtnHex.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_TEMPLMGR_CHK_HEX));
+	m_WndBtnEndian.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_TEMPLMGR_CHK_SWAP));
+	m_WndCmbTempl.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_TEMPLMGR_COMBO_TEMPLATES));
+	m_WndTree.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_TEMPLMGR_TREE));
+
+	m_ListEx.Create({ .hWndParent { m_Wnd }, .uID { IDC_HEXCTRL_TEMPLMGR_LIST }, .flSizeFontList { 10.F },
+		.flSizeFontHdr { 10.F }, .fDialogCtrl { true } });
+	m_ListEx.SetExtendedStyle(LVS_EX_HEADERDRAGDROP | LVS_EX_FULLROWSELECT);
+	const auto flDPIScale = GDIUT::GetDPIScaleForHWND(m_ListEx);
+	m_ListEx.InsertColumn(COL_TYPE, L"Type", LVCFMT_LEFT, std::lround(85 * flDPIScale));
+	m_ListEx.InsertColumn(COL_NAME, L"Name", LVCFMT_LEFT, std::lround(200 * flDPIScale));
+	m_ListEx.InsertColumn(COL_OFFSET, L"Offset", LVCFMT_LEFT, std::lround(50 * flDPIScale));
+	m_ListEx.InsertColumn(COL_SIZE, L"Size", LVCFMT_LEFT, std::lround(50 * flDPIScale));
+	m_ListEx.InsertColumn(COL_DATA, L"Data", LVCFMT_LEFT, std::lround(120 * flDPIScale), -1, LVCFMT_LEFT, true);
+	m_ListEx.InsertColumn(COL_ENDIAN, L"Endianness", LVCFMT_CENTER, std::lround(75 * flDPIScale), -1, LVCFMT_CENTER);
+	m_ListEx.InsertColumn(COL_DESCR, L"Description", LVCFMT_LEFT, std::lround(100 * flDPIScale), -1, LVCFMT_LEFT, true);
+	m_ListEx.InsertColumn(COL_COLORS, L"Colors", LVCFMT_LEFT, std::lround(57 * flDPIScale));
+
+	using enum EMenuID;
+	m_MenuHdr.CreatePopupMenu();
+	m_MenuHdr.AppendString(static_cast<int>(IDM_LIST_HDR_TYPE), L"Type");
+	m_MenuHdr.SetItemCheck(static_cast<int>(IDM_LIST_HDR_TYPE), true);
+	m_MenuHdr.AppendString(static_cast<int>(IDM_LIST_HDR_NAME), L"Name");
+	m_MenuHdr.SetItemCheck(static_cast<int>(IDM_LIST_HDR_NAME), true);
+	m_MenuHdr.AppendString(static_cast<int>(IDM_LIST_HDR_OFFSET), L"Offset");
+	m_MenuHdr.SetItemCheck(static_cast<int>(IDM_LIST_HDR_OFFSET), true);
+	m_MenuHdr.AppendString(static_cast<int>(IDM_LIST_HDR_SIZE), L"Size");
+	m_MenuHdr.SetItemCheck(static_cast<int>(IDM_LIST_HDR_SIZE), true);
+	m_MenuHdr.AppendString(static_cast<int>(IDM_LIST_HDR_DATA), L"Data");
+	m_MenuHdr.SetItemCheck(static_cast<int>(IDM_LIST_HDR_DATA), true);
+	m_MenuHdr.AppendString(static_cast<int>(IDM_LIST_HDR_ENDIANNESS), L"Endianness");
+	m_MenuHdr.SetItemCheck(static_cast<int>(IDM_LIST_HDR_ENDIANNESS), true);
+	m_MenuHdr.AppendString(static_cast<int>(IDM_LIST_HDR_DESCRIPTION), L"Description");
+	m_MenuHdr.SetItemCheck(static_cast<int>(IDM_LIST_HDR_DESCRIPTION), true);
+	m_MenuHdr.AppendString(static_cast<int>(IDM_LIST_HDR_COLORS), L"Colors");
+	m_MenuHdr.SetItemCheck(static_cast<int>(IDM_LIST_HDR_COLORS), true);
+
+	m_MenuTree.CreatePopupMenu();
+	m_MenuTree.AppendString(static_cast<UINT_PTR>(IDM_TREE_DISAPPLY), L"Disapply template");
+	m_MenuTree.AppendString(static_cast<UINT_PTR>(IDM_TREE_DISAPPLYALL), L"Disapply all");
+
+	m_WndEditOffset.SetWndText(L"0x0");
+	m_WndBtnTT.SetCheck(true);
+	m_WndBtnHglSel.SetCheck(IsHglSel());
+	m_WndBtnHex.SetCheck(IsShowAsHex());
+
+	m_SplitVert.Initialize(m_Wnd, m_ListEx, GDIUT::CSplitter::EAnchorSide::SIDE_LEFT);
+	m_SplitVert.AddItem(m_WndTree, true);
+	m_SplitVert.SetEdges(100, m_Wnd.GetClientRect().Width() - 10);
+
+	m_DynLayout.SetHost(m_Wnd);
+	m_DynLayout.AddItem(IDC_HEXCTRL_TEMPLMGR_LIST, GDIUT::CDynLayout::MoveNone(), GDIUT::CDynLayout::SizeHorzAndVert(100, 100));
+	m_DynLayout.AddItem(IDC_HEXCTRL_TEMPLMGR_TREE, GDIUT::CDynLayout::MoveNone(), GDIUT::CDynLayout::SizeVert(100));
+	m_DynLayout.AddItem(IDC_HEXCTRL_TEMPLMGR_GRB_TOP, GDIUT::CDynLayout::MoveNone(), GDIUT::CDynLayout::SizeHorz(100));
+	m_DynLayout.AddItem(IDC_HEXCTRL_TEMPLMGR_CHK_MIN, GDIUT::CDynLayout::MoveHorz(100), GDIUT::CDynLayout::SizeNone());
+	m_DynLayout.Enable(true);
+
+	::SetWindowSubclass(m_WndTree, TreeSubclassProc, reinterpret_cast<UINT_PTR>(this), 0);
+	SetDlgButtonsState();
+
+	for (const auto& pTemplate : m_vecTemplates) {
+		OnTemplateLoadUnload(pTemplate->iTemplateID, true);
+	}
+
+	for (const auto& applied : m_vecTemplApplied) {
+		OnTemplateApplyDisapply(applied.iAppliedID, true);
+	}
+
+	CreateArrows();
+	UpdateDateTimeFormat();
+
+	return TRUE;
+}
+
+auto CHexDlgTemplMgr::WMLButtonDown([[maybe_unused]] const MSG& msg)->INT_PTR
+{
+	m_SplitVert.WMLButtonDown(ut::GetXLPARAM(msg.lParam), ut::GetYLPARAM(msg.lParam));
+	if (m_SplitVert.IsSplitting()) {
+		m_DynLayout.Enable(false);
+	}
+
+	return TRUE;
+}
+
+auto CHexDlgTemplMgr::WMLButtonUp([[maybe_unused]] const MSG& msg)->INT_PTR
+{
+	m_SplitVert.WMLButtonUp();
+	m_DynLayout.Enable(true);
+
+	return TRUE;
+}
+
+auto CHexDlgTemplMgr::WMMeasureItem(const MSG& msg)->INT_PTR
+{
+	const auto pMIS = reinterpret_cast<LPMEASUREITEMSTRUCT>(msg.lParam);
+	if (pMIS->CtlID == static_cast<UINT>(IDC_HEXCTRL_TEMPLMGR_LIST)) {
+		m_ListEx.MeasureItem(pMIS);
+	}
+
+	return TRUE;
+}
+
+auto CHexDlgTemplMgr::WMMouseActivate([[maybe_unused]] const MSG& msg)->INT_PTR
+{
+	if (const auto pHex = GetHexCtrl(); pHex != nullptr && pHex->IsCreated() && pHex->IsDataSet()) {
+		UpdateDateTimeFormat();
+	}
+
+	return MA_ACTIVATE;
+}
+
+auto CHexDlgTemplMgr::WMMouseMove(const MSG& msg)->INT_PTR
+{
+	m_SplitVert.WMMouseMove(ut::GetXLPARAM(msg.lParam), ut::GetYLPARAM(msg.lParam));
+
+	return TRUE;
+}
+
+auto CHexDlgTemplMgr::WMNotify(const MSG& msg)->INT_PTR
+{
+	const auto pNMHDR = reinterpret_cast<NMHDR*>(msg.lParam);
+	switch (pNMHDR->idFrom) {
+	case IDC_HEXCTRL_TEMPLMGR_LIST:
+		switch (pNMHDR->code) {
+		case LVN_GETDISPINFOW: WMNotifyListGetDispInfo(pNMHDR); break;
+		case LVN_ITEMCHANGED: WMNotifyListItemChanged(pNMHDR); break;
+		case NM_DBLCLK: WMNotifyListDblClick(pNMHDR); break;
+		case NM_RCLICK: WMNotifyListRClick(pNMHDR); break;
+		case NM_RETURN: WMNotifyListEnterPressed(pNMHDR); break;
+		case LISTEX::LISTEX_MSG_EDITBEGIN: WMNotifyListEditBegin(pNMHDR); break;
+		case LISTEX::LISTEX_MSG_GETCOLOR: WMNotifyListGetColor(pNMHDR); break;
+		case LISTEX::LISTEX_MSG_HDRRBTNUP: WMNotifyListHdrRClick(pNMHDR); break;
+		case LISTEX::LISTEX_MSG_SETDATA: WMNotifyListSetData(pNMHDR); break;
+		default: break;
+		}
+	case IDC_HEXCTRL_TEMPLMGR_TREE:
+		switch (pNMHDR->code) {
+		case NM_RCLICK: WMNotifyTreeRClick(pNMHDR); break;
+		case TVN_GETDISPINFOW: WMNotifyTreeGetDispInfo(pNMHDR); break;
+		case TVN_SELCHANGEDW: WMNotifyTreeItemChanged(pNMHDR); break;
+		default: break;
+		}
+	default: break;
+	}
+
+	return TRUE;
+}
+
+void CHexDlgTemplMgr::WMNotifyListDblClick(NMHDR* pNMHDR)
+{
+	const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
+	const auto iItem = pNMI->iItem;
+	if (iItem < 0)
+		return;
+
+	const auto& vec = *m_pVecFieldsCurr;
+	if (vec[iItem]->vecNested.empty())
+		return;
+
+	m_fListGuardEvent = true; //To prevent nasty OnListItemChanged to fire after this method ends.
+	m_pVecFieldsCurr = &vec[iItem]->vecNested;
+
+	const auto hItem = TreeItemFromListItem(iItem);
+	m_hTreeCurrParent = hItem;
+	m_WndTree.Expand(hItem, TVE_EXPAND);
+
+	m_ListEx.SetItemState(-1, 0, LVIS_SELECTED | LVIS_FOCUSED); //Deselect all items.
+	m_ListEx.SetItemCountEx(static_cast<int>(m_pVecFieldsCurr->size()));
+	m_ListEx.RedrawWindow();
+	m_fListGuardEvent = false;
+}
+
+void CHexDlgTemplMgr::WMNotifyListEditBegin(NMHDR* pNMHDR)
+{
+	const auto pLDI = reinterpret_cast<LISTEX::PLISTEXDATAINFO>(pNMHDR);
+	const auto& pField = (*m_pVecFieldsCurr)[pLDI->iItem];
+
+	if (!pField->vecNested.empty() || (pField->eType == EHexFieldType::custom_size
+		&& pField->iSize != 1 && pField->iSize != 2 && pField->iSize != 4 && pField->iSize != 8)) {
+		pLDI->fAllowEdit = false; //Do not show edit-box if clicked on nested fields.
+	}
+}
+
+void CHexDlgTemplMgr::WMNotifyListEnterPressed([[maybe_unused]] NMHDR* pNMHDR)
+{
+	const auto uSelected = m_ListEx.GetSelectedCount();
+	if (uSelected != 1)
+		return;
+
+	//Simulate DblClick in List with Enter key.
+	NMITEMACTIVATE nmii { .iItem = m_ListEx.GetSelectionMark() };
+	WMNotifyListDblClick(&nmii.hdr);
+}
+
+void CHexDlgTemplMgr::WMNotifyListGetColor(NMHDR* pNMHDR)
+{
+	constexpr auto clrTextBluish { RGB(16, 42, 255) };  //Bluish text.
+	constexpr auto clrTextGreenish { RGB(0, 110, 0) };  //Green text.
+	constexpr auto clrBkGreyish { RGB(235, 235, 235) }; //Grayish bk.
+
+	const auto pLCI = reinterpret_cast<LISTEX::PLISTEXCOLORINFO>(pNMHDR);
+	const auto& pField = (*m_pVecFieldsCurr)[pLCI->iItem];
+	const auto eType = pField->eType;
+	using enum EHexFieldType;
+
+	pLCI->stClr.clrText = static_cast<COLORREF>(-1); //Default text color.
+
+	//List items with nested structs colored separately with greyish bk.
+	if (!pField->vecNested.empty() && pLCI->iSubItem != COL_COLORS) {
+		pLCI->stClr.clrBk = clrBkGreyish;
+		if (pLCI->iSubItem == COL_TYPE) {
+			if (eType == type_custom) {
+				if (pField->iCustomTypeID > 0) {
+					pLCI->stClr.clrText = clrTextGreenish;
+				}
+			}
+			else if (eType != custom_size) {
+				pLCI->stClr.clrText = clrTextBluish;
+			}
+		}
+
+		return;
+	}
+
+	switch (pLCI->iSubItem) {
+	case COL_TYPE:
+		if (eType != type_custom && eType != custom_size) {
+			pLCI->stClr.clrText = clrTextBluish;
+			pLCI->stClr.clrBk = static_cast<COLORREF>(-1); //Default bk color.
+			return;
+		}
+		break;
+	case COL_COLORS:
+		pLCI->stClr.clrBk = pField->stClr.clrBk;
+		pLCI->stClr.clrText = pField->stClr.clrText;
+		return;
+	default:
+		break;
+	}
+}
+
+void CHexDlgTemplMgr::WMNotifyListGetDispInfo(NMHDR* pNMHDR)
+{
+	const auto pDispInfo = reinterpret_cast<NMLVDISPINFOW*>(pNMHDR);
+	const auto pItem = &pDispInfo->item;
+	if ((pItem->mask & LVIF_TEXT) == 0)
+		return;
+
+	const auto& pField = (*m_pVecFieldsCurr)[pItem->iItem];
+	const auto wsvFmt = IsShowAsHex() ? L"0x{:X}" : L"{}";
+	const auto fShouldSwap = pField->fBigEndian == !IsSwapEndian();
+	using enum EHexFieldType;
+
+	//EHexFieldType converter to actual wstring for the list.
+	static const std::unordered_map<EHexFieldType, const wchar_t* const> umapETypeToWstr {
+		{ custom_size, L"custom size" }, { type_custom, L"custom type" },
+		{ type_bool, L"bool" }, { type_int8, L"int8" }, { type_uint8, L"uint8" },
+		{ type_int16, L"int16" }, { type_uint16, L"uint16" }, { type_int32, L"int32" },
+		{ type_uint32, L"uint32" }, { type_int64, L"int64" }, { type_uint64, L"uint64" },
+		{ type_float, L"float" }, { type_double, L"double" }, { type_time32, L"time32_t" },
+		{ type_time64, L"time64_t" }, { type_filetime, L"FILETIME" }, { type_systemtime, L"SYSTEMTIME" },
+		{ type_guid, L"GUID" }
+	};
+
+	const auto pAppliedCurr = GetSelectedApplied();
+	switch (pItem->iSubItem) {
+	case COL_TYPE:
+		if (pField->eType == type_custom) {
+			const auto& vecCT = pAppliedCurr->pTemplate->vecCustomType;
+			if (const auto it = std::find_if(vecCT.begin(), vecCT.end(),
+				[iCustomTypeID = pField->iCustomTypeID](const HEXCUSTOMTYPE& ct) {
+					return ct.iTypeID == iCustomTypeID; }); it != vecCT.end()) {
+				pItem->pszText = const_cast<LPWSTR>(it->wstrTypeName.data());
+			}
+			else {
+				pItem->pszText = const_cast<LPWSTR>(umapETypeToWstr.at(pField->eType));
+			}
+		}
+		else {
+			pItem->pszText = const_cast<LPWSTR>(umapETypeToWstr.at(pField->eType));
+		}
+		break;
+	case COL_NAME:
+		pItem->pszText = pField->wstrName.data();
+		break;
+	case COL_OFFSET:
+		*std::vformat_to(pItem->pszText, wsvFmt, std::make_wformat_args(pField->iOffset)) = L'\0';
+		break;
+	case COL_SIZE:
+		*std::vformat_to(pItem->pszText, wsvFmt, std::make_wformat_args(pField->iSize)) = L'\0';
+		break;
+	case COL_DATA:
+	{
+		if (!m_pHexCtrl->IsDataSet()
+			|| pAppliedCurr->ullOffset + pAppliedCurr->pTemplate->iSizeTotal > m_pHexCtrl->GetDataSize()) //Size overflow check.
+			break;
+
+		if (!pField->vecNested.empty()) {
+			break; //Doing nothing (no data fetch) for nested structs.
+		}
+
+		const auto ullOffset = pAppliedCurr->ullOffset + pField->iOffset;
+		const auto eType = pField->eType;
+		switch (eType) {
+		case custom_size: //If field of a custom size we cycling through the size field.
+			switch (pField->iSize) {
+			case 1:
+			{
+				const auto bData = ut::GetIHexTData<BYTE>(*m_pHexCtrl, ullOffset);
+				*std::vformat_to(pItem->pszText, wsvFmt, std::make_wformat_args(bData)) = L'\0';
+			}
+			break;
+			case 2:
+			{
+				auto wData = ut::GetIHexTData<WORD>(*m_pHexCtrl, ullOffset);
+				if (fShouldSwap) {
+					wData = ut::ByteSwap(wData);
+				}
+				*std::vformat_to(pItem->pszText, wsvFmt, std::make_wformat_args(wData)) = L'\0';
+			}
+			break;
+			case 4:
+			{
+				auto dwData = ut::GetIHexTData<DWORD>(*m_pHexCtrl, ullOffset);
+				if (fShouldSwap) {
+					dwData = ut::ByteSwap(dwData);
+				}
+				*std::vformat_to(pItem->pszText, wsvFmt, std::make_wformat_args(dwData)) = L'\0';
+			}
+			break;
+			case 8:
+			{
+				auto ullData = ut::GetIHexTData<std::uint64_t>(*m_pHexCtrl, ullOffset);
+				if (fShouldSwap) {
+					ullData = ut::ByteSwap(ullData);
+				}
+				*std::vformat_to(pItem->pszText, wsvFmt, std::make_wformat_args(ullData)) = L'\0';
+			}
+			break;
+			default:
+				break;
+			}
+			break;
+		case type_bool:
+			ShowListDataBool(pItem->pszText, ut::GetIHexTData<std::uint8_t>(*m_pHexCtrl, ullOffset));
+			break;
+		case type_int8:
+			ShowListDataNUMBER(pItem->pszText, ut::GetIHexTData<std::int8_t>(*m_pHexCtrl, ullOffset), false);
+			break;
+		case type_uint8:
+			ShowListDataNUMBER(pItem->pszText, ut::GetIHexTData<std::uint8_t>(*m_pHexCtrl, ullOffset), false);
+			break;
+		case type_int16:
+			ShowListDataNUMBER(pItem->pszText, ut::GetIHexTData<std::int16_t>(*m_pHexCtrl, ullOffset), fShouldSwap);
+			break;
+		case type_uint16:
+			ShowListDataNUMBER(pItem->pszText, ut::GetIHexTData<std::uint16_t>(*m_pHexCtrl, ullOffset), fShouldSwap);
+			break;
+		case type_int32:
+			ShowListDataNUMBER(pItem->pszText, ut::GetIHexTData<std::int32_t>(*m_pHexCtrl, ullOffset), fShouldSwap);
+			break;
+		case type_uint32:
+			ShowListDataNUMBER(pItem->pszText, ut::GetIHexTData<std::uint32_t>(*m_pHexCtrl, ullOffset), fShouldSwap);
+			break;
+		case type_int64:
+			ShowListDataNUMBER(pItem->pszText, ut::GetIHexTData<std::int64_t>(*m_pHexCtrl, ullOffset), fShouldSwap);
+			break;
+		case type_uint64:
+			ShowListDataNUMBER(pItem->pszText, ut::GetIHexTData<std::uint64_t>(*m_pHexCtrl, ullOffset), fShouldSwap);
+			break;
+		case type_float:
+			ShowListDataNUMBER(pItem->pszText, ut::GetIHexTData<float>(*m_pHexCtrl, ullOffset), fShouldSwap);
+			break;
+		case type_double:
+			ShowListDataNUMBER(pItem->pszText, ut::GetIHexTData<double>(*m_pHexCtrl, ullOffset), fShouldSwap);
+			break;
+		case type_time32:
+			ShowListDataTime32(pItem->pszText, ut::GetIHexTData<__time32_t>(*m_pHexCtrl, ullOffset), fShouldSwap);
+			break;
+		case type_time64:
+			ShowListDataTime64(pItem->pszText, ut::GetIHexTData<__time64_t>(*m_pHexCtrl, ullOffset), fShouldSwap);
+			break;
+		case type_filetime:
+			ShowListDataFILETIME(pItem->pszText, ut::GetIHexTData<FILETIME>(*m_pHexCtrl, ullOffset), fShouldSwap);
+			break;
+		case type_systemtime:
+			ShowListDataSYSTEMTIME(pItem->pszText, ut::GetIHexTData<SYSTEMTIME>(*m_pHexCtrl, ullOffset), fShouldSwap);
+			break;
+		case type_guid:
+			ShowListDataGUID(pItem->pszText, ut::GetIHexTData<GUID>(*m_pHexCtrl, ullOffset), fShouldSwap);
+			break;
+		default:
+			break;
+		}
+	}
+	break;
+	case COL_ENDIAN:
+		*std::vformat_to(pItem->pszText, fShouldSwap ? L"big" : L"little",
+			std::make_wformat_args()) = L'\0';
+		break;
+	case COL_DESCR:
+		*std::format_to(pItem->pszText, L"{}", pField->wstrDescr) = L'\0';
+		break;
+	case COL_COLORS:
+		*std::format_to(pItem->pszText, L"#Text") = L'\0';
+		break;
+	default:
+		break;
+	}
+}
+
+void CHexDlgTemplMgr::WMNotifyListHdrRClick([[maybe_unused]] NMHDR* pNMHDR)
+{
+	POINT ptCur;
+	::GetCursorPos(&ptCur);
+	m_MenuHdr.TrackPopupMenu(ptCur.x, ptCur.y, m_Wnd);
+}
+
+void CHexDlgTemplMgr::WMNotifyListItemChanged(NMHDR* pNMHDR)
+{
+	const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
+	const auto iItem = pNMI->iItem;
+	if (iItem < 0 || m_fListGuardEvent)
+		return;
+
+	m_WndTree.SelectItem(TreeItemFromListItem(iItem));
+}
+
+void CHexDlgTemplMgr::WMNotifyListRClick([[maybe_unused]] NMHDR* pNMHDR)
+{ }
+
+void CHexDlgTemplMgr::WMNotifyListSetData(NMHDR* pNMHDR)
+{
+	const auto pLDI = reinterpret_cast<LISTEX::PLISTEXDATAINFO>(pNMHDR);
+	const auto pwszText = pLDI->pwszData;
+	const auto& pField = (*m_pVecFieldsCurr)[pLDI->iItem];
+
+	if (pLDI->iSubItem == COL_DATA) {
+		if (!m_pHexCtrl->IsDataSet()) {
+			return;
+		}
+
+		const auto ullOffset = GetSelectedApplied()->ullOffset + pField->iOffset;
+		const auto fShouldSwap = pField->fBigEndian == !IsSwapEndian();
+
+		bool fSetRet { };
+		using enum EHexFieldType;
+		switch (pField->eType) {
+		case custom_size:
+			fSetRet = true;
+			switch (pField->iSize) {
+			case 1:
+				if (const auto opt = stn::StrToUInt8(pwszText); opt) {
+					SetTData(*opt, ullOffset, false);
+				}
+				break;
+			case 2:
+				if (const auto opt = stn::StrToUInt16(pwszText); opt) {
+					SetTData(*opt, ullOffset, false);
+				}
+				break;
+			case 4:
+				if (const auto opt = stn::StrToUInt32(pwszText); opt) {
+					SetTData(*opt, ullOffset, false);
+				}
+				break;
+			case 8:
+				if (const auto opt = stn::StrToUInt64(pwszText); opt) {
+					SetTData(*opt, ullOffset, false);
+				}
+				break;
+			default:
+				fSetRet = false;
+				break;
+			}
+			break;
+		case type_bool:
+			fSetRet = SetDataBool(pwszText, ullOffset);
+			break;
+		case type_int8:
+			fSetRet = SetDataNUMBER<std::int8_t>(pwszText, ullOffset, false);
+			break;
+		case type_uint8:
+			fSetRet = SetDataNUMBER<std::uint8_t>(pwszText, ullOffset, false);
+			break;
+		case type_int16:
+			fSetRet = SetDataNUMBER<std::int16_t>(pwszText, ullOffset, fShouldSwap);
+			break;
+		case type_uint16:
+			fSetRet = SetDataNUMBER<std::uint16_t>(pwszText, ullOffset, fShouldSwap);
+			break;
+		case type_int32:
+			fSetRet = SetDataNUMBER<std::int32_t>(pwszText, ullOffset, fShouldSwap);
+			break;
+		case type_uint32:
+			fSetRet = SetDataNUMBER<std::uint32_t>(pwszText, ullOffset, fShouldSwap);
+			break;
+		case type_int64:
+			fSetRet = SetDataNUMBER<std::int64_t>(pwszText, ullOffset, fShouldSwap);
+			break;
+		case type_uint64:
+			fSetRet = SetDataNUMBER<std::uint64_t>(pwszText, ullOffset, fShouldSwap);
+			break;
+		case type_float:
+			fSetRet = SetDataNUMBER<float>(pwszText, ullOffset, fShouldSwap);
+			break;
+		case type_double:
+			fSetRet = SetDataNUMBER<double>(pwszText, ullOffset, fShouldSwap);
+			break;
+		case type_time32:
+			fSetRet = SetDataTime32(pwszText, ullOffset, fShouldSwap);
+			break;
+		case type_time64:
+			fSetRet = SetDataTime64(pwszText, ullOffset, fShouldSwap);
+			break;
+		case type_filetime:
+			fSetRet = SetDataFILETIME(pwszText, ullOffset, fShouldSwap);
+			break;
+		case type_systemtime:
+			fSetRet = SetDataSYSTEMTIME(pwszText, ullOffset, fShouldSwap);
+			break;
+		case type_guid:
+			fSetRet = SetDataGUID(pwszText, ullOffset, fShouldSwap);
+			break;
+		default:
+			break;
+		}
+
+		if (!fSetRet) {
+			::MessageBoxW(m_Wnd, L"Incorrect input data.", L"Incorrect input", MB_ICONERROR);
+			return;
+		}
+	}
+	else if (pLDI->iSubItem == COL_DESCR) {
+		pField->wstrDescr = pwszText;
+	}
+
+	RedrawHexCtrl();
+}
+
+void CHexDlgTemplMgr::WMNotifyTreeGetDispInfo(NMHDR* pNMHDR)
+{
+	const auto pDispInfo = reinterpret_cast<NMTVDISPINFOW*>(pNMHDR);
+	const auto pItem = &pDispInfo->item;
+	if ((pItem->mask & TVIF_TEXT) == 0)
+		return;
+
+	const std::wstring* pwstr;
+	const auto uzItemData = m_WndTree.GetItemData(pItem->hItem);
+	if (m_WndTree.GetParentItem(pItem->hItem) == nullptr) { //Root node.
+		pwstr = &TMPLGetAppliedByID(static_cast<int>(uzItemData))->pTemplate->wstrName;
+	}
+	else {
+		pwstr = &reinterpret_cast<PCHEXTEMPLFIELD>(uzItemData)->wstrName;
+	}
+	std::copy(pwstr->begin(), pwstr->end(), pItem->pszText);
+}
+
+void CHexDlgTemplMgr::WMNotifyTreeItemChanged(NMHDR* pNMHDR)
+{
+	const auto pTree = reinterpret_cast<LPNMTREEVIEWW>(pNMHDR);
+	const auto pItemNew = &pTree->itemNew;
+	const auto pItemOld = &pTree->itemOld;
+	const auto hItemParent = m_WndTree.GetParentItem(pItemNew->hItem);
+	const auto uzItemData = m_WndTree.GetItemData(pItemNew->hItem);
+
+	//Item was changed by m_WndTree.SelectItem (from RClick, or list) or by m_WndTree.DeleteItem.
+	//If hItemParent==nullptr and action==TVC_UNKNOWN, it was RClick on root node.
+	if (pTree->action == TVC_UNKNOWN && hItemParent != nullptr) {
+		SetHexSelByField(reinterpret_cast<PCHEXTEMPLFIELD>(uzItemData));
+		return;
+	}
+
+	m_fListGuardEvent = true; //To not trigger OnListItemChanged on the way.
+	bool fRootNodeClick { false };
+	PCHEXTEMPLFIELD pFieldCurr { };
+	PCVecFields pVecCurrFields { };
+	const auto iAppliedIDPrev = GetAppliedIDFromTree(pItemOld->hItem);
+	const auto iAppliedIDCurr = GetAppliedIDFromTree(pItemNew->hItem);
+	const auto pAppliedCurr = GetSelectedApplied();
+	m_ListEx.SetItemState(-1, 0, LVIS_SELECTED | LVIS_FOCUSED); //Deselect all items.
+
+	if (hItemParent == nullptr) { //Root item.
+		fRootNodeClick = true;
+		pVecCurrFields = &pAppliedCurr->pTemplate->vecFields; //On Root item click, set pVecCurrFields to Template's main vecFields.
+		m_hTreeCurrParent = pItemNew->hItem;
+	}
+	else { //Child items.
+		pFieldCurr = reinterpret_cast<PCHEXTEMPLFIELD>(uzItemData);
+		if (pFieldCurr->pFieldParent == nullptr) {
+			if (pFieldCurr->vecNested.empty()) { //On first level child items, set pVecCurrFields to Template's main vecFields.
+				pVecCurrFields = &pAppliedCurr->pTemplate->vecFields;
+				m_hTreeCurrParent = hItemParent;
+			}
+			else { //If it's nested Fields vector, set pVecCurrFields to it.
+				fRootNodeClick = true;
+				pVecCurrFields = &pFieldCurr->vecNested;
+				m_hTreeCurrParent = pItemNew->hItem;
+			}
+		}
+		else { //If it's nested Field, set pVecCurrFields to parent Fields' vecNested.
+			if (pFieldCurr->vecNested.empty()) {
+				pVecCurrFields = &pFieldCurr->pFieldParent->vecNested;
+				m_hTreeCurrParent = hItemParent;
+			}
+			else {
+				fRootNodeClick = true;
+				pVecCurrFields = &pFieldCurr->vecNested;
+				m_hTreeCurrParent = pItemNew->hItem;
+			}
+		}
+	}
+
+	//To not trigger SetItemCountEx, which is slow, every time the Tree item changes.
+	//But only if Fields vector changes, or other applied template has been clicked.
+	if ((pVecCurrFields != m_pVecFieldsCurr) || (iAppliedIDPrev != iAppliedIDCurr)) {
+		m_pVecFieldsCurr = pVecCurrFields;
+		m_ListEx.SetItemCountEx(static_cast<int>(m_pVecFieldsCurr->size()), LVSICF_NOSCROLL);
+	}
+
+	UpdateStaticText();
+
+	if (!fRootNodeClick) {
+		int iIndexHighlight { 0 }; //Index to highlight in the list.
+		auto hChild = m_WndTree.GetNextItem(hItemParent, TVGN_CHILD);
+		while (hChild != pItemNew->hItem) { //Checking for currently selected item in the tree.
+			++iIndexHighlight;
+			hChild = m_WndTree.GetNextSiblingItem(hChild);
+		}
+		m_ListEx.SetItemState(iIndexHighlight, LVIS_SELECTED, LVIS_SELECTED);
+		m_ListEx.EnsureVisible(iIndexHighlight, FALSE);
+	}
+
+	SetHexSelByField(pFieldCurr);
+	m_fListGuardEvent = false;
+}
+
+void CHexDlgTemplMgr::WMNotifyTreeRClick([[maybe_unused]] NMHDR* pNMHDR)
+{
+	POINT pt;
+	::GetCursorPos(&pt);
+	POINT ptTree = pt;
+	m_WndTree.ScreenToClient(&ptTree);
+	const auto hTreeItem = m_WndTree.HitTest(ptTree);
+	const auto fHitTest = hTreeItem != nullptr;
+	const auto fHasApplied = HasApplied();
+
+	if (hTreeItem != nullptr) {
+		m_WndTree.SelectItem(hTreeItem);
+	}
+
+	m_MenuTree.EnableItem(static_cast<UINT>(EMenuID::IDM_TREE_DISAPPLY), fHasApplied && fHitTest);
+	m_MenuTree.EnableItem(static_cast<UINT>(EMenuID::IDM_TREE_DISAPPLYALL), fHasApplied);
+	m_MenuTree.TrackPopupMenu(pt.x, pt.y, m_Wnd);
+}
+
+auto CHexDlgTemplMgr::WMSize(const MSG& msg)->INT_PTR
+{
+	const auto wWidth = LOWORD(msg.lParam);
+	const auto wHeight = HIWORD(msg.lParam);
+	m_DynLayout.WMSize(wWidth, wHeight);
+	m_SplitVert.SetEdges(100, wWidth - 10);
+
+	return TRUE;
 }
 
 auto CHexDlgTemplMgr::CloneTemplate(PCHEXTEMPLATE pTemplate)->std::unique_ptr<HEXTEMPLATE>

@@ -34,15 +34,15 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] auto GetGoMode()const -> EGoMode;
 		void GoTo(bool fForward);
 		[[nodiscard]] bool IsNoEsc()const;
-		auto OnActivate(const MSG& msg) -> INT_PTR;
 		void OnCancel();
-		auto OnClose() -> INT_PTR;
-		auto OnCommand(const MSG& msg) -> INT_PTR;
-		auto OnDestroy() -> INT_PTR;
-		auto OnInitDialog(const MSG& msg) -> INT_PTR;
-		auto OnMouseActivate(const MSG& msg) -> INT_PTR;
 		void OnOK();
 		void UpdateComboMode();
+		auto WMActivate(const MSG& msg) -> INT_PTR;
+		auto WMClose() -> INT_PTR;
+		auto WMCommand(const MSG& msg) -> INT_PTR;
+		auto WMDestroy() -> INT_PTR;
+		auto WMInitDialog(const MSG& msg) -> INT_PTR;
+		auto WMMouseActivate(const MSG& msg) -> INT_PTR;
 	private:
 		HINSTANCE m_hInstRes { };
 		GDIUT::CWnd m_Wnd;
@@ -62,7 +62,7 @@ enum class CHexDlgGoTo::EGoMode : std::uint8_t {
 
 void CHexDlgGoTo::CreateDlg()const
 {
-	//m_Wnd is set in the OnInitDialog().
+	//m_Wnd is set in the WMInitDialog().
 	if (const auto hWnd = ::CreateDialogParamW(m_hInstRes, MAKEINTRESOURCEW(IDD_HEXCTRL_GOTO),
 		m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN), GDIUT::DlgProc<CHexDlgGoTo>, reinterpret_cast<LPARAM>(this));
 		hWnd == nullptr) {
@@ -101,12 +101,12 @@ bool CHexDlgGoTo::PreTranslateMsg(MSG* pMsg)
 auto CHexDlgGoTo::ProcessMsg(const MSG& msg)->INT_PTR
 {
 	switch (msg.message) {
-	case WM_ACTIVATE: return OnActivate(msg);
-	case WM_CLOSE: return OnClose();
-	case WM_COMMAND: return OnCommand(msg);
-	case WM_DESTROY: return OnDestroy();
-	case WM_INITDIALOG: return OnInitDialog(msg);
-	case WM_MOUSEACTIVATE: return OnMouseActivate(msg);
+	case WM_ACTIVATE: return WMActivate(msg);
+	case WM_CLOSE: return WMClose();
+	case WM_COMMAND: return WMCommand(msg);
+	case WM_DESTROY: return WMDestroy();
+	case WM_INITDIALOG: return WMInitDialog(msg);
+	case WM_MOUSEACTIVATE: return WMMouseActivate(msg);
 	default:
 		return 0;
 	}
@@ -225,81 +225,12 @@ bool CHexDlgGoTo::IsNoEsc()const
 	return m_u64Flags & HEXCTRL_FLAG_DLG_NOESC;
 }
 
-auto CHexDlgGoTo::OnActivate(const MSG& msg)->INT_PTR
-{
-	if (const auto pHex = GetHexCtrl();
-		pHex != nullptr && pHex->IsCreated() && pHex->IsDataSet() && LOWORD(msg.wParam) == WA_ACTIVE) {
-		UpdateComboMode();
-	}
-
-	return 0;
-}
-
 void CHexDlgGoTo::OnCancel()
 {
 	if (IsNoEsc()) //Not closing Dialog on Escape key.
 		return;
 
-	OnClose();
-}
-
-auto CHexDlgGoTo::OnClose()->INT_PTR
-{
-	ShowWindow(SW_HIDE);
-	return TRUE;
-}
-
-auto CHexDlgGoTo::OnCommand(const MSG& msg)->INT_PTR
-{
-	const auto uCtrlID = LOWORD(msg.wParam);
-	switch (uCtrlID) {
-	case IDOK:
-		OnOK();
-		break;
-	case IDCANCEL:
-		OnCancel();
-		break;
-	default:
-		return FALSE;
-	}
-	return TRUE;
-}
-
-auto CHexDlgGoTo::OnDestroy()->INT_PTR
-{
-	m_u64Flags = { };
-	m_pHexCtrl = nullptr;
-	m_fRepeat = false;
-
-	return TRUE;
-}
-
-auto CHexDlgGoTo::OnInitDialog(const MSG& msg)->INT_PTR
-{
-	using enum EGoMode;
-	m_Wnd.Attach(msg.hwnd);
-	m_WndCmbMode.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_GOTO_COMBO_MODE));
-	auto iIndex = m_WndCmbMode.AddString(L"Offset");
-	m_WndCmbMode.SetItemData(iIndex, static_cast<DWORD_PTR>(MODE_OFFSET));
-	m_WndCmbMode.SetCurSel(iIndex);
-	iIndex = m_WndCmbMode.AddString(L"Offset forward from the current");
-	m_WndCmbMode.SetItemData(iIndex, static_cast<DWORD_PTR>(MODE_OFFSETFWD));
-	iIndex = m_WndCmbMode.AddString(L"Offset back from the current");
-	m_WndCmbMode.SetItemData(iIndex, static_cast<DWORD_PTR>(MODE_OFFSETBACK));
-	iIndex = m_WndCmbMode.AddString(L"Offset from the end");
-	m_WndCmbMode.SetItemData(iIndex, static_cast<DWORD_PTR>(MODE_OFFSETEND));
-	UpdateComboMode();
-
-	return TRUE;
-}
-
-auto CHexDlgGoTo::OnMouseActivate([[maybe_unused]] const MSG& msg)->INT_PTR
-{
-	if (const auto pHex = GetHexCtrl(); pHex != nullptr && pHex->IsCreated() && pHex->IsDataSet()) {
-		UpdateComboMode();
-	}
-
-	return MA_ACTIVATE;
+	WMClose();
 }
 
 void CHexDlgGoTo::OnOK()
@@ -341,4 +272,73 @@ void CHexDlgGoTo::UpdateComboMode()
 		m_WndCmbMode.SetRedraw(true);
 		m_WndCmbMode.RedrawWindow();
 	}
+}
+
+auto CHexDlgGoTo::WMActivate(const MSG& msg)->INT_PTR
+{
+	if (const auto pHex = GetHexCtrl();
+		pHex != nullptr && pHex->IsCreated() && pHex->IsDataSet() && LOWORD(msg.wParam) == WA_ACTIVE) {
+		UpdateComboMode();
+	}
+
+	return 0;
+}
+
+auto CHexDlgGoTo::WMClose()->INT_PTR
+{
+	ShowWindow(SW_HIDE);
+	return TRUE;
+}
+
+auto CHexDlgGoTo::WMCommand(const MSG& msg)->INT_PTR
+{
+	const auto uCtrlID = LOWORD(msg.wParam);
+	switch (uCtrlID) {
+	case IDOK:
+		OnOK();
+		break;
+	case IDCANCEL:
+		OnCancel();
+		break;
+	default:
+		return FALSE;
+	}
+	return TRUE;
+}
+
+auto CHexDlgGoTo::WMDestroy()->INT_PTR
+{
+	m_u64Flags = { };
+	m_pHexCtrl = nullptr;
+	m_fRepeat = false;
+
+	return TRUE;
+}
+
+auto CHexDlgGoTo::WMInitDialog(const MSG& msg)->INT_PTR
+{
+	using enum EGoMode;
+	m_Wnd.Attach(msg.hwnd);
+	m_WndCmbMode.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_GOTO_COMBO_MODE));
+	auto iIndex = m_WndCmbMode.AddString(L"Offset");
+	m_WndCmbMode.SetItemData(iIndex, static_cast<DWORD_PTR>(MODE_OFFSET));
+	m_WndCmbMode.SetCurSel(iIndex);
+	iIndex = m_WndCmbMode.AddString(L"Offset forward from the current");
+	m_WndCmbMode.SetItemData(iIndex, static_cast<DWORD_PTR>(MODE_OFFSETFWD));
+	iIndex = m_WndCmbMode.AddString(L"Offset back from the current");
+	m_WndCmbMode.SetItemData(iIndex, static_cast<DWORD_PTR>(MODE_OFFSETBACK));
+	iIndex = m_WndCmbMode.AddString(L"Offset from the end");
+	m_WndCmbMode.SetItemData(iIndex, static_cast<DWORD_PTR>(MODE_OFFSETEND));
+	UpdateComboMode();
+
+	return TRUE;
+}
+
+auto CHexDlgGoTo::WMMouseActivate([[maybe_unused]] const MSG& msg)->INT_PTR
+{
+	if (const auto pHex = GetHexCtrl(); pHex != nullptr && pHex->IsCreated() && pHex->IsDataSet()) {
+		UpdateComboMode();
+	}
+
+	return MA_ACTIVATE;
 }

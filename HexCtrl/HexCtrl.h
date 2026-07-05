@@ -510,7 +510,7 @@ namespace HEXCTRL {
 	**************************************************************************/
 
 	constexpr auto HEXCTRL_MSG_BKMCLICK { 0x0100U };      //Bookmark is clicked.
-	constexpr auto HEXCTRL_MSG_CONTEXTMENU { 0x0101U };   //OnContextMenu has triggered.
+	constexpr auto HEXCTRL_MSG_CONTEXTMENU { 0x0101U };   //Context menu has been invoked.
 	constexpr auto HEXCTRL_MSG_DESTROY { 0x0102U };       //Indicates that the HexCtrl is being destroyed.
 	constexpr auto HEXCTRL_MSG_DLGBKMMGR { 0x0103U };     //"Bookmark manager" dialog is about to be displayed.
 	constexpr auto HEXCTRL_MSG_DLGCODEPAGE { 0x0104U };   //"Codepage" dialog is about to be displayed.

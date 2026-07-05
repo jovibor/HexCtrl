@@ -820,11 +820,11 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 		void Enable(bool fTrack);
 		bool LoadFromResource(HINSTANCE hInstRes, const wchar_t* pwszResName);
 		bool LoadFromResource(HINSTANCE hInstRes, UINT uResID);
-		void OnSize(int iWidth, int iHeight)const; //Should be hooked into the host window's WM_SIZE handler.
 		void RemoveAll() { m_vecItems.clear(); }
 		void SetHost(HWND hWnd) { assert(hWnd != nullptr); m_hWndHost = hWnd; }
 		void UpdateItem(int iItemID, MoveRatio move, SizeRatio size);
 		void UpdateItem(HWND hWndItem, MoveRatio move, SizeRatio size);
+		void WMSize(int iWidth, int iHeight)const; //Should be hooked into the host window's WM_SIZE handler.
 
 		//Static helper methods to use in the AddItem.
 		[[nodiscard]] static MoveRatio MoveNone() { return { }; }
@@ -940,7 +940,25 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 		return LoadFromResource(hInstRes, MAKEINTRESOURCEW(uResID));
 	}
 
-	void CDynLayout::OnSize(int iWidth, int iHeight)const {
+	void CDynLayout::UpdateItem(int iItemID, MoveRatio move, SizeRatio size) {
+		UpdateItem(::GetDlgItem(m_hWndHost, iItemID), move, size);
+	}
+
+	void CDynLayout::UpdateItem(HWND hWndItem, MoveRatio move, SizeRatio size) {
+		assert(hWndItem != nullptr);
+		if (hWndItem == nullptr)
+			return;
+
+		auto it = std::find_if(m_vecItems.begin(), m_vecItems.end(), [=](const ItemData& id) {
+			return id.hWnd == hWndItem; });
+		assert(it != m_vecItems.end());
+		if (it != m_vecItems.end()) {
+			it->move = move;
+			it->size = size;
+		}
+	}
+
+	void CDynLayout::WMSize(int iWidth, int iHeight)const {
 		if (!m_fTrack)
 			return;
 
@@ -960,24 +978,6 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 			::DeferWindowPos(hDWP, hWnd, nullptr, iNewLeft, iNewTop, iNewWidth, iNewHeight, SWP_NOZORDER | SWP_NOACTIVATE);
 		}
 		::EndDeferWindowPos(hDWP);
-	}
-
-	void CDynLayout::UpdateItem(int iItemID, MoveRatio move, SizeRatio size) {
-		UpdateItem(::GetDlgItem(m_hWndHost, iItemID), move, size);
-	}
-
-	void CDynLayout::UpdateItem(HWND hWndItem, MoveRatio move, SizeRatio size) {
-		assert(hWndItem != nullptr);
-		if (hWndItem == nullptr)
-			return;
-
-		auto it = std::find_if(m_vecItems.begin(), m_vecItems.end(), [=](const ItemData& id) {
-			return id.hWnd == hWndItem; });
-		assert(it != m_vecItems.end());
-		if (it != m_vecItems.end()) {
-			it->move = move;
-			it->size = size;
-		}
 	}
 
 	class CDC {

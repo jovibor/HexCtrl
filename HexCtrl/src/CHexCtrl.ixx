@@ -51,15 +51,15 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] auto ProcessMsg(const MSG& msg) -> INT_PTR;
 	private:
 		void CreateRes();
-		auto OnCommand(const MSG& msg) -> INT_PTR;
-		auto OnCtlClrStatic(const MSG& msg) -> INT_PTR;
-		auto OnDestroy() -> INT_PTR;
-		auto OnDPIChanged(const MSG& msg) -> INT_PTR;
-		auto OnInitDialog(const MSG& msg) -> INT_PTR;
-		auto OnLButtonDown(const MSG& msg) -> INT_PTR;
-		auto OnLButtonUp(const MSG& msg) -> INT_PTR;
-		auto OnMouseMove(const MSG& msg) -> INT_PTR;
-		auto OnSetCursor(const MSG& msg) -> INT_PTR;
+		auto WMCommand(const MSG& msg) -> INT_PTR;
+		auto WMCtlColorStatic(const MSG& msg) -> INT_PTR;
+		auto WMDestroy() -> INT_PTR;
+		auto WMDPIChanged(const MSG& msg) -> INT_PTR;
+		auto WMInitDialog(const MSG& msg) -> INT_PTR;
+		auto WMLButtonDown(const MSG& msg) -> INT_PTR;
+		auto WMLButtonUp(const MSG& msg) -> INT_PTR;
+		auto WMMouseMove(const MSG& msg) -> INT_PTR;
+		auto WMSetCursor(const MSG& msg) -> INT_PTR;
 	private:
 		HINSTANCE m_hInstRes { };
 		GDIUT::CWnd m_Wnd;      //Main window.
@@ -79,15 +79,15 @@ auto CHexDlgAbout::DoModal(HWND hWndParent)->INT_PTR {
 
 auto CHexDlgAbout::ProcessMsg(const MSG& msg)->INT_PTR {
 	switch (msg.message) {
-	case WM_COMMAND: return OnCommand(msg);
-	case WM_CTLCOLORSTATIC: return OnCtlClrStatic(msg);
-	case WM_DESTROY: return OnDestroy();
-	case WM_DPICHANGED: return OnDPIChanged(msg);
-	case WM_INITDIALOG: return OnInitDialog(msg);
-	case WM_LBUTTONDOWN: return OnLButtonDown(msg);
-	case WM_LBUTTONUP: return OnLButtonUp(msg);
-	case WM_MOUSEMOVE: return OnMouseMove(msg);
-	case WM_SETCURSOR: return OnSetCursor(msg);
+	case WM_COMMAND: return WMCommand(msg);
+	case WM_CTLCOLORSTATIC: return WMCtlColorStatic(msg);
+	case WM_DESTROY: return WMDestroy();
+	case WM_DPICHANGED: return WMDPIChanged(msg);
+	case WM_INITDIALOG: return WMInitDialog(msg);
+	case WM_LBUTTONDOWN: return WMLButtonDown(msg);
+	case WM_LBUTTONUP: return WMLButtonUp(msg);
+	case WM_MOUSEMOVE: return WMMouseMove(msg);
+	case WM_SETCURSOR: return WMSetCursor(msg);
 	default:
 		return 0;
 	}
@@ -119,7 +119,7 @@ void CHexDlgAbout::CreateRes()
 	m_Wnd.GetDlgItem(IDC_HEXCTRL_ABOUT_LOGO).SendMsg(STM_SETIMAGE, IMAGE_BITMAP, reinterpret_cast<LPARAM>(m_hBmpLogo));
 }
 
-auto CHexDlgAbout::OnCommand(const MSG& msg)->INT_PTR {
+auto CHexDlgAbout::WMCommand(const MSG& msg)->INT_PTR {
 	const auto uCtrlID = LOWORD(msg.wParam);
 	switch (uCtrlID) {
 	case IDOK:
@@ -132,7 +132,7 @@ auto CHexDlgAbout::OnCommand(const MSG& msg)->INT_PTR {
 	return TRUE;
 }
 
-auto CHexDlgAbout::OnCtlClrStatic(const MSG& msg)->INT_PTR
+auto CHexDlgAbout::WMCtlColorStatic(const MSG& msg)->INT_PTR
 {
 	if (const auto hWndFrom = reinterpret_cast<HWND>(msg.lParam); hWndFrom == m_WndLink) {
 		const auto hDC = reinterpret_cast<HDC>(msg.wParam);
@@ -145,7 +145,7 @@ auto CHexDlgAbout::OnCtlClrStatic(const MSG& msg)->INT_PTR
 	return FALSE; //Default handler.
 }
 
-auto CHexDlgAbout::OnDestroy()->INT_PTR {
+auto CHexDlgAbout::WMDestroy()->INT_PTR {
 	::DeleteObject(m_hBmpLogo);
 	::DeleteObject(m_hFontDef);
 	::DeleteObject(m_hFontUnderline);
@@ -153,13 +153,13 @@ auto CHexDlgAbout::OnDestroy()->INT_PTR {
 	return TRUE;
 }
 
-auto CHexDlgAbout::OnDPIChanged([[maybe_unused]] const MSG& msg)->INT_PTR
+auto CHexDlgAbout::WMDPIChanged([[maybe_unused]] const MSG& msg)->INT_PTR
 {
 	CreateRes();
 	return 0;
 }
 
-auto CHexDlgAbout::OnInitDialog(const MSG& msg)->INT_PTR
+auto CHexDlgAbout::WMInitDialog(const MSG& msg)->INT_PTR
 {
 	m_Wnd.Attach(msg.hwnd);
 	m_WndLink.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_ABOUT_STAT_LINKGH));
@@ -172,7 +172,7 @@ auto CHexDlgAbout::OnInitDialog(const MSG& msg)->INT_PTR
 	return TRUE;
 }
 
-auto CHexDlgAbout::OnLButtonDown(const MSG& msg)->INT_PTR
+auto CHexDlgAbout::WMLButtonDown(const MSG& msg)->INT_PTR
 {
 	const POINT pt { .x { ut::GetXLPARAM(msg.lParam) }, .y { ut::GetYLPARAM(msg.lParam) } };
 	const auto hWnd = m_Wnd.ChildWindowFromPoint(pt);
@@ -186,7 +186,7 @@ auto CHexDlgAbout::OnLButtonDown(const MSG& msg)->INT_PTR
 	return TRUE;
 }
 
-auto CHexDlgAbout::OnLButtonUp(const MSG& msg) -> INT_PTR
+auto CHexDlgAbout::WMLButtonUp(const MSG& msg) -> INT_PTR
 {
 	const POINT pt { .x { ut::GetXLPARAM(msg.lParam) }, .y { ut::GetYLPARAM(msg.lParam) } };
 	const auto hWnd = m_Wnd.ChildWindowFromPoint(pt);
@@ -202,7 +202,7 @@ auto CHexDlgAbout::OnLButtonUp(const MSG& msg) -> INT_PTR
 	return TRUE;
 }
 
-auto CHexDlgAbout::OnMouseMove(const MSG& msg)->INT_PTR
+auto CHexDlgAbout::WMMouseMove(const MSG& msg)->INT_PTR
 {
 	const POINT pt { .x { ut::GetXLPARAM(msg.lParam) }, .y { ut::GetYLPARAM(msg.lParam) } };
 	const auto hWnd = m_Wnd.ChildWindowFromPoint(pt);
@@ -217,7 +217,7 @@ auto CHexDlgAbout::OnMouseMove(const MSG& msg)->INT_PTR
 	return TRUE;
 }
 
-auto CHexDlgAbout::OnSetCursor([[maybe_unused]] const MSG& msg)->INT_PTR
+auto CHexDlgAbout::WMSetCursor([[maybe_unused]] const MSG& msg)->INT_PTR
 {
 	if (m_fHandCursor) {
 		const auto hCurHand = static_cast<HCURSOR>(::LoadImageW(nullptr, IDC_HAND, IMAGE_CURSOR, 0, 0,
@@ -387,36 +387,8 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] bool IsVirtualImpl()const;
 		void ModifyWorker(const HEXCTRL::HEXMODIFY& hms, const auto& FuncWorker, HEXCTRL::SpanCByte spnOper)const; //Main "Modify" method with different workers.
 		[[nodiscard]] auto OffsetToWstr(ULONGLONG ullOffset)const -> std::wstring; //Format offset as std::wstring.
-		void OnCaretPosChange(ULONGLONG ullOffset);            //On changing caret position.
-		auto OnChar(const MSG& msg) -> LRESULT;
-		auto OnCommand(const MSG& msg) -> LRESULT;
-		auto OnContextMenu(const MSG& msg) -> LRESULT;
-		auto OnDestroy() -> LRESULT;
-		auto OnDPIChangedAfterParent() -> LRESULT;
-		auto OnEraseBkgnd(const MSG& msg) -> LRESULT;
-		auto OnGetDlgCode(const MSG& msg) -> LRESULT;
-		auto OnHelp(const MSG& msg) -> LRESULT;
-		auto OnHScroll(const MSG& msg) -> LRESULT;
-		auto OnInitMenuPopup(const MSG& msg) -> LRESULT;
-		auto OnKeyDown(const MSG& msg) -> LRESULT;
-		auto OnKeyUp(const MSG& msg) -> LRESULT;
-		auto OnLButtonDblClk(const MSG& msg) -> LRESULT;
-		auto OnLButtonDown(const MSG& msg) -> LRESULT;
-		auto OnLButtonUp(const MSG& msg) -> LRESULT;
-		auto OnMButtonDown(const MSG& msg) -> LRESULT;
-		void OnModifyData();                                   //When data has been modified.
-		auto OnMouseMove(const MSG& msg) -> LRESULT;
-		auto OnMouseWheel(const MSG& msg) -> LRESULT;
-		auto OnNCActivate(const MSG& msg) -> LRESULT;
-		auto OnNCCalcSize(const MSG& msg) -> LRESULT;
-		auto OnNCPaint(const MSG& msg) -> LRESULT;
-		auto OnPaint() -> LRESULT;
-		auto OnRButtonDown(const MSG& msg) -> LRESULT;
-		auto OnSetCursor(const MSG& msg) -> LRESULT;
-		auto OnSetFocus(const MSG& msg) -> LRESULT;
-		auto OnSize(const MSG& msg) -> LRESULT;
-		auto OnTimer(const MSG& msg) -> LRESULT;
-		auto OnVScroll(const MSG& msg) -> LRESULT;
+		void OnCaretPosChange(ULONGLONG ullOffset); //On changing caret position.
+		void OnModifyData();                        //When data has been modified.
 		template<typename T> requires std::is_class_v<T>
 		void ParentNotify(const T& t)const;                    //Notify routine used to send messages to Parent window.
 		void ParentNotify(UINT uCode)const;                    //Same as above, but only for notification code.
@@ -447,6 +419,34 @@ namespace HEXCTRL::INTERNAL {
 		void TTTrackShow(bool fShow, bool fTimer, const wchar_t* pwszText = nullptr);
 		void Undo();
 		void UpdateDPIScale(); //Set new DPI scale factor according to current DPI.
+		auto WMChar(const MSG& msg) -> LRESULT;
+		auto WMCommand(const MSG& msg) -> LRESULT;
+		auto WMContextMenu(const MSG& msg) -> LRESULT;
+		auto WMDestroy() -> LRESULT;
+		auto WMDPIChangedAfterParent() -> LRESULT;
+		auto WMEraseBkgnd(const MSG& msg) -> LRESULT;
+		auto WMGetDlgCode(const MSG& msg) -> LRESULT;
+		auto WMHelp(const MSG& msg) -> LRESULT;
+		auto WMHScroll(const MSG& msg) -> LRESULT;
+		auto WMInitMenuPopup(const MSG& msg) -> LRESULT;
+		auto WMKeyDown(const MSG& msg) -> LRESULT;
+		auto WMKeyUp(const MSG& msg) -> LRESULT;
+		auto WMLButtonDblClk(const MSG& msg) -> LRESULT;
+		auto WMLButtonDown(const MSG& msg) -> LRESULT;
+		auto WMLButtonUp(const MSG& msg) -> LRESULT;
+		auto WMMButtonDown(const MSG& msg) -> LRESULT;
+		auto WMMouseMove(const MSG& msg) -> LRESULT;
+		auto WMMouseWheel(const MSG& msg) -> LRESULT;
+		auto WMNCActivate(const MSG& msg) -> LRESULT;
+		auto WMNCCalcSize(const MSG& msg) -> LRESULT;
+		auto WMNCPaint(const MSG& msg) -> LRESULT;
+		auto WMPaint() -> LRESULT;
+		auto WMRButtonDown(const MSG& msg) -> LRESULT;
+		auto WMSetCursor(const MSG& msg) -> LRESULT;
+		auto WMSetFocus(const MSG& msg) -> LRESULT;
+		auto WMSize(const MSG& msg) -> LRESULT;
+		auto WMTimer(const MSG& msg) -> LRESULT;
+		auto WMVScroll(const MSG& msg) -> LRESULT;
 		static void ModifyOperScalar(std::byte* pData, const HEXMODIFY& hms, SpanCByte); //Modify operation scalar.
 		static auto CALLBACK SubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
 			UINT_PTR uIDSubclass, DWORD_PTR dwRefData)->LRESULT;
@@ -1696,35 +1696,35 @@ bool CHexCtrl::PreTranslateMsg(MSG* pMsg)
 auto CHexCtrl::ProcessMsg(const MSG& msg)->LRESULT
 {
 	switch (msg.message) {
-	case WM_CHAR: return OnChar(msg);
-	case WM_COMMAND: return OnCommand(msg);
-	case WM_CONTEXTMENU: return OnContextMenu(msg);
-	case WM_DESTROY: return OnDestroy();
-	case WM_DPICHANGED_AFTERPARENT: return OnDPIChangedAfterParent();
-	case WM_ERASEBKGND: return OnEraseBkgnd(msg);
-	case WM_GETDLGCODE: return OnGetDlgCode(msg);
-	case WM_HELP: return OnHelp(msg);
-	case WM_HSCROLL: return OnHScroll(msg);
-	case WM_INITMENUPOPUP: return OnInitMenuPopup(msg);
+	case WM_CHAR: return WMChar(msg);
+	case WM_COMMAND: return WMCommand(msg);
+	case WM_CONTEXTMENU: return WMContextMenu(msg);
+	case WM_DESTROY: return WMDestroy();
+	case WM_DPICHANGED_AFTERPARENT: return WMDPIChangedAfterParent();
+	case WM_ERASEBKGND: return WMEraseBkgnd(msg);
+	case WM_GETDLGCODE: return WMGetDlgCode(msg);
+	case WM_HELP: return WMHelp(msg);
+	case WM_HSCROLL: return WMHScroll(msg);
+	case WM_INITMENUPOPUP: return WMInitMenuPopup(msg);
 	case WM_SYSKEYDOWN:
-	case WM_KEYDOWN: return OnKeyDown(msg);
-	case WM_KEYUP: return OnKeyUp(msg);
-	case WM_LBUTTONDBLCLK: return OnLButtonDblClk(msg);
-	case WM_LBUTTONDOWN: return OnLButtonDown(msg);
-	case WM_LBUTTONUP: return OnLButtonUp(msg);
-	case WM_MBUTTONDOWN: return OnMButtonDown(msg);
-	case WM_MOUSEMOVE: return OnMouseMove(msg);
-	case WM_MOUSEWHEEL: return OnMouseWheel(msg);
-	case WM_NCACTIVATE: return OnNCActivate(msg);
-	case WM_NCCALCSIZE: return OnNCCalcSize(msg);
-	case WM_NCPAINT: return OnNCPaint(msg);
-	case WM_PAINT: return OnPaint();
-	case WM_RBUTTONDOWN: return OnRButtonDown(msg);
-	case WM_SETCURSOR: return OnSetCursor(msg);
-	case WM_SETFOCUS: return OnSetFocus(msg);
-	case WM_SIZE: return OnSize(msg);
-	case WM_TIMER: return OnTimer(msg);
-	case WM_VSCROLL: return OnVScroll(msg);
+	case WM_KEYDOWN: return WMKeyDown(msg);
+	case WM_KEYUP: return WMKeyUp(msg);
+	case WM_LBUTTONDBLCLK: return WMLButtonDblClk(msg);
+	case WM_LBUTTONDOWN: return WMLButtonDown(msg);
+	case WM_LBUTTONUP: return WMLButtonUp(msg);
+	case WM_MBUTTONDOWN: return WMMButtonDown(msg);
+	case WM_MOUSEMOVE: return WMMouseMove(msg);
+	case WM_MOUSEWHEEL: return WMMouseWheel(msg);
+	case WM_NCACTIVATE: return WMNCActivate(msg);
+	case WM_NCCALCSIZE: return WMNCCalcSize(msg);
+	case WM_NCPAINT: return WMNCPaint(msg);
+	case WM_PAINT: return WMPaint();
+	case WM_RBUTTONDOWN: return WMRButtonDown(msg);
+	case WM_SETCURSOR: return WMSetCursor(msg);
+	case WM_SETFOCUS: return WMSetFocus(msg);
+	case WM_SIZE: return WMSize(msg);
+	case WM_TIMER: return WMTimer(msg);
+	case WM_VSCROLL: return WMVScroll(msg);
 	default: return GDIUT::DefWndProc(msg);
 	}
 }
@@ -4225,723 +4225,11 @@ void CHexCtrl::OnCaretPosChange(ULONGLONG ullOffset)
 	ParentNotify(HEXCTRL_MSG_SETCARET);
 }
 
-auto CHexCtrl::OnChar(const MSG& msg)->LRESULT
-{
-	const auto wChar = LOWORD(msg.wParam); //LOWORD holds wchar_t symbol.
-	if (!IsDataSetImpl() || !IsMutableImpl() || !IsCurTextArea() || (::GetKeyState(VK_CONTROL) < 0)
-		|| !std::iswprint(wChar))
-		return 0;
-
-	std::string strASCII; //ASCII char to set.
-	//Keyboard Layout ID (locale identifier) for the current thread.
-	const auto lcid = static_cast<LCID>(reinterpret_cast<DWORD_PTR>(::GetKeyboardLayout(0UL)) & 0xFFFFUL);
-	UINT uANSICP { }; //ANSI CodePage ID.
-	if (constexpr int iSize = sizeof(uANSICP) / sizeof(wchar_t);
-		::GetLocaleInfoW(lcid, LOCALE_IDEFAULTANSICODEPAGE | LOCALE_RETURN_NUMBER,
-			reinterpret_cast<LPWSTR>(&uANSICP), iSize) == iSize) { //ANSI code page for the current KLID (if any).
-		//Convert input wchar symbol to ASCII char according to the current Keyboard ANSI code page.
-		const std::wstring_view wsv(reinterpret_cast<const wchar_t*>(&wChar), 1);
-		strASCII = ut::WstrToStr(wsv, uANSICP);
-	}
-
-	//Set converted char if conversion (wchar_t->ASCII_char) was made, or zero otherwise. 
-	const std::byte bByteToSet = static_cast<std::byte>(!strASCII.empty() ? strASCII[0] : 0);
-	ModifyData({ .spnData { &bByteToSet, sizeof(bByteToSet) }, .vecSpan { { GetCaretPosImpl(), 1 } } });
-	CaretMoveRight();
-
-	return 0;
-}
-
-auto CHexCtrl::OnCommand(const MSG& msg)->LRESULT
-{
-	const auto wMenuID = LOWORD(msg.wParam);
-	if (const auto opt = GetCommandFromMenu(wMenuID); opt) {
-		ExecuteCmd(*opt);
-		return 0;
-	}
-
-	//For a user defined custom menu we notify the parent window.
-	ParentNotify(HEXMENUINFO { .hdr { m_Wnd, static_cast<UINT>(m_Wnd.GetDlgCtrlID()), HEXCTRL_MSG_MENUCLICK },
-		.pt { m_stMenuClickedPt }, .wMenuID { wMenuID } });
-
-	return 0;
-}
-
-auto CHexCtrl::OnContextMenu(const MSG& msg)->LRESULT
-{
-	const POINT pt { .x { ut::GetXLPARAM(msg.lParam) }, .y { ut::GetYLPARAM(msg.lParam) } };
-
-	//Notify parent that we are about to display a context menu.
-	const HEXMENUINFO hmi { .hdr { m_Wnd, static_cast<UINT>(m_Wnd.GetDlgCtrlID()), HEXCTRL_MSG_CONTEXTMENU },
-		.pt { m_stMenuClickedPt = pt }, .fShow { true } };
-	ParentNotify(hmi);
-	if (hmi.fShow) { //Parent window can disable context menu showing up.
-		m_MenuMain.GetSubMenu(0).TrackPopupMenu(pt.x, pt.y, m_Wnd);
-	}
-
-	return 0;
-}
-
-auto CHexCtrl::OnDestroy()->LRESULT
-{
-	//All these cleanups below are important when HexCtrl window is destroyed but IHexCtrl object
-	//itself is still alive. The IHexCtrl object is alive until the IHexCtrl::Delete() method is called.
-	//Child windows of the IHexCtrl (e.g. tooltips) will be destroyed automatically by Windows.
-
-	//Note: The MSDN for the DestroyWindow clearly states that:
-	//"If the specified window is a parent or owner window, DestroyWindow automatically destroys the associated 
-	//child or owned windows when it destroys the parent or owner window. The function first destroys child or
-	//owned windows, and then it destroys the parent or owner window."
-	//But this doesn't seem to always be the case for owned dialog windows in some environments (mainly when 
-	//IHexCtrl is a child of MFC's CView class).
-	//These DestroyDlg calls to make sure the dialogs are always properly destroyed.
-
-	ClearData();
-	m_DlgBkmMgr.DestroyDlg();
-	m_DlgCodepage.DestroyDlg();
-	m_DlgDataInterp.DestroyDlg();
-	m_DlgModify.DestroyDlg();
-	m_DlgGoTo.DestroyDlg();
-	m_DlgSearch.DestroyDlg();
-	m_DlgTemplMgr.DestroyDlg();
-	m_DlgTemplMgr.UnloadAll(); //Templates could be loaded without creating the dialog itself.
-	m_vecKeyBind.clear();
-	m_vecUndo.clear();
-	m_vecRedo.clear();
-	m_vecCharsWidth.clear();
-	m_umapMenuItems.clear();
-	m_MenuMain.DestroyMenu();
-	::DeleteObject(m_hFntMain);
-	::DeleteObject(m_hFntInfoBar);
-	::DeleteObject(m_hPenLinesMain);
-	::DeleteObject(m_hPenLinesTempl);
-	m_ScrollV.DestroyWindow(); //Not a child of the IHexCtrl.
-	m_ScrollH.DestroyWindow(); //Not a child of the IHexCtrl.
-	ParentNotify(HEXCTRL_MSG_DESTROY);
-	m_fCreated = false;
-
-	return 0;
-}
-
-auto CHexCtrl::OnDPIChangedAfterParent()->LRESULT
-{
-	//Take the current font size, in points, with the old DPI.
-	const auto flFontPointsMain = FontPointsFromScaledPixels(GetFontSizeInPixels(true));
-	const auto flFontPointsInfo = FontPointsFromScaledPixels(GetFontSizeInPixels(false));
-
-	UpdateDPIScale(); //Set new DPI scale.
-
-	//Invoke all DPI dependent routines, with the new DPI.
-	SetFontSizeInPoints(flFontPointsMain, true);
-	SetFontSizeInPoints(flFontPointsInfo, false);
-	CreateMenu();
-	m_ScrollV.OnDPIChangedAfterParent();
-	m_ScrollH.OnDPIChangedAfterParent();
-
-	return 0;
-}
-
-auto CHexCtrl::OnEraseBkgnd([[maybe_unused]] const MSG& msg)->LRESULT
-{
-	return 1; //An application should return nonzero if it erases the background, or zero otherwise.
-}
-
-auto CHexCtrl::OnGetDlgCode([[maybe_unused]] const MSG& msg)->LRESULT
-{
-	return DLGC_WANTALLKEYS;
-}
-
-auto CHexCtrl::OnHelp([[maybe_unused]] const MSG& msg)->LRESULT
-{
-	return TRUE;
-}
-
-auto CHexCtrl::OnHScroll([[maybe_unused]] const MSG& msg)->LRESULT
-{
-	RedrawImpl();
-	return 0;
-}
-
-auto CHexCtrl::OnInitMenuPopup(const MSG& msg)->LRESULT
-{
-	using enum EHexCmd;
-	//The LOWORD(lParam) specifies zero-based relative position of the menu, that opens drop-down menu or submenu.
-	switch (LOWORD(msg.lParam)) {
-	case 0:	//Search.
-		m_MenuMain.EnableItem(IDM_HEXCTRL_SEARCH_SEARCH, IsCmdAvail(CMD_SEARCH_DLG));
-		m_MenuMain.EnableItem(IDM_HEXCTRL_SEARCH_NEXT, IsCmdAvail(CMD_SEARCH_NEXT));
-		m_MenuMain.EnableItem(IDM_HEXCTRL_SEARCH_PREV, IsCmdAvail(CMD_SEARCH_PREV));
-		break;
-	case 3:	//Navigation.
-		m_MenuMain.EnableItem(IDM_HEXCTRL_NAV_GOTO, IsCmdAvail(CMD_NAV_GOTO_DLG));
-		m_MenuMain.EnableItem(IDM_HEXCTRL_NAV_REPFWD, IsCmdAvail(CMD_NAV_REPFWD));
-		m_MenuMain.EnableItem(IDM_HEXCTRL_NAV_REPBKW, IsCmdAvail(CMD_NAV_REPBKW));
-		m_MenuMain.EnableItem(IDM_HEXCTRL_NAV_DATABEG, IsCmdAvail(CMD_NAV_DATABEG));
-		m_MenuMain.EnableItem(IDM_HEXCTRL_NAV_DATAEND, IsCmdAvail(CMD_NAV_DATAEND));
-		m_MenuMain.EnableItem(IDM_HEXCTRL_NAV_PAGEBEG, IsCmdAvail(CMD_NAV_PAGEBEG));
-		m_MenuMain.EnableItem(IDM_HEXCTRL_NAV_PAGEEND, IsCmdAvail(CMD_NAV_PAGEEND));
-		m_MenuMain.EnableItem(IDM_HEXCTRL_NAV_LINEBEG, IsCmdAvail(CMD_NAV_LINEBEG));
-		m_MenuMain.EnableItem(IDM_HEXCTRL_NAV_LINEEND, IsCmdAvail(CMD_NAV_LINEEND));
-		break;
-	case 4:	//Bookmarks.
-		m_MenuMain.EnableItem(IDM_HEXCTRL_BKM_ADD, IsCmdAvail(CMD_BKM_ADD));
-		m_MenuMain.EnableItem(IDM_HEXCTRL_BKM_REMOVE, IsCmdAvail(CMD_BKM_REMOVE));
-		m_MenuMain.EnableItem(IDM_HEXCTRL_BKM_GONEXT, IsCmdAvail(CMD_BKM_NEXT));
-		m_MenuMain.EnableItem(IDM_HEXCTRL_BKM_GOPREV, IsCmdAvail(CMD_BKM_PREV));
-		m_MenuMain.EnableItem(IDM_HEXCTRL_BKM_REMOVEALL, IsCmdAvail(CMD_BKM_REMOVEALL));
-		m_MenuMain.EnableItem(IDM_HEXCTRL_BKM_BKMMGR, IsCmdAvail(CMD_BKM_DLG_MGR));
-		break;
-	case 5:	//Clipboard.
-		m_MenuMain.EnableItem(IDM_HEXCTRL_CLPBRD_COPYHEX, IsCmdAvail(CMD_CLPBRD_COPY_HEX));
-		m_MenuMain.EnableItem(IDM_HEXCTRL_CLPBRD_COPYHEXLE, IsCmdAvail(CMD_CLPBRD_COPY_HEXLE));
-		m_MenuMain.EnableItem(IDM_HEXCTRL_CLPBRD_COPYHEXFMT, IsCmdAvail(CMD_CLPBRD_COPY_HEXFMT));
-		m_MenuMain.EnableItem(IDM_HEXCTRL_CLPBRD_COPYTEXTCP, IsCmdAvail(CMD_CLPBRD_COPY_TEXTCP));
-		m_MenuMain.EnableItem(IDM_HEXCTRL_CLPBRD_COPYBASE64, IsCmdAvail(CMD_CLPBRD_COPY_BASE64));
-		m_MenuMain.EnableItem(IDM_HEXCTRL_CLPBRD_COPYCARR, IsCmdAvail(CMD_CLPBRD_COPY_CARR));
-		m_MenuMain.EnableItem(IDM_HEXCTRL_CLPBRD_COPYGREPHEX, IsCmdAvail(CMD_CLPBRD_COPY_GREPHEX));
-		m_MenuMain.EnableItem(IDM_HEXCTRL_CLPBRD_COPYPRNTSCRN, IsCmdAvail(CMD_CLPBRD_COPY_PRNTSCRN));
-		m_MenuMain.EnableItem(IDM_HEXCTRL_CLPBRD_COPYCAROFF, IsCmdAvail(CMD_CLPBRD_COPY_OFFSET));
-		m_MenuMain.EnableItem(IDM_HEXCTRL_CLPBRD_PASTEHEX, IsCmdAvail(CMD_CLPBRD_PASTE_HEX));
-		m_MenuMain.EnableItem(IDM_HEXCTRL_CLPBRD_PASTEUTF16, IsCmdAvail(CMD_CLPBRD_PASTE_TEXTUTF16));
-		m_MenuMain.EnableItem(IDM_HEXCTRL_CLPBRD_PASTETEXTCP, IsCmdAvail(CMD_CLPBRD_PASTE_TEXTCP));
-		break;
-	case 6: //Modify.
-		m_MenuMain.EnableItem(IDM_HEXCTRL_MODIFY_FILLZEROS, IsCmdAvail(CMD_MODIFY_FILLZEROS));
-		m_MenuMain.EnableItem(IDM_HEXCTRL_MODIFY_FILLDATA, IsCmdAvail(CMD_MODIFY_FILLDATA_DLG));
-		m_MenuMain.EnableItem(IDM_HEXCTRL_MODIFY_OPERS, IsCmdAvail(CMD_MODIFY_OPERS_DLG));
-		m_MenuMain.EnableItem(IDM_HEXCTRL_MODIFY_UNDO, IsCmdAvail(CMD_MODIFY_UNDO));
-		m_MenuMain.EnableItem(IDM_HEXCTRL_MODIFY_REDO, IsCmdAvail(CMD_MODIFY_REDO));
-		break;
-	case 7: //Selection.
-		m_MenuMain.EnableItem(IDM_HEXCTRL_SEL_MARKSTARTEND, IsCmdAvail(CMD_SEL_MARKSTARTEND));
-		m_MenuMain.EnableItem(IDM_HEXCTRL_SEL_ALL, IsCmdAvail(CMD_SEL_ALL));
-		break;
-	case 8: //Templates.
-		m_MenuMain.EnableItem(IDM_HEXCTRL_TEMPL_APPLYCURR, IsCmdAvail(CMD_TEMPL_APPLYCURR));
-		m_MenuMain.EnableItem(IDM_HEXCTRL_TEMPL_DISAPPLY, IsCmdAvail(CMD_TEMPL_DISAPPLY));
-		m_MenuMain.EnableItem(IDM_HEXCTRL_TEMPL_DISAPPLYALL, IsCmdAvail(CMD_TEMPL_DISAPPALL));
-		m_MenuMain.EnableItem(IDM_HEXCTRL_TEMPL_TEMPLMGR, IsCmdAvail(CMD_TEMPL_DLG_MGR));
-		break;
-	case 9: //Data Presentation.
-		m_MenuMain.EnableItem(IDM_HEXCTRL_DATAINTERP, IsCmdAvail(CMD_DATAINTERP_DLG));
-		m_MenuMain.EnableItem(IDM_HEXCTRL_TEXTCODEPAGE, IsCmdAvail(CMD_CODEPAGE_DLG));
-		break;
-	default:
-		break;
-	}
-
-	return 0;
-}
-
-auto CHexCtrl::OnKeyDown(const MSG& msg)->LRESULT
-{
-	const auto wVKey = LOWORD(msg.wParam); //Virtual-key code (both: WM_KEYDOWN/WM_SYSKEYDOWN).
-
-	//LORE: If some key combinations (e.g. Ctrl+Alt+Num Plus) do not work for seemingly no reason,
-	//it might be due to global hotkeys hooks from some running app.
-	if (const auto optCmd = GetCommandFromKey(wVKey, ::GetAsyncKeyState(VK_CONTROL) < 0,
-		::GetAsyncKeyState(VK_SHIFT) < 0, ::GetAsyncKeyState(VK_MENU) < 0); optCmd) {
-		ExecuteCmd(*optCmd);
-		return 0;
-	}
-
-	if (!IsDataSetImpl() || !IsMutableImpl() || IsCurTextArea())
-		return 0;
-
-	//If caret is in the Hex area then just one part (High/Low) of the byte must be changed.
-	//Normalizing all input in the Hex area to only [0x0-0xF] range, allowing only [0-9], [A-F], [NUM0-NUM9].
-	int iByteInput;
-	if (wVKey >= '0' && wVKey <= '9') {
-		iByteInput = wVKey - '0'; //'1' - '0' = 0x01.
-	}
-	else if (wVKey >= 'A' && wVKey <= 'F') {
-		iByteInput = wVKey - 0x37; //'A' - 0x37 = 0x0A.
-	}
-	else if (wVKey >= VK_NUMPAD0 && wVKey <= VK_NUMPAD9) {
-		iByteInput = wVKey - VK_NUMPAD0;
-	}
-	else
-		return 0;
-
-	const auto u8ByteCurr = ut::GetIHexTData<std::uint8_t>(*this, GetCaretPosImpl());
-	const auto bByteToSet = static_cast<std::byte>(m_fCaretHigh ? ((iByteInput << 4U) | (u8ByteCurr & 0x0FU))
-		: ((iByteInput & 0x0FU) | (u8ByteCurr & 0xF0U)));
-	ModifyData({ .eModifyMode { EHexModifyMode::MODIFY_ONCE }, .spnData { &bByteToSet, sizeof(bByteToSet) },
-		.vecSpan { { GetCaretPosImpl(), 1 } } });
-	CaretMoveRight();
-
-	return 0;
-}
-
-auto CHexCtrl::OnKeyUp([[maybe_unused]] const MSG& msg)->LRESULT
-{
-	if (!IsDataSetImpl())
-		return 0;
-
-	m_DlgDataInterp.UpdateData();
-
-	return 0;
-}
-
-auto CHexCtrl::OnLButtonDblClk(const MSG& msg)->LRESULT
-{
-	const POINT pt { .x { ut::GetXLPARAM(msg.lParam) }, .y { ut::GetYLPARAM(msg.lParam) } };
-
-	if ((pt.x + static_cast<long>(m_ScrollH.GetScrollPos())) < m_iSecondVertLinePx) { //DblClick on "Offset" area.
-		SetOffsetMode(!IsOffsetAsHexImpl());
-	}
-	else if (GetRectTextCaption().PtInRect(pt) != FALSE) { //DblClick on codepage caption area.
-		ExecuteCmd(EHexCmd::CMD_CODEPAGE_DLG);
-	}
-	else if (const auto optHit = HitTest(pt); optHit) { //DblClick on hex/text area.
-		m_fLMousePressed = true;
-		m_ullCaretPos = optHit->ullOffset;
-		m_fCursorTextArea = optHit->fIsText;
-		if (!optHit->fIsText) {
-			m_fCaretHigh = optHit->fIsHigh;
-		}
-
-		HEXSPAN hs;
-		if (msg.wParam & MK_SHIFT) {
-			const auto dwCapacity = GetCapacity();
-			hs.ullOffset = m_ullCursorPrev = m_ullCursorNow = m_ullCaretPos - (m_ullCaretPos % dwCapacity);
-			hs.ullSize = dwCapacity;
-		}
-		else {
-			m_fClickWithAlt = ::GetAsyncKeyState(VK_MENU) < 0;
-			m_ullCursorPrev = m_ullCursorNow = m_ullCaretPos;
-			hs.ullOffset = m_ullCaretPos;
-			hs.ullSize = 1ULL;
-		}
-		SetSelection({ &hs, 1 });
-		m_Wnd.SetCapture();
-	}
-
-	return 0;
-}
-
-auto CHexCtrl::OnLButtonDown(const MSG& msg)->LRESULT
-{
-	const POINT pt { .x { ut::GetXLPARAM(msg.lParam) }, .y { ut::GetYLPARAM(msg.lParam) } };
-
-	m_Wnd.SetFocus(); //SetFocus is vital to give proper keyboard input to the main HexCtrl window.
-
-	if (IsScrollCursor()) {
-		SetScrollCursor(false);
-		return 0;
-	}
-
-	const auto optHit = HitTest(pt);
-	if (!optHit)
-		return 0;
-
-	m_fLMousePressed = true;
-	m_ullCursorNow = m_ullCaretPos = optHit->ullOffset;
-	m_fCursorTextArea = optHit->fIsText;
-	if (!optHit->fIsText) {
-		m_fCaretHigh = optHit->fIsHigh;
-	}
-
-	m_fClickWithAlt = ::GetAsyncKeyState(VK_MENU) < 0;
-	m_Wnd.SetCapture();
-
-	VecHexSpan vecSel;
-	if (msg.wParam & MK_SHIFT) {
-		ULONGLONG ullSelStart;
-		ULONGLONG ullSelEnd;
-		if (m_ullCursorNow <= m_ullCursorPrev) {
-			ullSelStart = m_ullCursorNow;
-			ullSelEnd = m_ullCursorPrev + 1;
-		}
-		else {
-			ullSelStart = m_ullCursorPrev;
-			ullSelEnd = m_ullCursorNow + 1;
-		}
-		vecSel.emplace_back(ullSelStart, ullSelEnd - ullSelStart);
-	}
-	else {
-		m_ullCursorPrev = m_ullCursorNow;
-	}
-
-	if (HasSelection() || !vecSel.empty()) { //To avoid set empty selection when it's already empty.
-		SetSelection(vecSel);
-	}
-	else {
-		RedrawImpl();
-	}
-
-	OnCaretPosChange(GetCaretPosImpl());
-
-	return 0;
-}
-
-auto CHexCtrl::OnLButtonUp([[maybe_unused]] const MSG& msg)->LRESULT
-{
-	m_fLMousePressed = false;
-	::ReleaseCapture();
-	m_ScrollV.OnLButtonUp();
-	m_ScrollH.OnLButtonUp();
-
-	return 0;
-}
-
-auto CHexCtrl::OnMButtonDown(const MSG& msg)->LRESULT
-{
-	m_Wnd.SetFocus();
-	const auto wFlags = GET_KEYSTATE_WPARAM(msg.wParam);
-
-	if (const auto opt = GetCommandFromKey(m_dwVKMiddleButtonDown,
-		wFlags & MK_CONTROL, wFlags & MK_SHIFT, false); opt) {
-		ExecuteCmd(*opt);
-	}
-
-	return 0;
-}
-
 void CHexCtrl::OnModifyData()
 {
 	ParentNotify(HEXCTRL_MSG_SETDATA);
 	m_DlgTemplMgr.UpdateData();
 	m_DlgDataInterp.UpdateData();
-}
-
-auto CHexCtrl::OnMouseMove(const MSG& msg)->LRESULT
-{
-	const POINT pt { .x { ut::GetXLPARAM(msg.lParam) }, .y { ut::GetYLPARAM(msg.lParam) } };
-	const auto optHit = HitTest(pt);
-
-	if (m_fLMousePressed) {
-		//If LMouse is pressed but cursor is outside of the client area (SetCapture() behavior).
-		const auto rcClient = m_Wnd.GetClientRect();
-		if (m_ScrollH.IsVisible()) { //Checking for scrollbars existence first.
-			if (pt.x < rcClient.left) {
-				m_ScrollH.ScrollLineLeft();
-			}
-			else if (pt.x >= rcClient.right) {
-				m_ScrollH.ScrollLineRight();
-			}
-		}
-
-		if (m_ScrollV.IsVisible()) {
-			if (pt.y < m_iStartWorkAreaYPx) {
-				m_ScrollV.ScrollLineUp();
-			}
-			else if (pt.y >= m_iEndWorkAreaPx) {
-				m_ScrollV.ScrollLineDown();
-			}
-		}
-
-		//Checking if the current cursor pos is at the same byte's half
-		//that it was at the previous WM_MOUSEMOVE event.
-		//Making selection of the byte only if the cursor has crossed byte's halves.
-		//Doesn't apply when moving in the Text area.
-		if (!optHit || (optHit->ullOffset == m_ullCursorNow && m_fCaretHigh == optHit->fIsHigh && !optHit->fIsText))
-			return 0;
-
-		m_ullCursorNow = optHit->ullOffset;
-		const auto ullOffsetHit = optHit->ullOffset;
-		const auto dwCapacity = GetCapacity();
-		ULONGLONG ullClick;
-		ULONGLONG ullStart;
-		ULONGLONG ullSize;
-		ULONGLONG ullLines;
-		if (m_fClickWithAlt) { //Select block (with Alt).
-			ullClick = m_ullCursorPrev;
-			const DWORD dwModOffset = ullOffsetHit % dwCapacity;
-			const DWORD dwModClick = ullClick % dwCapacity;
-			if (ullOffsetHit >= ullClick) {
-				if (dwModOffset <= dwModClick) {
-					const auto dwModStart = dwModClick - dwModOffset;
-					ullStart = ullClick - dwModStart;
-					ullSize = dwModStart + 1;
-				}
-				else {
-					ullStart = ullClick;
-					ullSize = dwModOffset - dwModClick + 1;
-				}
-				ullLines = (ullOffsetHit - ullStart) / dwCapacity + 1;
-			}
-			else {
-				if (dwModOffset <= dwModClick) {
-					ullStart = ullOffsetHit;
-					ullSize = dwModClick - ullStart % dwCapacity + 1;
-				}
-				else {
-					const auto dwModStart = dwModOffset - dwModClick;
-					ullStart = ullOffsetHit - dwModStart;
-					ullSize = dwModStart + 1;
-				}
-				ullLines = (ullClick - ullStart) / dwCapacity + 1;
-			}
-		}
-		else {
-			if (ullOffsetHit <= m_ullCursorPrev) {
-				ullClick = m_ullCursorPrev;
-				ullStart = ullOffsetHit;
-				ullSize = ullClick - ullStart + 1;
-			}
-			else {
-				ullClick = m_ullCursorPrev;
-				ullStart = m_ullCursorPrev;
-				ullSize = ullOffsetHit - ullClick + 1;
-			}
-			ullLines = 1;
-		}
-
-		m_ullCursorPrev = ullClick;
-		m_ullCaretPos = ullStart;
-		VecHexSpan vecSel;
-		vecSel.reserve(static_cast<std::size_t>(ullLines));
-		for (auto itLine = 0ULL; itLine < ullLines; ++itLine) {
-			vecSel.emplace_back(ullStart + (dwCapacity * itLine), ullSize);
-		}
-		SetSelection(vecSel);
-	}
-	else {
-		if (optHit) {
-			if (const auto pBkm = m_DlgBkmMgr.HitTest(optHit->ullOffset);
-				pBkm != nullptr && m_DlgBkmMgr.IsShowTooltips()) {
-				const auto pwszBkmDesc = pBkm->wstrDesc.data();
-				if (m_pwszTTText != pwszBkmDesc) {
-					m_pwszTTText = pwszBkmDesc;
-					TTTrackShow(true, true, m_pwszTTText);
-				}
-			}
-			else if (const auto pField = m_DlgTemplMgr.HitTest(optHit->ullOffset);
-				pField != nullptr && m_DlgTemplMgr.IsShowTooltips()) {
-				const auto pwszFieldName = pField->wstrName.data();
-				if (m_pwszTTText != pwszFieldName) {
-					m_pwszTTText = pwszFieldName;
-					TTTrackShow(true, true, m_pwszTTText);
-				}
-			}
-			else if (m_pwszTTText != nullptr) {
-				TTTrackShow(false, false);
-			}
-		}
-		else {
-			//If there is tooltip already shown, but cursor is outside of data chunks.
-			if (m_pwszTTText != nullptr) {
-				TTTrackShow(false, false);
-			}
-		}
-
-		m_ScrollV.OnMouseMove(pt);
-		m_ScrollH.OnMouseMove(pt);
-	}
-
-	return 0;
-}
-
-auto CHexCtrl::OnMouseWheel(const MSG& msg)->LRESULT
-{
-	const auto uwDelta = GET_WHEEL_DELTA_WPARAM(msg.wParam);
-	const auto wFlags = GET_KEYSTATE_WPARAM(msg.wParam);
-
-	if (const auto opt = GetCommandFromKey(uwDelta > 0 ? m_dwVKMouseWheelUp : m_dwVKMouseWheelDown,
-		wFlags & MK_CONTROL, wFlags & MK_SHIFT, false); opt) {
-		ExecuteCmd(*opt);
-	}
-
-	return 0;
-}
-
-auto CHexCtrl::OnNCActivate([[maybe_unused]] const MSG& msg)->LRESULT
-{
-	m_ScrollV.OnNCActivate();
-	m_ScrollH.OnNCActivate();
-
-	return TRUE;
-}
-
-auto CHexCtrl::OnNCCalcSize(const MSG& msg)->LRESULT
-{
-	GDIUT::DefWndProc(msg);
-	const auto pNCSP = reinterpret_cast<LPNCCALCSIZE_PARAMS>(msg.lParam);
-
-	//Sequence is important — H->V.
-	m_ScrollH.OnNCCalcSize(pNCSP);
-	m_ScrollV.OnNCCalcSize(pNCSP);
-
-	return 0;
-}
-
-auto CHexCtrl::OnNCPaint(const MSG& msg)->LRESULT
-{
-	GDIUT::DefWndProc(msg);
-	m_ScrollV.OnNCPaint();
-	m_ScrollH.OnNCPaint();
-
-	return 0;
-}
-
-auto CHexCtrl::OnPaint()->LRESULT
-{
-	GDIUT::CPaintDC dcPaint(m_Wnd);
-
-	if (!IsDrawable()) //Control should not be rendered atm.
-		return 0;
-
-	const auto rcClient = m_Wnd.GetClientRect();
-
-	if (!IsCreated()) {
-		dcPaint.FillSolidRect(rcClient, m_stColors.clrBk);
-		dcPaint.SetTextColor(m_stColors.clrFontHex);
-		dcPaint.SetBkColor(m_stColors.clrBkHex);
-		dcPaint.TextOutW(1, 1, L"Call IHexCtrl::Create first.");
-		return 0;
-	}
-
-	//To prevent drawing in too small window (can cause hangs).
-	if (rcClient.IsRectEmpty() || rcClient.Height() <= m_iHeightTopRectPx + m_iHeightBottomOffAreaPx)
-		return 0;
-
-	const auto ullStartLine = GetTopLine();
-	const auto ullEndLine = GetBottomLine();
-	auto iLines = static_cast<int>(ullEndLine - ullStartLine);
-	if (iLines < 0) {
-		ut::DBG_REPORT(L"iLines < 0");
-		return 0;
-	}
-
-	//Actual amount of lines, "ullEndLine - ullStartLine" always shows one line less.
-	if (IsDataSetImpl()) {
-		++iLines;
-	}
-
-	//Drawing through CMemDC to avoid flickering.
-	GDIUT::CMemDC dcMem(dcPaint, rcClient);
-	DrawWindow(dcMem);
-	DrawInfoBar(dcMem);
-
-	if (!IsDataSetImpl())
-		return 0;
-
-	DrawOffsets(dcMem, ullStartLine, iLines);
-	const auto& [wstrHex, wstrText] = BuildDataToDraw(ullStartLine, iLines);
-	DrawHexText(dcMem, ullStartLine, iLines, wstrHex, wstrText);
-	DrawTemplates(dcMem, ullStartLine, iLines, wstrHex, wstrText);
-	DrawBookmarks(dcMem, ullStartLine, iLines, wstrHex, wstrText);
-	DrawSelection(dcMem, ullStartLine, iLines, wstrHex, wstrText);
-	DrawSelHighlight(dcMem, ullStartLine, iLines, wstrHex, wstrText);
-	DrawCaret(dcMem, ullStartLine, iLines, wstrHex, wstrText);
-	DrawDataInterp(dcMem, ullStartLine, iLines, wstrHex, wstrText);
-	DrawPageLines(dcMem, ullStartLine, iLines);
-
-	return 0;
-}
-
-auto CHexCtrl::OnRButtonDown([[maybe_unused]] const MSG& msg)->LRESULT
-{
-	if (IsScrollCursor()) {
-		SetScrollCursor(false);
-		return 0;
-	}
-
-	return 0;
-}
-
-auto CHexCtrl::OnSetCursor(const MSG& msg)->LRESULT
-{
-	if (IsScrollCursor()) {
-		static const auto hCurScroll = static_cast<HCURSOR>(::LoadImageW(nullptr, MAKEINTRESOURCEW(32654),
-			IMAGE_CURSOR, 0, 0, LR_DEFAULTSIZE | LR_SHARED)); //Standard Windows scrolling cursor.
-		::SetCursor(hCurScroll);
-		return TRUE;
-	}
-
-	const auto wHitTest = LOWORD(msg.lParam);
-	const auto wMessage = HIWORD(msg.lParam);
-	m_ScrollV.OnSetCursor(wHitTest, wMessage);
-	m_ScrollH.OnSetCursor(wHitTest, wMessage);
-
-	return GDIUT::DefWndProc(msg); //To set appropriate cursor.
-}
-
-auto CHexCtrl::OnSetFocus([[maybe_unused]] const MSG& msg)->LRESULT
-{
-	m_DlgDataInterp.DisableHighlight();
-
-	return 0;
-}
-
-auto CHexCtrl::OnSize(const MSG& msg)->LRESULT
-{
-	if (!IsCreated())
-		return 0;
-
-	const auto wWidth = LOWORD(msg.lParam);
-	const auto wHeight = HIWORD(msg.lParam);
-	RecalcClientArea(wWidth, wHeight);
-	m_ScrollV.SetScrollPageSize(GetScrollPageSize());
-
-	return 0;
-}
-
-auto CHexCtrl::OnTimer(const MSG& msg)->LRESULT
-{
-	const auto uIDTimer = msg.wParam;
-
-	if (uIDTimer == m_uIDTTooltip) {
-		constexpr auto dSecToShow { 5000.0 }; //How many ms to show tooltips.
-		auto rcClient = m_Wnd.GetClientRect();
-		m_Wnd.ClientToScreen(rcClient);
-		GDIUT::CPoint ptCur;
-		::GetCursorPos(ptCur);
-
-		if (!rcClient.PtInRect(ptCur)) { //Check if cursor has left the client rect.
-			TTTrackShow(false, false);
-		}
-		else if (const auto msElapsed = std::chrono::duration<double, std::milli>
-			(std::chrono::high_resolution_clock::now() - m_tmTT).count();
-			msElapsed >= dSecToShow) { //Check if more than dSecToShow ms have passed since toolip is shown.
-			TTTrackShow(false, true);
-		}
-
-		return 0;
-	}
-
-	if (uIDTimer == m_uIDTScrolCursor) {
-		GDIUT::CPoint ptCur;
-		::GetCursorPos(ptCur);
-		constexpr auto flSlowFactor = 4.F; //For scrolling slowly, for every segment.
-
-		//Segment size in pixels for cursor to move, to accelerate against.
-		const auto iSegmentPx = static_cast<int>(20 * GetDPIScale());
-		const auto iSegmentsY = (ptCur.y - m_ptScrollCursorClick.y) / iSegmentPx; //How many vertical segments away from click.
-		const auto i64NewScrollY = static_cast<std::int64_t>(m_ScrollV.GetScrollPos()
-			+ m_ScrollV.GetScrollLineSize() / flSlowFactor * iSegmentsY);
-		m_ScrollV.SetScrollPos(i64NewScrollY);
-		const auto iSegmentsX = (ptCur.x - m_ptScrollCursorClick.x) / iSegmentPx; //How many horizontal segments away from click.
-		const auto i64NewScrollX = static_cast<std::int64_t>(m_ScrollH.GetScrollPos()
-			+ m_ScrollH.GetScrollLineSize() / flSlowFactor * iSegmentsX);
-		m_ScrollH.SetScrollPos(i64NewScrollX);
-
-		return 0;
-	}
-
-	return GDIUT::DefWndProc(msg);
-}
-
-auto CHexCtrl::OnVScroll([[maybe_unused]] const MSG& msg)->LRESULT
-{
-	bool fRedraw { true };
-	if (m_stData.fHighLatency) {
-		fRedraw = m_ScrollV.IsThumbReleased();
-		if (!fRedraw) {
-			const auto wstrOffset = (IsOffsetAsHexImpl() ? L"Offset: 0x" : L"Offset: ") + OffsetToWstr(GetTopLine() * GetCapacity());
-			TTTrackShow(true, false, wstrOffset.data());
-		}
-		else {
-			TTTrackShow(false, false);
-		}
-	}
-
-	if (fRedraw) {
-		RedrawImpl();
-	}
-
-	return 0;
 }
 
 template<typename T> requires std::is_class_v<T>
@@ -6037,7 +5325,7 @@ void CHexCtrl::TextChunkPoint(ULONGLONG ullOffset, int& iCx, int& iCy)const
 void CHexCtrl::TTTrackShow(bool fShow, bool fTimer, const wchar_t* pwszText)
 {
 	//When fShow==true, the fTimer==true means to set a new timer for tooltip.
-	//When fShow==false, the fTimer==true means that this call is from the OnTimer, and tooltip showing time has run out.
+	//When fShow==false, the fTimer==true means that this call is from the WMTimer, and tooltip showing time has run out.
 
 	const TTTOOLINFOW ti { .cbSize { sizeof(TTTOOLINFOW) }, .uFlags { TTF_TRACK }, .lpszText { const_cast<LPWSTR>(pwszText) } };
 	if (fShow) {
@@ -6113,6 +5401,718 @@ void CHexCtrl::Undo()
 void CHexCtrl::UpdateDPIScale()
 {
 	m_flDPIScale = GDIUT::GetDPIScaleForHWND(m_Wnd);
+}
+
+auto CHexCtrl::WMChar(const MSG& msg)->LRESULT
+{
+	const auto wChar = LOWORD(msg.wParam); //LOWORD holds wchar_t symbol.
+	if (!IsDataSetImpl() || !IsMutableImpl() || !IsCurTextArea() || (::GetKeyState(VK_CONTROL) < 0)
+		|| !std::iswprint(wChar))
+		return 0;
+
+	std::string strASCII; //ASCII char to set.
+	//Keyboard Layout ID (locale identifier) for the current thread.
+	const auto lcid = static_cast<LCID>(reinterpret_cast<DWORD_PTR>(::GetKeyboardLayout(0UL)) & 0xFFFFUL);
+	UINT uANSICP { }; //ANSI CodePage ID.
+	if (constexpr int iSize = sizeof(uANSICP) / sizeof(wchar_t);
+		::GetLocaleInfoW(lcid, LOCALE_IDEFAULTANSICODEPAGE | LOCALE_RETURN_NUMBER,
+			reinterpret_cast<LPWSTR>(&uANSICP), iSize) == iSize) { //ANSI code page for the current KLID (if any).
+		//Convert input wchar symbol to ASCII char according to the current Keyboard ANSI code page.
+		const std::wstring_view wsv(reinterpret_cast<const wchar_t*>(&wChar), 1);
+		strASCII = ut::WstrToStr(wsv, uANSICP);
+	}
+
+	//Set converted char if conversion (wchar_t->ASCII_char) was made, or zero otherwise. 
+	const std::byte bByteToSet = static_cast<std::byte>(!strASCII.empty() ? strASCII[0] : 0);
+	ModifyData({ .spnData { &bByteToSet, sizeof(bByteToSet) }, .vecSpan { { GetCaretPosImpl(), 1 } } });
+	CaretMoveRight();
+
+	return 0;
+}
+
+auto CHexCtrl::WMCommand(const MSG& msg)->LRESULT
+{
+	const auto wMenuID = LOWORD(msg.wParam);
+	if (const auto opt = GetCommandFromMenu(wMenuID); opt) {
+		ExecuteCmd(*opt);
+		return 0;
+	}
+
+	//For a user defined custom menu we notify the parent window.
+	ParentNotify(HEXMENUINFO { .hdr { m_Wnd, static_cast<UINT>(m_Wnd.GetDlgCtrlID()), HEXCTRL_MSG_MENUCLICK },
+		.pt { m_stMenuClickedPt }, .wMenuID { wMenuID } });
+
+	return 0;
+}
+
+auto CHexCtrl::WMContextMenu(const MSG& msg)->LRESULT
+{
+	const POINT pt { .x { ut::GetXLPARAM(msg.lParam) }, .y { ut::GetYLPARAM(msg.lParam) } };
+
+	//Notify parent that we are about to display a context menu.
+	const HEXMENUINFO hmi { .hdr { m_Wnd, static_cast<UINT>(m_Wnd.GetDlgCtrlID()), HEXCTRL_MSG_CONTEXTMENU },
+		.pt { m_stMenuClickedPt = pt }, .fShow { true } };
+	ParentNotify(hmi);
+	if (hmi.fShow) { //Parent window can disable context menu showing up.
+		m_MenuMain.GetSubMenu(0).TrackPopupMenu(pt.x, pt.y, m_Wnd);
+	}
+
+	return 0;
+}
+
+auto CHexCtrl::WMDestroy()->LRESULT
+{
+	//All these cleanups below are important when HexCtrl window is destroyed but IHexCtrl object
+	//itself is still alive. The IHexCtrl object is alive until the IHexCtrl::Delete() method is called.
+	//Child windows of the IHexCtrl (e.g. tooltips) will be destroyed automatically by Windows.
+
+	//Note: The MSDN for the DestroyWindow clearly states that:
+	//"If the specified window is a parent or owner window, DestroyWindow automatically destroys the associated 
+	//child or owned windows when it destroys the parent or owner window. The function first destroys child or
+	//owned windows, and then it destroys the parent or owner window."
+	//But this doesn't seem to always be the case for owned dialog windows in some environments (mainly when 
+	//IHexCtrl is a child of MFC's CView class).
+	//These DestroyDlg calls to make sure the dialogs are always properly destroyed.
+
+	ClearData();
+	m_DlgBkmMgr.DestroyDlg();
+	m_DlgCodepage.DestroyDlg();
+	m_DlgDataInterp.DestroyDlg();
+	m_DlgModify.DestroyDlg();
+	m_DlgGoTo.DestroyDlg();
+	m_DlgSearch.DestroyDlg();
+	m_DlgTemplMgr.DestroyDlg();
+	m_DlgTemplMgr.UnloadAll(); //Templates could be loaded without creating the dialog itself.
+	m_vecKeyBind.clear();
+	m_vecUndo.clear();
+	m_vecRedo.clear();
+	m_vecCharsWidth.clear();
+	m_umapMenuItems.clear();
+	m_MenuMain.DestroyMenu();
+	::DeleteObject(m_hFntMain);
+	::DeleteObject(m_hFntInfoBar);
+	::DeleteObject(m_hPenLinesMain);
+	::DeleteObject(m_hPenLinesTempl);
+	m_ScrollV.DestroyWindow(); //Not a child of the IHexCtrl.
+	m_ScrollH.DestroyWindow(); //Not a child of the IHexCtrl.
+	ParentNotify(HEXCTRL_MSG_DESTROY);
+	m_fCreated = false;
+
+	return 0;
+}
+
+auto CHexCtrl::WMDPIChangedAfterParent()->LRESULT
+{
+	//Take the current font size, in points, with the old DPI.
+	const auto flFontPointsMain = FontPointsFromScaledPixels(GetFontSizeInPixels(true));
+	const auto flFontPointsInfo = FontPointsFromScaledPixels(GetFontSizeInPixels(false));
+
+	UpdateDPIScale(); //Set new DPI scale.
+
+	//Invoke all DPI dependent routines, with the new DPI.
+	SetFontSizeInPoints(flFontPointsMain, true);
+	SetFontSizeInPoints(flFontPointsInfo, false);
+	CreateMenu();
+	m_ScrollV.WMDPIChangedAfterParent();
+	m_ScrollH.WMDPIChangedAfterParent();
+
+	return 0;
+}
+
+auto CHexCtrl::WMEraseBkgnd([[maybe_unused]] const MSG& msg)->LRESULT
+{
+	return 1; //An application should return nonzero if it erases the background, or zero otherwise.
+}
+
+auto CHexCtrl::WMGetDlgCode([[maybe_unused]] const MSG& msg)->LRESULT
+{
+	return DLGC_WANTALLKEYS;
+}
+
+auto CHexCtrl::WMHelp([[maybe_unused]] const MSG& msg)->LRESULT
+{
+	return TRUE;
+}
+
+auto CHexCtrl::WMHScroll([[maybe_unused]] const MSG& msg)->LRESULT
+{
+	RedrawImpl();
+	return 0;
+}
+
+auto CHexCtrl::WMInitMenuPopup(const MSG& msg)->LRESULT
+{
+	using enum EHexCmd;
+	//The LOWORD(lParam) specifies zero-based relative position of the menu, that opens drop-down menu or submenu.
+	switch (LOWORD(msg.lParam)) {
+	case 0:	//Search.
+		m_MenuMain.EnableItem(IDM_HEXCTRL_SEARCH_SEARCH, IsCmdAvail(CMD_SEARCH_DLG));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_SEARCH_NEXT, IsCmdAvail(CMD_SEARCH_NEXT));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_SEARCH_PREV, IsCmdAvail(CMD_SEARCH_PREV));
+		break;
+	case 3:	//Navigation.
+		m_MenuMain.EnableItem(IDM_HEXCTRL_NAV_GOTO, IsCmdAvail(CMD_NAV_GOTO_DLG));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_NAV_REPFWD, IsCmdAvail(CMD_NAV_REPFWD));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_NAV_REPBKW, IsCmdAvail(CMD_NAV_REPBKW));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_NAV_DATABEG, IsCmdAvail(CMD_NAV_DATABEG));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_NAV_DATAEND, IsCmdAvail(CMD_NAV_DATAEND));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_NAV_PAGEBEG, IsCmdAvail(CMD_NAV_PAGEBEG));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_NAV_PAGEEND, IsCmdAvail(CMD_NAV_PAGEEND));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_NAV_LINEBEG, IsCmdAvail(CMD_NAV_LINEBEG));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_NAV_LINEEND, IsCmdAvail(CMD_NAV_LINEEND));
+		break;
+	case 4:	//Bookmarks.
+		m_MenuMain.EnableItem(IDM_HEXCTRL_BKM_ADD, IsCmdAvail(CMD_BKM_ADD));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_BKM_REMOVE, IsCmdAvail(CMD_BKM_REMOVE));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_BKM_GONEXT, IsCmdAvail(CMD_BKM_NEXT));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_BKM_GOPREV, IsCmdAvail(CMD_BKM_PREV));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_BKM_REMOVEALL, IsCmdAvail(CMD_BKM_REMOVEALL));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_BKM_BKMMGR, IsCmdAvail(CMD_BKM_DLG_MGR));
+		break;
+	case 5:	//Clipboard.
+		m_MenuMain.EnableItem(IDM_HEXCTRL_CLPBRD_COPYHEX, IsCmdAvail(CMD_CLPBRD_COPY_HEX));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_CLPBRD_COPYHEXLE, IsCmdAvail(CMD_CLPBRD_COPY_HEXLE));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_CLPBRD_COPYHEXFMT, IsCmdAvail(CMD_CLPBRD_COPY_HEXFMT));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_CLPBRD_COPYTEXTCP, IsCmdAvail(CMD_CLPBRD_COPY_TEXTCP));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_CLPBRD_COPYBASE64, IsCmdAvail(CMD_CLPBRD_COPY_BASE64));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_CLPBRD_COPYCARR, IsCmdAvail(CMD_CLPBRD_COPY_CARR));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_CLPBRD_COPYGREPHEX, IsCmdAvail(CMD_CLPBRD_COPY_GREPHEX));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_CLPBRD_COPYPRNTSCRN, IsCmdAvail(CMD_CLPBRD_COPY_PRNTSCRN));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_CLPBRD_COPYCAROFF, IsCmdAvail(CMD_CLPBRD_COPY_OFFSET));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_CLPBRD_PASTEHEX, IsCmdAvail(CMD_CLPBRD_PASTE_HEX));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_CLPBRD_PASTEUTF16, IsCmdAvail(CMD_CLPBRD_PASTE_TEXTUTF16));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_CLPBRD_PASTETEXTCP, IsCmdAvail(CMD_CLPBRD_PASTE_TEXTCP));
+		break;
+	case 6: //Modify.
+		m_MenuMain.EnableItem(IDM_HEXCTRL_MODIFY_FILLZEROS, IsCmdAvail(CMD_MODIFY_FILLZEROS));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_MODIFY_FILLDATA, IsCmdAvail(CMD_MODIFY_FILLDATA_DLG));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_MODIFY_OPERS, IsCmdAvail(CMD_MODIFY_OPERS_DLG));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_MODIFY_UNDO, IsCmdAvail(CMD_MODIFY_UNDO));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_MODIFY_REDO, IsCmdAvail(CMD_MODIFY_REDO));
+		break;
+	case 7: //Selection.
+		m_MenuMain.EnableItem(IDM_HEXCTRL_SEL_MARKSTARTEND, IsCmdAvail(CMD_SEL_MARKSTARTEND));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_SEL_ALL, IsCmdAvail(CMD_SEL_ALL));
+		break;
+	case 8: //Templates.
+		m_MenuMain.EnableItem(IDM_HEXCTRL_TEMPL_APPLYCURR, IsCmdAvail(CMD_TEMPL_APPLYCURR));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_TEMPL_DISAPPLY, IsCmdAvail(CMD_TEMPL_DISAPPLY));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_TEMPL_DISAPPLYALL, IsCmdAvail(CMD_TEMPL_DISAPPALL));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_TEMPL_TEMPLMGR, IsCmdAvail(CMD_TEMPL_DLG_MGR));
+		break;
+	case 9: //Data Presentation.
+		m_MenuMain.EnableItem(IDM_HEXCTRL_DATAINTERP, IsCmdAvail(CMD_DATAINTERP_DLG));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_TEXTCODEPAGE, IsCmdAvail(CMD_CODEPAGE_DLG));
+		break;
+	default:
+		break;
+	}
+
+	return 0;
+}
+
+auto CHexCtrl::WMKeyDown(const MSG& msg)->LRESULT
+{
+	const auto wVKey = LOWORD(msg.wParam); //Virtual-key code (both: WM_KEYDOWN/WM_SYSKEYDOWN).
+
+	//LORE: If some key combinations (e.g. Ctrl+Alt+Num Plus) do not work for seemingly no reason,
+	//it might be due to global hotkeys hooks from some running app.
+	if (const auto optCmd = GetCommandFromKey(wVKey, ::GetAsyncKeyState(VK_CONTROL) < 0,
+		::GetAsyncKeyState(VK_SHIFT) < 0, ::GetAsyncKeyState(VK_MENU) < 0); optCmd) {
+		ExecuteCmd(*optCmd);
+		return 0;
+	}
+
+	if (!IsDataSetImpl() || !IsMutableImpl() || IsCurTextArea())
+		return 0;
+
+	//If caret is in the Hex area then just one part (High/Low) of the byte must be changed.
+	//Normalizing all input in the Hex area to only [0x0-0xF] range, allowing only [0-9], [A-F], [NUM0-NUM9].
+	int iByteInput;
+	if (wVKey >= '0' && wVKey <= '9') {
+		iByteInput = wVKey - '0'; //'1' - '0' = 0x01.
+	}
+	else if (wVKey >= 'A' && wVKey <= 'F') {
+		iByteInput = wVKey - 0x37; //'A' - 0x37 = 0x0A.
+	}
+	else if (wVKey >= VK_NUMPAD0 && wVKey <= VK_NUMPAD9) {
+		iByteInput = wVKey - VK_NUMPAD0;
+	}
+	else
+		return 0;
+
+	const auto u8ByteCurr = ut::GetIHexTData<std::uint8_t>(*this, GetCaretPosImpl());
+	const auto bByteToSet = static_cast<std::byte>(m_fCaretHigh ? ((iByteInput << 4U) | (u8ByteCurr & 0x0FU))
+		: ((iByteInput & 0x0FU) | (u8ByteCurr & 0xF0U)));
+	ModifyData({ .eModifyMode { EHexModifyMode::MODIFY_ONCE }, .spnData { &bByteToSet, sizeof(bByteToSet) },
+		.vecSpan { { GetCaretPosImpl(), 1 } } });
+	CaretMoveRight();
+
+	return 0;
+}
+
+auto CHexCtrl::WMKeyUp([[maybe_unused]] const MSG& msg)->LRESULT
+{
+	if (!IsDataSetImpl())
+		return 0;
+
+	m_DlgDataInterp.UpdateData();
+
+	return 0;
+}
+
+auto CHexCtrl::WMLButtonDblClk(const MSG& msg)->LRESULT
+{
+	const POINT pt { .x { ut::GetXLPARAM(msg.lParam) }, .y { ut::GetYLPARAM(msg.lParam) } };
+
+	if ((pt.x + static_cast<long>(m_ScrollH.GetScrollPos())) < m_iSecondVertLinePx) { //DblClick on "Offset" area.
+		SetOffsetMode(!IsOffsetAsHexImpl());
+	}
+	else if (GetRectTextCaption().PtInRect(pt) != FALSE) { //DblClick on codepage caption area.
+		ExecuteCmd(EHexCmd::CMD_CODEPAGE_DLG);
+	}
+	else if (const auto optHit = HitTest(pt); optHit) { //DblClick on hex/text area.
+		m_fLMousePressed = true;
+		m_ullCaretPos = optHit->ullOffset;
+		m_fCursorTextArea = optHit->fIsText;
+		if (!optHit->fIsText) {
+			m_fCaretHigh = optHit->fIsHigh;
+		}
+
+		HEXSPAN hs;
+		if (msg.wParam & MK_SHIFT) {
+			const auto dwCapacity = GetCapacity();
+			hs.ullOffset = m_ullCursorPrev = m_ullCursorNow = m_ullCaretPos - (m_ullCaretPos % dwCapacity);
+			hs.ullSize = dwCapacity;
+		}
+		else {
+			m_fClickWithAlt = ::GetAsyncKeyState(VK_MENU) < 0;
+			m_ullCursorPrev = m_ullCursorNow = m_ullCaretPos;
+			hs.ullOffset = m_ullCaretPos;
+			hs.ullSize = 1ULL;
+		}
+		SetSelection({ &hs, 1 });
+		m_Wnd.SetCapture();
+	}
+
+	return 0;
+}
+
+auto CHexCtrl::WMLButtonDown(const MSG& msg)->LRESULT
+{
+	const POINT pt { .x { ut::GetXLPARAM(msg.lParam) }, .y { ut::GetYLPARAM(msg.lParam) } };
+
+	m_Wnd.SetFocus(); //SetFocus is vital to give proper keyboard input to the main HexCtrl window.
+
+	if (IsScrollCursor()) {
+		SetScrollCursor(false);
+		return 0;
+	}
+
+	const auto optHit = HitTest(pt);
+	if (!optHit)
+		return 0;
+
+	m_fLMousePressed = true;
+	m_ullCursorNow = m_ullCaretPos = optHit->ullOffset;
+	m_fCursorTextArea = optHit->fIsText;
+	if (!optHit->fIsText) {
+		m_fCaretHigh = optHit->fIsHigh;
+	}
+
+	m_fClickWithAlt = ::GetAsyncKeyState(VK_MENU) < 0;
+	m_Wnd.SetCapture();
+
+	VecHexSpan vecSel;
+	if (msg.wParam & MK_SHIFT) {
+		ULONGLONG ullSelStart;
+		ULONGLONG ullSelEnd;
+		if (m_ullCursorNow <= m_ullCursorPrev) {
+			ullSelStart = m_ullCursorNow;
+			ullSelEnd = m_ullCursorPrev + 1;
+		}
+		else {
+			ullSelStart = m_ullCursorPrev;
+			ullSelEnd = m_ullCursorNow + 1;
+		}
+		vecSel.emplace_back(ullSelStart, ullSelEnd - ullSelStart);
+	}
+	else {
+		m_ullCursorPrev = m_ullCursorNow;
+	}
+
+	if (HasSelection() || !vecSel.empty()) { //To avoid set empty selection when it's already empty.
+		SetSelection(vecSel);
+	}
+	else {
+		RedrawImpl();
+	}
+
+	OnCaretPosChange(GetCaretPosImpl());
+
+	return 0;
+}
+
+auto CHexCtrl::WMLButtonUp([[maybe_unused]] const MSG& msg)->LRESULT
+{
+	m_fLMousePressed = false;
+	::ReleaseCapture();
+	m_ScrollV.WMLButtonUp();
+	m_ScrollH.WMLButtonUp();
+
+	return 0;
+}
+
+auto CHexCtrl::WMMButtonDown(const MSG& msg)->LRESULT
+{
+	m_Wnd.SetFocus();
+	const auto wFlags = GET_KEYSTATE_WPARAM(msg.wParam);
+
+	if (const auto opt = GetCommandFromKey(m_dwVKMiddleButtonDown,
+		wFlags & MK_CONTROL, wFlags & MK_SHIFT, false); opt) {
+		ExecuteCmd(*opt);
+	}
+
+	return 0;
+}
+
+auto CHexCtrl::WMMouseMove(const MSG& msg)->LRESULT
+{
+	const POINT pt { .x { ut::GetXLPARAM(msg.lParam) }, .y { ut::GetYLPARAM(msg.lParam) } };
+	const auto optHit = HitTest(pt);
+
+	if (m_fLMousePressed) {
+		//If LMouse is pressed but cursor is outside of the client area (SetCapture() behavior).
+		const auto rcClient = m_Wnd.GetClientRect();
+		if (m_ScrollH.IsVisible()) { //Checking for scrollbars existence first.
+			if (pt.x < rcClient.left) {
+				m_ScrollH.ScrollLineLeft();
+			}
+			else if (pt.x >= rcClient.right) {
+				m_ScrollH.ScrollLineRight();
+			}
+		}
+
+		if (m_ScrollV.IsVisible()) {
+			if (pt.y < m_iStartWorkAreaYPx) {
+				m_ScrollV.ScrollLineUp();
+			}
+			else if (pt.y >= m_iEndWorkAreaPx) {
+				m_ScrollV.ScrollLineDown();
+			}
+		}
+
+		//Checking if the current cursor pos is at the same byte's half
+		//that it was at the previous WM_MOUSEMOVE event.
+		//Making selection of the byte only if the cursor has crossed byte's halves.
+		//Doesn't apply when moving in the Text area.
+		if (!optHit || (optHit->ullOffset == m_ullCursorNow && m_fCaretHigh == optHit->fIsHigh && !optHit->fIsText))
+			return 0;
+
+		m_ullCursorNow = optHit->ullOffset;
+		const auto ullOffsetHit = optHit->ullOffset;
+		const auto dwCapacity = GetCapacity();
+		ULONGLONG ullClick;
+		ULONGLONG ullStart;
+		ULONGLONG ullSize;
+		ULONGLONG ullLines;
+		if (m_fClickWithAlt) { //Select block (with Alt).
+			ullClick = m_ullCursorPrev;
+			const DWORD dwModOffset = ullOffsetHit % dwCapacity;
+			const DWORD dwModClick = ullClick % dwCapacity;
+			if (ullOffsetHit >= ullClick) {
+				if (dwModOffset <= dwModClick) {
+					const auto dwModStart = dwModClick - dwModOffset;
+					ullStart = ullClick - dwModStart;
+					ullSize = dwModStart + 1;
+				}
+				else {
+					ullStart = ullClick;
+					ullSize = dwModOffset - dwModClick + 1;
+				}
+				ullLines = (ullOffsetHit - ullStart) / dwCapacity + 1;
+			}
+			else {
+				if (dwModOffset <= dwModClick) {
+					ullStart = ullOffsetHit;
+					ullSize = dwModClick - ullStart % dwCapacity + 1;
+				}
+				else {
+					const auto dwModStart = dwModOffset - dwModClick;
+					ullStart = ullOffsetHit - dwModStart;
+					ullSize = dwModStart + 1;
+				}
+				ullLines = (ullClick - ullStart) / dwCapacity + 1;
+			}
+		}
+		else {
+			if (ullOffsetHit <= m_ullCursorPrev) {
+				ullClick = m_ullCursorPrev;
+				ullStart = ullOffsetHit;
+				ullSize = ullClick - ullStart + 1;
+			}
+			else {
+				ullClick = m_ullCursorPrev;
+				ullStart = m_ullCursorPrev;
+				ullSize = ullOffsetHit - ullClick + 1;
+			}
+			ullLines = 1;
+		}
+
+		m_ullCursorPrev = ullClick;
+		m_ullCaretPos = ullStart;
+		VecHexSpan vecSel;
+		vecSel.reserve(static_cast<std::size_t>(ullLines));
+		for (auto itLine = 0ULL; itLine < ullLines; ++itLine) {
+			vecSel.emplace_back(ullStart + (dwCapacity * itLine), ullSize);
+		}
+		SetSelection(vecSel);
+	}
+	else {
+		if (optHit) {
+			if (const auto pBkm = m_DlgBkmMgr.HitTest(optHit->ullOffset);
+				pBkm != nullptr && m_DlgBkmMgr.IsShowTooltips()) {
+				const auto pwszBkmDesc = pBkm->wstrDesc.data();
+				if (m_pwszTTText != pwszBkmDesc) {
+					m_pwszTTText = pwszBkmDesc;
+					TTTrackShow(true, true, m_pwszTTText);
+				}
+			}
+			else if (const auto pField = m_DlgTemplMgr.HitTest(optHit->ullOffset);
+				pField != nullptr && m_DlgTemplMgr.IsShowTooltips()) {
+				const auto pwszFieldName = pField->wstrName.data();
+				if (m_pwszTTText != pwszFieldName) {
+					m_pwszTTText = pwszFieldName;
+					TTTrackShow(true, true, m_pwszTTText);
+				}
+			}
+			else if (m_pwszTTText != nullptr) {
+				TTTrackShow(false, false);
+			}
+		}
+		else {
+			//If there is tooltip already shown, but cursor is outside of data chunks.
+			if (m_pwszTTText != nullptr) {
+				TTTrackShow(false, false);
+			}
+		}
+
+		m_ScrollV.WMMouseMove(pt);
+		m_ScrollH.WMMouseMove(pt);
+	}
+
+	return 0;
+}
+
+auto CHexCtrl::WMMouseWheel(const MSG& msg)->LRESULT
+{
+	const auto uwDelta = GET_WHEEL_DELTA_WPARAM(msg.wParam);
+	const auto wFlags = GET_KEYSTATE_WPARAM(msg.wParam);
+
+	if (const auto opt = GetCommandFromKey(uwDelta > 0 ? m_dwVKMouseWheelUp : m_dwVKMouseWheelDown,
+		wFlags & MK_CONTROL, wFlags & MK_SHIFT, false); opt) {
+		ExecuteCmd(*opt);
+	}
+
+	return 0;
+}
+
+auto CHexCtrl::WMNCActivate([[maybe_unused]] const MSG& msg)->LRESULT
+{
+	m_ScrollV.WMNCActivate();
+	m_ScrollH.WMNCActivate();
+
+	return TRUE;
+}
+
+auto CHexCtrl::WMNCCalcSize(const MSG& msg)->LRESULT
+{
+	GDIUT::DefWndProc(msg);
+	const auto pNCSP = reinterpret_cast<LPNCCALCSIZE_PARAMS>(msg.lParam);
+
+	//Sequence is important — H->V.
+	m_ScrollH.WMNCCalcSize(pNCSP);
+	m_ScrollV.WMNCCalcSize(pNCSP);
+
+	return 0;
+}
+
+auto CHexCtrl::WMNCPaint(const MSG& msg)->LRESULT
+{
+	GDIUT::DefWndProc(msg);
+	m_ScrollV.WMNCPaint();
+	m_ScrollH.WMNCPaint();
+
+	return 0;
+}
+
+auto CHexCtrl::WMPaint()->LRESULT
+{
+	GDIUT::CPaintDC dcPaint(m_Wnd);
+
+	if (!IsDrawable()) //Control should not be rendered atm.
+		return 0;
+
+	const auto rcClient = m_Wnd.GetClientRect();
+
+	if (!IsCreated()) {
+		dcPaint.FillSolidRect(rcClient, m_stColors.clrBk);
+		dcPaint.SetTextColor(m_stColors.clrFontHex);
+		dcPaint.SetBkColor(m_stColors.clrBkHex);
+		dcPaint.TextOutW(1, 1, L"Call IHexCtrl::Create first.");
+		return 0;
+	}
+
+	//To prevent drawing in too small window (can cause hangs).
+	if (rcClient.IsRectEmpty() || rcClient.Height() <= m_iHeightTopRectPx + m_iHeightBottomOffAreaPx)
+		return 0;
+
+	const auto ullStartLine = GetTopLine();
+	const auto ullEndLine = GetBottomLine();
+	auto iLines = static_cast<int>(ullEndLine - ullStartLine);
+	if (iLines < 0) {
+		ut::DBG_REPORT(L"iLines < 0");
+		return 0;
+	}
+
+	//Actual amount of lines, "ullEndLine - ullStartLine" always shows one line less.
+	if (IsDataSetImpl()) {
+		++iLines;
+	}
+
+	//Drawing through CMemDC to avoid flickering.
+	GDIUT::CMemDC dcMem(dcPaint, rcClient);
+	DrawWindow(dcMem);
+	DrawInfoBar(dcMem);
+
+	if (!IsDataSetImpl())
+		return 0;
+
+	DrawOffsets(dcMem, ullStartLine, iLines);
+	const auto& [wstrHex, wstrText] = BuildDataToDraw(ullStartLine, iLines);
+	DrawHexText(dcMem, ullStartLine, iLines, wstrHex, wstrText);
+	DrawTemplates(dcMem, ullStartLine, iLines, wstrHex, wstrText);
+	DrawBookmarks(dcMem, ullStartLine, iLines, wstrHex, wstrText);
+	DrawSelection(dcMem, ullStartLine, iLines, wstrHex, wstrText);
+	DrawSelHighlight(dcMem, ullStartLine, iLines, wstrHex, wstrText);
+	DrawCaret(dcMem, ullStartLine, iLines, wstrHex, wstrText);
+	DrawDataInterp(dcMem, ullStartLine, iLines, wstrHex, wstrText);
+	DrawPageLines(dcMem, ullStartLine, iLines);
+
+	return 0;
+}
+
+auto CHexCtrl::WMRButtonDown([[maybe_unused]] const MSG& msg)->LRESULT
+{
+	if (IsScrollCursor()) {
+		SetScrollCursor(false);
+		return 0;
+	}
+
+	return 0;
+}
+
+auto CHexCtrl::WMSetCursor(const MSG& msg)->LRESULT
+{
+	if (IsScrollCursor()) {
+		static const auto hCurScroll = static_cast<HCURSOR>(::LoadImageW(nullptr, MAKEINTRESOURCEW(32654),
+			IMAGE_CURSOR, 0, 0, LR_DEFAULTSIZE | LR_SHARED)); //Standard Windows scrolling cursor.
+		::SetCursor(hCurScroll);
+		return TRUE;
+	}
+
+	const auto wHitTest = LOWORD(msg.lParam);
+	const auto wMessage = HIWORD(msg.lParam);
+	m_ScrollV.WMSetCursor(wHitTest, wMessage);
+	m_ScrollH.WMSetCursor(wHitTest, wMessage);
+
+	return GDIUT::DefWndProc(msg); //To set appropriate cursor.
+}
+
+auto CHexCtrl::WMSetFocus([[maybe_unused]] const MSG& msg)->LRESULT
+{
+	m_DlgDataInterp.DisableHighlight();
+
+	return 0;
+}
+
+auto CHexCtrl::WMSize(const MSG& msg)->LRESULT
+{
+	if (!IsCreated())
+		return 0;
+
+	const auto wWidth = LOWORD(msg.lParam);
+	const auto wHeight = HIWORD(msg.lParam);
+	RecalcClientArea(wWidth, wHeight);
+	m_ScrollV.SetScrollPageSize(GetScrollPageSize());
+
+	return 0;
+}
+
+auto CHexCtrl::WMTimer(const MSG& msg)->LRESULT
+{
+	const auto uIDTimer = msg.wParam;
+
+	if (uIDTimer == m_uIDTTooltip) {
+		constexpr auto dSecToShow { 5000.0 }; //How many ms to show tooltips.
+		auto rcClient = m_Wnd.GetClientRect();
+		m_Wnd.ClientToScreen(rcClient);
+		GDIUT::CPoint ptCur;
+		::GetCursorPos(ptCur);
+
+		if (!rcClient.PtInRect(ptCur)) { //Check if cursor has left the client rect.
+			TTTrackShow(false, false);
+		}
+		else if (const auto msElapsed = std::chrono::duration<double, std::milli>
+			(std::chrono::high_resolution_clock::now() - m_tmTT).count();
+			msElapsed >= dSecToShow) { //Check if more than dSecToShow ms have passed since toolip is shown.
+			TTTrackShow(false, true);
+		}
+
+		return 0;
+	}
+
+	if (uIDTimer == m_uIDTScrolCursor) {
+		GDIUT::CPoint ptCur;
+		::GetCursorPos(ptCur);
+		constexpr auto flSlowFactor = 4.F; //For scrolling slowly, for every segment.
+
+		//Segment size in pixels for cursor to move, to accelerate against.
+		const auto iSegmentPx = static_cast<int>(20 * GetDPIScale());
+		const auto iSegmentsY = (ptCur.y - m_ptScrollCursorClick.y) / iSegmentPx; //How many vertical segments away from click.
+		const auto i64NewScrollY = static_cast<std::int64_t>(m_ScrollV.GetScrollPos()
+			+ m_ScrollV.GetScrollLineSize() / flSlowFactor * iSegmentsY);
+		m_ScrollV.SetScrollPos(i64NewScrollY);
+		const auto iSegmentsX = (ptCur.x - m_ptScrollCursorClick.x) / iSegmentPx; //How many horizontal segments away from click.
+		const auto i64NewScrollX = static_cast<std::int64_t>(m_ScrollH.GetScrollPos()
+			+ m_ScrollH.GetScrollLineSize() / flSlowFactor * iSegmentsX);
+		m_ScrollH.SetScrollPos(i64NewScrollX);
+
+		return 0;
+	}
+
+	return GDIUT::DefWndProc(msg);
+}
+
+auto CHexCtrl::WMVScroll([[maybe_unused]] const MSG& msg)->LRESULT
+{
+	bool fRedraw { true };
+	if (m_stData.fHighLatency) {
+		fRedraw = m_ScrollV.IsThumbReleased();
+		if (!fRedraw) {
+			const auto wstrOffset = (IsOffsetAsHexImpl() ? L"Offset: 0x" : L"Offset: ") + OffsetToWstr(GetTopLine() * GetCapacity());
+			TTTrackShow(true, false, wstrOffset.data());
+		}
+		else {
+			TTTrackShow(false, false);
+		}
+	}
+
+	if (fRedraw) {
+		RedrawImpl();
+	}
+
+	return 0;
 }
 
 void CHexCtrl::ModifyOperScalar(std::byte* pData, const HEXMODIFY& hms, [[maybe_unused]] SpanCByte)

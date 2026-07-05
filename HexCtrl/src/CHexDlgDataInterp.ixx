@@ -46,26 +46,9 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] bool IsBigEndian()const;
 		[[nodiscard]] bool IsNoEsc()const;
 		[[nodiscard]] bool IsShowAsHex()const;
-		auto OnActivate(const MSG& msg) -> INT_PTR;
 		void OnCancel();
 		void OnCheckHex();
 		void OnCheckBigEndian();
-		auto OnClose() -> INT_PTR;
-		auto OnCommand(const MSG& msg) -> INT_PTR;
-		auto OnDestroy() -> INT_PTR;
-		auto OnDPIChanged(const MSG& msg) -> INT_PTR;
-		auto OnDrawItem(const MSG& msg) -> INT_PTR;
-		auto OnGetDPIScaledSize(const MSG& msg) -> INT_PTR;
-		auto OnInitDialog(const MSG& msg) -> INT_PTR;
-		auto OnMeasureItem(const MSG& msg) -> INT_PTR;
-		auto OnMouseActivate(const MSG& msg) -> INT_PTR;
-		auto OnNotify(const MSG& msg) -> INT_PTR;
-		void OnNotifyListEditBegin(NMHDR* pNMHDR);
-		void OnNotifyListGetColor(NMHDR* pNMHDR);
-		void OnNotifyListGetDispInfo(NMHDR* pNMHDR);
-		void OnNotifyListItemChanged(NMHDR* pNMHDR);
-		void OnNotifyListSetData(NMHDR* pNMHDR);
-		auto OnSize(const MSG& msg) -> INT_PTR;
 		void RedrawHexCtrl()const;
 		[[nodiscard]] bool SetDataBinary(std::wstring_view wsv)const;
 		template<typename T> requires ut::TSize1248<T>
@@ -111,6 +94,23 @@ namespace HEXCTRL::INTERNAL {
 		void ShowValueUTF16(SpanCByte spn);
 		void UpdateDateTimeFormat();
 		void UpdateListData(); //Internal method without any window checks.
+		auto WMActivate(const MSG& msg) -> INT_PTR;
+		auto WMClose() -> INT_PTR;
+		auto WMCommand(const MSG& msg) -> INT_PTR;
+		auto WMDestroy() -> INT_PTR;
+		auto WMDPIChanged(const MSG& msg) -> INT_PTR;
+		auto WMDrawItem(const MSG& msg) -> INT_PTR;
+		auto WMGetDPIScaledSize(const MSG& msg) -> INT_PTR;
+		auto WMInitDialog(const MSG& msg) -> INT_PTR;
+		auto WMMeasureItem(const MSG& msg) -> INT_PTR;
+		auto WMMouseActivate(const MSG& msg) -> INT_PTR;
+		auto WMNotify(const MSG& msg) -> INT_PTR;
+		void WMNotifyListEditBegin(NMHDR* pNMHDR);
+		void WMNotifyListGetColor(NMHDR* pNMHDR);
+		void WMNotifyListGetDispInfo(NMHDR* pNMHDR);
+		void WMNotifyListItemChanged(NMHDR* pNMHDR);
+		void WMNotifyListSetData(NMHDR* pNMHDR);
+		auto WMSize(const MSG& msg) -> INT_PTR;
 	private:
 		HINSTANCE m_hInstRes { };
 		GDIUT::CWnd m_Wnd;
@@ -189,7 +189,7 @@ void CHexDlgDataInterp::ClearData()
 
 void CHexDlgDataInterp::CreateDlg()const
 {
-	//m_Wnd is set in the OnInitDialog().
+	//m_Wnd is set in the WMInitDialog().
 	if (const auto hWnd = ::CreateDialogParamW(m_hInstRes, MAKEINTRESOURCEW(IDD_HEXCTRL_DATAINTERP),
 		m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN), GDIUT::DlgProc<CHexDlgDataInterp>, reinterpret_cast<LPARAM>(this));
 		hWnd == nullptr) {
@@ -258,18 +258,18 @@ bool CHexDlgDataInterp::PreTranslateMsg(MSG* pMsg)
 auto CHexDlgDataInterp::ProcessMsg(const MSG& msg)->INT_PTR
 {
 	switch (msg.message) {
-	case WM_ACTIVATE: return OnActivate(msg);
-	case WM_COMMAND: return OnCommand(msg);
-	case WM_CLOSE: return OnClose();
-	case WM_DESTROY: return OnDestroy();
-	case WM_DPICHANGED: return OnDPIChanged(msg);
-	case WM_DRAWITEM: return OnDrawItem(msg);
-	case WM_GETDPISCALEDSIZE: return OnGetDPIScaledSize(msg);
-	case WM_INITDIALOG: return OnInitDialog(msg);
-	case WM_MEASUREITEM: return OnMeasureItem(msg);
-	case WM_MOUSEACTIVATE: return OnMouseActivate(msg);
-	case WM_NOTIFY: return OnNotify(msg);
-	case WM_SIZE: return OnSize(msg);
+	case WM_ACTIVATE: return WMActivate(msg);
+	case WM_COMMAND: return WMCommand(msg);
+	case WM_CLOSE: return WMClose();
+	case WM_DESTROY: return WMDestroy();
+	case WM_DPICHANGED: return WMDPIChanged(msg);
+	case WM_DRAWITEM: return WMDrawItem(msg);
+	case WM_GETDPISCALEDSIZE: return WMGetDPIScaledSize(msg);
+	case WM_INITDIALOG: return WMInitDialog(msg);
+	case WM_MEASUREITEM: return WMMeasureItem(msg);
+	case WM_MOUSEACTIVATE: return WMMouseActivate(msg);
+	case WM_NOTIFY: return WMNotify(msg);
+	case WM_SIZE: return WMSize(msg);
 	default:
 		return 0;
 	}
@@ -351,23 +351,12 @@ bool CHexDlgDataInterp::IsShowAsHex()const
 	return m_WndBtnHex.IsChecked();
 }
 
-auto CHexDlgDataInterp::OnActivate(const MSG& msg)->INT_PTR
-{
-	if (const auto pHex = GetHexCtrl();
-		pHex != nullptr && pHex->IsCreated() && pHex->IsDataSet() && LOWORD(msg.wParam) == WA_ACTIVE) {
-		UpdateDateTimeFormat();
-		UpdateListData();
-	}
-
-	return 0;
-}
-
 void CHexDlgDataInterp::OnCancel()
 {
 	if (IsNoEsc()) //Not closing Dialog on Escape key.
 		return;
 
-	OnClose();
+	WMClose();
 }
 
 void CHexDlgDataInterp::OnCheckHex()
@@ -386,336 +375,6 @@ void CHexDlgDataInterp::OnCheckBigEndian()
 	//To ensure that data is highlighted in the HexCtrl, even if check-box was clicked on inactive dialog.
 	SetHighlightSize(GetCurrFieldSize());
 	RedrawHexCtrl();
-}
-
-auto CHexDlgDataInterp::OnClose()->INT_PTR
-{
-	ShowWindow(SW_HIDE);
-	return TRUE;
-}
-
-auto CHexDlgDataInterp::OnCommand(const MSG& msg)->INT_PTR
-{
-	const auto uCtrlID = LOWORD(msg.wParam);
-	const auto uCode = HIWORD(msg.wParam);   //Control code, zero for menu.
-
-	if (uCode != BN_CLICKED) { return FALSE; }
-	switch (uCtrlID) {
-	case IDCANCEL: OnCancel(); break;
-	case IDC_HEXCTRL_DATAINTERP_CHK_HEX: OnCheckHex(); break;
-	case IDC_HEXCTRL_DATAINTERP_CHK_BE: OnCheckBigEndian(); break;
-	default:
-		return FALSE;
-	}
-	return TRUE;
-}
-
-auto CHexDlgDataInterp::OnDestroy()->INT_PTR
-{
-	m_vecData.clear();
-	m_u64Flags = { };
-	m_pHexCtrl = nullptr;
-	m_DynLayout.RemoveAll();
-
-	return TRUE;
-}
-
-auto CHexDlgDataInterp::OnDPIChanged([[maybe_unused]] const MSG& msg)->INT_PTR
-{
-	m_DynLayout.Enable(true);
-	return 0;
-}
-
-auto CHexDlgDataInterp::OnDrawItem(const MSG& msg)->INT_PTR
-{
-	const auto pDIS = reinterpret_cast<LPDRAWITEMSTRUCT>(msg.lParam);
-	if (pDIS->CtlID == static_cast<UINT>(IDC_HEXCTRL_DATAINTERP_LIST)) {
-		m_ListEx.DrawItem(pDIS);
-	}
-
-	return TRUE;
-}
-
-auto CHexDlgDataInterp::OnGetDPIScaledSize([[maybe_unused]] const MSG& msg)->INT_PTR
-{
-	//This message is sent to top-level windows with a DPI_AWARENESS_CONTEXT
-	//of Per Monitor v2 before a WM_DPICHANGED message is sent.
-	//We use it to temporarily disable all dynamic layout resizes,
-	//to re-enable it later in the WM_DPICHANGED handler.
-
-	m_DynLayout.Enable(false);
-	return 0;
-}
-
-auto CHexDlgDataInterp::OnInitDialog(const MSG& msg)->INT_PTR
-{
-	m_Wnd.Attach(msg.hwnd);
-	m_WndBtnHex.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_DATAINTERP_CHK_HEX));
-	m_WndBtnBE.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_DATAINTERP_CHK_BE));
-	m_WndBtnHex.SetCheck(true);
-	m_WndBtnBE.SetCheck(false);
-
-	using enum EName;
-	//The order of data initialization follows exactly EName members order,
-	//to easily reference the vecor later as vector[eName], for the best performance.
-	std::vector<LISTDATA> vecData {
-		{ L"Binary:", L"", NAME_BINARY, 0U }, { L"int8:", L"", NAME_INT8, 1U },
-		{ L"uint8:", L"", NAME_UINT8, 1U }, { L"int16:", L"", NAME_INT16, 2U },
-		{ L"uint16:", L"", NAME_UINT16, 2U }, { L"int32:", L"", NAME_INT32, 4U },
-		{ L"uint32:", L"", NAME_UINT32, 4U }, { L"int64:", L"", NAME_INT64, 8U },
-		{ L"uint64:", L"", NAME_UINT64, 8U }, { L"float:", L"", NAME_FLOAT, 4U },
-		{ L"double:", L"", NAME_DOUBLE, 8U }, { L"time32_t:", L"", NAME_TIME32T, 4U },
-		{ L"time64_t:", L"", NAME_TIME64T, 8U }, { L"FILETIME:", L"", NAME_FILETIME, 8U },
-		{ L"OLE time:", L"", NAME_OLEDATETIME, 8U }, { L"Java time:", L"", NAME_JAVATIME, 8U },
-		{ L"MS-DOS time:", L"", NAME_MSDOSTIME, 8U }, { L"MS-UDTTM time:", L"", NAME_MSDTTMTIME, 4U },
-		{ L"Windows SYSTEMTIME:", L"", NAME_SYSTEMTIME, 16U }, { L"GUID v1 UTC time:", L"", NAME_GUIDTIME, 16U },
-		{ L"GUID:", L"", NAME_GUID, 16U }, { L"ASCII character:", L"", NAME_ASCII, 1U },
-		{ L"UTF-8 code point:", L"", NAME_UTF8, 0U }, { L"UTF-16 code point:", L"", NAME_UTF16, 0U }
-	};
-	m_vecData = std::move(vecData);
-
-	m_ListEx.Create({ .hWndParent { m_Wnd }, .uID { IDC_HEXCTRL_DATAINTERP_LIST }, .fDialogCtrl { true } });
-	m_ListEx.SetExtendedStyle(LVS_EX_HEADERDRAGDROP | LVS_EX_FULLROWSELECT);
-	const auto flDPIScale = GDIUT::GetDPIScaleForHWND(m_ListEx);
-	m_ListEx.InsertColumn(0, L"Data type", LVCFMT_LEFT, std::lround(143 * flDPIScale));
-	m_ListEx.InsertColumn(1, L"Value", LVCFMT_LEFT, std::lround(240 * flDPIScale), -1, LVCFMT_LEFT, true);
-	m_ListEx.SetItemCountEx(static_cast<int>(m_vecData.size()), LVSICF_NOSCROLL);
-
-	m_DynLayout.SetHost(m_Wnd);
-	m_DynLayout.AddItem(IDC_HEXCTRL_DATAINTERP_LIST, GDIUT::CDynLayout::MoveNone(), GDIUT::CDynLayout::SizeHorzAndVert(100, 100));
-	m_DynLayout.AddItem(IDC_HEXCTRL_DATAINTERP_CHK_HEX, GDIUT::CDynLayout::MoveVert(100), GDIUT::CDynLayout::SizeNone());
-	m_DynLayout.AddItem(IDC_HEXCTRL_DATAINTERP_CHK_BE, GDIUT::CDynLayout::MoveVert(100), GDIUT::CDynLayout::SizeNone());
-	m_DynLayout.Enable(true);
-
-	UpdateDateTimeFormat();
-	UpdateListData();
-
-	return TRUE;
-}
-
-auto CHexDlgDataInterp::OnMeasureItem(const MSG& msg)->INT_PTR
-{
-	const auto pMIS = reinterpret_cast<LPMEASUREITEMSTRUCT>(msg.lParam);
-	if (pMIS->CtlID == static_cast<UINT>(IDC_HEXCTRL_DATAINTERP_LIST)) {
-		m_ListEx.MeasureItem(pMIS);
-	}
-
-	return TRUE;
-}
-
-auto CHexDlgDataInterp::OnMouseActivate([[maybe_unused]] const MSG& msg)->INT_PTR
-{
-	if (const auto pHex = GetHexCtrl(); pHex != nullptr && pHex->IsCreated() && pHex->IsDataSet()) {
-		UpdateDateTimeFormat();
-		UpdateListData();
-	}
-
-	return MA_ACTIVATE;
-}
-
-auto CHexDlgDataInterp::OnNotify(const MSG& msg)->INT_PTR
-{
-	const auto pNMHDR = reinterpret_cast<NMHDR*>(msg.lParam);
-	switch (pNMHDR->idFrom) {
-	case IDC_HEXCTRL_DATAINTERP_LIST:
-		switch (pNMHDR->code) {
-		case LVN_GETDISPINFOW: OnNotifyListGetDispInfo(pNMHDR); break;
-		case LVN_ITEMCHANGED:
-		case NM_CLICK: OnNotifyListItemChanged(pNMHDR); break;
-		case LISTEX::LISTEX_MSG_EDITBEGIN: OnNotifyListEditBegin(pNMHDR); break;
-		case LISTEX::LISTEX_MSG_GETCOLOR: OnNotifyListGetColor(pNMHDR); break;
-		case LISTEX::LISTEX_MSG_SETDATA: OnNotifyListSetData(pNMHDR); break;
-		default: break;
-		}
-	default: break;
-	}
-
-	return TRUE;
-}
-
-void CHexDlgDataInterp::OnNotifyListEditBegin(NMHDR* pNMHDR)
-{
-	const auto pLDI = reinterpret_cast<LISTEX::PLISTEXDATAINFO>(pNMHDR);
-	const auto iItem = pLDI->iItem;
-	const auto iSubItem = pLDI->iSubItem;
-	if (iItem < 0 || iSubItem < 0 || iItem >= static_cast<int>(m_vecData.size()))
-		return;
-
-	const auto pField = GetListData(iItem);
-	pLDI->fAllowEdit = m_pHexCtrl->IsDataSet() ? pField->fAllowEdit : false;
-	if (pLDI->fAllowEdit && (pField->eName == EName::NAME_UTF8 || pField->eName == EName::NAME_UTF16)) {
-		GDIUT::CWndEdit(pLDI->hWndEdit).SetCueBanner(L"Enter Unicode character:", true);
-		if (const auto u = pField->wstrValue.find_first_of(L" U+"); u != std::wstring::npos) {
-			pLDI->pwszData[u] = 0; //Null terminating the buffer to not show "U+" part in the edit box.
-		}
-	}
-}
-
-void CHexDlgDataInterp::OnNotifyListGetColor(NMHDR* pNMHDR)
-{
-	const auto pLCI = reinterpret_cast<LISTEX::PLISTEXCOLORINFO>(pNMHDR);
-	const auto iItem = pLCI->iItem;
-	const auto iSubItem = pLCI->iSubItem;
-	if (iItem < 0 || iSubItem < 0)
-		return;
-
-	const auto pField = GetListData(iItem);
-
-	if (pField->eName == EName::NAME_BINARY) {
-		pLCI->stClr.clrBk = RGB(240, 255, 255);
-		return;
-	}
-
-	if (!pField->fAllowEdit) {
-		pLCI->stClr.clrBk = RGB(245, 245, 245);
-		return;
-	}
-}
-
-void CHexDlgDataInterp::OnNotifyListGetDispInfo(NMHDR* pNMHDR)
-{
-	const auto pDispInfo = reinterpret_cast<NMLVDISPINFOW*>(pNMHDR);
-	const auto pItem = &pDispInfo->item;
-	if ((pItem->mask & LVIF_TEXT) == 0)
-		return;
-
-	const auto iItem = pItem->iItem;
-	switch (pItem->iSubItem) {
-	case 0: //Data type.
-		pItem->pszText = GetListData(iItem)->wstrTypeName.data();
-		break;
-	case 1: //Value.
-		pItem->pszText = GetListData(iItem)->wstrValue.data();
-		break;
-	default: break;
-	}
-}
-
-void CHexDlgDataInterp::OnNotifyListItemChanged(NMHDR* pNMHDR)
-{
-	const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
-	const auto iItem = pNMI->iItem;
-	const auto iSubitem = pNMI->iSubItem;
-	if (iItem < 0 || iSubitem < 0 || !m_pHexCtrl->IsDataSet() || iItem >= static_cast<int>(m_vecData.size())) {
-		return;
-	}
-
-	const auto pField = GetListData(iItem);
-	if (pField->eName == EName::NAME_BINARY) //Do nothing if clicked at NAME_BINARY.
-		return;
-
-	m_eCurrField = pField->eName;
-	SetHighlightSize(pField->u8Size);
-	ShowValueBinary();
-	m_ListEx.RedrawWindow();
-	RedrawHexCtrl();
-}
-
-void CHexDlgDataInterp::OnNotifyListSetData(NMHDR* pNMHDR)
-{
-	const auto pListDataInfo = reinterpret_cast<LISTEX::PLISTEXDATAINFO>(pNMHDR);
-	const auto iItem = pListDataInfo->iItem;
-	if (!m_pHexCtrl->IsCreated() || !m_pHexCtrl->IsDataSet() || !m_pHexCtrl->IsMutable()
-		|| iItem > static_cast<int>(m_vecData.size()))
-		return;
-
-	const auto eName = GetListData(iItem)->eName;
-	const std::wstring_view wsv = pListDataInfo->pwszData;
-
-	using enum EName;
-	bool fSuccess { false };
-	switch (eName) {
-	case NAME_BINARY:
-		fSuccess = SetDataBinary(wsv);
-		break;
-	case NAME_INT8:
-		fSuccess = SetDataNUMBER<std::int8_t>(wsv);
-		break;
-	case NAME_UINT8:
-		fSuccess = SetDataNUMBER<std::uint8_t>(wsv);
-		break;
-	case NAME_INT16:
-		fSuccess = SetDataNUMBER<std::int16_t>(wsv);
-		break;
-	case NAME_UINT16:
-		fSuccess = SetDataNUMBER<std::uint16_t>(wsv);
-		break;
-	case NAME_INT32:
-		fSuccess = SetDataNUMBER<std::int32_t>(wsv);
-		break;
-	case NAME_UINT32:
-		fSuccess = SetDataNUMBER<std::uint32_t>(wsv);
-		break;
-	case NAME_INT64:
-		fSuccess = SetDataNUMBER<std::int64_t>(wsv);
-		break;
-	case NAME_UINT64:
-		fSuccess = SetDataNUMBER<std::uint64_t>(wsv);
-		break;
-	case NAME_FLOAT:
-		fSuccess = SetDataNUMBER<float>(wsv);
-		break;
-	case NAME_DOUBLE:
-		fSuccess = SetDataNUMBER<double>(wsv);
-		break;
-	case NAME_TIME32T:
-		fSuccess = SetDataTime32(wsv);
-		break;
-	case NAME_TIME64T:
-		fSuccess = SetDataTime64(wsv);
-		break;
-	case NAME_FILETIME:
-		fSuccess = SetDataFILETIME(wsv);
-		break;
-	case NAME_OLEDATETIME:
-		fSuccess = SetDataOLEDATETIME(wsv);
-		break;
-	case NAME_JAVATIME:
-		fSuccess = SetDataJAVATIME(wsv);
-		break;
-	case NAME_MSDOSTIME:
-		fSuccess = SetDataMSDOSTIME(wsv);
-		break;
-	case NAME_MSDTTMTIME:
-		fSuccess = SetDataMSDTTMTIME(wsv);
-		break;
-	case NAME_SYSTEMTIME:
-		fSuccess = SetDataSYSTEMTIME(wsv);
-		break;
-	case NAME_GUIDTIME:
-		fSuccess = SetDataGUIDTIME(wsv);
-		break;
-	case NAME_GUID:
-		fSuccess = SetDataGUID(wsv);
-		break;
-	case NAME_ASCII:
-		fSuccess = SetDataASCII(wsv);
-		break;
-	case NAME_UTF8:
-		fSuccess = SetDataUTF8(wsv);
-		break;
-	case NAME_UTF16:
-		fSuccess = SetDataUTF16(wsv);
-		break;
-	default:
-		break;
-	};
-
-	if (!fSuccess) {
-		::MessageBoxW(m_Wnd, L"Wrong data format or out of range.", L"Data error...", MB_ICONERROR);
-	}
-
-	UpdateListData();
-	SetHighlightSize(GetCurrFieldSize());
-	RedrawHexCtrl();
-}
-
-auto CHexDlgDataInterp::OnSize(const MSG& msg)->INT_PTR
-{
-	const auto wWidth = LOWORD(msg.lParam);
-	const auto wHeight = HIWORD(msg.lParam);
-	m_DynLayout.OnSize(wWidth, wHeight);
-	return TRUE;
 }
 
 void CHexDlgDataInterp::RedrawHexCtrl()const
@@ -1818,4 +1477,345 @@ void CHexDlgDataInterp::UpdateListData()
 	ShowValueUTF16(spnData);
 	ShowValueBinary();
 	m_ListEx.RedrawWindow();
+}
+
+auto CHexDlgDataInterp::WMActivate(const MSG& msg)->INT_PTR
+{
+	if (const auto pHex = GetHexCtrl();
+		pHex != nullptr && pHex->IsCreated() && pHex->IsDataSet() && LOWORD(msg.wParam) == WA_ACTIVE) {
+		UpdateDateTimeFormat();
+		UpdateListData();
+	}
+
+	return 0;
+}
+
+auto CHexDlgDataInterp::WMClose()->INT_PTR
+{
+	ShowWindow(SW_HIDE);
+	return TRUE;
+}
+
+auto CHexDlgDataInterp::WMCommand(const MSG& msg)->INT_PTR
+{
+	const auto uCtrlID = LOWORD(msg.wParam);
+	const auto uCode = HIWORD(msg.wParam);   //Control code, zero for menu.
+
+	if (uCode != BN_CLICKED) { return FALSE; }
+	switch (uCtrlID) {
+	case IDCANCEL: OnCancel(); break;
+	case IDC_HEXCTRL_DATAINTERP_CHK_HEX: OnCheckHex(); break;
+	case IDC_HEXCTRL_DATAINTERP_CHK_BE: OnCheckBigEndian(); break;
+	default:
+		return FALSE;
+	}
+	return TRUE;
+}
+
+auto CHexDlgDataInterp::WMDestroy()->INT_PTR
+{
+	m_vecData.clear();
+	m_u64Flags = { };
+	m_pHexCtrl = nullptr;
+	m_DynLayout.RemoveAll();
+
+	return TRUE;
+}
+
+auto CHexDlgDataInterp::WMDPIChanged([[maybe_unused]] const MSG& msg)->INT_PTR
+{
+	m_DynLayout.Enable(true);
+	return 0;
+}
+
+auto CHexDlgDataInterp::WMDrawItem(const MSG& msg)->INT_PTR
+{
+	const auto pDIS = reinterpret_cast<LPDRAWITEMSTRUCT>(msg.lParam);
+	if (pDIS->CtlID == static_cast<UINT>(IDC_HEXCTRL_DATAINTERP_LIST)) {
+		m_ListEx.DrawItem(pDIS);
+	}
+
+	return TRUE;
+}
+
+auto CHexDlgDataInterp::WMGetDPIScaledSize([[maybe_unused]] const MSG& msg)->INT_PTR
+{
+	//This message is sent to top-level windows with a DPI_AWARENESS_CONTEXT
+	//of Per Monitor v2 before a WM_DPICHANGED message is sent.
+	//We use it to temporarily disable all dynamic layout resizes,
+	//to re-enable it later in the WM_DPICHANGED handler.
+
+	m_DynLayout.Enable(false);
+	return 0;
+}
+
+auto CHexDlgDataInterp::WMInitDialog(const MSG& msg)->INT_PTR
+{
+	m_Wnd.Attach(msg.hwnd);
+	m_WndBtnHex.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_DATAINTERP_CHK_HEX));
+	m_WndBtnBE.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_DATAINTERP_CHK_BE));
+	m_WndBtnHex.SetCheck(true);
+	m_WndBtnBE.SetCheck(false);
+
+	using enum EName;
+	//The order of data initialization follows exactly EName members order,
+	//to easily reference the vecor later as vector[eName], for the best performance.
+	std::vector<LISTDATA> vecData {
+		{ L"Binary:", L"", NAME_BINARY, 0U }, { L"int8:", L"", NAME_INT8, 1U },
+		{ L"uint8:", L"", NAME_UINT8, 1U }, { L"int16:", L"", NAME_INT16, 2U },
+		{ L"uint16:", L"", NAME_UINT16, 2U }, { L"int32:", L"", NAME_INT32, 4U },
+		{ L"uint32:", L"", NAME_UINT32, 4U }, { L"int64:", L"", NAME_INT64, 8U },
+		{ L"uint64:", L"", NAME_UINT64, 8U }, { L"float:", L"", NAME_FLOAT, 4U },
+		{ L"double:", L"", NAME_DOUBLE, 8U }, { L"time32_t:", L"", NAME_TIME32T, 4U },
+		{ L"time64_t:", L"", NAME_TIME64T, 8U }, { L"FILETIME:", L"", NAME_FILETIME, 8U },
+		{ L"OLE time:", L"", NAME_OLEDATETIME, 8U }, { L"Java time:", L"", NAME_JAVATIME, 8U },
+		{ L"MS-DOS time:", L"", NAME_MSDOSTIME, 8U }, { L"MS-UDTTM time:", L"", NAME_MSDTTMTIME, 4U },
+		{ L"Windows SYSTEMTIME:", L"", NAME_SYSTEMTIME, 16U }, { L"GUID v1 UTC time:", L"", NAME_GUIDTIME, 16U },
+		{ L"GUID:", L"", NAME_GUID, 16U }, { L"ASCII character:", L"", NAME_ASCII, 1U },
+		{ L"UTF-8 code point:", L"", NAME_UTF8, 0U }, { L"UTF-16 code point:", L"", NAME_UTF16, 0U }
+	};
+	m_vecData = std::move(vecData);
+
+	m_ListEx.Create({ .hWndParent { m_Wnd }, .uID { IDC_HEXCTRL_DATAINTERP_LIST }, .fDialogCtrl { true } });
+	m_ListEx.SetExtendedStyle(LVS_EX_HEADERDRAGDROP | LVS_EX_FULLROWSELECT);
+	const auto flDPIScale = GDIUT::GetDPIScaleForHWND(m_ListEx);
+	m_ListEx.InsertColumn(0, L"Data type", LVCFMT_LEFT, std::lround(143 * flDPIScale));
+	m_ListEx.InsertColumn(1, L"Value", LVCFMT_LEFT, std::lround(240 * flDPIScale), -1, LVCFMT_LEFT, true);
+	m_ListEx.SetItemCountEx(static_cast<int>(m_vecData.size()), LVSICF_NOSCROLL);
+
+	m_DynLayout.SetHost(m_Wnd);
+	m_DynLayout.AddItem(IDC_HEXCTRL_DATAINTERP_LIST, GDIUT::CDynLayout::MoveNone(), GDIUT::CDynLayout::SizeHorzAndVert(100, 100));
+	m_DynLayout.AddItem(IDC_HEXCTRL_DATAINTERP_CHK_HEX, GDIUT::CDynLayout::MoveVert(100), GDIUT::CDynLayout::SizeNone());
+	m_DynLayout.AddItem(IDC_HEXCTRL_DATAINTERP_CHK_BE, GDIUT::CDynLayout::MoveVert(100), GDIUT::CDynLayout::SizeNone());
+	m_DynLayout.Enable(true);
+
+	UpdateDateTimeFormat();
+	UpdateListData();
+
+	return TRUE;
+}
+
+auto CHexDlgDataInterp::WMMeasureItem(const MSG& msg)->INT_PTR
+{
+	const auto pMIS = reinterpret_cast<LPMEASUREITEMSTRUCT>(msg.lParam);
+	if (pMIS->CtlID == static_cast<UINT>(IDC_HEXCTRL_DATAINTERP_LIST)) {
+		m_ListEx.MeasureItem(pMIS);
+	}
+
+	return TRUE;
+}
+
+auto CHexDlgDataInterp::WMMouseActivate([[maybe_unused]] const MSG& msg)->INT_PTR
+{
+	if (const auto pHex = GetHexCtrl(); pHex != nullptr && pHex->IsCreated() && pHex->IsDataSet()) {
+		UpdateDateTimeFormat();
+		UpdateListData();
+	}
+
+	return MA_ACTIVATE;
+}
+
+auto CHexDlgDataInterp::WMNotify(const MSG& msg)->INT_PTR
+{
+	const auto pNMHDR = reinterpret_cast<NMHDR*>(msg.lParam);
+	switch (pNMHDR->idFrom) {
+	case IDC_HEXCTRL_DATAINTERP_LIST:
+		switch (pNMHDR->code) {
+		case LVN_GETDISPINFOW: WMNotifyListGetDispInfo(pNMHDR); break;
+		case LVN_ITEMCHANGED:
+		case NM_CLICK: WMNotifyListItemChanged(pNMHDR); break;
+		case LISTEX::LISTEX_MSG_EDITBEGIN: WMNotifyListEditBegin(pNMHDR); break;
+		case LISTEX::LISTEX_MSG_GETCOLOR: WMNotifyListGetColor(pNMHDR); break;
+		case LISTEX::LISTEX_MSG_SETDATA: WMNotifyListSetData(pNMHDR); break;
+		default: break;
+		}
+	default: break;
+	}
+
+	return TRUE;
+}
+
+void CHexDlgDataInterp::WMNotifyListEditBegin(NMHDR* pNMHDR)
+{
+	const auto pLDI = reinterpret_cast<LISTEX::PLISTEXDATAINFO>(pNMHDR);
+	const auto iItem = pLDI->iItem;
+	const auto iSubItem = pLDI->iSubItem;
+	if (iItem < 0 || iSubItem < 0 || iItem >= static_cast<int>(m_vecData.size()))
+		return;
+
+	const auto pField = GetListData(iItem);
+	pLDI->fAllowEdit = m_pHexCtrl->IsDataSet() ? pField->fAllowEdit : false;
+	if (pLDI->fAllowEdit && (pField->eName == EName::NAME_UTF8 || pField->eName == EName::NAME_UTF16)) {
+		GDIUT::CWndEdit(pLDI->hWndEdit).SetCueBanner(L"Enter Unicode character:", true);
+		if (const auto u = pField->wstrValue.find_first_of(L" U+"); u != std::wstring::npos) {
+			pLDI->pwszData[u] = 0; //Null terminating the buffer to not show "U+" part in the edit box.
+		}
+	}
+}
+
+void CHexDlgDataInterp::WMNotifyListGetColor(NMHDR* pNMHDR)
+{
+	const auto pLCI = reinterpret_cast<LISTEX::PLISTEXCOLORINFO>(pNMHDR);
+	const auto iItem = pLCI->iItem;
+	const auto iSubItem = pLCI->iSubItem;
+	if (iItem < 0 || iSubItem < 0)
+		return;
+
+	const auto pField = GetListData(iItem);
+
+	if (pField->eName == EName::NAME_BINARY) {
+		pLCI->stClr.clrBk = RGB(240, 255, 255);
+		return;
+	}
+
+	if (!pField->fAllowEdit) {
+		pLCI->stClr.clrBk = RGB(245, 245, 245);
+		return;
+	}
+}
+
+void CHexDlgDataInterp::WMNotifyListGetDispInfo(NMHDR* pNMHDR)
+{
+	const auto pDispInfo = reinterpret_cast<NMLVDISPINFOW*>(pNMHDR);
+	const auto pItem = &pDispInfo->item;
+	if ((pItem->mask & LVIF_TEXT) == 0)
+		return;
+
+	const auto iItem = pItem->iItem;
+	switch (pItem->iSubItem) {
+	case 0: //Data type.
+		pItem->pszText = GetListData(iItem)->wstrTypeName.data();
+		break;
+	case 1: //Value.
+		pItem->pszText = GetListData(iItem)->wstrValue.data();
+		break;
+	default: break;
+	}
+}
+
+void CHexDlgDataInterp::WMNotifyListItemChanged(NMHDR* pNMHDR)
+{
+	const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
+	const auto iItem = pNMI->iItem;
+	const auto iSubitem = pNMI->iSubItem;
+	if (iItem < 0 || iSubitem < 0 || !m_pHexCtrl->IsDataSet() || iItem >= static_cast<int>(m_vecData.size())) {
+		return;
+	}
+
+	const auto pField = GetListData(iItem);
+	if (pField->eName == EName::NAME_BINARY) //Do nothing if clicked at NAME_BINARY.
+		return;
+
+	m_eCurrField = pField->eName;
+	SetHighlightSize(pField->u8Size);
+	ShowValueBinary();
+	m_ListEx.RedrawWindow();
+	RedrawHexCtrl();
+}
+
+void CHexDlgDataInterp::WMNotifyListSetData(NMHDR* pNMHDR)
+{
+	const auto pListDataInfo = reinterpret_cast<LISTEX::PLISTEXDATAINFO>(pNMHDR);
+	const auto iItem = pListDataInfo->iItem;
+	if (!m_pHexCtrl->IsCreated() || !m_pHexCtrl->IsDataSet() || !m_pHexCtrl->IsMutable()
+		|| iItem > static_cast<int>(m_vecData.size()))
+		return;
+
+	const auto eName = GetListData(iItem)->eName;
+	const std::wstring_view wsv = pListDataInfo->pwszData;
+
+	using enum EName;
+	bool fSuccess { false };
+	switch (eName) {
+	case NAME_BINARY:
+		fSuccess = SetDataBinary(wsv);
+		break;
+	case NAME_INT8:
+		fSuccess = SetDataNUMBER<std::int8_t>(wsv);
+		break;
+	case NAME_UINT8:
+		fSuccess = SetDataNUMBER<std::uint8_t>(wsv);
+		break;
+	case NAME_INT16:
+		fSuccess = SetDataNUMBER<std::int16_t>(wsv);
+		break;
+	case NAME_UINT16:
+		fSuccess = SetDataNUMBER<std::uint16_t>(wsv);
+		break;
+	case NAME_INT32:
+		fSuccess = SetDataNUMBER<std::int32_t>(wsv);
+		break;
+	case NAME_UINT32:
+		fSuccess = SetDataNUMBER<std::uint32_t>(wsv);
+		break;
+	case NAME_INT64:
+		fSuccess = SetDataNUMBER<std::int64_t>(wsv);
+		break;
+	case NAME_UINT64:
+		fSuccess = SetDataNUMBER<std::uint64_t>(wsv);
+		break;
+	case NAME_FLOAT:
+		fSuccess = SetDataNUMBER<float>(wsv);
+		break;
+	case NAME_DOUBLE:
+		fSuccess = SetDataNUMBER<double>(wsv);
+		break;
+	case NAME_TIME32T:
+		fSuccess = SetDataTime32(wsv);
+		break;
+	case NAME_TIME64T:
+		fSuccess = SetDataTime64(wsv);
+		break;
+	case NAME_FILETIME:
+		fSuccess = SetDataFILETIME(wsv);
+		break;
+	case NAME_OLEDATETIME:
+		fSuccess = SetDataOLEDATETIME(wsv);
+		break;
+	case NAME_JAVATIME:
+		fSuccess = SetDataJAVATIME(wsv);
+		break;
+	case NAME_MSDOSTIME:
+		fSuccess = SetDataMSDOSTIME(wsv);
+		break;
+	case NAME_MSDTTMTIME:
+		fSuccess = SetDataMSDTTMTIME(wsv);
+		break;
+	case NAME_SYSTEMTIME:
+		fSuccess = SetDataSYSTEMTIME(wsv);
+		break;
+	case NAME_GUIDTIME:
+		fSuccess = SetDataGUIDTIME(wsv);
+		break;
+	case NAME_GUID:
+		fSuccess = SetDataGUID(wsv);
+		break;
+	case NAME_ASCII:
+		fSuccess = SetDataASCII(wsv);
+		break;
+	case NAME_UTF8:
+		fSuccess = SetDataUTF8(wsv);
+		break;
+	case NAME_UTF16:
+		fSuccess = SetDataUTF16(wsv);
+		break;
+	default:
+		break;
+	};
+
+	if (!fSuccess) {
+		::MessageBoxW(m_Wnd, L"Wrong data format or out of range.", L"Data error...", MB_ICONERROR);
+	}
+
+	UpdateListData();
+	SetHighlightSize(GetCurrFieldSize());
+	RedrawHexCtrl();
+}
+
+auto CHexDlgDataInterp::WMSize(const MSG& msg)->INT_PTR
+{
+	const auto wWidth = LOWORD(msg.lParam);
+	const auto wHeight = HIWORD(msg.lParam);
+	m_DynLayout.WMSize(wWidth, wHeight);
+	return TRUE;
 }
