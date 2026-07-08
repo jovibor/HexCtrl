@@ -136,7 +136,6 @@ namespace HEXCTRL::INTERNAL {
 		auto WMLButtonUp(const MSG& msg) -> INT_PTR;
 		auto WMMeasureItem(const MSG& msg) -> INT_PTR;
 		auto WMMouseActivate(const MSG& msg) -> INT_PTR;
-		auto WMMouseMove(const MSG& msg) -> INT_PTR;
 		auto WMNotify(const MSG& msg) -> INT_PTR;
 		void WMNotifyListDblClick(NMHDR* pNMHDR);
 		void WMNotifyListEditBegin(NMHDR* pNMHDR);
@@ -421,7 +420,6 @@ auto CHexDlgTemplMgr::ProcessMsg(const MSG& msg)->INT_PTR
 	case WM_LBUTTONUP: return WMLButtonUp(msg);
 	case WM_MEASUREITEM: return WMMeasureItem(msg);
 	case WM_MOUSEACTIVATE: return WMMouseActivate(msg);
-	case WM_MOUSEMOVE: return WMMouseMove(msg);
 	case WM_NOTIFY: return WMNotify(msg);
 	case WM_SIZE: return WMSize(msg);
 	default:
@@ -1514,7 +1512,7 @@ auto CHexDlgTemplMgr::WMInitDialog(const MSG& msg)->INT_PTR
 	m_SplitVert.AddItem(m_WndTree, true);
 	m_SplitVert.SetEdges(100, m_Wnd.GetClientRect().Width() - 10);
 
-	m_DynLayout.SetHost(m_Wnd);
+	m_DynLayout.Initialize(m_Wnd);
 	m_DynLayout.AddItem(IDC_HEXCTRL_TEMPLMGR_LIST, GDIUT::CDynLayout::MoveNone(), GDIUT::CDynLayout::SizeHorzAndVert(100, 100));
 	m_DynLayout.AddItem(IDC_HEXCTRL_TEMPLMGR_TREE, GDIUT::CDynLayout::MoveNone(), GDIUT::CDynLayout::SizeVert(100));
 	m_DynLayout.AddItem(IDC_HEXCTRL_TEMPLMGR_GRB_TOP, GDIUT::CDynLayout::MoveNone(), GDIUT::CDynLayout::SizeHorz(100));
@@ -1540,7 +1538,6 @@ auto CHexDlgTemplMgr::WMInitDialog(const MSG& msg)->INT_PTR
 
 auto CHexDlgTemplMgr::WMLButtonDown([[maybe_unused]] const MSG& msg)->INT_PTR
 {
-	m_SplitVert.WMLButtonDown(ut::GetXLPARAM(msg.lParam), ut::GetYLPARAM(msg.lParam));
 	if (m_SplitVert.IsSplitting()) {
 		m_DynLayout.Enable(false);
 	}
@@ -1550,7 +1547,6 @@ auto CHexDlgTemplMgr::WMLButtonDown([[maybe_unused]] const MSG& msg)->INT_PTR
 
 auto CHexDlgTemplMgr::WMLButtonUp([[maybe_unused]] const MSG& msg)->INT_PTR
 {
-	m_SplitVert.WMLButtonUp();
 	m_DynLayout.Enable(true);
 
 	return TRUE;
@@ -1573,13 +1569,6 @@ auto CHexDlgTemplMgr::WMMouseActivate([[maybe_unused]] const MSG& msg)->INT_PTR
 	}
 
 	return MA_ACTIVATE;
-}
-
-auto CHexDlgTemplMgr::WMMouseMove(const MSG& msg)->INT_PTR
-{
-	m_SplitVert.WMMouseMove(ut::GetXLPARAM(msg.lParam), ut::GetYLPARAM(msg.lParam));
-
-	return TRUE;
 }
 
 auto CHexDlgTemplMgr::WMNotify(const MSG& msg)->INT_PTR
@@ -2123,8 +2112,6 @@ void CHexDlgTemplMgr::WMNotifyTreeRClick([[maybe_unused]] NMHDR* pNMHDR)
 auto CHexDlgTemplMgr::WMSize(const MSG& msg)->INT_PTR
 {
 	const auto wWidth = LOWORD(msg.lParam);
-	const auto wHeight = HIWORD(msg.lParam);
-	m_DynLayout.WMSize(wWidth, wHeight);
 	m_SplitVert.SetEdges(100, wWidth - 10);
 
 	return TRUE;

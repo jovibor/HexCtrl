@@ -110,7 +110,6 @@ namespace HEXCTRL::INTERNAL {
 		void WMNotifyListGetDispInfo(NMHDR* pNMHDR);
 		void WMNotifyListItemChanged(NMHDR* pNMHDR);
 		void WMNotifyListSetData(NMHDR* pNMHDR);
-		auto WMSize(const MSG& msg) -> INT_PTR;
 	private:
 		HINSTANCE m_hInstRes { };
 		GDIUT::CWnd m_Wnd;
@@ -269,7 +268,6 @@ auto CHexDlgDataInterp::ProcessMsg(const MSG& msg)->INT_PTR
 	case WM_MEASUREITEM: return WMMeasureItem(msg);
 	case WM_MOUSEACTIVATE: return WMMouseActivate(msg);
 	case WM_NOTIFY: return WMNotify(msg);
-	case WM_SIZE: return WMSize(msg);
 	default:
 		return 0;
 	}
@@ -1583,7 +1581,7 @@ auto CHexDlgDataInterp::WMInitDialog(const MSG& msg)->INT_PTR
 	m_ListEx.InsertColumn(1, L"Value", LVCFMT_LEFT, std::lround(240 * flDPIScale), -1, LVCFMT_LEFT, true);
 	m_ListEx.SetItemCountEx(static_cast<int>(m_vecData.size()), LVSICF_NOSCROLL);
 
-	m_DynLayout.SetHost(m_Wnd);
+	m_DynLayout.Initialize(m_Wnd);
 	m_DynLayout.AddItem(IDC_HEXCTRL_DATAINTERP_LIST, GDIUT::CDynLayout::MoveNone(), GDIUT::CDynLayout::SizeHorzAndVert(100, 100));
 	m_DynLayout.AddItem(IDC_HEXCTRL_DATAINTERP_CHK_HEX, GDIUT::CDynLayout::MoveVert(100), GDIUT::CDynLayout::SizeNone());
 	m_DynLayout.AddItem(IDC_HEXCTRL_DATAINTERP_CHK_BE, GDIUT::CDynLayout::MoveVert(100), GDIUT::CDynLayout::SizeNone());
@@ -1810,12 +1808,4 @@ void CHexDlgDataInterp::WMNotifyListSetData(NMHDR* pNMHDR)
 	UpdateListData();
 	SetHighlightSize(GetCurrFieldSize());
 	RedrawHexCtrl();
-}
-
-auto CHexDlgDataInterp::WMSize(const MSG& msg)->INT_PTR
-{
-	const auto wWidth = LOWORD(msg.lParam);
-	const auto wHeight = HIWORD(msg.lParam);
-	m_DynLayout.WMSize(wWidth, wHeight);
-	return TRUE;
 }

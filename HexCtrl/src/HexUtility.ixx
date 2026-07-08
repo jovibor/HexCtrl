@@ -24,7 +24,8 @@ module;
 #include <vector>
 export module HEXCTRL:HexUtility;
 
-#pragma comment(lib, "MSImg32") //AlphaBlend.
+#pragma comment(lib, "MSImg32")  //AlphaBlend.
+#pragma comment(lib, "Comctl32") //SetWindowSubclass
 
 export import HexCtrl_StrToNum;
 export import HexCtrl_ListEx;
@@ -558,15 +559,15 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 		void Initialize(HWND hWndHost, int iAnchorID, EAnchorSide eAnchorSide, std::uint32_t u32SplitterWidth = 30);
 		[[nodiscard]] bool IsSplitting()const; //Is splitting is going on atm.
 		void SetEdges(int iMinEdge, int iMaxEdge);
-
-		//These WM* handlers must be placed into the respective host window handlers.
-		void WMMouseMove(int iX, int iY);
-		void WMLButtonDown(int iX, int iY);
-		void WMLButtonUp();
 	private:
 		[[nodiscard]] bool IsLock()const;
 		void Lock();
 		void Unlock();
+		void WMMouseMove(int iX, int iY);
+		void WMLButtonDown(int iX, int iY);
+		void WMLButtonUp();
+		static auto CALLBACK SubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
+			UINT_PTR uIDSubclass, DWORD_PTR dwRefData)->LRESULT;
 	private:
 		inline static CSplitter* m_pSplitterCurrentlyInUse { }; //The currently active splitter.
 		struct ItemData {
@@ -604,6 +605,7 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 		m_hWndAnchor = hWndAnchor;
 		m_eAnchorSide = eAnchorSide;
 		m_u32WidthHalf = u32SplitterWidth / 2;
+		::SetWindowSubclass(m_hWndHost, SubclassProc, reinterpret_cast<UINT_PTR>(this), 0);
 	}
 
 	void CSplitter::Initialize(HWND hWndHost, int iAnchorID, EAnchorSide eAnchorSide, std::uint32_t u32SplitterWidth) {
@@ -617,6 +619,22 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 	void CSplitter::SetEdges(int iMinEdge, int iMaxEdge) {
 		m_iMinEdge = iMinEdge;
 		m_iMaxEdge = iMaxEdge;
+	}
+
+	//Private methods.
+
+	bool CSplitter::IsLock()const {
+		//Locking mechanism is needed to avoid Set/ReleaseCapture interference 
+		//between two or more splitters in the same window.
+		return m_pSplitterCurrentlyInUse != nullptr && m_pSplitterCurrentlyInUse != this;
+	}
+
+	void CSplitter::Lock() {
+		m_pSplitterCurrentlyInUse = this;
+	}
+
+	void CSplitter::Unlock() {
+		m_pSplitterCurrentlyInUse = nullptr;
 	}
 
 	void CSplitter::WMLButtonDown(int iX, int iY) {
@@ -787,21 +805,28 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 		}
 	}
 
-	//Private methods.
+	auto CSplitter::SubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR uIDSubclass,
+	 [[maybe_unused]] DWORD_PTR dwRefData)->LRESULT {
+		switch (uMsg) {
+		case WM_LBUTTONDOWN:
+			reinterpret_cast<CSplitter*>(uIDSubclass)->WMLButtonDown(LOWORD(lParam), HIWORD(lParam));
+			break;
+		case WM_LBUTTONUP:
+			reinterpret_cast<CSplitter*>(uIDSubclass)->WMLButtonUp();
+			break;
+		case WM_MOUSEMOVE:
+			reinterpret_cast<CSplitter*>(uIDSubclass)->WMMouseMove(ut::GetXLPARAM(lParam), ut::GetYLPARAM(lParam));
+			break;
+		case WM_NCDESTROY:
+			::RemoveWindowSubclass(hWnd, SubclassProc, uIDSubclass);
+			break;
+		default:
+			break;
+		}
 
-	bool CSplitter::IsLock()const {
-		//Locking mechanism is needed to avoid Set/ReleaseCapture interference 
-		//between two or more splitters in the same window.
-		return m_pSplitterCurrentlyInUse != nullptr && m_pSplitterCurrentlyInUse != this;
+		return ::DefSubclassProc(hWnd, uMsg, wParam, lParam);
 	}
 
-	void CSplitter::Lock() {
-		m_pSplitterCurrentlyInUse = this;
-	}
-
-	void CSplitter::Unlock() {
-		m_pSplitterCurrentlyInUse = nullptr;
-	}
 
 	class CDynLayout final {
 	public:
@@ -814,17 +839,15 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 		struct SizeRatio : public ItemRatio { };
 
 		CDynLayout() = default;
-		CDynLayout(HWND hWndHost) : m_hWndHost(hWndHost) { }
 		void AddItem(int iItemID, MoveRatio move, SizeRatio size);
 		void AddItem(HWND hWndItem, MoveRatio move, SizeRatio size);
 		void Enable(bool fTrack);
+		void Initialize(HWND hWndHost); //This is the main method that should be called first.
 		bool LoadFromResource(HINSTANCE hInstRes, const wchar_t* pwszResName);
 		bool LoadFromResource(HINSTANCE hInstRes, UINT uResID);
-		void RemoveAll() { m_vecItems.clear(); }
-		void SetHost(HWND hWnd) { assert(hWnd != nullptr); m_hWndHost = hWnd; }
+		void RemoveAll();
 		void UpdateItem(int iItemID, MoveRatio move, SizeRatio size);
 		void UpdateItem(HWND hWndItem, MoveRatio move, SizeRatio size);
-		void WMSize(int iWidth, int iHeight)const; //Should be hooked into the host window's WM_SIZE handler.
 
 		//Static helper methods to use in the AddItem.
 		[[nodiscard]] static MoveRatio MoveNone() { return { }; }
@@ -847,6 +870,10 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 		[[nodiscard]] static SizeRatio SizeHorzAndVert(int iXRatio, int iYRatio) {
 			return { { .flXRatio { ToFlRatio(iXRatio) }, .flYRatio { ToFlRatio(iYRatio) } } };
 		}
+	private:
+		void WMSize(int iWidth, int iHeight)const;
+		static auto CALLBACK SubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
+			UINT_PTR uIDSubclass, DWORD_PTR dwRefData)->LRESULT;
 	private:
 		[[nodiscard]] static auto ToFlRatio(int iRatio) -> float {
 			return std::clamp(iRatio, 0, 100) / 100.F;
@@ -887,6 +914,12 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 		}
 	}
 
+	void CDynLayout::Initialize(HWND hWndHost) {
+		assert(hWndHost != nullptr);
+		m_hWndHost = hWndHost;
+		::SetWindowSubclass(m_hWndHost, SubclassProc, reinterpret_cast<UINT_PTR>(this), 0);
+	}
+
 	bool CDynLayout::LoadFromResource(HINSTANCE hInstRes, const wchar_t* pwszResName) {
 		assert(pwszResName != nullptr);
 		if (pwszResName == nullptr)
@@ -897,6 +930,7 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 			return false;
 
 		const auto hDlgLayout = ::FindResourceW(hInstRes, pwszResName, L"AFX_DIALOG_LAYOUT");
+		assert(hDlgLayout != nullptr);
 		if (hDlgLayout == nullptr) { //No such resource found in the hInstRes.
 			return false;
 		}
@@ -916,10 +950,10 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 		const auto* const pDataEnd = reinterpret_cast<WORD*>(reinterpret_cast<std::byte*>(pResData) + dwSizeRes);
 
 		assert(*pDataBegin == 0);
-		if (*pDataBegin != 0) //First WORD must be zero, it's a header (version number).
+		if (*pDataBegin != 0) //The first WORD must be zero, it's a header (version number).
 			return false;
 
-		++pDataBegin; //Past first WORD is the actual data.
+		++pDataBegin; //Past the first WORD is the actual data.
 		auto hWndChild = ::GetWindow(m_hWndHost, GW_CHILD); //First child window in the host window.
 		while (pDataBegin + 4 <= pDataEnd) { //Actual AFX_DIALOG_LAYOUT data.
 			if (hWndChild == nullptr)
@@ -940,6 +974,10 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 		return LoadFromResource(hInstRes, MAKEINTRESOURCEW(uResID));
 	}
 
+	void CDynLayout::RemoveAll() {
+		m_vecItems.clear();
+	}
+
 	void CDynLayout::UpdateItem(int iItemID, MoveRatio move, SizeRatio size) {
 		UpdateItem(::GetDlgItem(m_hWndHost, iItemID), move, size);
 	}
@@ -957,6 +995,8 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 			it->size = size;
 		}
 	}
+
+	//Private methods.
 
 	void CDynLayout::WMSize(int iWidth, int iHeight)const {
 		if (!m_fTrack)
@@ -979,6 +1019,23 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 		}
 		::EndDeferWindowPos(hDWP);
 	}
+
+	auto CDynLayout::SubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR uIDSubclass,
+	 [[maybe_unused]] DWORD_PTR dwRefData)->LRESULT {
+		switch (uMsg) {
+		case WM_SIZE:
+			reinterpret_cast<CDynLayout*>(uIDSubclass)->WMSize(LOWORD(lParam), HIWORD(lParam));
+			break;
+		case WM_NCDESTROY:
+			::RemoveWindowSubclass(hWnd, SubclassProc, uIDSubclass);
+			break;
+		default:
+			break;
+		}
+
+		return ::DefSubclassProc(hWnd, uMsg, wParam, lParam);
+	}
+
 
 	class CDC {
 	public:

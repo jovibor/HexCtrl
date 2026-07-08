@@ -76,7 +76,6 @@ namespace HEXCTRL::INTERNAL {
 		void WMNotifyListItemChanged(NMHDR* pNMHDR);
 		void WMNotifyListRClick(NMHDR* pNMHDR);
 		void WMNotifyListSetData(NMHDR* pNMHDR);
-		auto WMSize(const MSG& msg) -> INT_PTR;
 	private:
 		HINSTANCE m_hInstRes { };
 		GDIUT::CWnd m_Wnd;
@@ -324,7 +323,6 @@ auto CHexDlgBkmMgr::ProcessMsg(const MSG& msg)->INT_PTR
 	case WM_INITDIALOG: return WMInitDialog(msg);
 	case WM_MEASUREITEM: return WMMeasureItem(msg);
 	case WM_NOTIFY: return WMNotify(msg);
-	case WM_SIZE: return WMSize(msg);
 	default:
 		return 0;
 	}
@@ -589,7 +587,7 @@ auto CHexDlgBkmMgr::WMInitDialog(const MSG& msg)->INT_PTR
 	m_WndBtnHex.SetCheck(true);
 	m_WndBtnTT.SetCheck(true);
 
-	m_DynLayout.SetHost(m_Wnd);
+	m_DynLayout.Initialize(m_Wnd);
 	m_DynLayout.AddItem(IDC_HEXCTRL_BKMMGR_LIST, GDIUT::CDynLayout::MoveNone(), GDIUT::CDynLayout::SizeHorzAndVert(100, 100));
 	m_DynLayout.AddItem(IDC_HEXCTRL_BKMMGR_CHK_HEX, GDIUT::CDynLayout::MoveVert(100), GDIUT::CDynLayout::SizeNone());
 	m_DynLayout.AddItem(IDC_HEXCTRL_BKMMGR_CHK_TT, GDIUT::CDynLayout::MoveVert(100), GDIUT::CDynLayout::SizeNone());
@@ -856,12 +854,4 @@ void CHexDlgBkmMgr::WMNotifyListSetData(NMHDR* pNMHDR)
 	}
 
 	m_pHexCtrl->Redraw();
-}
-
-auto CHexDlgBkmMgr::WMSize(const MSG& msg)->INT_PTR
-{
-	const auto wWidth = LOWORD(msg.lParam);
-	const auto wHeight = HIWORD(msg.lParam);
-	m_DynLayout.WMSize(wWidth, wHeight);
-	return TRUE;
 }
