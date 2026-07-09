@@ -1417,7 +1417,7 @@ auto CHexDlgTemplMgr::WMDestroy()->INT_PTR
 	m_hTreeCurrParent = nullptr;
 	m_pHexCtrl = nullptr;
 	m_u64Flags = { };
-	m_DynLayout.RemoveAll();
+	m_DynLayout.Uninitialize();
 	::DeleteObject(m_hBmpMin);
 	::DeleteObject(m_hBmpMax);
 

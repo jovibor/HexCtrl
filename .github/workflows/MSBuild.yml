@@ -18,7 +18,7 @@ env:
 
 jobs:
   build_x86_x64:
-    name: Build and Test
+    name: Build and Test x86/x64
     runs-on: windows-latest
     strategy:
       matrix:
@@ -45,7 +45,7 @@ jobs:
         & ${{env.PATH_VSTESTCONSOLE_EXE}} ${{env.PATH_TESTDLL}}
 
   build_arm64:
-    name: Build and Test
+    name: Build and Test ARM64
     runs-on: windows-11-arm
     strategy:
       matrix:

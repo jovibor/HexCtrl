@@ -52,23 +52,14 @@ namespace HEXCTRL::INTERNAL {
 	private:
 		void CreateRes();
 		auto WMCommand(const MSG& msg) -> INT_PTR;
-		auto WMCtlColorStatic(const MSG& msg) -> INT_PTR;
 		auto WMDestroy() -> INT_PTR;
 		auto WMDPIChanged(const MSG& msg) -> INT_PTR;
 		auto WMInitDialog(const MSG& msg) -> INT_PTR;
-		auto WMLButtonDown(const MSG& msg) -> INT_PTR;
-		auto WMLButtonUp(const MSG& msg) -> INT_PTR;
-		auto WMMouseMove(const MSG& msg) -> INT_PTR;
-		auto WMSetCursor(const MSG& msg) -> INT_PTR;
 	private:
-		HINSTANCE m_hInstRes { };
+		GDIUT::CLinkCtrl m_LinkGithub;
 		GDIUT::CWnd m_Wnd;      //Main window.
-		GDIUT::CWnd m_WndLink;  //Static link control
+		HINSTANCE m_hInstRes { };
 		HBITMAP m_hBmpLogo { }; //Logo bitmap.
-		HFONT m_hFontDef { };
-		HFONT m_hFontUnderline { };
-		bool m_fHandCursor { }; //Is cursor a hand cursor atm?
-		bool m_fLBDownLink { }; //Left button was pressed on the link static control.
 	};
 }
 
@@ -80,38 +71,15 @@ auto CHexDlgAbout::DoModal(HWND hWndParent)->INT_PTR {
 auto CHexDlgAbout::ProcessMsg(const MSG& msg)->INT_PTR {
 	switch (msg.message) {
 	case WM_COMMAND: return WMCommand(msg);
-	case WM_CTLCOLORSTATIC: return WMCtlColorStatic(msg);
 	case WM_DESTROY: return WMDestroy();
 	case WM_DPICHANGED: return WMDPIChanged(msg);
 	case WM_INITDIALOG: return WMInitDialog(msg);
-	case WM_LBUTTONDOWN: return WMLButtonDown(msg);
-	case WM_LBUTTONUP: return WMLButtonUp(msg);
-	case WM_MOUSEMOVE: return WMMouseMove(msg);
-	case WM_SETCURSOR: return WMSetCursor(msg);
 	default:
 		return 0;
 	}
 }
 
-void CHexDlgAbout::CreateRes()
-{
-	::DeleteObject(m_hFontDef);
-	::DeleteObject(m_hFontUnderline);
-
-	if (const auto hFont = m_WndLink.GetHFont(); hFont != nullptr) {
-		m_hFontDef = hFont;
-		auto lf = m_WndLink.GetLogFont().value();
-		lf.lfUnderline = TRUE;
-		m_hFontUnderline = ::CreateFontIndirectW(&lf);
-	}
-	else {
-		LOGFONTW lf { };
-		::GetObjectW(static_cast<HFONT>(::GetStockObject(DEFAULT_GUI_FONT)), sizeof(lf), &lf);
-		m_hFontDef = ::CreateFontIndirectW(&lf);
-		lf.lfUnderline = TRUE;
-		m_hFontUnderline = ::CreateFontIndirectW(&lf);
-	}
-
+void CHexDlgAbout::CreateRes() {
 	::DeleteObject(m_hBmpLogo);
 	const auto iSizeIcon = static_cast<int>(32 * GDIUT::GetDPIScaleForHWND(m_Wnd));
 	m_hBmpLogo = static_cast<HBITMAP>(::LoadImageW(m_hInstRes, MAKEINTRESOURCEW(IDB_HEXCTRL_LOGO),
@@ -132,37 +100,21 @@ auto CHexDlgAbout::WMCommand(const MSG& msg)->INT_PTR {
 	return TRUE;
 }
 
-auto CHexDlgAbout::WMCtlColorStatic(const MSG& msg)->INT_PTR
-{
-	if (const auto hWndFrom = reinterpret_cast<HWND>(msg.lParam); hWndFrom == m_WndLink) {
-		const auto hDC = reinterpret_cast<HDC>(msg.wParam);
-		::SetTextColor(hDC, RGB(0, 50, 250));
-		::SetBkColor(hDC, ::GetSysColor(COLOR_3DFACE));
-		::SelectObject(hDC, m_fHandCursor ? m_hFontUnderline : m_hFontDef);
-		return reinterpret_cast<INT_PTR>(::GetSysColorBrush(COLOR_3DFACE));
-	}
-
-	return FALSE; //Default handler.
-}
-
 auto CHexDlgAbout::WMDestroy()->INT_PTR {
 	::DeleteObject(m_hBmpLogo);
-	::DeleteObject(m_hFontDef);
-	::DeleteObject(m_hFontUnderline);
 
 	return TRUE;
 }
 
-auto CHexDlgAbout::WMDPIChanged([[maybe_unused]] const MSG& msg)->INT_PTR
-{
+auto CHexDlgAbout::WMDPIChanged([[maybe_unused]] const MSG& msg)->INT_PTR {
+	m_LinkGithub.WMDPIChanged();
 	CreateRes();
 	return 0;
 }
 
-auto CHexDlgAbout::WMInitDialog(const MSG& msg)->INT_PTR
-{
+auto CHexDlgAbout::WMInitDialog(const MSG& msg)->INT_PTR {
 	m_Wnd.Attach(msg.hwnd);
-	m_WndLink.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_ABOUT_STAT_LINKGH));
+	m_LinkGithub.Initialize(m_Wnd, IDC_HEXCTRL_ABOUT_STAT_LINKGH);
 	CreateRes();
 
 	const auto wstrVersion = std::format(L"Hex Control for Windows apps, v{}.{}.{}\r\nCopyright © 2018-present Jovibor",
@@ -170,63 +122,6 @@ auto CHexDlgAbout::WMInitDialog(const MSG& msg)->INT_PTR
 	::SetWindowTextW(m_Wnd.GetDlgItem(IDC_HEXCTRL_ABOUT_STAT_VERSION), wstrVersion.data());
 
 	return TRUE;
-}
-
-auto CHexDlgAbout::WMLButtonDown(const MSG& msg)->INT_PTR
-{
-	const POINT pt { .x { ut::GetXLPARAM(msg.lParam) }, .y { ut::GetYLPARAM(msg.lParam) } };
-	const auto hWnd = m_Wnd.ChildWindowFromPoint(pt);
-	if (hWnd != m_WndLink) {
-		m_fLBDownLink = false;
-		return FALSE;
-	}
-
-	m_fLBDownLink = true;
-
-	return TRUE;
-}
-
-auto CHexDlgAbout::WMLButtonUp(const MSG& msg) -> INT_PTR
-{
-	const POINT pt { .x { ut::GetXLPARAM(msg.lParam) }, .y { ut::GetYLPARAM(msg.lParam) } };
-	const auto hWnd = m_Wnd.ChildWindowFromPoint(pt);
-	if (hWnd != m_WndLink) {
-		m_fLBDownLink = false;
-		return FALSE;
-	}
-
-	if (m_fLBDownLink) {
-		::ShellExecuteW(nullptr, L"open", m_WndLink.GetWndText().data(), nullptr, nullptr, 0);
-	}
-
-	return TRUE;
-}
-
-auto CHexDlgAbout::WMMouseMove(const MSG& msg)->INT_PTR
-{
-	const POINT pt { .x { ut::GetXLPARAM(msg.lParam) }, .y { ut::GetYLPARAM(msg.lParam) } };
-	const auto hWnd = m_Wnd.ChildWindowFromPoint(pt);
-	if (hWnd == nullptr)
-		return FALSE;
-
-	if (m_fHandCursor != (m_WndLink == hWnd)) {
-		m_fHandCursor = m_WndLink == hWnd;
-		m_WndLink.Invalidate(false);
-	}
-
-	return TRUE;
-}
-
-auto CHexDlgAbout::WMSetCursor([[maybe_unused]] const MSG& msg)->INT_PTR
-{
-	if (m_fHandCursor) {
-		const auto hCurHand = static_cast<HCURSOR>(::LoadImageW(nullptr, IDC_HAND, IMAGE_CURSOR, 0, 0,
-			LR_DEFAULTSIZE | LR_SHARED));
-		::SetCursor(hCurHand);
-		return TRUE;
-	}
-
-	return 0; //Default cursor.
 }
 
 

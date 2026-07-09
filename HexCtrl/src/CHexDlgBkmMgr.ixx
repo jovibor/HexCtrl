@@ -530,7 +530,7 @@ auto CHexDlgBkmMgr::WMDestroy()->INT_PTR
 	RemoveAll();
 	m_menuList.DestroyMenu();
 	m_u64Flags = { };
-	m_DynLayout.RemoveAll();
+	m_DynLayout.Uninitialize();
 
 	return TRUE;
 }

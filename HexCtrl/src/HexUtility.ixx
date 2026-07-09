@@ -550,15 +550,19 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 		[[nodiscard]] constexpr int Width()const { return right - left; }
 	};
 
+
 	class CSplitter final {
 	public:
 		enum class EAnchorSide : std::uint8_t { SIDE_LEFT, SIDE_TOP, SIDE_RIGHT, SIDE_BOTTOM };
+		CSplitter() = default;
+		~CSplitter();
 		void AddItem(HWND hWndItem, bool fIsResize);
 		void AddItem(int iItemID, bool fIsResize);
 		void Initialize(HWND hWndHost, HWND hWndAnchor, EAnchorSide eAnchorSide, std::uint32_t u32SplitterWidth = 30);
 		void Initialize(HWND hWndHost, int iAnchorID, EAnchorSide eAnchorSide, std::uint32_t u32SplitterWidth = 30);
 		[[nodiscard]] bool IsSplitting()const; //Is splitting is going on atm.
 		void SetEdges(int iMinEdge, int iMaxEdge);
+		void Uninitialize();
 	private:
 		[[nodiscard]] bool IsLock()const;
 		void Lock();
@@ -585,6 +589,10 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 		bool m_fCurInSplitter { }; //Is cursor under the splitter area.
 		bool m_fSplitting { };     //Left mouse is down for resize atm.
 	};
+
+	CSplitter::~CSplitter() {
+		Uninitialize();
+	}
 
 	void CSplitter::AddItem(HWND hWndItem, bool fIsResize) {
 		assert(hWndItem != nullptr);
@@ -619,6 +627,15 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 	void CSplitter::SetEdges(int iMinEdge, int iMaxEdge) {
 		m_iMinEdge = iMinEdge;
 		m_iMaxEdge = iMaxEdge;
+	}
+
+	void CSplitter::Uninitialize() {
+		if (m_hWndHost == nullptr)
+			return;
+
+		::RemoveWindowSubclass(m_hWndHost, SubclassProc, reinterpret_cast<UINT_PTR>(this));
+		m_vecItems.clear();
+		m_hWndHost = nullptr;
 	}
 
 	//Private methods.
@@ -818,7 +835,7 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 			reinterpret_cast<CSplitter*>(uIDSubclass)->WMMouseMove(ut::GetXLPARAM(lParam), ut::GetYLPARAM(lParam));
 			break;
 		case WM_NCDESTROY:
-			::RemoveWindowSubclass(hWnd, SubclassProc, uIDSubclass);
+			reinterpret_cast<CSplitter*>(uIDSubclass)->Uninitialize();
 			break;
 		default:
 			break;
@@ -839,13 +856,14 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 		struct SizeRatio : public ItemRatio { };
 
 		CDynLayout() = default;
+		~CDynLayout();
 		void AddItem(int iItemID, MoveRatio move, SizeRatio size);
 		void AddItem(HWND hWndItem, MoveRatio move, SizeRatio size);
 		void Enable(bool fTrack);
 		void Initialize(HWND hWndHost); //This is the main method that should be called first.
 		bool LoadFromResource(HINSTANCE hInstRes, const wchar_t* pwszResName);
 		bool LoadFromResource(HINSTANCE hInstRes, UINT uResID);
-		void RemoveAll();
+		void Uninitialize();
 		void UpdateItem(int iItemID, MoveRatio move, SizeRatio size);
 		void UpdateItem(HWND hWndItem, MoveRatio move, SizeRatio size);
 
@@ -890,6 +908,10 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 		bool m_fTrack { };
 	};
 
+	CDynLayout::~CDynLayout() {
+		Uninitialize();
+	}
+
 	void CDynLayout::AddItem(int iItemID, MoveRatio move, SizeRatio size) {
 		AddItem(::GetDlgItem(m_hWndHost, iItemID), move, size);
 	}
@@ -916,6 +938,10 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 
 	void CDynLayout::Initialize(HWND hWndHost) {
 		assert(hWndHost != nullptr);
+		if (m_hWndHost != nullptr) {
+			Uninitialize();
+		}
+
 		m_hWndHost = hWndHost;
 		::SetWindowSubclass(m_hWndHost, SubclassProc, reinterpret_cast<UINT_PTR>(this), 0);
 	}
@@ -974,8 +1000,13 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 		return LoadFromResource(hInstRes, MAKEINTRESOURCEW(uResID));
 	}
 
-	void CDynLayout::RemoveAll() {
+	void CDynLayout::Uninitialize() {
+		if (m_hWndHost == nullptr)
+			return;
+
+		::RemoveWindowSubclass(m_hWndHost, SubclassProc, reinterpret_cast<UINT_PTR>(this));
 		m_vecItems.clear();
+		m_hWndHost = nullptr;
 	}
 
 	void CDynLayout::UpdateItem(int iItemID, MoveRatio move, SizeRatio size) {
@@ -1023,11 +1054,191 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 	auto CDynLayout::SubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR uIDSubclass,
 	 [[maybe_unused]] DWORD_PTR dwRefData)->LRESULT {
 		switch (uMsg) {
+		case WM_NCDESTROY:
+			reinterpret_cast<CDynLayout*>(uIDSubclass)->Uninitialize();
+			break;
 		case WM_SIZE:
 			reinterpret_cast<CDynLayout*>(uIDSubclass)->WMSize(LOWORD(lParam), HIWORD(lParam));
 			break;
+		default:
+			break;
+		}
+
+		return ::DefSubclassProc(hWnd, uMsg, wParam, lParam);
+	}
+
+
+	class CLinkCtrl final {
+	public:
+		CLinkCtrl() = default;
+		~CLinkCtrl();
+		void Initialize(HWND hWndHost, HWND hWndLink, std::wstring_view wsvURL = { },
+			COLORREF clrBk = RGB(240, 240, 240), COLORREF clrText = RGB(0, 50, 250));
+		void Initialize(HWND hWndHost, int iLinkID, std::wstring_view wsvURL = { },
+			COLORREF clrBk = RGB(240, 240, 240), COLORREF clrText = RGB(0, 50, 250));
+		void Uninitialize();
+		void WMDPIChanged(); //Should be hooked into the host window's WM_DPICHANGED handler.
+	private:
+		void CreateFonts();
+		auto WMCtlColorStatic(WPARAM wParam, LPARAM lParam) -> INT_PTR;
+		void WMLButtonDown(WPARAM wParam, LPARAM lParam);
+		void WMLButtonUp(WPARAM wParam, LPARAM lParam);
+		void WMMouseMove(WPARAM wParam, LPARAM lParam);
+		auto WMSetCursor() -> INT_PTR;
+		static auto CALLBACK SubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
+			UINT_PTR uIDSubclass, DWORD_PTR dwRefData)->LRESULT;
+	private:
+		std::wstring m_wstrURL;
+		HWND m_hWndHost { };
+		HWND m_hWndLink { };
+		HFONT m_hFontDef { }; //Main default font of the link control, should not be deleted.
+		HFONT m_hFontUnderline { };
+		HBRUSH m_hbrBk { };
+		COLORREF m_clrBk { };
+		COLORREF m_clrText { };
+		bool m_fHandCursor { }; //Is cursor a hand cursor atm?
+		bool m_fLBDownLink { }; //Left button was pressed on the link static control.
+	};
+
+	CLinkCtrl::~CLinkCtrl() {
+		Uninitialize();
+	}
+
+	void CLinkCtrl::Initialize(HWND hWndHost, HWND hWndLink, std::wstring_view wsvURL, COLORREF clrBk, COLORREF clrText) {
+		assert(hWndHost != nullptr);
+		assert(hWndLink != nullptr);
+		m_hWndHost = hWndHost;
+		m_hWndLink = hWndLink;
+		m_clrBk = clrBk;
+		m_clrText = clrText;
+		m_hbrBk = ::CreateSolidBrush(m_clrBk);
+
+		if (wsvURL.empty()) {
+			wchar_t buff[512];
+			::GetWindowTextW(m_hWndLink, buff, 512);
+			m_wstrURL = buff;
+		}
+		else {
+			m_wstrURL = wsvURL;
+		}
+
+		CreateFonts();
+		::SetWindowSubclass(m_hWndHost, SubclassProc, reinterpret_cast<UINT_PTR>(this), 0);
+	}
+
+	void CLinkCtrl::Initialize(HWND hWndHost, int iLinkID, std::wstring_view wsvURL, COLORREF clrBk, COLORREF clrText) {
+		Initialize(hWndHost, ::GetDlgItem(hWndHost, iLinkID), wsvURL, clrBk, clrText);
+	}
+
+	void CLinkCtrl::Uninitialize() {
+		if (m_hWndHost == nullptr)
+			return;
+
+		::RemoveWindowSubclass(m_hWndHost, SubclassProc, reinterpret_cast<UINT_PTR>(this));
+		::DeleteObject(m_hFontUnderline);
+		::DeleteObject(m_hbrBk);
+		m_hWndHost = nullptr;
+	}
+
+	void CLinkCtrl::WMDPIChanged() {
+		//This method must be placed into the host window's WM_DPICHANGED handler,
+		//to properly recreate link control's underline font when DPI changes.
+		//Unfortunately, it doesn't work correctly when called from the SubclassProc.
+		//The underline font, for some reason, remains with the size from the previous DPI.
+		//This is the behavior at least in Windows 11. Looks like a Windows bug.
+
+		CreateFonts();
+	}
+
+	//Private methods.
+
+	void CLinkCtrl::CreateFonts() {
+		m_hFontDef = reinterpret_cast<HFONT>(::SendMessageW(m_hWndLink, WM_GETFONT, 0, 0));
+		LOGFONTW lf;
+		::GetObjectW(m_hFontDef, sizeof(lf), &lf);
+		lf.lfUnderline = TRUE;
+		::DeleteObject(m_hFontUnderline);
+		m_hFontUnderline = ::CreateFontIndirectW(&lf);
+	}
+
+	auto CLinkCtrl::WMCtlColorStatic(WPARAM wParam, LPARAM lParam)->INT_PTR {
+		const auto hWndFrom = reinterpret_cast<HWND>(lParam);
+		if (hWndFrom != m_hWndLink)
+			return FALSE; //Default handler.
+
+		const auto hDC = reinterpret_cast<HDC>(wParam);
+		::SetTextColor(hDC, m_clrText);
+		::SetBkColor(hDC, m_clrBk);
+		::SelectObject(hDC, m_fHandCursor ? m_hFontUnderline : m_hFontDef);
+		return reinterpret_cast<INT_PTR>(m_hbrBk);
+	}
+
+	void CLinkCtrl::WMLButtonDown([[maybe_unused]] WPARAM wParam, LPARAM lParam) {
+		const POINT pt { .x { ut::GetXLPARAM(lParam) }, .y { ut::GetYLPARAM(lParam) } };
+		m_fLBDownLink = ::ChildWindowFromPoint(m_hWndHost, pt) == m_hWndLink;
+	}
+
+	void CLinkCtrl::WMLButtonUp([[maybe_unused]] WPARAM wParam, LPARAM lParam) {
+		const POINT pt { .x { ut::GetXLPARAM(lParam) }, .y { ut::GetYLPARAM(lParam) } };
+		const auto hWnd = ::ChildWindowFromPoint(m_hWndHost, pt);
+		if (hWnd != m_hWndLink) {
+			m_fLBDownLink = false;
+			return;
+		}
+
+		if (m_fLBDownLink) {
+			::ShellExecuteW(nullptr, L"open", m_wstrURL.data(), nullptr, nullptr, 0);
+		}
+	}
+
+	void CLinkCtrl::WMMouseMove([[maybe_unused]] WPARAM wParam, LPARAM lParam) {
+		const POINT pt { .x { ut::GetXLPARAM(lParam) }, .y { ut::GetYLPARAM(lParam) } };
+		const auto hWnd = ::ChildWindowFromPoint(m_hWndHost, pt);
+		if (hWnd == nullptr)
+			return;
+
+		if (m_fHandCursor != (m_hWndLink == hWnd)) {
+			m_fHandCursor = m_hWndLink == hWnd;
+			::InvalidateRect(m_hWndLink, nullptr, FALSE);
+		}
+	}
+
+	auto CLinkCtrl::WMSetCursor()->INT_PTR {
+		if (m_fHandCursor) {
+			const auto hCurHand = static_cast<HCURSOR>(::LoadImageW(nullptr, IDC_HAND, IMAGE_CURSOR, 0, 0,
+				LR_DEFAULTSIZE | LR_SHARED));
+			::SetCursor(hCurHand);
+			return TRUE;
+		}
+
+		return 0; //Default cursor.
+	}
+
+	auto CLinkCtrl::SubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR uIDSubclass,
+		[[maybe_unused]] DWORD_PTR dwRefData)->LRESULT {
+		switch (uMsg) {
+		case WM_CTLCOLORSTATIC:
+			if (const auto hbr = reinterpret_cast<CLinkCtrl*>(uIDSubclass)->WMCtlColorStatic(wParam, lParam);
+				hbr != 0) {
+				return hbr;
+			}
+			break;
+		case WM_LBUTTONDOWN:
+			reinterpret_cast<CLinkCtrl*>(uIDSubclass)->WMLButtonDown(wParam, lParam);
+			break;
+		case WM_LBUTTONUP:
+			reinterpret_cast<CLinkCtrl*>(uIDSubclass)->WMLButtonUp(wParam, lParam);
+			break;
+		case WM_MOUSEMOVE:
+			reinterpret_cast<CLinkCtrl*>(uIDSubclass)->WMMouseMove(wParam, lParam);
+			break;
 		case WM_NCDESTROY:
-			::RemoveWindowSubclass(hWnd, SubclassProc, uIDSubclass);
+			reinterpret_cast<CLinkCtrl*>(uIDSubclass)->Uninitialize();
+			break;
+		case WM_SETCURSOR:
+			if (const auto ret = reinterpret_cast<CLinkCtrl*>(uIDSubclass)->WMSetCursor(); ret != FALSE) {
+				return TRUE;
+			}
 			break;
 		default:
 			break;

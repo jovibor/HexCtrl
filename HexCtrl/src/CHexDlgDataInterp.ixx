@@ -1515,7 +1515,7 @@ auto CHexDlgDataInterp::WMDestroy()->INT_PTR
 	m_vecData.clear();
 	m_u64Flags = { };
 	m_pHexCtrl = nullptr;
-	m_DynLayout.RemoveAll();
+	m_DynLayout.Uninitialize();
 
 	return TRUE;
 }
