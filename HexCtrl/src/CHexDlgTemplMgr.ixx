@@ -68,9 +68,6 @@ namespace HEXCTRL::INTERNAL {
 			const FIELDSDEFPROPS& defProps, UmapCustomTypes& umapCustomT, int* pOffset = nullptr);
 		[[nodiscard]] static auto JSONEndianness(const rapidjson::Value& value) -> std::optional<bool>;
 		[[nodiscard]] static auto JSONColors(const rapidjson::Value& value, const char* pszColorName) -> std::optional<COLORREF>;
-		[[nodiscard]] static auto CloneTemplate(PCHEXTEMPLATE pTemplate) -> std::unique_ptr<HEXTEMPLATE>;
-		static auto CALLBACK TreeSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
-			UINT_PTR uIdSubclass, DWORD_PTR dwRefData)->LRESULT;
 	private:
 		void CreateArrows();
 		[[nodiscard]] auto GetAppliedIDFromTree(HTREEITEM hTreeItem) -> int;
@@ -150,6 +147,9 @@ namespace HEXCTRL::INTERNAL {
 		void WMNotifyTreeItemChanged(NMHDR* pNMHDR);
 		void WMNotifyTreeRClick(NMHDR* pNMHDR);
 		auto WMSize(const MSG& msg) -> INT_PTR;
+		[[nodiscard]] static auto CloneTemplate(PCHEXTEMPLATE pTemplate) -> std::unique_ptr<HEXTEMPLATE>;
+		static auto CALLBACK TreeSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
+			UINT_PTR uIDSubclass, DWORD_PTR dwRefData)->LRESULT;
 	private:
 		enum EListColumns : std::int8_t;
 		GDIUT::CSplitter m_SplitVert;
@@ -483,6 +483,267 @@ void CHexDlgTemplMgr::UnloadTemplate(int iTemplateID)
 	//This needed because SetDlgButtonsState checks m_vecTemplates.empty(), which was erased just line above.
 	//OnTemplateLoadUnload at the beginning doesn't know yet that it's empty (when all templates are unloaded).
 	SetDlgButtonsState();
+}
+
+bool CHexDlgTemplMgr::JSONParseFields(const IterJSONMember itFieldsArray, VecHexFields& vecFields,
+	const FIELDSDEFPROPS& defProps, UmapCustomTypes& umapCustomT, int* pOffset) {
+	using enum EHexFieldType;
+	static const std::unordered_map<std::string_view, EHexFieldType> umapStrToEType { //From JSON string to EHexFieldType conversion.
+		{ "bool", type_bool },
+		{ "int8", type_int8 }, { "char", type_int8 },
+		{ "uint8", type_uint8 }, { "unsigned char", type_uint8 }, { "byte", type_uint8 },
+		{ "int16", type_int16 }, { "short", type_int16 },
+		{ "uint16", type_uint16 }, { "unsigned short", type_uint16 }, { "WORD", type_uint16 },
+		{ "int32", type_int32 }, { "long", type_int32 }, { "int", type_int32 },
+		{ "uint32", type_uint32 }, { "unsigned long", type_uint32 }, { "unsigned int", type_uint32 }, { "DWORD", type_uint32 },
+		{ "int64", type_int64 }, { "long long", type_int64 },
+		{ "uint64", type_uint64 }, { "unsigned long long", type_uint64 }, { "QWORD", type_uint64 },
+		{ "float", type_float }, { "double", type_double },
+		{ "time32_t", type_time32 }, { "time64_t", type_time64 },
+		{ "FILETIME", type_filetime }, { "SYSTEMTIME", type_systemtime }, { "GUID", type_guid } };
+	static const std::unordered_map<EHexFieldType, int> umapTypeToSize { //Types sizes.
+		{ type_bool, static_cast<int>(sizeof(bool)) }, { type_int8, static_cast<int>(sizeof(char)) },
+		{ type_uint8, static_cast<int>(sizeof(char)) }, { type_int16, static_cast<int>(sizeof(short)) },
+		{ type_uint16, static_cast<int>(sizeof(short)) }, { type_int32, static_cast<int>(sizeof(int)) },
+		{ type_uint32, static_cast<int>(sizeof(int)) }, { type_int64, static_cast<int>(sizeof(long long)) },
+		{ type_uint64, static_cast<int>(sizeof(long long)) }, { type_float, static_cast<int>(sizeof(float)) },
+		{ type_double, static_cast<int>(sizeof(double)) }, { type_time32, static_cast<int>(sizeof(__time32_t)) },
+		{ type_time64, static_cast<int>(sizeof(__time64_t)) }, { type_filetime, static_cast<int>(sizeof(FILETIME)) },
+		{ type_systemtime, static_cast<int>(sizeof(SYSTEMTIME)) }, { type_guid, static_cast<int>(sizeof(GUID)) }
+	};
+
+	const auto lmbTotalSize = [](const VecHexFields& vecFields)->int { //Counts total size of all Fields in VecHexFields, recursively.
+		const auto _lmbTotalSize = [](const auto& lmbSelf, const VecHexFields& vecFields)->int {
+			return std::reduce(vecFields.begin(), vecFields.end(), 0,
+				[&lmbSelf](auto ullTotal, const std::unique_ptr<HEXTEMPLFIELD>& pField) {
+					if (!pField->vecNested.empty()) {
+						return ullTotal + lmbSelf(lmbSelf, pField->vecNested);
+					}
+					return ullTotal + pField->iSize; });
+			};
+		return _lmbTotalSize(_lmbTotalSize, vecFields);
+		};
+
+	int iOffset { 0 }; //Default starting offset.
+	if (pOffset == nullptr) {
+		pOffset = &iOffset;
+	}
+
+	for (auto pField = itFieldsArray->value.Begin(); pField != itFieldsArray->value.End(); ++pField) {
+		if (!pField->IsObject()) {
+			ut::DBG_REPORT(L"Each array entry must be an Object {}.");
+			return false;
+		}
+
+		std::wstring wstrNameField;
+		if (const auto itName = pField->FindMember("name");
+			itName != pField->MemberEnd() && itName->value.IsString()) {
+			wstrNameField = ut::StrToWstr(itName->value.GetString());
+		}
+		else {
+			ut::DBG_REPORT(L"Each array entry (Object) must have a \"name\" string.");
+			return false;
+		}
+
+		const auto& pNewField = vecFields.emplace_back(std::make_unique<HEXTEMPLFIELD>());
+		pNewField->wstrName = wstrNameField;
+		pNewField->iOffset = *pOffset;
+		pNewField->stClr.clrBk = JSONColors(*pField, "clrBk").value_or(defProps.stClr.clrBk);
+		pNewField->stClr.clrText = JSONColors(*pField, "clrText").value_or(defProps.stClr.clrText);
+		pNewField->pFieldParent = defProps.pFieldParent;
+		pNewField->eType = type_custom;
+		pNewField->fBigEndian = JSONEndianness(*pField).value_or(defProps.fBigEndian);
+
+		if (const auto itNestedFields = pField->FindMember("Fields");
+			itNestedFields != pField->MemberEnd()) {
+			if (!itNestedFields->value.IsArray()) {
+				ut::DBG_REPORT(L"Each \"Fields\" must be an Array.");
+				return false;
+			}
+
+			//Setting defaults for the next nested fields.
+			const FIELDSDEFPROPS stDefsNested { .stClr { pNewField->stClr }, .pTemplate { defProps.pTemplate },
+				.pFieldParent { pNewField.get() }, .fBigEndian { pNewField->fBigEndian } };
+
+			//Recursion for nested fields starts here.
+			if (!JSONParseFields(itNestedFields, pNewField->vecNested, stDefsNested, umapCustomT, pOffset)) {
+				return false;
+			}
+
+			pNewField->iSize = lmbTotalSize(pNewField->vecNested); //Total size of all nested fields.
+		}
+		else {
+			if (const auto itDescr = pField->FindMember("description");
+				itDescr != pField->MemberEnd() && itDescr->value.IsString()) {
+				pNewField->wstrDescr = ut::StrToWstr(itDescr->value.GetString());
+			}
+
+			int iArraySize { 0 };
+			if (const auto itArray = pField->FindMember("array");
+				itArray != pField->MemberEnd() && itArray->value.IsInt() && itArray->value.GetInt() > 1) {
+				iArraySize = itArray->value.GetInt();
+			}
+
+			int iSize { 0 }; //Current field's size, via "type" or "size" property.
+			if (const auto itType = pField->FindMember("type"); itType != pField->MemberEnd()) {
+				if (!itType->value.IsString()) {
+					ut::DBG_REPORT(L"Field \"type\" must be a string.");
+					return false;
+				}
+
+				if (const auto itMapType = umapStrToEType.find(itType->value.GetString());
+					itMapType != umapStrToEType.end()) {
+					pNewField->eType = itMapType->second;
+					iSize = umapTypeToSize.at(itMapType->second);
+				}
+				else { //If it's not any standard type, we try to find custom type with given name.
+					const auto& vecCTypes = defProps.pTemplate->vecCustomType;
+					const auto itVecCT = std::find_if(vecCTypes.begin(), vecCTypes.end(),
+						[=](const HEXCUSTOMTYPE& ct) { return ct.wstrTypeName == ut::StrToWstr(itType->value.GetString()); });
+					if (itVecCT == vecCTypes.end()) {
+						ut::DBG_REPORT(L"Unknown field \"type\".");
+						return false;
+					}
+
+					pNewField->iCustomTypeID = itVecCT->iTypeID; //Custom type ID.
+					pNewField->eType = type_custom;
+					const auto lmbCopyCustomType = [](const VecHexFields& vecCustomFields,
+						const PtrHexField& pField, int& iOffset)->void {
+							const auto _lmbCustomTypeCopy = [](const auto& lmbSelf,
+								const VecHexFields& vecCustomFields, const PtrHexField& pField, int& iOffset)->void {
+									for (const auto& pCustomField : vecCustomFields) {
+										const auto& pNewField = pField->vecNested.emplace_back(std::make_unique<HEXTEMPLFIELD>());
+										const auto& CFClr = pCustomField->stClr;
+										pNewField->wstrName = pCustomField->wstrName;
+										pNewField->wstrDescr = pCustomField->wstrDescr;
+										pNewField->iOffset = iOffset;
+										pNewField->iSize = pCustomField->iSize;
+										pNewField->stClr.clrBk = CFClr.clrBk == -1 ? pField->stClr.clrBk : CFClr.clrBk;
+										pNewField->stClr.clrText = CFClr.clrText == -1 ? pField->stClr.clrText : CFClr.clrText;
+										pNewField->pFieldParent = pField.get();
+										pNewField->eType = pCustomField->eType;
+										pNewField->iCustomTypeID = pCustomField->iCustomTypeID;
+										pNewField->fBigEndian = pCustomField->fBigEndian;
+
+										if (pCustomField->vecNested.empty()) {
+											iOffset += pCustomField->iSize;
+										}
+										else {
+											lmbSelf(lmbSelf, pCustomField->vecNested, pNewField, iOffset);
+										}
+									}
+								};
+							_lmbCustomTypeCopy(_lmbCustomTypeCopy, vecCustomFields, pField, iOffset);
+						};
+
+					auto iOffsetCustomType = *pOffset;
+					if (iArraySize <= 1) {
+						lmbCopyCustomType(umapCustomT[itVecCT->iTypeID], pNewField, iOffsetCustomType);
+					}
+					else { //Creating array of Custom Types.
+						for (int iArrIndex = 0; iArrIndex < iArraySize; ++iArrIndex) {
+							const auto& pFieldArray = pNewField->vecNested.emplace_back(std::make_unique<HEXTEMPLFIELD>());
+							pFieldArray->wstrName = std::format(L"{}[{}]", wstrNameField, iArrIndex);
+							pFieldArray->iOffset = iOffsetCustomType;
+							pFieldArray->stClr = pNewField->stClr;
+							pFieldArray->pFieldParent = pNewField.get();
+							pFieldArray->eType = pNewField->eType;
+							pFieldArray->iCustomTypeID = pNewField->iCustomTypeID;
+							pFieldArray->fBigEndian = pNewField->fBigEndian;
+
+							//Copy Custom Type fields into the pFieldArray->vecNested.
+							lmbCopyCustomType(umapCustomT[itVecCT->iTypeID], pFieldArray, iOffsetCustomType);
+							pFieldArray->iSize = lmbTotalSize(pFieldArray->vecNested);
+						}
+						pNewField->wstrName = std::format(L"{}[{}]", wstrNameField, iArraySize);
+					}
+
+					iSize = lmbTotalSize(pNewField->vecNested);
+				}
+			}
+			else { //No "type" property was found.
+				const auto itSize = pField->FindMember("size");
+				if (itSize == pField->MemberEnd()) {
+					ut::DBG_REPORT(L"No \"size\" or \"type\" property was found.");
+					return false;
+				}
+
+				if (!itSize->value.IsInt()) {
+					ut::DBG_REPORT(L"The \"size\" must be an int.");
+					return false;
+				}
+
+				const auto iFieldSize = itSize->value.GetInt();
+				if (iFieldSize < 1) {
+					ut::DBG_REPORT(L"The \"size\" must be > 0.");
+					return false;
+				}
+
+				iSize = iFieldSize;
+				pNewField->eType = custom_size;
+			}
+
+			if (iArraySize > 1 && pNewField->eType != type_custom) { //Creating array of standard/default types.
+				for (auto iArrIndex = 0; iArrIndex < iArraySize; ++iArrIndex) {
+					const auto& pFieldArray = pNewField->vecNested.emplace_back(std::make_unique<HEXTEMPLFIELD>());
+					pFieldArray->wstrName = std::format(L"{}[{}]", wstrNameField, iArrIndex);
+					pFieldArray->iOffset = *pOffset + iArrIndex * iSize;
+					pFieldArray->iSize = iSize;
+					pFieldArray->stClr = pNewField->stClr;
+					pFieldArray->pFieldParent = pNewField.get();
+					pFieldArray->eType = pNewField->eType;
+					pFieldArray->iCustomTypeID = pNewField->iCustomTypeID;
+					pFieldArray->fBigEndian = pNewField->fBigEndian;
+				}
+				pNewField->wstrName = std::format(L"{}[{}]", wstrNameField, iArraySize);
+				iSize *= iArraySize;
+			}
+
+			pNewField->iSize = iSize;
+			*pOffset += iSize;
+		}
+	}
+
+	return true;
+}
+
+auto CHexDlgTemplMgr::JSONEndianness(const rapidjson::Value& value)->std::optional<bool>
+{
+	const auto itEndianness = value.FindMember("endianness");
+	if (itEndianness == value.MemberEnd()) {
+		return false; //If no "endianness" property then it's "little" by default.
+	}
+
+	if (!itEndianness->value.IsString()) {
+		ut::DBG_REPORT(L"Field \"endianness\" must be a string.");
+		return std::nullopt;
+	}
+
+	const std::string_view svEndianness = itEndianness->value.GetString();
+	if (svEndianness != "big" && svEndianness != "little") {
+		ut::DBG_REPORT(L"Unknown \"endianness\" type.");
+		return std::nullopt;
+	}
+
+	return svEndianness == "big";
+}
+
+auto CHexDlgTemplMgr::JSONColors(const rapidjson::Value& value, const char* pszColorName)->std::optional<COLORREF>
+{
+	const auto itClr = value.FindMember(pszColorName);
+	if (itClr == value.MemberEnd() || !itClr->value.IsString()) {
+		return std::nullopt;
+	}
+
+	const std::string_view sv { itClr->value.GetString() };
+	if (sv.empty() || sv.size() != 7 || sv[0] != '#')
+		return std::nullopt;
+
+	const auto R = *stn::StrToUInt32(sv.substr(1, 2), 16);
+	const auto G = *stn::StrToUInt32(sv.substr(3, 2), 16);
+	const auto B = *stn::StrToUInt32(sv.substr(5, 2), 16);
+
+	return RGB(R, G, B);
 }
 
 
@@ -2155,269 +2416,7 @@ auto CHexDlgTemplMgr::CloneTemplate(PCHEXTEMPLATE pTemplate)->std::unique_ptr<HE
 	return pNew;
 }
 
-bool CHexDlgTemplMgr::JSONParseFields(const IterJSONMember itFieldsArray, VecHexFields& vecFields,
-	const FIELDSDEFPROPS& defProps, UmapCustomTypes& umapCustomT, int* pOffset)
-{
-	using enum EHexFieldType;
-	static const std::unordered_map<std::string_view, EHexFieldType> umapStrToEType { //From JSON string to EHexFieldType conversion.
-		{ "bool", type_bool },
-		{ "int8", type_int8 }, { "char", type_int8 },
-		{ "uint8", type_uint8 }, { "unsigned char", type_uint8 }, { "byte", type_uint8 },
-		{ "int16", type_int16 }, { "short", type_int16 },
-		{ "uint16", type_uint16 }, { "unsigned short", type_uint16 }, { "WORD", type_uint16 },
-		{ "int32", type_int32 }, { "long", type_int32 }, { "int", type_int32 },
-		{ "uint32", type_uint32 }, { "unsigned long", type_uint32 }, { "unsigned int", type_uint32 }, { "DWORD", type_uint32 },
-		{ "int64", type_int64 }, { "long long", type_int64 },
-		{ "uint64", type_uint64 }, { "unsigned long long", type_uint64 }, { "QWORD", type_uint64 },
-		{ "float", type_float }, { "double", type_double },
-		{ "time32_t", type_time32 }, { "time64_t", type_time64 },
-		{ "FILETIME", type_filetime }, { "SYSTEMTIME", type_systemtime }, { "GUID", type_guid } };
-	static const std::unordered_map<EHexFieldType, int> umapTypeToSize { //Types sizes.
-		{ type_bool, static_cast<int>(sizeof(bool)) }, { type_int8, static_cast<int>(sizeof(char)) },
-		{ type_uint8, static_cast<int>(sizeof(char)) }, { type_int16, static_cast<int>(sizeof(short)) },
-		{ type_uint16, static_cast<int>(sizeof(short)) }, { type_int32, static_cast<int>(sizeof(int)) },
-		{ type_uint32, static_cast<int>(sizeof(int)) }, { type_int64, static_cast<int>(sizeof(long long)) },
-		{ type_uint64, static_cast<int>(sizeof(long long)) }, { type_float, static_cast<int>(sizeof(float)) },
-		{ type_double, static_cast<int>(sizeof(double)) }, { type_time32, static_cast<int>(sizeof(__time32_t)) },
-		{ type_time64, static_cast<int>(sizeof(__time64_t)) }, { type_filetime, static_cast<int>(sizeof(FILETIME)) },
-		{ type_systemtime, static_cast<int>(sizeof(SYSTEMTIME)) }, { type_guid, static_cast<int>(sizeof(GUID)) }
-	};
-
-	const auto lmbTotalSize = [](const VecHexFields& vecFields)->int { //Counts total size of all Fields in VecHexFields, recursively.
-		const auto _lmbTotalSize = [](const auto& lmbSelf, const VecHexFields& vecFields)->int {
-			return std::reduce(vecFields.begin(), vecFields.end(), 0,
-				[&lmbSelf](auto ullTotal, const std::unique_ptr<HEXTEMPLFIELD>& pField) {
-					if (!pField->vecNested.empty()) {
-						return ullTotal + lmbSelf(lmbSelf, pField->vecNested);
-					}
-					return ullTotal + pField->iSize; });
-			};
-		return _lmbTotalSize(_lmbTotalSize, vecFields);
-		};
-
-	int iOffset { 0 }; //Default starting offset.
-	if (pOffset == nullptr) {
-		pOffset = &iOffset;
-	}
-
-	for (auto pField = itFieldsArray->value.Begin(); pField != itFieldsArray->value.End(); ++pField) {
-		if (!pField->IsObject()) {
-			ut::DBG_REPORT(L"Each array entry must be an Object {}.");
-			return false;
-		}
-
-		std::wstring wstrNameField;
-		if (const auto itName = pField->FindMember("name");
-			itName != pField->MemberEnd() && itName->value.IsString()) {
-			wstrNameField = ut::StrToWstr(itName->value.GetString());
-		}
-		else {
-			ut::DBG_REPORT(L"Each array entry (Object) must have a \"name\" string.");
-			return false;
-		}
-
-		const auto& pNewField = vecFields.emplace_back(std::make_unique<HEXTEMPLFIELD>());
-		pNewField->wstrName = wstrNameField;
-		pNewField->iOffset = *pOffset;
-		pNewField->stClr.clrBk = JSONColors(*pField, "clrBk").value_or(defProps.stClr.clrBk);
-		pNewField->stClr.clrText = JSONColors(*pField, "clrText").value_or(defProps.stClr.clrText);
-		pNewField->pFieldParent = defProps.pFieldParent;
-		pNewField->eType = type_custom;
-		pNewField->fBigEndian = JSONEndianness(*pField).value_or(defProps.fBigEndian);
-
-		if (const auto itNestedFields = pField->FindMember("Fields");
-			itNestedFields != pField->MemberEnd()) {
-			if (!itNestedFields->value.IsArray()) {
-				ut::DBG_REPORT(L"Each \"Fields\" must be an Array.");
-				return false;
-			}
-
-			//Setting defaults for the next nested fields.
-			const FIELDSDEFPROPS stDefsNested { .stClr { pNewField->stClr }, .pTemplate { defProps.pTemplate },
-				.pFieldParent { pNewField.get() }, .fBigEndian { pNewField->fBigEndian } };
-
-			//Recursion for nested fields starts here.
-			if (!JSONParseFields(itNestedFields, pNewField->vecNested, stDefsNested, umapCustomT, pOffset)) {
-				return false;
-			}
-
-			pNewField->iSize = lmbTotalSize(pNewField->vecNested); //Total size of all nested fields.
-		}
-		else {
-			if (const auto itDescr = pField->FindMember("description");
-				itDescr != pField->MemberEnd() && itDescr->value.IsString()) {
-				pNewField->wstrDescr = ut::StrToWstr(itDescr->value.GetString());
-			}
-
-			int iArraySize { 0 };
-			if (const auto itArray = pField->FindMember("array");
-				itArray != pField->MemberEnd() && itArray->value.IsInt() && itArray->value.GetInt() > 1) {
-				iArraySize = itArray->value.GetInt();
-			}
-
-			int iSize { 0 }; //Current field's size, via "type" or "size" property.
-			if (const auto itType = pField->FindMember("type"); itType != pField->MemberEnd()) {
-				if (!itType->value.IsString()) {
-					ut::DBG_REPORT(L"Field \"type\" must be a string.");
-					return false;
-				}
-
-				if (const auto itMapType = umapStrToEType.find(itType->value.GetString());
-					itMapType != umapStrToEType.end()) {
-					pNewField->eType = itMapType->second;
-					iSize = umapTypeToSize.at(itMapType->second);
-				}
-				else { //If it's not any standard type, we try to find custom type with given name.
-					const auto& vecCTypes = defProps.pTemplate->vecCustomType;
-					const auto itVecCT = std::find_if(vecCTypes.begin(), vecCTypes.end(),
-						[=](const HEXCUSTOMTYPE& ct) { return ct.wstrTypeName == ut::StrToWstr(itType->value.GetString()); });
-					if (itVecCT == vecCTypes.end()) {
-						ut::DBG_REPORT(L"Unknown field \"type\".");
-						return false;
-					}
-
-					pNewField->iCustomTypeID = itVecCT->iTypeID; //Custom type ID.
-					pNewField->eType = type_custom;
-					const auto lmbCopyCustomType = [](const VecHexFields& vecCustomFields,
-						const PtrHexField& pField, int& iOffset)->void {
-							const auto _lmbCustomTypeCopy = [](const auto& lmbSelf,
-								const VecHexFields& vecCustomFields, const PtrHexField& pField, int& iOffset)->void {
-									for (const auto& pCustomField : vecCustomFields) {
-										const auto& pNewField = pField->vecNested.emplace_back(std::make_unique<HEXTEMPLFIELD>());
-										const auto& CFClr = pCustomField->stClr;
-										pNewField->wstrName = pCustomField->wstrName;
-										pNewField->wstrDescr = pCustomField->wstrDescr;
-										pNewField->iOffset = iOffset;
-										pNewField->iSize = pCustomField->iSize;
-										pNewField->stClr.clrBk = CFClr.clrBk == -1 ? pField->stClr.clrBk : CFClr.clrBk;
-										pNewField->stClr.clrText = CFClr.clrText == -1 ? pField->stClr.clrText : CFClr.clrText;
-										pNewField->pFieldParent = pField.get();
-										pNewField->eType = pCustomField->eType;
-										pNewField->iCustomTypeID = pCustomField->iCustomTypeID;
-										pNewField->fBigEndian = pCustomField->fBigEndian;
-
-										if (pCustomField->vecNested.empty()) {
-											iOffset += pCustomField->iSize;
-										}
-										else {
-											lmbSelf(lmbSelf, pCustomField->vecNested, pNewField, iOffset);
-										}
-									}
-								};
-							_lmbCustomTypeCopy(_lmbCustomTypeCopy, vecCustomFields, pField, iOffset);
-						};
-
-					auto iOffsetCustomType = *pOffset;
-					if (iArraySize <= 1) {
-						lmbCopyCustomType(umapCustomT[itVecCT->iTypeID], pNewField, iOffsetCustomType);
-					}
-					else { //Creating array of Custom Types.
-						for (int iArrIndex = 0; iArrIndex < iArraySize; ++iArrIndex) {
-							const auto& pFieldArray = pNewField->vecNested.emplace_back(std::make_unique<HEXTEMPLFIELD>());
-							pFieldArray->wstrName = std::format(L"{}[{}]", wstrNameField, iArrIndex);
-							pFieldArray->iOffset = iOffsetCustomType;
-							pFieldArray->stClr = pNewField->stClr;
-							pFieldArray->pFieldParent = pNewField.get();
-							pFieldArray->eType = pNewField->eType;
-							pFieldArray->iCustomTypeID = pNewField->iCustomTypeID;
-							pFieldArray->fBigEndian = pNewField->fBigEndian;
-
-							//Copy Custom Type fields into the pFieldArray->vecNested.
-							lmbCopyCustomType(umapCustomT[itVecCT->iTypeID], pFieldArray, iOffsetCustomType);
-							pFieldArray->iSize = lmbTotalSize(pFieldArray->vecNested);
-						}
-						pNewField->wstrName = std::format(L"{}[{}]", wstrNameField, iArraySize);
-					}
-
-					iSize = lmbTotalSize(pNewField->vecNested);
-				}
-			}
-			else { //No "type" property was found.
-				const auto itSize = pField->FindMember("size");
-				if (itSize == pField->MemberEnd()) {
-					ut::DBG_REPORT(L"No \"size\" or \"type\" property was found.");
-					return false;
-				}
-
-				if (!itSize->value.IsInt()) {
-					ut::DBG_REPORT(L"The \"size\" must be an int.");
-					return false;
-				}
-
-				const auto iFieldSize = itSize->value.GetInt();
-				if (iFieldSize < 1) {
-					ut::DBG_REPORT(L"The \"size\" must be > 0.");
-					return false;
-				}
-
-				iSize = iFieldSize;
-				pNewField->eType = custom_size;
-			}
-
-			if (iArraySize > 1 && pNewField->eType != type_custom) { //Creating array of standard/default types.
-				for (auto iArrIndex = 0; iArrIndex < iArraySize; ++iArrIndex) {
-					const auto& pFieldArray = pNewField->vecNested.emplace_back(std::make_unique<HEXTEMPLFIELD>());
-					pFieldArray->wstrName = std::format(L"{}[{}]", wstrNameField, iArrIndex);
-					pFieldArray->iOffset = *pOffset + iArrIndex * iSize;
-					pFieldArray->iSize = iSize;
-					pFieldArray->stClr = pNewField->stClr;
-					pFieldArray->pFieldParent = pNewField.get();
-					pFieldArray->eType = pNewField->eType;
-					pFieldArray->iCustomTypeID = pNewField->iCustomTypeID;
-					pFieldArray->fBigEndian = pNewField->fBigEndian;
-				}
-				pNewField->wstrName = std::format(L"{}[{}]", wstrNameField, iArraySize);
-				iSize *= iArraySize;
-			}
-
-			pNewField->iSize = iSize;
-			*pOffset += iSize;
-		}
-	}
-
-	return true;
-}
-
-auto CHexDlgTemplMgr::JSONEndianness(const rapidjson::Value& value)->std::optional<bool>
-{
-	const auto itEndianness = value.FindMember("endianness");
-	if (itEndianness == value.MemberEnd()) {
-		return false; //If no "endianness" property then it's "little" by default.
-	}
-
-	if (!itEndianness->value.IsString()) {
-		ut::DBG_REPORT(L"Field \"endianness\" must be a string.");
-		return std::nullopt;
-	}
-
-	const std::string_view svEndianness = itEndianness->value.GetString();
-	if (svEndianness != "big" && svEndianness != "little") {
-		ut::DBG_REPORT(L"Unknown \"endianness\" type.");
-		return std::nullopt;
-	}
-
-	return svEndianness == "big";
-}
-
-auto CHexDlgTemplMgr::JSONColors(const rapidjson::Value& value, const char* pszColorName)->std::optional<COLORREF>
-{
-	const auto itClr = value.FindMember(pszColorName);
-	if (itClr == value.MemberEnd() || !itClr->value.IsString()) {
-		return std::nullopt;
-	}
-
-	const std::string_view sv { itClr->value.GetString() };
-	if (sv.empty() || sv.size() != 7 || sv[0] != '#')
-		return std::nullopt;
-
-	const auto R = *stn::StrToUInt32(sv.substr(1, 2), 16);
-	const auto G = *stn::StrToUInt32(sv.substr(3, 2), 16);
-	const auto B = *stn::StrToUInt32(sv.substr(5, 2), 16);
-
-	return RGB(R, G, B);
-}
-
-auto CHexDlgTemplMgr::TreeSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass,
+auto CHexDlgTemplMgr::TreeSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR uIDSubclass,
 	 [[maybe_unused]] DWORD_PTR dwRefData)->LRESULT
 {
 	switch (uMsg) {
@@ -2427,7 +2426,7 @@ auto CHexDlgTemplMgr::TreeSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPAR
 		::SetFocus(hWnd);
 		break;
 	case WM_NCDESTROY:
-		::RemoveWindowSubclass(hWnd, TreeSubclassProc, uIdSubclass);
+		::RemoveWindowSubclass(hWnd, TreeSubclassProc, uIDSubclass);
 		break;
 	default:
 		break;
