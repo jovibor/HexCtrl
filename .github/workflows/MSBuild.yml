@@ -17,8 +17,8 @@ env:
   PATH_TEMPDIR: '"C:\HexCtrlTEMP\"'
 
 jobs:
-  build_x86_x64:
-    name: Build and Test (x86/x64)
+  build_x86_x64_AVX1:
+    name: Build and Test (x86/x64 AVX1)
     runs-on: windows-latest
     strategy:
       matrix:
@@ -33,7 +33,34 @@ jobs:
    
     - name: Build Project HexCtrlDll
       working-directory: ${{env.GITHUB_WORKSPACE}}
-      run: msbuild /m ${{env.PATH_PROJ_HEXCTRLDLL}} /p:Configuration=${{ matrix.build_type }} /p:Platform=${{ matrix.arch }} /p:OutDir=${{env.PATH_TEMPDIR}}
+      run: msbuild /m ${{env.PATH_PROJ_HEXCTRLDLL}} /p:Configuration=${{ matrix.build_type }} /p:Platform=${{ matrix.arch }} /p:OutDir=${{env.PATH_TEMPDIR}} /p:CLExtraFlags=/DHEXCTRL_FORCE_AVX1
+   
+    - name: Build Project HexCtrlTest
+      working-directory: ${{env.GITHUB_WORKSPACE}}
+      run: msbuild /m ${{env.PATH_PROJ_HEXCTRLTEST}} /p:Configuration=${{ matrix.build_type }} /p:Platform=${{ matrix.arch }} /p:OutDir=${{env.PATH_TEMPDIR}} /p:LinkerAdditionalDir=${{env.PATH_TEMPDIR}}
+
+    - name: Run vstest.console.exe
+      working-directory: ${{env.GITHUB_WORKSPACE}}
+      run: |
+        & ${{env.PATH_VSTESTCONSOLE_EXE}} ${{env.PATH_TESTDLL}}
+
+  build_x86_x64_AVX2:
+    name: Build and Test (x86/x64 AVX2)
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        build_type: [Debug]
+        arch: [Win32, x64]
+
+    steps:
+    - uses: actions/checkout@v7
+
+    - name: Add MSBuild to PATH
+      uses: microsoft/setup-msbuild@v3
+   
+    - name: Build Project HexCtrlDll
+      working-directory: ${{env.GITHUB_WORKSPACE}}
+      run: msbuild /m ${{env.PATH_PROJ_HEXCTRLDLL}} /p:Configuration=${{ matrix.build_type }} /p:Platform=${{ matrix.arch }} /p:OutDir=${{env.PATH_TEMPDIR}} /p:CLExtraFlags=/DHEXCTRL_FORCE_AVX2
    
     - name: Build Project HexCtrlTest
       working-directory: ${{env.GITHUB_WORKSPACE}}

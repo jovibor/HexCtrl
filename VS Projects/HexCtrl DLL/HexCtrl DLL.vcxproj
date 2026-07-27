@@ -283,7 +283,7 @@
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers />
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <AdditionalOptions>/utf-8 /DHEXCTRLAPI=__declspec(dllexport) %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>$(CLExtraFlags) /utf-8 /DHEXCTRLAPI=__declspec(dllexport) %(AdditionalOptions)</AdditionalOptions>
       <ScanSourceForModuleDependencies>true</ScanSourceForModuleDependencies>
     </ClCompile>
     <Link>
@@ -314,7 +314,7 @@
       <LanguageStandard>stdcpp20</LanguageStandard>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <AdditionalOptions>/utf-8 /DHEXCTRLAPI=__declspec(dllexport) %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>$(CLExtraFlags) /utf-8 /DHEXCTRLAPI=__declspec(dllexport) %(AdditionalOptions)</AdditionalOptions>
       <ScanSourceForModuleDependencies>true</ScanSourceForModuleDependencies>
     </ClCompile>
     <Link>
@@ -342,7 +342,7 @@
       <OmitFramePointers>
       </OmitFramePointers>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <AdditionalOptions>/utf-8 /DHEXCTRLAPI=__declspec(dllexport) %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>$(CLExtraFlags) /utf-8 /DHEXCTRLAPI=__declspec(dllexport) %(AdditionalOptions)</AdditionalOptions>
       <ScanSourceForModuleDependencies>true</ScanSourceForModuleDependencies>
     </ClCompile>
     <Link>
@@ -371,7 +371,7 @@
       <OmitFramePointers>
       </OmitFramePointers>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <AdditionalOptions>/utf-8 /DHEXCTRLAPI=__declspec(dllexport) %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>$(CLExtraFlags) /utf-8 /DHEXCTRLAPI=__declspec(dllexport) %(AdditionalOptions)</AdditionalOptions>
       <ScanSourceForModuleDependencies>true</ScanSourceForModuleDependencies>
     </ClCompile>
     <Link>
@@ -404,7 +404,7 @@
       <OmitFramePointers>
       </OmitFramePointers>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <AdditionalOptions>/utf-8 /DHEXCTRLAPI=__declspec(dllexport) %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>$(CLExtraFlags) /utf-8 /DHEXCTRLAPI=__declspec(dllexport) %(AdditionalOptions)</AdditionalOptions>
       <ScanSourceForModuleDependencies>true</ScanSourceForModuleDependencies>
     </ClCompile>
     <Link>
@@ -440,7 +440,7 @@
       <OmitFramePointers>
       </OmitFramePointers>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <AdditionalOptions>/utf-8 /DHEXCTRLAPI=__declspec(dllexport) %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>$(CLExtraFlags) /utf-8 /DHEXCTRLAPI=__declspec(dllexport) %(AdditionalOptions)</AdditionalOptions>
       <ScanSourceForModuleDependencies>true</ScanSourceForModuleDependencies>
     </ClCompile>
     <Link>

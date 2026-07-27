@@ -1726,6 +1726,11 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 namespace HEXCTRL::INTERNAL::simd {
 #if defined(_M_IX86) || defined(_M_X64)
 	[[nodiscard]] bool HasAVX2() {
+	#if defined(HEXCTRL_FORCE_AVX1)
+		return false;
+	#elif defined(HEXCTRL_FORCE_AVX2) // ^^^ HEXCTRL_FORCE_AVX1 / vvv HEXCTRL_FORCE_AVX2
+		return true;
+	#else // ^^^ HEXCTRL_FORCE_AVX2 / vvv Runtime check.
 		const static bool fHasAVX2 = []() {
 			int arrInfo[4] { };
 			::__cpuid(arrInfo, 0);
@@ -1736,14 +1741,14 @@ namespace HEXCTRL::INTERNAL::simd {
 			return (arrInfo[1] & 0b00100000) != 0;
 			}();
 		return fHasAVX2;
+	#endif
 	}
 
 	template<typename T> concept TVec128 = (std::is_same_v<T, __m128> || std::is_same_v<T, __m128i> || std::is_same_v<T, __m128d>);
 	template<typename T> concept TVec256 = (std::is_same_v<T, __m256> || std::is_same_v<T, __m256i> || std::is_same_v<T, __m256d>);
 
 	template<ut::TSize1248 TIntegral, TVec128 TVec>	//Bytes swap inside vector types: __m128, __m128i, __m128d.
-	[[nodiscard]] auto __vectorcall ByteSwapVec(const TVec m128T) -> TVec
-	{
+	[[nodiscard]] auto __vectorcall ByteSwapVec(const TVec m128T) -> TVec {
 		if constexpr (std::is_same_v<TVec, __m128i>) { //Integrals.
 			if constexpr (sizeof(TIntegral) == sizeof(std::uint8_t)) { //1 bytes.
 				return m128T;
@@ -1780,8 +1785,7 @@ namespace HEXCTRL::INTERNAL::simd {
 	}
 
 	template<ut::TSize1248 TIntegral, TVec256 TVec>	//Bytes swap inside vector types: __m256, __m256i, __m256d.
-	[[nodiscard]] auto __vectorcall ByteSwapVec(const TVec m256T) -> TVec
-	{
+	[[nodiscard]] auto __vectorcall ByteSwapVec(const TVec m256T) -> TVec {
 		if constexpr (std::is_same_v<TVec, __m256i>) { //Integrals.
 			if constexpr (sizeof(TIntegral) == sizeof(std::uint8_t)) { //1 bytes.
 				return m256T;
