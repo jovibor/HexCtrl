@@ -1861,6 +1861,7 @@ void CHexCtrl::SetOffsetMode(bool fHex)
 	m_fOffsetHex = fHex;
 	RecalcAll();
 	RedrawImpl();
+	ParentNotify(HEXCTRL_MSG_SETOFFSETMODE);
 }
 
 void CHexCtrl::SetPageSize(DWORD dwSize, std::wstring_view wsvName)
