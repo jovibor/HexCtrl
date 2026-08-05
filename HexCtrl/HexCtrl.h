@@ -526,8 +526,9 @@ namespace HEXCTRL {
 	constexpr auto HEXCTRL_MSG_SETDATA { 0x010EU };       //Indicates that the data has changed.
 	constexpr auto HEXCTRL_MSG_SETFONT { 0x010FU };       //Font has changed.
 	constexpr auto HEXCTRL_MSG_SETGROUPSIZE { 0x0110U };  //Data grouping size has changed.
-	constexpr auto HEXCTRL_MSG_SETSELECTION { 0x0111U };  //Selection has been made.
-
+	constexpr auto HEXCTRL_MSG_SETOFFSETMODE { 0x0111U }; //Offset display mode (Hex/Decimal) has changed.
+	constexpr auto HEXCTRL_MSG_SETSELECTION { 0x0112U };  //Selection has been made.
+	
 	/**************************************************************************
 	* Flags for the internal dialogs, used with the SetDlgProperties method.  *
 	**************************************************************************/
