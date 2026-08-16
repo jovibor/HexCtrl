@@ -203,7 +203,7 @@ namespace HEXCTRL::INTERNAL {
 		void SetSelection(SpanHexSpan spnSel, bool fRedraw = true, bool fHighlight = false)override;
 		void SetUnprintableChar(wchar_t wch)override;
 		void SetWindowPos(HWND hWndAfter, int iX, int iY, int iWidth, int iHeight, UINT uFlags)override;
-		void ShowInfoBar(bool fShow)override;
+		void ShowInfoBar(bool fShow, HEXINFOBAR hib = { })override;
 	private:
 		struct KEYBIND; struct UNDO; struct MENUITEM; enum class EClipboard : std::uint8_t;
 		[[nodiscard]] auto BuildDataToDraw(ULONGLONG ullStartLine, int iLines)const -> std::tuple<std::wstring, std::wstring>;
@@ -423,6 +423,7 @@ namespace HEXCTRL::INTERNAL {
 		float m_flDPIScale { 1.F };           //DPI scale factor for window.
 		wchar_t m_wchUnprintable { };         //Replacement char for unprintable characters.
 		wchar_t m_wchDateSepar { };           //Date separator.
+		HEXINFOBAR m_hib;                     //InfoBar data to show.
 		bool m_fCreated { false };            //Is control created or not.
 		bool m_fDataSet { false };            //Is data set or not.
 		bool m_fInfoBar { true };             //Show bottom Info window or not.
@@ -1919,11 +1920,12 @@ void CHexCtrl::SetWindowPos(HWND hWndAfter, int iX, int iY, int iWidth, int iHei
 	m_Wnd.SetWindowPos(hWndAfter, iX, iY, iWidth, iHeight, uFlags);
 }
 
-void CHexCtrl::ShowInfoBar(bool fShow)
+void CHexCtrl::ShowInfoBar(bool fShow, HEXINFOBAR hib)
 {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return; }
 
 	m_fInfoBar = fShow;
+	m_hib = hib;
 	RecalcAll();
 	RedrawImpl();
 }
@@ -2824,17 +2826,21 @@ void CHexCtrl::DrawInfoBar(HDC hDC)const
 	const auto ullCaretPos = GetVirtualOffset(GetCaretPosImpl());
 
 	//^ (caret) - encloses a data name, ` (tilda) - encloses the data itself.
-	auto wstrInfoBar = std::vformat(ut::GetLocale(), IsOffsetAsHexImpl() ? L"^Caret: ^`0x{:X}`|" : L"^Caret: ^`{:L}`|",
-		std::make_wformat_args(ullCaretPos));
+	std::wstring wstrInfoBar;
 
-	if (IsPageVisible()) { //Page/Sector.
+	if (m_hib.fCaret) {
+		wstrInfoBar = std::vformat(ut::GetLocale(), IsOffsetAsHexImpl() ? L"^Caret: ^`0x{:X}`|" : L"^Caret: ^`{:L}`|",
+		std::make_wformat_args(ullCaretPos));
+	}
+
+	if (m_hib.fPage && IsPageVisible()) { //Page/Sector.
 		const auto ullPagePos = GetPagePosImpl();
 		const auto ullPagesCount = GetPagesCountImpl();
 		wstrInfoBar += std::vformat(ut::GetLocale(), IsOffsetAsHexImpl() ? L"^{}: ^`0x{:X}/0x{:X}`|" : L"^{}: ^`{:L}/{:L}`|",
 			std::make_wformat_args(m_wstrPageName, ullPagePos, ullPagesCount));
 	}
 
-	if (HasSelection()) {
+	if (m_hib.fSelection && HasSelection()) {
 		const auto ullSelStart = GetVirtualOffset(m_Selection.GetSelStart());
 		const auto ullSelSize = m_Selection.GetSelSize();
 		if (ullSelSize == 1) { //In case of just one byte selected.
@@ -2848,23 +2854,27 @@ void CHexCtrl::DrawInfoBar(HDC hDC)const
 		}
 	}
 
-	wstrInfoBar += IsMutableImpl() ? L"^RW^|" : L"^RO^|"; //RW/RO mode.
+	if (m_hib.fMutable) {
+		wstrInfoBar += IsMutableImpl() ? L"^RW^|" : L"^RO^|"; //RW/RO mode.
+	}
 
-	constexpr auto uBInKB { 1024U };          //Bytes in KB.
-	constexpr auto uBInMB { uBInKB * 1024U }; //Bytes in MB.
-	constexpr auto uBInGB { uBInMB * 1024U }; //Bytes in GB.
-	const auto ullDataSize = GetDataSizeImpl();
-	if (ullDataSize < uBInKB) {
-		wstrInfoBar += std::format(L"^{}B^|", ullDataSize);
-	}
-	else if (ullDataSize < uBInMB) {
-		wstrInfoBar += std::format(L"^{}KB^|", ullDataSize / uBInKB);
-	}
-	else if (ullDataSize < uBInGB) {
-		wstrInfoBar += std::format(L"^{:.1f}MB^|", ullDataSize / static_cast<float>(uBInMB));
-	}
-	else { //More than or equal to 1 GB/s.
-		wstrInfoBar += std::format(L"^{:.1f}GB^|", ullDataSize / static_cast<float>(uBInGB));
+	if (m_hib.fDataSize) {
+		constexpr auto uBInKB { 1024U };          //Bytes in KB.
+		constexpr auto uBInMB { uBInKB * 1024U }; //Bytes in MB.
+		constexpr auto uBInGB { uBInMB * 1024U }; //Bytes in GB.
+		const auto ullDataSize = GetDataSizeImpl();
+		if (ullDataSize < uBInKB) {
+			wstrInfoBar += std::format(L"^{}B^|", ullDataSize);
+		}
+		else if (ullDataSize < uBInMB) {
+			wstrInfoBar += std::format(L"^{}KB^|", ullDataSize / uBInKB);
+		}
+		else if (ullDataSize < uBInGB) {
+			wstrInfoBar += std::format(L"^{:.1f}MB^|", ullDataSize / static_cast<float>(uBInMB));
+		}
+		else { //More than or equal to 1 GB/s.
+			wstrInfoBar += std::format(L"^{:.1f}GB^|", ullDataSize / static_cast<float>(uBInGB));
+		}
 	}
 
 	struct POLYINFODATA { //InfoBar text, colors, and vertical lines.

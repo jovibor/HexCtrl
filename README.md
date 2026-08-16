@@ -93,6 +93,7 @@
   * [HEXDATA](#hexdata)
   * [HEXDATAINFO](#hexdatainfo)
   * [HEXHITTEST](#hexhittest)
+  * [HEXINFOBAR](#hexinfobar)
   * [HEXMENUINFO](#hexmenuinfo)
   * [HEXMODIFY](#hexmodify)
   * [HEXSPAN](#hexspan)
@@ -806,9 +807,9 @@ Sets **HexCtrl** window position. This method replicates behavior of the [`SetWi
 
 ### [](#)ShowInfoBar
 ```cpp
-void ShowInfoBar(bool fShow);
+void ShowInfoBar(bool fShow, HEXINFOBAR hib = { });
 ```
-Show/hide bottom Info bar.
+Show/hide InfoBar, and set what data to show.
 
 ## [](#)Structures
 Below are listed all **HexCtrl**'s structures.
@@ -963,6 +964,9 @@ struct HEXHITTEST {
     bool      fIsHigh { false }; //Is it High or Low part of the byte.
 };
 ```
+
+### [](#)HEXINFOBAR
+This tiny flag structure is used in the [ShowInfoBar](#showinfobar) method to set what data to show in the InfoBar.
 
 ### [](#)HEXMODIFY
 This struct is used to represent data modification parameters.  

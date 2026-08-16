@@ -419,6 +419,16 @@ namespace HEXCTRL {
 		bool           fBigEndian { false }; //Treat data as the big endian, used if eModifyMode == MODIFY_OPERATION.
 	};
 
+	/********************************************************************************************
+	* HEXINFOBAR - Data to show in the Info Bar.                                                *
+	********************************************************************************************/
+	struct HEXINFOBAR {
+		bool fCaret : 1 {true};
+		bool fPage : 1 {true};
+		bool fSelection : 1 {true};
+		bool fMutable : 1 {true};
+		bool fDataSize : 1 {true};
+	};
 
 	/********************************************************************************************
 	* IHexCtrl: Pure abstract HexCtrl base class.                                               *
@@ -497,7 +507,7 @@ namespace HEXCTRL {
 		virtual void SetSelection(SpanHexSpan spnSel, bool fRedraw = true, bool fHighlight = false) = 0; //Set current selection.
 		virtual void SetUnprintableChar(wchar_t wch) = 0;      //Set unprintable replacement character.
 		virtual void SetWindowPos(HWND hWndAfter, int iX, int iY, int iWidth, int iHeight, UINT uFlags = SWP_NOACTIVATE | SWP_NOZORDER) = 0;
-		virtual void ShowInfoBar(bool fShow) = 0;              //Show/hide bottom Info bar.
+		virtual void ShowInfoBar(bool fShow, HEXINFOBAR hib = { }) = 0; //Show/hide InfoBar, and set what data to show.
 	};
 
 	struct IHexCtrlDeleter { void operator()(IHexCtrl* p)const { p->Delete(); } };
@@ -528,7 +538,7 @@ namespace HEXCTRL {
 	constexpr auto HEXCTRL_MSG_SETGROUPSIZE { 0x0110U };  //Data grouping size has changed.
 	constexpr auto HEXCTRL_MSG_SETOFFSETMODE { 0x0111U }; //Offset display mode (Hex/Decimal) has changed.
 	constexpr auto HEXCTRL_MSG_SETSELECTION { 0x0112U };  //Selection has been made.
-	
+
 	/**************************************************************************
 	* Flags for the internal dialogs, used with the SetDlgProperties method.  *
 	**************************************************************************/
