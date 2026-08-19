@@ -309,6 +309,15 @@ The `OnHexGetColor` method of this interface takes [`HEXCOLORINFO`](#hexcolorinf
                 "name": "MyCustomDataArray",
                 "type": "MyCustomType",
                 "array": 4
+            },
+            {
+                "name": "Jump field",
+                "type": "DWORD",
+                "jump": {
+                    "anchor": "here",
+                    "direction": "forward",
+                    "units": "byte"
+                }
             }
         ]
     },
@@ -362,6 +371,10 @@ The **Fields**'s properties include:
 - **endianness** - [optional, string] - field endianness, "little" or "big". By default all fields are little-endian.
 - **clrBk** - [optional, string] - field background color
 - **clrText** - [optional, string] - field text color
+- **jump** - [optional, object] - field is a pointer to another place in the data. It has inner properties: 
+    - **anchor** [mandatory, string, case-insensitive]: "dataStart", "dataEnd", "here", or absolute offset, e.g. "0xff"
+    - **direction** [optional, string, case-insensitive]: "forward", "backward"
+    - **units** [optional, string, case-insensitive]: "byte", "word", "dword", "qword", or arbitrary number, e.g. "512"
 
 The **endianness**, **clrBk** and **clrText** properties that locate at the same level as the **Fields** property, would mean the default properties for all the **Fields** objects of that level and below the line, unless they explicitly redefined in the field itself.  
 

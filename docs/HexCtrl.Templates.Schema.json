@@ -37,6 +37,22 @@
                         "type": "string",
                         "format": "color"
                     },
+					"jump": {
+						"type": "object",
+   						"properties": {
+                            "anchor": {
+                                "type": "string"
+                            },
+                            "direction": {
+                                "type": "string",
+                                "enum": [ "forward", "backward" ]
+                            },
+                            "units": {
+                                "type": "string"
+                            }
+                        },					
+						"additionalProperties": false
+					},
                     "Fields": {
                         "$ref": "#/$defs/Fields"
                     }

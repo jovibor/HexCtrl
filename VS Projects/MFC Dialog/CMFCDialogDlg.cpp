@@ -27,8 +27,7 @@ BEGIN_MESSAGE_MAP(CMFCDialogDlg, CDialogEx)
 	ON_WM_DROPFILES()
 END_MESSAGE_MAP()
 
-void CMFCDialogDlg::SetStartupFile(LPCWSTR pwszFile)
-{
+void CMFCDialogDlg::SetStartupFile(LPCWSTR pwszFile) {
 	m_wstrStartupFile = pwszFile;
 }
 
@@ -68,18 +67,18 @@ void CMFCDialogDlg::CreateHexPopup()
 	SetIconsForHexCtrl(*m_pHexPopup);
 
 	const auto hWndHex = m_pHexPopup->GetWndHandle(EHexWnd::WND_MAIN);
-	const auto iWidthActual = m_pHexPopup->GetActualWidth() + GetSystemMetrics(SM_CXVSCROLL);
+	const auto iWidthActual = m_pHexPopup->GetActualWidth() + ::GetSystemMetrics(SM_CXVSCROLL);
 	CRect rcHex(0, 0, iWidthActual, iWidthActual); //Square window.
-	AdjustWindowRectEx(rcHex, dwStyle, FALSE, dwExStyle);
+	::AdjustWindowRectEx(rcHex, dwStyle, FALSE, dwExStyle);
 	const auto iWidth = rcHex.Width();
 	const auto iHeight = rcHex.Height() - rcHex.Height() / 3;
-	const auto iPosX = GetSystemMetrics(SM_CXSCREEN) / 2 - iWidth / 2;
-	const auto iPosY = GetSystemMetrics(SM_CYSCREEN) / 2 - iHeight / 2;
+	const auto iPosX = ::GetSystemMetrics(SM_CXSCREEN) / 2 - iWidth / 2;
+	const auto iPosY = ::GetSystemMetrics(SM_CYSCREEN) / 2 - iHeight / 2;
 	m_pHexPopup->SetWindowPos(m_hWnd, iPosX, iPosY, iWidth, iHeight, SWP_NOACTIVATE);
 
-	const auto hIconSmall = static_cast<HICON>(LoadImageW(AfxGetInstanceHandle(),
+	const auto hIconSmall = static_cast<HICON>(::LoadImageW(AfxGetInstanceHandle(),
 		MAKEINTRESOURCEW(IDR_MAINFRAME), IMAGE_ICON, 0, 0, 0));
-	const auto hIconBig = static_cast<HICON>(LoadImageW(AfxGetInstanceHandle(),
+	const auto hIconBig = static_cast<HICON>(::LoadImageW(AfxGetInstanceHandle(),
 		MAKEINTRESOURCEW(IDR_MAINFRAME), IMAGE_ICON, 96, 96, 0));
 	if (hIconSmall != nullptr) {
 		::SendMessageW(hWndHex, WM_SETICON, ICON_SMALL, reinterpret_cast<LPARAM>(hIconSmall));
@@ -132,25 +131,25 @@ void CMFCDialogDlg::FileOpen(std::wstring_view wsvPath, bool fResolveLnk)
 		wstrPath = LnkToPath(wstrPath.data());
 	}
 
-	if (m_hFile = CreateFileW(wstrPath.data(), GENERIC_READ | GENERIC_WRITE,
+	if (m_hFile = ::CreateFileW(wstrPath.data(), GENERIC_READ | GENERIC_WRITE,
 		FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr); m_hFile == INVALID_HANDLE_VALUE) {
 		const std::wstring wstr = L"CreateFileW failed.\r\n" + GetLastErrorWstr();
 		MessageBoxW(wstr.data(), L"Error", MB_ICONERROR);
 		return;
 	}
 
-	if (m_hMapObject = CreateFileMappingW(m_hFile, nullptr, PAGE_READWRITE, 0, 0, nullptr); !m_hMapObject) {
-		CloseHandle(m_hFile);
+	if (m_hMapObject = ::CreateFileMappingW(m_hFile, nullptr, PAGE_READWRITE, 0, 0, nullptr); !m_hMapObject) {
+		::CloseHandle(m_hFile);
 		const std::wstring wstr = L"CreateFileMappingW failed.\r\n" + GetLastErrorWstr();
 		MessageBoxW(wstr.data(), L"Error", MB_ICONERROR);
 		return;
 	}
 
-	if (m_lpBase = MapViewOfFile(m_hMapObject, FILE_MAP_WRITE, 0, 0, 0); !m_lpBase) {
+	if (m_lpBase = ::MapViewOfFile(m_hMapObject, FILE_MAP_WRITE, 0, 0, 0); !m_lpBase) {
 		const std::wstring wstr = L"MapViewOfFileW failed.\r\n" + GetLastErrorWstr();
 		MessageBoxW(wstr.data(), L"Error", MB_ICONERROR);
-		CloseHandle(m_hMapObject);
-		CloseHandle(m_hFile);
+		::CloseHandle(m_hMapObject);
+		::CloseHandle(m_hFile);
 		return;
 	}
 
@@ -180,27 +179,24 @@ void CMFCDialogDlg::FileClose()
 	}
 
 	if (m_lpBase)
-		UnmapViewOfFile(m_lpBase);
+		::UnmapViewOfFile(m_lpBase);
 	if (m_hMapObject)
-		CloseHandle(m_hMapObject);
+		::CloseHandle(m_hMapObject);
 	if (m_hFile)
-		CloseHandle(m_hFile);
+		::CloseHandle(m_hFile);
 
 	m_fFileOpen = false;
 }
 
-bool CMFCDialogDlg::IsFileOpen()const
-{
+bool CMFCDialogDlg::IsFileOpen()const {
 	return m_fFileOpen;
 }
 
-bool CMFCDialogDlg::IsLnk()const
-{
+bool CMFCDialogDlg::IsLnk()const {
 	return m_chkLnk.GetCheck() == BST_CHECKED;
 }
 
-bool CMFCDialogDlg::IsRW()const
-{
+bool CMFCDialogDlg::IsRW()const {
 	return m_chkRW.GetCheck() == BST_CHECKED;
 }
 
@@ -316,25 +312,24 @@ auto CMFCDialogDlg::OnDPIChanged(WPARAM /*wParam*/, LPARAM /*lParam*/)->LRESULT
 void CMFCDialogDlg::OnDropFiles(HDROP hDropInfo)
 {
 	PVOID pOldValue;
-	Wow64DisableWow64FsRedirection(&pOldValue);
+	::Wow64DisableWow64FsRedirection(&pOldValue);
 
-	const auto dwFilesDropped = DragQueryFileW(hDropInfo, 0xFFFFFFFFUL, nullptr, 0);
+	const auto dwFilesDropped = ::DragQueryFileW(hDropInfo, 0xFFFFFFFFUL, nullptr, 0);
 	if (dwFilesDropped > 0) { //If more than one file, we only use the first.
-		const auto dwBuffer = DragQueryFileW(hDropInfo, 0, nullptr, 0);
+		const auto dwBuffer = ::DragQueryFileW(hDropInfo, 0, nullptr, 0);
 		std::wstring wstrFile(dwBuffer, '\0');
-		DragQueryFileW(hDropInfo, 0, wstrFile.data(), dwBuffer + 1);
+		::DragQueryFileW(hDropInfo, 0, wstrFile.data(), dwBuffer + 1);
 		FileOpen(wstrFile, IsLnk());
 	}
-	DragFinish(hDropInfo);
+	::DragFinish(hDropInfo);
 
 	CDialogEx::OnDropFiles(hDropInfo);
-	Wow64RevertWow64FsRedirection(pOldValue);
+	::Wow64RevertWow64FsRedirection(pOldValue);
 }
 
 auto CMFCDialogDlg::OnGetDPIScaledSize(WPARAM /*wParam*/, LPARAM /*lParam*/)->LRESULT
 {
 	EnableDynamicLayout(FALSE);
-
 	return CDialogEx::Default();
 }
 
@@ -374,7 +369,7 @@ BOOL CMFCDialogDlg::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
-	CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
+	::CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
 
 	const auto hIcon = AfxGetApp()->LoadIconW(IDR_MAINFRAME);
 	SetIcon(hIcon, TRUE);  //Set big icon
@@ -384,9 +379,9 @@ BOOL CMFCDialogDlg::OnInitDialog()
 
 	//For Drag'n Drop to work in elevated mode.
 	//https://helgeklein.com/blog/how-to-enable-drag-and-drop-for-an-elevated-mfc-application-on-vistawindows-7/
-	ChangeWindowMessageFilterEx(m_hWnd, WM_DROPFILES, MSGFLT_ALLOW, nullptr);
-	ChangeWindowMessageFilterEx(m_hWnd, WM_COPYDATA, MSGFLT_ALLOW, nullptr);
-	ChangeWindowMessageFilterEx(m_hWnd, 0x0049, MSGFLT_ALLOW, nullptr);
+	::ChangeWindowMessageFilterEx(m_hWnd, WM_DROPFILES, MSGFLT_ALLOW, nullptr);
+	::ChangeWindowMessageFilterEx(m_hWnd, WM_COPYDATA, MSGFLT_ALLOW, nullptr);
+	::ChangeWindowMessageFilterEx(m_hWnd, 0x0049, MSGFLT_ALLOW, nullptr);
 	DragAcceptFiles(TRUE);
 
 	m_pHexDlg->CreateDialogCtrl(IDC_MY_HEX, m_hWnd);
@@ -454,7 +449,7 @@ void CMFCDialogDlg::SetIconsForHexCtrl(IHexCtrl& HexCtrl)
 auto CMFCDialogDlg::GetLastErrorWstr()->std::wstring
 {
 	wchar_t wbuff[MAX_PATH];
-	FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, nullptr,
+	::FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, nullptr,
 		::GetLastError(), 0, wbuff, MAX_PATH, nullptr);
 	return wbuff;
 }
@@ -462,21 +457,23 @@ auto CMFCDialogDlg::GetLastErrorWstr()->std::wstring
 void CMFCDialogDlg::LoadTemplates(IHexCtrl* pHexCtrl)
 {
 	wchar_t buff[MAX_PATH];
-	GetModuleFileNameW(nullptr, buff, MAX_PATH);
+	::GetModuleFileNameW(nullptr, buff, MAX_PATH);
 	std::wstring wstrPath = buff;
 	wstrPath = wstrPath.substr(0, wstrPath.find_last_of(L'\\'));
 	wstrPath += L"\\Templates\\";
-	if (const std::filesystem::path pathTemplates { wstrPath }; std::filesystem::exists(pathTemplates)) {
-		const auto pTempl = pHexCtrl->GetTemplates();
-		for (const auto& entry : std::filesystem::directory_iterator { pathTemplates }) {
-			const std::wstring_view wsvFile = entry.path().c_str();
-			if (const auto uzPos = wsvFile.find_last_of(L'.'); uzPos != std::wstring_view::npos) {
-				if (wsvFile.substr(uzPos + 1) == L"json") { //Check json extension of templates.
-					const auto p = HEXCTRL::IHexTemplates::LoadFromFile(wsvFile.data());
-					pTempl->AddTemplate(*p);
-					//pTempl->LoadTemplate(wsvFile.data());
-				}
-			}
+	const std::filesystem::path pathTemplates { wstrPath };
+	if (!std::filesystem::exists(pathTemplates))
+		return;
+
+	for (const auto& entry : std::filesystem::directory_iterator { pathTemplates }) {
+		const auto& path = entry.path();
+		if (path.filename() == L"HexCtrl.Templates.Schema.json") { //Do not load json schema.
+			continue;
+		}
+
+		if (path.extension() == L".json") { //Load all .json files.
+			const auto p = HEXCTRL::IHexTemplates::LoadFromFile(path.c_str());
+			pHexCtrl->GetTemplates()->AddTemplate(*p);
 		}
 	}
 }

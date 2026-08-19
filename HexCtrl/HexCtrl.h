@@ -216,52 +216,72 @@ namespace HEXCTRL {
 	* Templates related data structures, enums, and aliases                                     *
 	********************************************************************************************/
 	struct HEXTEMPLFIELD;
-	using PtrHexField = std::unique_ptr<HEXTEMPLFIELD>;
-	using VecHexFields = std::vector<PtrHexField>; //Vector for the Fields.
+	using PtrHexTemplField = std::unique_ptr<HEXTEMPLFIELD>;
+	using VecHexTemplFields = std::vector<PtrHexTemplField>; //Vector for the template fields.
 	using PCHEXTEMPLFIELD = const HEXTEMPLFIELD*;
 
-	//Predefined types of a field.
-	enum class EHexFieldType : std::uint8_t {
+	//Predefined types of a template field.
+	enum class EHexTemplFieldType : std::uint8_t {
 		custom_size, type_custom,
 		type_bool, type_int8, type_uint8, type_int16, type_uint16, type_int32,
 		type_uint32, type_int64, type_uint64, type_float, type_double, type_time32,
 		type_time64, type_filetime, type_systemtime, type_guid
 	};
 
-	//Custom type of a field.
-	struct HEXCUSTOMTYPE {
+	//Custom type of a template field.
+	struct HEXTEMPLCT {
 		std::wstring wstrTypeName; //Custom type name.
 		int          iTypeID { };  //Custom type ID.
 	};
-	using VecHexCT = std::vector<HEXCUSTOMTYPE>;
+	using VecHexTemplCT = std::vector<HEXTEMPLCT>;
+
+	//Template jump field anchor enum.
+	enum class EHexTemplJumpAnchor : std::uint8_t {
+		DATA_START, DATA_END, DATA_HERE, OFFSET_CUSTOM
+	};
+
+	//Template jump field direction enum.
+	enum class EHexTemplJumpDirection : std::uint8_t {
+		JUMP_FORWARD, JUMP_BACKWARD
+	};
+
+	//Struct describes jumping properties of the field.
+	struct HEXTEMPLJUMP {
+		std::uint64_t          u64Anchor { };  //Field is used if the eAnchor==OFFSET_CUSTOM.
+		std::uint32_t          u32Units { 1 }; //Default unit size is 1 byte, but can be any size.
+		EHexTemplJumpAnchor    eAnchor { };
+		EHexTemplJumpDirection eDirection { };
+	};
+	using PtrHexTemplJump = std::unique_ptr<HEXTEMPLJUMP>;
 
 	//Template's field main struct.
 	struct HEXTEMPLFIELD {
-		std::wstring    wstrName;             //Field name.
-		std::wstring    wstrDescr;            //Field description.
-		VecHexFields    vecNested;            //Vector for nested fields.
-		HEXCOLOR        stClr;                //Field Bk and Text color.
-		PCHEXTEMPLFIELD pFieldParent { };     //Parent field, in case of nested.
-		int             iOffset { };          //Field offset relative to the Template's beginning.
-		int             iSize { };            //Field size.
-		int             iCustomTypeID { };    //Field custom-type ID, if eType==type_custom.
-		EHexFieldType   eType { };            //Field type.
-		bool            fBigEndian { false }; //Field endianness.
+		std::wstring       wstrName;             //Field name.
+		std::wstring       wstrDescr;            //Field description.
+		VecHexTemplFields  vecNested;            //Vector for nested fields.
+		HEXCOLOR           stClr;                //Field Bk and Text color.
+		PCHEXTEMPLFIELD    pFieldParent { };     //Parent field, in case of nested.
+		PtrHexTemplJump    pJump { };            //Pointer to a jump struct, if it's a "jump" field.
+		int                iOffset { };          //Field offset relative to the Template's beginning.
+		int                iSize { };            //Field size.
+		int                iCustomTypeID { };    //Field custom-type ID, if eType==type_custom.
+		EHexTemplFieldType eType { };            //Field type.
+		bool               fBigEndian { false }; //Field endianness.
 	};
 
 	//Template main struct.
 	struct HEXTEMPLATE {
-		std::wstring wstrName;      //Template name.
-		VecHexFields vecFields;     //Template fields.
-		VecHexCT     vecCustomType; //Custom types of this template.
-		int          iSizeTotal;    //Total size of all Template's fields, assigned internally by framework.
-		int          iTemplateID;   //Template ID, assigned by framework.
+		std::wstring      wstrName;      //Template name.
+		VecHexTemplFields vecFields;     //Template fields.
+		VecHexTemplCT     vecCustomType; //Custom types of this template.
+		int               iSizeTotal;    //Total size of all Template's fields, assigned internally by framework.
+		int               iTemplateID;   //Template ID, assigned by framework.
 	};
 	using PCHEXTEMPLATE = const HEXTEMPLATE*;
 
 	//Applied templates.
 	struct HEXTEMPLAPPLIED {
-		ULONGLONG     ullOffset { };  //Offset, where to apply a template.
+		std::uint64_t ullOffset { };  //Offset, where to apply the template.
 		PCHEXTEMPLATE pTemplate { };  //Template pointer.
 		int           iAppliedID { }; //AppliedID assigned by framework. Any template can be applied many times.
 	};

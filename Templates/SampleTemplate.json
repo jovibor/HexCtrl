@@ -56,8 +56,13 @@
                 "type": "int"
             },
             {
-                "name": "FieldDWORD",
-                "type": "DWORD"
+                "name": "FieldDWORD_Jump_Forward",
+                "type": "DWORD",
+				"jump": { 
+                    "anchor": "here",
+                    "direction": "forward",
+                    "units": "byte"
+                }
             },
             {
                 "name": "FieldLL",
