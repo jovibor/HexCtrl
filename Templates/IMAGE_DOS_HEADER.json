@@ -82,7 +82,12 @@
             },
             {
                 "name": "e_lfanew",
-                "type": "long"
+                "type": "long",
+                "jump": {
+                    "anchor": "dataStart",
+                    "direction": "forward",
+                    "units": "byte"
+                }
             }
         ]
     }

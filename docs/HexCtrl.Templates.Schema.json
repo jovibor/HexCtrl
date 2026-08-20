@@ -18,16 +18,19 @@
                         "type": "string"
                     },
                     "size": {
-                        "type": [ "integer" ],
+                        "type": "integer",
                         "minimum": 1
                     },
                     "array": {
-                        "type": [ "integer" ],
+                        "type": "integer",
                         "minimum": 1
                     },
                     "endianness": {
                         "type": "string",
-                        "enum": [ "little", "big" ]
+                        "enum": [
+                            "little",
+                            "big"
+                        ]
                     },
                     "clrBk": {
                         "type": "string",
@@ -37,29 +40,57 @@
                         "type": "string",
                         "format": "color"
                     },
-					"jump": {
-						"type": "object",
-   						"properties": {
+                    "jump": {
+                        "type": "object",
+                        "properties": {
                             "anchor": {
                                 "type": "string"
                             },
                             "direction": {
                                 "type": "string",
-                                "enum": [ "forward", "backward" ]
+                                "enum": [
+                                    "forward",
+                                    "backward"
+                                ]
                             },
                             "units": {
-                                "type": "string"
+                                "type": [
+                                    "string",
+                                    "integer"
+                                ]
                             }
-                        },					
-						"additionalProperties": false
-					},
+                        },
+                        "additionalProperties": false
+                    },
                     "Fields": {
                         "$ref": "#/$defs/Fields"
                     }
                 },
                 "additionalProperties": false,
-                "required": [ "name" ],
-                "oneOf": [ { "anyOf": [ { "required": [ "type" ] }, { "required": [ "size" ] } ] }, { "required": [ "Fields" ] } ]
+                "required": [
+                    "name"
+                ],
+                "oneOf": [
+                    {
+                        "anyOf": [
+                            {
+                                "required": [
+                                    "type"
+                                ]
+                            },
+                            {
+                                "required": [
+                                    "size"
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "required": [
+                            "Fields"
+                        ]
+                    }
+                ]
             }
         }
     },
@@ -76,7 +107,10 @@
             "properties": {
                 "endianness": {
                     "type": "string",
-                    "enum": [ "little", "big" ]
+                    "enum": [
+                        "little",
+                        "big"
+                    ]
                 },
                 "clrBk": {
                     "type": "string",
@@ -98,11 +132,14 @@
                 "type": "object",
                 "properties": {
                     "TypeName": {
-                        "type":"string"
+                        "type": "string"
                     },
                     "endianness": {
                         "type": "string",
-                        "enum": [ "little", "big" ]
+                        "enum": [
+                            "little",
+                            "big"
+                        ]
                     },
                     "clrBk": {
                         "type": "string",
@@ -121,5 +158,8 @@
         }
     },
     "additionalProperties": false,
-    "required": [ "TemplateName", "Data" ]
+    "required": [
+        "TemplateName",
+        "Data"
+    ]
 }

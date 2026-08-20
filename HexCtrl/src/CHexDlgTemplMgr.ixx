@@ -121,6 +121,7 @@ namespace HEXCTRL::INTERNAL {
 		void TMPLRemoveApplied(int iAppliedID);
 		[[nodiscard]] auto TreeItemFromListItem(int iListItem)const -> HTREEITEM;
 		void UpdateDateTimeFormat();
+		void UpdateEditOffsetToCurrHexCaret();
 		void UpdateStaticText();
 		auto WMActivate(const MSG& msg) -> INT_PTR;
 		auto WMCommand(const MSG& msg) -> INT_PTR;
@@ -1641,6 +1642,13 @@ void CHexDlgTemplMgr::UpdateDateTimeFormat()
 	m_ListEx.RedrawWindow();
 }
 
+void CHexDlgTemplMgr::UpdateEditOffsetToCurrHexCaret() {
+	if (const auto pHex = GetHexCtrl(); pHex != nullptr && pHex->IsCreated() && pHex->IsDataSet()) {
+		const auto wstr = std::format(L"0x{:X}", GetHexCtrl()->GetCaretPos());
+		m_WndEditOffset.SetWndText(wstr);
+	}
+}
+
 void CHexDlgTemplMgr::UpdateStaticText()
 {
 	std::wstring wstrOffset;
@@ -1866,6 +1874,7 @@ auto CHexDlgTemplMgr::WMInitDialog(const MSG& msg)->INT_PTR
 
 	CreateArrows();
 	UpdateDateTimeFormat();
+	UpdateEditOffsetToCurrHexCaret();
 
 	return TRUE;
 }
@@ -1900,6 +1909,7 @@ auto CHexDlgTemplMgr::WMMouseActivate([[maybe_unused]] const MSG& msg)->INT_PTR
 {
 	if (const auto pHex = GetHexCtrl(); pHex != nullptr && pHex->IsCreated() && pHex->IsDataSet()) {
 		UpdateDateTimeFormat();
+		UpdateEditOffsetToCurrHexCaret();
 	}
 
 	return MA_ACTIVATE;
@@ -2071,13 +2081,21 @@ void CHexDlgTemplMgr::WMNotifyListGetDispInfo(NMHDR* pNMHDR)
 		}
 		break;
 	case COL_NAME:
+	{
+		//List internal buffer overrun check.
 		if (pField->pJump == nullptr) {
-			pItem->pszText = pField->wstrName.data();
+			const std::wstring_view wsv = pField->wstrName.size() < pItem->cchTextMax ? pField->wstrName :
+				std::wstring_view { pField->wstrName.data(), static_cast<std::size_t>(pItem->cchTextMax - 1) };
+			*std::format_to(pItem->pszText, L"{}", wsv) = L'\0';
 		}
 		else {
-			*std::format_to(pItem->pszText, L"<link=\"\">{}</link>", pField->wstrName) = L'\0';
+			const auto wstr = std::format(L"<link=\"\">{}</link>", pField->wstrName);
+			const std::wstring_view wsv = wstr.size() < pItem->cchTextMax ? wstr :
+				std::wstring_view { wstr.data(), static_cast<std::size_t>(pItem->cchTextMax - 1) };
+			*std::format_to(pItem->pszText, L"{}", wsv) = L'\0';
 		}
-		break;
+	}
+	break;
 	case COL_OFFSET:
 		*std::vformat_to(pItem->pszText, wsvFmt, std::make_wformat_args(pField->iOffset)) = L'\0';
 		break;
@@ -2194,8 +2212,13 @@ void CHexDlgTemplMgr::WMNotifyListGetDispInfo(NMHDR* pNMHDR)
 			std::make_wformat_args()) = L'\0';
 		break;
 	case COL_DESCR:
-		*std::format_to(pItem->pszText, L"{}", pField->wstrDescr) = L'\0';
-		break;
+	{
+		//List internal buffer overrun check.
+		std::wstring_view wsv = pField->wstrDescr.size() < pItem->cchTextMax ? pField->wstrDescr :
+			std::wstring_view { pField->wstrDescr.data(), static_cast<std::size_t>(pItem->cchTextMax - 1) };
+		*std::format_to(pItem->pszText, L"{}", wsv) = L'\0';
+	}
+	break;
 	case COL_COLORS:
 		*std::format_to(pItem->pszText, L"#Text") = L'\0';
 		break;
@@ -2343,6 +2366,7 @@ void CHexDlgTemplMgr::WMNotifyListLinkClick(NMHDR* pNMHDR) {
 	if (u64OffsetToJump < u64HexDataSize) {
 		pHex->GoToOffset(u64OffsetToJump);
 		pHex->SetCaretPos(u64OffsetToJump, true, true);
+		UpdateEditOffsetToCurrHexCaret();
 	}
 }
 

@@ -184,7 +184,12 @@
                 },
                 {
                     "name": "PointerToSymbolTable",
-                    "type": "DWORD"
+                    "type": "DWORD",
+                    "jump": {
+                        "anchor": "dataStart",
+                        "direction": "forward",
+                        "units": "byte"
+                    }
                 },
                 {
                     "name": "NumberOfSymbols",
@@ -192,7 +197,12 @@
                 },
                 {
                     "name": "SizeOfOptionalHeader",
-                    "type": "WORD"
+                    "type": "WORD",
+                    "jump": {
+                        "anchor": "here",
+                        "direction": "forward",
+                        "units": "byte"
+                    }
                 },
                 {
                     "name": "Characteristics",

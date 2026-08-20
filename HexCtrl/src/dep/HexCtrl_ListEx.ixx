@@ -13,6 +13,7 @@ module;
 #include <chrono>
 #include <format>
 #include <limits>
+#include <memory>
 #include <optional>
 #include <random>
 #include <string>
@@ -1318,7 +1319,7 @@ namespace HEXCTRL::LISTEX {
 		bool SetItem(const LVITEMW* pItem)const;
 		void SetItemCountEx(int iCount, DWORD dwFlags = LVSICF_NOINVALIDATEALL)const;
 		bool SetItemData(int iItem, DWORD_PTR dwData)const;
-		bool SetItemState(int iItem, LVITEMW* pItem)const;
+		bool SetItemState(int iItem, const LVITEMW* pItem)const;
 		bool SetItemState(int iItem, UINT uState, UINT uStateMask)const;
 		void SetItemText(int iItem, int iSubItem, LPCWSTR pwszText);
 		void SetRedraw(bool fRedraw)const;
@@ -1376,24 +1377,26 @@ namespace HEXCTRL::LISTEX {
 		static constexpr ULONG_PTR m_uIDTTTLinkActivate { 0x03 }; //Link tool-tip activate-timer ID.
 		static constexpr ULONG_PTR m_uIDTTTLinkCheck { 0x04 };    //Link tool-tip check-timer ID.
 		static constexpr auto m_uIDEditInPlace { 0x01U };         //In place edit-box ID.
+		static constexpr auto m_u32CacheSize { 1024UL };          //Internal buffer size in wchar_t, for the GetItemText.
 		struct COLUMNDATA {
 			int iIndex { };
 			EListExSortMode eSortMode { };
 		};
 		CListExHdr m_Hdr;                  //ListEx header control.
-		HWND m_hWnd { };                   //Main window.
-		HFONT m_hFntList { };              //Default list font.
-		HFONT m_hFntListUnderline { };     //Underlined list font, for links.
-		HPEN m_hPenGrid { };               //Pen for list lines between cells.
-		HWND m_hWndTTCell { };             //Tooltip window for cells.
-		HWND m_hWndTTLink { };             //Tooltip window for links.
-		HWND m_hWndTTRow { };              //Tooltip window for rows, in the m_fHighLatency mode.
-		HWND m_hWndEditInPlace { };        //Edit box for in-place cells editing.
-		GDIUT::CRect m_rcLinkCurr;         //Current link's rect;
 		LISTEXCOLORS m_stColors { };
 		std::vector<COLUMNDATA> m_vecColumnData; //Column data.
 		std::wstring m_wstrTTText;         //Tool-tip current text.
 		std::wstring m_wstrTTCaption;      //Tool-tip current caption.
+		std::unique_ptr<wchar_t[]> m_uptrCache; //Internal cache for the GetItemText.
+		HWND m_hWnd { };                   //Main window.
+		HWND m_hWndTTCell { };             //Tooltip window for cells.
+		HWND m_hWndTTLink { };             //Tooltip window for links.
+		HWND m_hWndTTRow { };              //Tooltip window for rows, in the m_fHighLatency mode.
+		HWND m_hWndEditInPlace { };        //Edit box for in-place cells editing.
+		HFONT m_hFntList { };              //Default list font.
+		HFONT m_hFntListUnderline { };     //Underlined list font, for links.
+		HPEN m_hPenGrid { };               //Pen for list lines between cells.
+		GDIUT::CRect m_rcLinkCurr;         //Current link's rect;
 		std::chrono::steady_clock::time_point m_tmTT; //Start time of the tooltip.
 		LVHITTESTINFO m_htiCurrCell { };   //Cells hit struct for tool-tip.
 		LVHITTESTINFO m_htiCurrLink { };   //Links hit struct for tool-tip.
@@ -1560,7 +1563,7 @@ bool CListEx::Create(const LISTEXCREATE& lcs)
 		std::lround(dwHdrHeightDef + FontScaledPixelsFromPoints(5 * GetDPIScale())); //Header is a bit higher than list rows.
 
 	m_hPenGrid = ::CreatePen(PS_SOLID, m_dwGridWidth, m_stColors.clrListGrid);
-
+	m_uptrCache.reset(new wchar_t[m_u32CacheSize]);
 	m_fCreated = true;
 
 	GetHeaderCtrl().SetColor(m_stColors);
@@ -1864,13 +1867,12 @@ auto CListEx::GetItemText(int iItem, int iSubItem)const->std::wstring
 
 	//Temporary buffer for string data to receive.
 	//In virtual mode, when responding to the LVN_GETDISPINFO notification message, client code can copy
-	//data to the .pszText pointed buffer, or can set the .pszText pointer to client own data. 
-	//But list control will copy that data to the provided original buffer anyway.
-	wchar_t buff[256];
-	const LVITEMW lvi { .iSubItem { iSubItem }, .pszText { buff }, .cchTextMax { 256 } };
+	//data to the .pszText pointed buffer, or can set the .pszText pointer to client's own data. 
+	//But the list control will copy that data to the provided original buffer anyway.
+	const LVITEMW lvi { .iSubItem { iSubItem }, .pszText { m_uptrCache.get() }, .cchTextMax { m_u32CacheSize } };
 	::SendMessageW(m_hWnd, LVM_GETITEMTEXTW, static_cast<WPARAM>(iItem), reinterpret_cast<LPARAM>(&lvi));
 
-	return buff;
+	return m_uptrCache.get();
 }
 
 int CListEx::GetNextItem(int iItem, int iFlags)const
@@ -2244,7 +2246,7 @@ bool CListEx::SetItemData(int iItem, DWORD_PTR dwData)const
 	return SetItem(&lvi);
 }
 
-bool CListEx::SetItemState(int iItem, LVITEMW* pItem)const
+bool CListEx::SetItemState(int iItem, const LVITEMW* pItem)const
 {
 	assert(IsCreated());
 	if (!IsCreated()) { return false; }
@@ -2257,7 +2259,7 @@ bool CListEx::SetItemState(int iItem, UINT uState, UINT uStateMask)const
 	assert(IsCreated());
 	if (!IsCreated()) { return false; }
 
-	LVITEMW lvi { .state { uState }, .stateMask { uStateMask } };
+	const LVITEMW lvi { .state { uState }, .stateMask { uStateMask } };
 	return SetItemState(iItem, &lvi);
 }
 
@@ -2266,7 +2268,7 @@ void CListEx::SetItemText(int iItem, int iSubItem, LPCWSTR pwszText)
 	assert(IsCreated());
 	if (!IsCreated()) { return; }
 
-	LVITEMW lvi { .iSubItem { iSubItem }, .pszText { const_cast<LPWSTR>(pwszText) } };
+	const LVITEMW lvi { .iSubItem { iSubItem }, .pszText { const_cast<LPWSTR>(pwszText) } };
 	::SendMessageW(m_hWnd, LVM_SETITEMTEXTW, iItem, reinterpret_cast<LPARAM>(&lvi));
 }
 
@@ -2423,12 +2425,10 @@ bool CListEx::EditInPlaceShow(bool fShow)
 	::SetWindowSubclass(m_hWndEditInPlace, EditSubclassProc, reinterpret_cast<UINT_PTR>(this), 0);
 
 	const auto uCtrlId = static_cast<UINT>(GetDlgCtrlID());
-	const auto wstrText = GetItemText(m_htiEdit.iItem, m_htiEdit.iSubItem);
-	wchar_t buff[256];
-	buff[wstrText.copy(buff, 255)] = 0; //Null terminating the buffer after copy not more than 255 wchars.
+	auto wstrText = GetItemText(m_htiEdit.iItem, m_htiEdit.iSubItem);
 	const LISTEXDATAINFO ldi { .hdr { .hwndFrom { m_hWnd }, .idFrom { uCtrlId }, .code { LISTEX_MSG_EDITBEGIN } },
 		.iItem { m_htiEdit.iItem }, .iSubItem { m_htiEdit.iSubItem }, .hWndEdit { m_hWndEditInPlace },
-		.pwszData { buff } };
+		.pwszData { wstrText.data() } };
 	::SendMessageW(::GetParent(m_hWnd), WM_NOTIFY, static_cast<WPARAM>(uCtrlId), reinterpret_cast<LPARAM>(&ldi));
 	if (!ldi.fAllowEdit) { //User explicitly declined displaying of the edit-box.
 		::DestroyWindow(m_hWndEditInPlace);
@@ -2520,17 +2520,17 @@ bool CListEx::IsWindow()const
 
 void CListEx::OnEditInPlaceEnterPressed()
 {
-	//Notifying parent about cell's text changing.
-	wchar_t buff[256];
-	::GetWindowTextW(m_hWndEditInPlace, buff, 256);
+	//Notifying parent window about cell's text changing.
+	std::unique_ptr<wchar_t[]> uptrCache { new wchar_t[m_u32CacheSize] }; //Cache for the text.
+	::GetWindowTextW(m_hWndEditInPlace, uptrCache.get(), m_u32CacheSize);
 	const auto uCtrlId = static_cast<UINT>(GetDlgCtrlID());
 	const LISTEXDATAINFO ldi { .hdr { .hwndFrom { m_hWnd }, .idFrom { uCtrlId }, .code { LISTEX_MSG_SETDATA } },
 		.iItem { m_htiEdit.iItem }, .iSubItem { m_htiEdit.iSubItem }, .hWndEdit { m_hWndEditInPlace },
-		.pwszData { buff } };
+		.pwszData { uptrCache.get() } };
 	::SendMessageW(::GetParent(m_hWnd), WM_NOTIFY, static_cast<WPARAM>(uCtrlId), reinterpret_cast<LPARAM>(&ldi));
 
 	if (!m_fVirtual) { //If it's not Virtual mode we set new text to a cell. 
-		SetItemText(m_htiEdit.iItem, m_htiEdit.iSubItem, buff);
+		SetItemText(m_htiEdit.iItem, m_htiEdit.iSubItem, uptrCache.get());
 	}
 
 	OnEditInPlaceKillFocus();
