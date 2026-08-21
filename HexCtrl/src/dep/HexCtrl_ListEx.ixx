@@ -1865,9 +1865,8 @@ auto CListEx::GetItemText(int iItem, int iSubItem)const->std::wstring
 	assert(IsCreated());
 	if (!IsCreated()) { return { }; }
 
-	//Temporary buffer for string data to receive.
-	//In virtual mode, when responding to the LVN_GETDISPINFO notification message, client code can copy
-	//data to the .pszText pointed buffer, or can set the .pszText pointer to client's own data. 
+	//In the Virtual mode, when responding to the LVN_GETDISPINFO notification message, client code can copy
+	//data to the .pszText pointed buffer, or can set the .pszText pointer to client's own data.
 	//But the list control will copy that data to the provided original buffer anyway.
 	const LVITEMW lvi { .iSubItem { iSubItem }, .pszText { m_uptrCache.get() }, .cchTextMax { m_u32CacheSize } };
 	::SendMessageW(m_hWnd, LVM_GETITEMTEXTW, static_cast<WPARAM>(iItem), reinterpret_cast<LPARAM>(&lvi));

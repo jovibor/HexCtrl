@@ -58,7 +58,7 @@
             {
                 "name": "FieldDWORD_Jump_Forward",
                 "type": "DWORD",
-				"jump": { 
+                "jump": {
                     "anchor": "here",
                     "direction": "forward",
                     "units": "byte"
@@ -114,7 +114,10 @@
                     },
                     {
                         "name": "Nested2",
-                        "size": 2
+                        "size": 2,
+                        "jump": {
+                            "anchor": "fieldFirst"
+                        }
                     }
                 ]
             },

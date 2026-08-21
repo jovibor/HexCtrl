@@ -372,7 +372,7 @@ The **Fields**'s properties include:
 - **clrBk** - [optional, string] - field background color
 - **clrText** - [optional, string] - field text color
 - **jump** - [optional, object] - field is a pointer to another place in the data. It has inner properties: 
-    - **anchor** [mandatory, string, case-insensitive]: "dataStart", "dataEnd", "here", or absolute offset, e.g. "0xff"
+    - **anchor** [mandatory, string, case-insensitive]: "dataStart", "dataEnd", "fieldThis" (or "here"), "fieldFirst" (or "structStart"), or absolute offset, e.g. "0xff"
     - **direction** [optional, string, case-insensitive]: "forward", "backward"
     - **units** [optional, string, case-insensitive]: "byte", "word", "dword", "qword", or arbitrary number, e.g. "512"
 

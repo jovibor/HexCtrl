@@ -555,7 +555,8 @@ bool CHexDlgTemplMgr::JSONParseFields(const IterJSONMember itFieldsArray, VecHex
 		{ type_systemtime, static_cast<int>(sizeof(SYSTEMTIME)) }, { type_guid, static_cast<int>(sizeof(GUID)) }
 	};
 
-	const auto lmbTotalSize = [](const VecHexTemplFields& vecFields)->int { //Counts total size of all Fields in VecHexTemplFields, recursively.
+	const auto lmbTotalSize = [](const VecHexTemplFields& vecFields)->int {
+		//Counts the total size of all fields in the VecHexTemplFields, recursively.
 		const auto _lmbTotalSize = [](const auto& lmbSelf, const VecHexTemplFields& vecFields)->int {
 			return std::reduce(vecFields.begin(), vecFields.end(), 0,
 				[&lmbSelf](auto ullTotal, const std::unique_ptr<HEXTEMPLFIELD>& pField) {
@@ -643,8 +644,11 @@ bool CHexDlgTemplMgr::JSONParseFields(const IterJSONMember itFieldsArray, VecHex
 						else if (IsEqualNoCase(svAnchor, "dataend")) {
 							uptrJump->eAnchor = DATA_END;
 						}
-						else if (IsEqualNoCase(svAnchor, "here")) {
-							uptrJump->eAnchor = DATA_HERE;
+						else if (IsEqualNoCase(svAnchor, "fieldthis") || IsEqualNoCase(svAnchor, "here")) {
+							uptrJump->eAnchor = FIELD_THIS;
+						}
+						else if (IsEqualNoCase(svAnchor, "fieldfirst") || IsEqualNoCase(svAnchor, "structstart")) {
+							uptrJump->eAnchor = FIELD_FIRST;
 						}
 						else {
 							uptrJump->eAnchor = OFFSET_CUSTOM;
@@ -2339,7 +2343,7 @@ void CHexDlgTemplMgr::WMNotifyListLinkClick(NMHDR* pNMHDR) {
 			}
 		}
 		break;
-	case DATA_HERE:
+	case FIELD_THIS:
 		if (jump->eDirection == JUMP_FORWARD) {
 			u64OffsetToJump = u64FieldOffset + u64FieldData;
 		}
@@ -2349,6 +2353,19 @@ void CHexDlgTemplMgr::WMNotifyListLinkClick(NMHDR* pNMHDR) {
 			}
 		}
 		break;
+	case FIELD_FIRST:
+	{
+		const auto u64FirstFieldOffset = GetSelectedApplied()->ullOffset + (*m_pVecFieldsCurr)[0]->iOffset;
+		if (jump->eDirection == JUMP_FORWARD) {
+			u64OffsetToJump = u64FirstFieldOffset + u64FieldData;
+		}
+		else {
+			if (u64FirstFieldOffset >= u64FieldData) {
+				u64OffsetToJump = u64FirstFieldOffset - u64FieldData;
+			}
+		}
+	}
+	break;
 	case OFFSET_CUSTOM:
 		if (jump->eDirection == JUMP_FORWARD) {
 			u64OffsetToJump = jump->u64Anchor + u64FieldData;

@@ -237,7 +237,7 @@ namespace HEXCTRL {
 
 	//Template jump field anchor enum.
 	enum class EHexTemplJumpAnchor : std::uint8_t {
-		DATA_START, DATA_END, DATA_HERE, OFFSET_CUSTOM
+		DATA_START, DATA_END, FIELD_THIS, FIELD_FIRST, OFFSET_CUSTOM
 	};
 
 	//Template jump field direction enum.

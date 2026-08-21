@@ -763,8 +763,12 @@ void CHexDlgBkmMgr::WMNotifyListGetDispInfo(NMHDR* pNMHDR)
 		*std::vformat_to(pItem->pszText, IsShowAsHex() ? L"0x{:X}" : L"{}", std::make_wformat_args(ullSize)) = L'\0';
 		break;
 	case 3: //Description.
-		pItem->pszText = pBkm->wstrDesc.data();
-		break;
+	{
+		const std::wstring_view wsv = pBkm->wstrDesc.size() < pItem->cchTextMax ? pBkm->wstrDesc :
+			std::wstring_view { pBkm->wstrDesc.data(), static_cast<std::size_t>(pItem->cchTextMax - 1) };
+		*std::format_to(pItem->pszText, L"{}", wsv) = L'\0';
+	}
+	break;
 	default:
 		break;
 	}
