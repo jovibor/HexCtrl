@@ -1340,6 +1340,7 @@ namespace HEXCTRL::LISTEX {
 		[[nodiscard]] auto GetCustomColor(int iItem, int iSubItem)const -> std::optional<LISTEXCOLOR>;
 		[[nodiscard]] auto GetDPIScale()const -> float;
 		[[nodiscard]] int GetIcon(int iItem, int iSubItem)const; //Does cell have an icon associated.
+		[[nodiscard]] auto GetItemTextImpl(int iItem, int iSubItem)const -> std::wstring_view;
 		[[nodiscard]] auto GetTooltip(int iItem, int iSubItem)const -> std::optional<LISTEXTTDATA>;
 		[[nodiscard]] bool IsWindow()const;
 		void OnEditInPlaceEnterPressed();
@@ -1865,13 +1866,7 @@ auto CListEx::GetItemText(int iItem, int iSubItem)const->std::wstring
 	assert(IsCreated());
 	if (!IsCreated()) { return { }; }
 
-	//In the Virtual mode, when responding to the LVN_GETDISPINFO notification message, client code can copy
-	//data to the .pszText pointed buffer, or can set the .pszText pointer to client's own data.
-	//But the list control will copy that data to the provided original buffer anyway.
-	const LVITEMW lvi { .iSubItem { iSubItem }, .pszText { m_uptrCache.get() }, .cchTextMax { m_u32CacheSize } };
-	::SendMessageW(m_hWnd, LVM_GETITEMTEXTW, static_cast<WPARAM>(iItem), reinterpret_cast<LPARAM>(&lvi));
-
-	return m_uptrCache.get();
+	return std::wstring { GetItemTextImpl(iItem, iSubItem) };
 }
 
 int CListEx::GetNextItem(int iItem, int iFlags)const
@@ -2494,6 +2489,16 @@ int CListEx::GetIcon(int iItem, int iSubItem)const
 	return lii.iIconIndex; //By default it's -1, meaning no icon.
 }
 
+auto CListEx::GetItemTextImpl(int iItem, int iSubItem)const->std::wstring_view {
+	//In the Virtual mode, when responding to the LVN_GETDISPINFO notification message, client code can copy
+	//data to the .pszText pointed buffer, or can set the .pszText pointer to client's own data.
+	//But the list control will copy that data to the provided original buffer anyway.
+	const LVITEMW lvi { .iSubItem { iSubItem }, .pszText { m_uptrCache.get() }, .cchTextMax { m_u32CacheSize } };
+	::SendMessageW(m_hWnd, LVM_GETITEMTEXTW, static_cast<WPARAM>(iItem), reinterpret_cast<LPARAM>(&lvi));
+
+	return m_uptrCache.get();
+}
+
 auto CListEx::GetTooltip(int iItem, int iSubItem)const->std::optional<LISTEXTTDATA>
 {
 	if (iItem < 0 || iSubItem < 0) {
@@ -2558,8 +2563,7 @@ void CListEx::OnNotifyEditInPlace(NMHDR* pNMHDR)
 auto CListEx::ParseItemData(int iItem, int iSubitem)->std::vector<CListEx::ITEMDATA>
 {
 	constexpr auto iIndentRc { 4 };
-	const auto wstrText = GetItemText(iItem, iSubitem);
-	const std::wstring_view wsvText = wstrText;
+	const auto wsvText = GetItemTextImpl(iItem, iSubitem);
 	GDIUT::CRect rcTextOrig = GetSubItemRect(iItem, iSubitem, LVIR_LABEL); //Original rect of the subitem's text.
 	if (iSubitem > 0) { //Not needed for item itself (not subitem).
 		rcTextOrig.left += iIndentRc;

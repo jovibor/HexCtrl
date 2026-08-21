@@ -628,68 +628,66 @@ bool CHexDlgTemplMgr::JSONParseFields(const IterJSONMember itFieldsArray, VecHex
 				iArraySize = itArray->value.GetInt();
 			}
 
-			if (iArraySize == 0) { //The "jump" property only allowed inside non-array fields.
-				if (const auto itJump = pField->FindMember("jump");
-					itJump != pField->MemberEnd() && itJump->value.IsObject()) {
-					const auto pObjJump = &itJump->value;
+			if (const auto itJump = pField->FindMember("jump");
+				itJump != pField->MemberEnd() && itJump->value.IsObject()) {
+				const auto pObjJump = &itJump->value;
 
-					if (const auto itAnchor = pObjJump->FindMember("anchor"); //The "anchor" is mandatory field.
-						itAnchor != pObjJump->MemberEnd() && itAnchor->value.IsString()) {
-						auto uptrJump = std::make_unique<HEXTEMPLJUMP>();
-						using enum EHexTemplJumpAnchor;
-						const std::string_view svAnchor { itAnchor->value.GetString() };
-						if (IsEqualNoCase(svAnchor, "datastart")) {
-							uptrJump->eAnchor = DATA_START;
-						}
-						else if (IsEqualNoCase(svAnchor, "dataend")) {
-							uptrJump->eAnchor = DATA_END;
-						}
-						else if (IsEqualNoCase(svAnchor, "fieldthis") || IsEqualNoCase(svAnchor, "here")) {
-							uptrJump->eAnchor = FIELD_THIS;
-						}
-						else if (IsEqualNoCase(svAnchor, "fieldfirst") || IsEqualNoCase(svAnchor, "structstart")) {
-							uptrJump->eAnchor = FIELD_FIRST;
+				if (const auto itAnchor = pObjJump->FindMember("anchor"); //The "anchor" is mandatory field.
+					itAnchor != pObjJump->MemberEnd() && itAnchor->value.IsString()) {
+					auto uptrJump = std::make_unique<HEXTEMPLJUMP>();
+					using enum EHexTemplJumpAnchor;
+					const std::string_view svAnchor { itAnchor->value.GetString() };
+					if (IsEqualNoCase(svAnchor, "datastart")) {
+						uptrJump->eAnchor = DATA_START;
+					}
+					else if (IsEqualNoCase(svAnchor, "dataend")) {
+						uptrJump->eAnchor = DATA_END;
+					}
+					else if (IsEqualNoCase(svAnchor, "fieldthis") || IsEqualNoCase(svAnchor, "here")) {
+						uptrJump->eAnchor = FIELD_THIS;
+					}
+					else if (IsEqualNoCase(svAnchor, "fieldfirst") || IsEqualNoCase(svAnchor, "structstart")) {
+						uptrJump->eAnchor = FIELD_FIRST;
+					}
+					else {
+						uptrJump->eAnchor = OFFSET_CUSTOM;
+						uptrJump->u64Anchor = stn::StrToUInt64(svAnchor).value_or(0ULL);
+					}
+
+					if (const auto itDirection = pObjJump->FindMember("direction");
+						itDirection != pObjJump->MemberEnd() && itDirection->value.IsString()) {
+						using enum EHexTemplJumpDirection;
+						const std::string_view svDirection { itDirection->value.GetString() };
+						if (IsEqualNoCase(svDirection, "backward")) {
+							uptrJump->eDirection = JUMP_BACKWARD;
 						}
 						else {
-							uptrJump->eAnchor = OFFSET_CUSTOM;
-							uptrJump->u64Anchor = stn::StrToUInt64(svAnchor).value_or(0ULL);
+							uptrJump->eDirection = JUMP_FORWARD;
 						}
-
-						if (const auto itDirection = pObjJump->FindMember("direction");
-							itDirection != pObjJump->MemberEnd() && itDirection->value.IsString()) {
-							using enum EHexTemplJumpDirection;
-							const std::string_view svDirection { itDirection->value.GetString() };
-							if (IsEqualNoCase(svDirection, "backward")) {
-								uptrJump->eDirection = JUMP_BACKWARD;
-							}
-							else {
-								uptrJump->eDirection = JUMP_FORWARD;
-							}
-						}
-
-						if (const auto itUnits = pObjJump->FindMember("units");
-							itUnits != pObjJump->MemberEnd() && itUnits->value.IsString()) {
-							const std::string_view svUnits { itUnits->value.GetString() };
-
-							if (IsEqualNoCase(svUnits, "byte")) {
-								uptrJump->u32Units = 1;
-							}
-							else if (IsEqualNoCase(svUnits, "word")) {
-								uptrJump->u32Units = 2;
-							}
-							else if (IsEqualNoCase(svUnits, "dword")) {
-								uptrJump->u32Units = 4;
-							}
-							else if (IsEqualNoCase(svUnits, "qword")) {
-								uptrJump->u32Units = 8;
-							}
-							else {
-								uptrJump->u32Units = stn::StrToUInt32(svUnits).value_or(1UL);
-							}
-						}
-
-						pNewField->pJump = std::move(uptrJump);
 					}
+
+					if (const auto itUnits = pObjJump->FindMember("units");
+						itUnits != pObjJump->MemberEnd() && itUnits->value.IsString()) {
+						const std::string_view svUnits { itUnits->value.GetString() };
+
+						if (IsEqualNoCase(svUnits, "byte")) {
+							uptrJump->u32Units = 1;
+						}
+						else if (IsEqualNoCase(svUnits, "word")) {
+							uptrJump->u32Units = 2;
+						}
+						else if (IsEqualNoCase(svUnits, "dword")) {
+							uptrJump->u32Units = 4;
+						}
+						else if (IsEqualNoCase(svUnits, "qword")) {
+							uptrJump->u32Units = 8;
+						}
+						else {
+							uptrJump->u32Units = stn::StrToUInt32(svUnits).value_or(1UL);
+						}
+					}
+
+					pNewField->pJump = std::move(uptrJump);
 				}
 			}
 
@@ -757,7 +755,8 @@ bool CHexDlgTemplMgr::JSONParseFields(const IterJSONMember itFieldsArray, VecHex
 							pFieldArray->iOffset = iOffsetCustomType;
 							pFieldArray->stClr = pNewField->stClr;
 							pFieldArray->pFieldParent = pNewField.get();
-							pFieldArray->pJump = nullptr; //The "jump" property only allowed inside non-array fields.
+							pFieldArray->pJump = pNewField->pJump != nullptr ?
+								std::make_unique<HEXTEMPLJUMP>(*pNewField->pJump) : nullptr;
 							pFieldArray->eType = pNewField->eType;
 							pFieldArray->iCustomTypeID = pNewField->iCustomTypeID;
 							pFieldArray->fBigEndian = pNewField->fBigEndian;
@@ -802,7 +801,8 @@ bool CHexDlgTemplMgr::JSONParseFields(const IterJSONMember itFieldsArray, VecHex
 					pFieldArray->iSize = iSize;
 					pFieldArray->stClr = pNewField->stClr;
 					pFieldArray->pFieldParent = pNewField.get();
-					pFieldArray->pJump = nullptr; //The "jump" property only allowed inside non-array fields.
+					pFieldArray->pJump = pNewField->pJump != nullptr ?
+						std::make_unique<HEXTEMPLJUMP>(*pNewField->pJump) : nullptr;
 					pFieldArray->eType = pNewField->eType;
 					pFieldArray->iCustomTypeID = pNewField->iCustomTypeID;
 					pFieldArray->fBigEndian = pNewField->fBigEndian;
