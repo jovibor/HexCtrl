@@ -898,42 +898,40 @@ bool CHexDlgTemplMgr::IsSwapEndian()const
 
 void CHexDlgTemplMgr::OnBnLoadTemplate()
 {
-	IFileOpenDialog *pIFOD { };
-	if (::CoCreateInstance(CLSID_FileOpenDialog, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pIFOD)) != S_OK) {
+	IFileOpenDialog *pFOD;
+	if (::CoCreateInstance(CLSID_FileOpenDialog, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pFOD)) != S_OK) {
 		ut::DBG_REPORT(L"CoCreateInstance failed.");
 		return;
 	}
 
 	DWORD dwFlags;
-	pIFOD->GetOptions(&dwFlags);
-	pIFOD->SetOptions(dwFlags | FOS_FORCEFILESYSTEM | FOS_OVERWRITEPROMPT | FOS_ALLOWMULTISELECT
-		| FOS_DONTADDTORECENT | FOS_FILEMUSTEXIST | FOS_PATHMUSTEXIST);
+	pFOD->GetOptions(&dwFlags);
+	pFOD->SetOptions(dwFlags | FOS_FORCEFILESYSTEM | FOS_ALLOWMULTISELECT | FOS_DONTADDTORECENT
+		| FOS_FILEMUSTEXIST | FOS_PATHMUSTEXIST);
 	COMDLG_FILTERSPEC arrFilter[] { { .pszName { L"Template files (*.json)" }, .pszSpec { L"*.json" } },
 		{ .pszName { L"All files (*.*)" }, .pszSpec { L"*.*" } } };
-	pIFOD->SetFileTypes(2, arrFilter);
+	pFOD->SetFileTypes(2, arrFilter);
 
-	if (pIFOD->Show(m_Wnd) != S_OK) //Cancel was pressed.
+	if (pFOD->Show(m_Wnd) != S_OK) { //Cancel was pressed.
+		pFOD->Release();
 		return;
+	}
 
-	IShellItemArray* pResults { };
-	pIFOD->GetResults(&pResults);
-	if (pResults == nullptr) {
-		ut::DBG_REPORT(L"pResults == nullptr");
+	IShellItemArray* pShellItemArray;
+	pFOD->GetResults(&pShellItemArray);
+	if (pShellItemArray == nullptr) {
+		pFOD->Release();
+		ut::DBG_REPORT(L"ShellItemArray == nullptr");
 		return;
 	}
 
 	DWORD dwCount { };
-	pResults->GetCount(&dwCount);
-	for (auto itFile { 0U }; itFile < dwCount; ++itFile) {
-		IShellItem* pItem { };
-		pResults->GetItemAt(itFile, &pItem);
-		if (pItem == nullptr) {
-			ut::DBG_REPORT(L"pItem == nullptr");
-			return;
-		}
-
+	pShellItemArray->GetCount(&dwCount);
+	for (auto iFileIdx { 0U }; iFileIdx < dwCount; ++iFileIdx) {
+		IShellItem* pShellItem;
+		pShellItemArray->GetItemAt(iFileIdx, &pShellItem);
 		wchar_t* pwszPath;
-		pItem->GetDisplayName(SIGDN_FILESYSPATH, &pwszPath);
+		pShellItem->GetDisplayName(SIGDN_FILESYSPATH, &pwszPath);
 		if (LoadTemplate(pwszPath) == 0) {
 			std::wstring wstrErr = L"Error loading a template:\n";
 			wstrErr += pwszPath;
@@ -941,12 +939,13 @@ void CHexDlgTemplMgr::OnBnLoadTemplate()
 			wsvFileName = wsvFileName.substr(wsvFileName.find_last_of('\\') + 1);
 			::MessageBoxW(m_Wnd, wstrErr.data(), wsvFileName.data(), MB_ICONERROR);
 		}
-		pItem->Release();
+
 		::CoTaskMemFree(pwszPath);
+		pShellItem->Release();
 	}
 
-	pResults->Release();
-	pIFOD->Release();
+	pShellItemArray->Release();
+	pFOD->Release();
 }
 
 void CHexDlgTemplMgr::OnBnUnloadTemplate()

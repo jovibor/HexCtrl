@@ -31,20 +31,6 @@ void CMFCDialogDlg::SetStartupFile(LPCWSTR pwszFile) {
 	m_wstrStartupFile = pwszFile;
 }
 
-auto CMFCDialogDlg::LnkToPath(LPCWSTR pwszLnk)->std::wstring
-{
-	CComPtr<IShellLinkW> psl;
-	psl.CoCreateInstance(CLSID_ShellLink, nullptr, CLSCTX_INPROC_SERVER);
-	CComPtr<IPersistFile> ppf;
-	psl->QueryInterface(IID_PPV_ARGS(&ppf));
-	ppf->Load(pwszLnk, STGM_READ);
-
-	std::wstring wstrPath(MAX_PATH, L'\0');
-	psl->GetPath(wstrPath.data(), MAX_PATH, nullptr, 0);
-
-	return wstrPath;
-}
-
 
 //Private methods.
 
@@ -118,7 +104,7 @@ void CMFCDialogDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
 	DDX_Control(pDX, IDC_CHK_RW, m_chkRW);
-	DDX_Control(pDX, IDC_CHK_LNK, m_chkLnk);
+	DDX_Control(pDX, IDC_CHK_LNK, m_chkDRLNK);
 	DDX_Control(pDX, IDC_EDIT_DATASIZE, m_editDataSize);
 }
 
@@ -128,7 +114,7 @@ void CMFCDialogDlg::FileOpen(std::wstring_view wsvPath, bool fResolveLnk)
 
 	std::wstring wstrPath(wsvPath);
 	if (fResolveLnk && wstrPath.ends_with(L".lnk")) {
-		wstrPath = LnkToPath(wstrPath.data());
+		wstrPath = ResolveLNK(wstrPath.data());
 	}
 
 	if (m_hFile = ::CreateFileW(wstrPath.data(), GENERIC_READ | GENERIC_WRITE,
@@ -192,8 +178,8 @@ bool CMFCDialogDlg::IsFileOpen()const {
 	return m_fFileOpen;
 }
 
-bool CMFCDialogDlg::IsLnk()const {
-	return m_chkLnk.GetCheck() == BST_CHECKED;
+bool CMFCDialogDlg::IsResolveLNK()const {
+	return m_chkDRLNK.GetCheck() == BST_UNCHECKED;
 }
 
 bool CMFCDialogDlg::IsRW()const {
@@ -254,8 +240,8 @@ void CMFCDialogDlg::OnBnSetRndData()
 
 void CMFCDialogDlg::OnBnFileOpen()
 {
-	if (auto vecFiles = OpenFileDlg(); !vecFiles.empty()) {
-		FileOpen(vecFiles.front(), IsLnk());
+	if (const auto opt = OpenFileDlg(); opt) {
+		FileOpen((*opt).front(), false);
 	}
 }
 
@@ -319,7 +305,7 @@ void CMFCDialogDlg::OnDropFiles(HDROP hDropInfo)
 		const auto dwBuffer = ::DragQueryFileW(hDropInfo, 0, nullptr, 0);
 		std::wstring wstrFile(dwBuffer, '\0');
 		::DragQueryFileW(hDropInfo, 0, wstrFile.data(), dwBuffer + 1);
-		FileOpen(wstrFile, IsLnk());
+		FileOpen(wstrFile, IsResolveLNK());
 	}
 	::DragFinish(hDropInfo);
 
@@ -397,10 +383,10 @@ BOOL CMFCDialogDlg::OnInitDialog()
 	//m_hds.pHexVirtColors = this;
 	//m_hds.fHighLatency = true;
 
-	m_chkLnk.SetCheck(BST_CHECKED);
+	m_chkDRLNK.SetCheck(BST_UNCHECKED);
 
 	if (!m_wstrStartupFile.empty()) {
-		FileOpen(m_wstrStartupFile, IsLnk());
+		FileOpen(m_wstrStartupFile, IsResolveLNK());
 	}
 
 	GetDynamicLayout()->SetMinSize({ 0, 0 });
@@ -478,29 +464,72 @@ void CMFCDialogDlg::LoadTemplates(IHexCtrl* pHexCtrl)
 	}
 }
 
-auto CMFCDialogDlg::OpenFileDlg()->std::vector<std::wstring>
-{
-	CFileDialog fd(TRUE, nullptr, nullptr,
-		OFN_OVERWRITEPROMPT | OFN_EXPLORER | OFN_DONTADDTORECENT | OFN_ENABLESIZING
-		| OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_NODEREFERENCELINKS, L"All files (*.*)|*.*||");
-
-	std::vector<std::wstring> vecFiles;
-	if (fd.DoModal() == IDOK) {
-		const CComPtr<IFileOpenDialog> pIFOD = fd.GetIFileOpenDialog();
-		CComPtr<IShellItemArray> pResults;
-		pIFOD->GetResults(&pResults);
-
-		DWORD dwCount { };
-		pResults->GetCount(&dwCount);
-		vecFiles.reserve(dwCount);
-		for (auto i { 0U }; i < dwCount; ++i) {
-			CComPtr<IShellItem> pItem;
-			pResults->GetItemAt(i, &pItem);
-			CComHeapPtr<wchar_t> pwstrPath;
-			pItem->GetDisplayName(SIGDN_FILESYSPATH, &pwstrPath);
-			vecFiles.emplace_back(pwstrPath);
-		}
+auto CMFCDialogDlg::OpenFileDlg()->std::optional<std::vector<std::wstring>> {
+	IFileOpenDialog *pFOD;
+	if (::CoCreateInstance(CLSID_FileOpenDialog, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pFOD)) != S_OK) {
+		return std::nullopt;
 	}
 
-	return vecFiles;
+	DWORD dwFlags;
+	pFOD->GetOptions(&dwFlags);
+	pFOD->SetOptions(dwFlags | FOS_FORCEFILESYSTEM | FOS_NODEREFERENCELINKS | FOS_DONTADDTORECENT
+		| FOS_FILEMUSTEXIST | FOS_PATHMUSTEXIST);
+	COMDLG_FILTERSPEC arrFilter[] { { .pszName { L"All files (*.*)" }, .pszSpec { L"*.*" } } };
+	pFOD->SetFileTypes(1, arrFilter);
+
+	IFileDialogCustomize *pFDC;
+	if (pFOD->QueryInterface(IID_PPV_ARGS(&pFDC)) != S_OK) {
+		return std::nullopt;
+	}
+
+	//Adding a check-box.
+	constexpr auto dwChkLnkID = 100UL;
+	pFDC->AddCheckButton(dwChkLnkID, L"Don't resolve .lnk", FALSE);
+
+	if (pFOD->Show(nullptr) != S_OK) { //Cancel was pressed.
+		pFDC->Release();
+		pFOD->Release();
+		return std::nullopt;
+	}
+
+	BOOL iChecked;
+	pFDC->GetCheckButtonState(dwChkLnkID, &iChecked);
+	const auto fDontResolveLNK = iChecked == TRUE;  //"Don't Resolve .lnk" is checked.
+
+	IShellItemArray* pShellItemArray;
+	pFOD->GetResults(&pShellItemArray);
+	DWORD dwCount { };
+	pShellItemArray->GetCount(&dwCount);
+	std::vector<std::wstring> vecFiles;
+	vecFiles.reserve(dwCount);
+
+	for (auto iFileIdx { 0U }; iFileIdx < dwCount; ++iFileIdx) {
+		IShellItem* pShellItem;
+		pShellItemArray->GetItemAt(iFileIdx, &pShellItem);
+		wchar_t* pwszPath;
+		pShellItem->GetDisplayName(SIGDN_FILESYSPATH, &pwszPath);
+		vecFiles.emplace_back(fDontResolveLNK ? std::wstring { pwszPath } : ResolveLNK(pwszPath));
+		::CoTaskMemFree(pwszPath);
+		pShellItem->Release();
+	}
+
+	pShellItemArray->Release();
+	pFDC->Release();
+	pFOD->Release();
+
+	return { std::move(vecFiles) };
 }
+
+auto CMFCDialogDlg::ResolveLNK(const wchar_t* pwszPath) -> std::wstring {
+	IShellLinkW* pShellLinkW;
+	::CoCreateInstance(CLSID_ShellLink, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pShellLinkW));
+	IPersistFile* pPersistFile;
+	pShellLinkW->QueryInterface(IID_PPV_ARGS(&pPersistFile));
+	pPersistFile->Load(pwszPath, STGM_READ);
+	wchar_t buff[MAX_PATH];
+	const auto hr = pShellLinkW->GetPath(buff, MAX_PATH, nullptr, 0);
+	pPersistFile->Release();
+	pShellLinkW->Release();
+
+	return hr == S_OK ? buff : pwszPath;
+};

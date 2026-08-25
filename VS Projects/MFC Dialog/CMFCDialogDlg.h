@@ -2,6 +2,8 @@
 #include <afxcontrolbars.h>
 #include "../../HexCtrl/HexCtrl.h"
 #include <memory>
+#include <optional>
+#include <vector>
 
 using namespace HEXCTRL;
 
@@ -9,7 +11,6 @@ class CMFCDialogDlg : public CDialogEx, public IHexVirtColors {
 public:
 	explicit CMFCDialogDlg(CWnd* pParent = nullptr);
 	void SetStartupFile(LPCWSTR pwszFile);
-	[[nodiscard]] static auto LnkToPath(LPCWSTR pwszLnk) -> std::wstring;
 private:
 	void CreateHexPopup();
 	void CreateIconsForHexCtrl();
@@ -17,7 +18,7 @@ private:
 	void FileOpen(std::wstring_view wsvPath, bool fResolveLnk = true);
 	void FileClose();
 	bool IsRW()const;
-	bool IsLnk()const;
+	bool IsResolveLNK()const;
 	afx_msg void OnBnSetRndData();
 	afx_msg void OnBnFileOpen();
 	afx_msg void OnBnClearData();
@@ -35,7 +36,8 @@ private:
 	void SetIconsForHexCtrl(IHexCtrl& HexCtrl); //Creates and sets icons for the HexCtrl's menu.
 	[[nodiscard]] static auto GetLastErrorWstr() -> std::wstring;
 	static void LoadTemplates(IHexCtrl* pHexCtrl);
-	[[nodiscard]] static auto OpenFileDlg() -> std::vector<std::wstring>;
+	[[nodiscard]] static auto OpenFileDlg() -> std::optional<std::vector<std::wstring>>;
+	[[nodiscard]] static auto ResolveLNK(const wchar_t* pwszPath) -> std::wstring;
 	DECLARE_MESSAGE_MAP();
 private:
 	struct HEXMENUICON {
@@ -59,7 +61,7 @@ private:
 	LPVOID m_lpBase { };
 	std::wstring m_wstrStartupFile;
 	CButton m_chkRW;
-	CButton m_chkLnk;
+	CButton m_chkDRLNK; //"Don't resolve lnk" check-box.
 	CEdit m_editDataSize;
 	std::vector<HEXMENUICON> m_vecHexIcons; //Icons for the HexCtrl's menu.
 };
