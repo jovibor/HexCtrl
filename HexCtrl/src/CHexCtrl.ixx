@@ -5378,7 +5378,7 @@ auto CHexCtrl::WMDestroy()->LRESULT
 	//owned windows, and then it destroys the parent or owner window."
 	//But this doesn't seem to always be the case for owned dialog windows in some environments (mainly when 
 	//IHexCtrl is a child of MFC's CView class).
-	//These DestroyDlg calls to make sure the dialogs are always properly destroyed.
+	//These DestroyDlg calls is to make sure the dialogs are always properly destroyed.
 
 	ClearData();
 	m_DlgBkmMgr.DestroyDlg();
@@ -5388,7 +5388,7 @@ auto CHexCtrl::WMDestroy()->LRESULT
 	m_DlgGoTo.DestroyDlg();
 	m_DlgSearch.DestroyDlg();
 	m_DlgTemplMgr.DestroyDlg();
-	m_DlgTemplMgr.UnloadAll(); //Templates could be loaded without creating the dialog itself.
+	m_DlgTemplMgr.RemoveAllTemplates(); //Templates could be loaded without creating the dialog itself.
 	m_vecKeyBind.clear();
 	m_vecUndo.clear();
 	m_vecRedo.clear();

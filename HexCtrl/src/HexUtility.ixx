@@ -1561,7 +1561,7 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 			assert(IsWindow()); SendMsg(TVM_EXPAND, uCode, reinterpret_cast<LPARAM>(hItem));
 		}
 		void GetItem(TVITEMW* pItem)const {
-			assert(IsWindow()); SendMsg(TVM_GETITEM, 0, reinterpret_cast<LPARAM>(pItem));
+			assert(IsWindow()); SendMsg(TVM_GETITEMW, 0, reinterpret_cast<LPARAM>(pItem));
 		}
 		[[nodiscard]] auto GetItemData(HTREEITEM hItem)const -> DWORD_PTR {
 			TVITEMW item { .mask { TVIF_PARAM }, .hItem { hItem } }; GetItem(&item); return item.lParam;
@@ -1589,6 +1589,15 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 		}
 		void SelectItem(HTREEITEM hItem)const {
 			assert(IsWindow()); SendMsg(TVM_SELECTITEM, TVGN_CARET, reinterpret_cast<LPARAM>(hItem));
+		}
+		bool SetItem(const TVITEMW* pItem)const {
+			assert(IsWindow());
+			return SendMsg(TVM_SETITEMW, 0, reinterpret_cast<LPARAM>(pItem));
+		}
+		bool SetItemState(HTREEITEM hItem, UINT uState, UINT uStateMask) {
+			assert(IsWindow());
+			const TVITEMW tvi { .mask { TVIF_STATE }, .hItem { hItem }, .state { uState }, .stateMask { uStateMask } };
+			return SetItem(&tvi);
 		}
 	};
 

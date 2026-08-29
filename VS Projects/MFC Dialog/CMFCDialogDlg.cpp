@@ -457,9 +457,8 @@ void CMFCDialogDlg::LoadTemplates(IHexCtrl* pHexCtrl)
 			continue;
 		}
 
-		if (path.extension() == L".json") { //Load all .json files.
-			const auto p = HEXCTRL::IHexTemplates::LoadFromFile(path.c_str());
-			pHexCtrl->GetTemplates()->AddTemplate(*p);
+		if (path.extension() == L".json") { //Add all *.json files.
+			pHexCtrl->GetTemplates()->AddTemplateFile(path.c_str());
 		}
 	}
 }

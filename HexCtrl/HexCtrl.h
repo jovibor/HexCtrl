@@ -212,98 +212,27 @@ namespace HEXCTRL {
 		virtual bool OnHexGetColor(HEXCOLORINFO&) = 0; //Should return true if colors are set.
 	};
 
-	/********************************************************************************************
-	* Templates related data structures, enums, and aliases                                     *
-	********************************************************************************************/
-	struct HEXTEMPLFIELD;
-	using PtrHexTemplField = std::unique_ptr<HEXTEMPLFIELD>;
-	using VecHexTemplFields = std::vector<PtrHexTemplField>; //Vector for the template fields.
-	using PCHEXTEMPLFIELD = const HEXTEMPLFIELD*;
 
-	//Predefined types of a template field.
-	enum class EHexTemplFieldType : std::uint8_t {
-		custom_size, type_custom,
-		type_bool, type_int8, type_uint8, type_int16, type_uint16, type_int32,
-		type_uint32, type_int64, type_uint64, type_float, type_double, type_time32,
-		type_time64, type_filetime, type_systemtime, type_guid
+	struct HEXTEMPLATEAPPLIED {
+		std::wstring  wstrFilePath;
+		std::uint64_t u64Offset { };
 	};
-
-	//Custom type of a template field.
-	struct HEXTEMPLCT {
-		std::wstring wstrTypeName; //Custom type name.
-		int          iTypeID { };  //Custom type ID.
-	};
-	using VecHexTemplCT = std::vector<HEXTEMPLCT>;
-
-	//Template jump field anchor enum.
-	enum class EHexTemplJumpAnchor : std::uint8_t {
-		DATA_START, DATA_END, FIELD_THIS, FIELD_FIRST, OFFSET_CUSTOM
-	};
-
-	//Template jump field direction enum.
-	enum class EHexTemplJumpDirection : std::uint8_t {
-		JUMP_FORWARD, JUMP_BACKWARD
-	};
-
-	//Struct describes jumping properties of the field.
-	struct HEXTEMPLJUMP {
-		std::uint64_t          u64Anchor { };  //Field is used if the eAnchor==OFFSET_CUSTOM.
-		std::uint32_t          u32Units { 1 }; //Default unit size is 1 byte, but can be any size.
-		EHexTemplJumpAnchor    eAnchor { };
-		EHexTemplJumpDirection eDirection { };
-	};
-	using PtrHexTemplJump = std::unique_ptr<HEXTEMPLJUMP>;
-
-	//Template's field main struct.
-	struct HEXTEMPLFIELD {
-		std::wstring       wstrName;             //Field name.
-		std::wstring       wstrDescr;            //Field description.
-		VecHexTemplFields  vecNested;            //Vector for nested fields.
-		HEXCOLOR           stClr;                //Field Bk and Text color.
-		PCHEXTEMPLFIELD    pFieldParent { };     //Parent field, in case of nested.
-		PtrHexTemplJump    pJump { };            //Pointer to a jump struct, if it's a "jump" field.
-		int                iOffset { };          //Field offset relative to the Template's beginning.
-		int                iSize { };            //Field size.
-		int                iCustomTypeID { };    //Field custom-type ID, if eType==type_custom.
-		EHexTemplFieldType eType { };            //Field type.
-		bool               fBigEndian { false }; //Field endianness.
-	};
-
-	//Template main struct.
-	struct HEXTEMPLATE {
-		std::wstring      wstrName;      //Template name.
-		VecHexTemplFields vecFields;     //Template fields.
-		VecHexTemplCT     vecCustomType; //Custom types of this template.
-		int               iSizeTotal;    //Total size of all Template's fields, assigned internally by framework.
-		int               iTemplateID;   //Template ID, assigned by framework.
-	};
-	using PCHEXTEMPLATE = const HEXTEMPLATE*;
-
-	//Applied templates.
-	struct HEXTEMPLAPPLIED {
-		std::uint64_t ullOffset { };  //Offset, where to apply the template.
-		PCHEXTEMPLATE pTemplate { };  //Template pointer.
-		int           iAppliedID { }; //AppliedID assigned by framework. Any template can be applied many times.
-	};
-	using SpanHexTemplApplied = std::span<const HEXTEMPLAPPLIED>;
+	using VecHexTemplatesApplied = std::vector<HEXTEMPLATEAPPLIED>;
 
 	/********************************************************************************************
 	* IHexTemplates: Pure abstract base interface for HexCtrl templates.                        *
 	********************************************************************************************/
 	class IHexTemplates {
 	public:
-		virtual auto AddTemplate(const HEXTEMPLATE& hts) -> int = 0; //Adds existing template.
-		virtual auto ApplyTemplate(ULONGLONG ullOffset, int iTemplateID) -> int = 0; //Applies template by ID, returns AppliedID.
-		virtual auto ApplyTemplate(ULONGLONG ullOffset, std::wstring_view wsvTemplateName) -> int = 0; //Applies template by name.
+		virtual bool AddTemplateFile(const wchar_t* pwszFilePath) = 0; //Adds template file to internal list.
+		virtual auto ApplyTemplate(const wchar_t* pwszFilePath, std::uint64_t u64Offset) -> int = 0; //Applies template file at offset.
 		virtual void DisapplyAll() = 0;
-		virtual void DisapplyByID(int iAppliedID) = 0;
-		virtual void DisapplyByOffset(ULONGLONG ullOffset) = 0;
-		[[nodiscard]] virtual auto GetAllApplied() -> SpanHexTemplApplied = 0; //All currently applied templates.
-		virtual auto LoadTemplate(const wchar_t* pFilePath) -> int = 0; //Returns TemplateID on success, null otherwise.
+		virtual void DisapplyByID(int iTemplateID) = 0; //iTemplateID is returned by the ApplyTemplate.
+		virtual void DisapplyByOffset(std::uint64_t u64Offset) = 0;
+		[[nodiscard]] virtual auto GetAllApplied() -> VecHexTemplatesApplied = 0; //All currently applied templates.
+		virtual void RemoveAllTemplates() = 0; //Removes all templates from applied and from the internal list.
+		virtual void RemoveTemplateFile(const wchar_t* pwszFilePath) = 0; //Removes template file from internal list.
 		virtual void ShowTooltips(bool fShow) = 0;
-		virtual void UnloadAll() = 0;                     //Unload all templates.
-		virtual void UnloadTemplate(int iTemplateID) = 0; //Unload/remove loaded template from memory.
-		[[nodiscard]] static HEXCTRLAPI auto __cdecl LoadFromFile(const wchar_t* pFilePath)->std::unique_ptr<HEXTEMPLATE>;
 	};
 
 	/********************************************************************************************
