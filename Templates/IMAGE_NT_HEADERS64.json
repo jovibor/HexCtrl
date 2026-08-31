@@ -1,210 +1,210 @@
 {
-    "$schema": "https://raw.githubusercontent.com/jovibor/HexCtrl/master/docs/HexCtrl.Templates.Schema.json",
-    "TemplateName": "IMAGE_NT_HEADERS64",
-    "Data": {
-        "endianness": "little",
-        "clrBk": "#606060",
-        "clrText": "#FFFFFF",
-        "Fields": [
-            {
-                "name": "Signature",
-                "type": "DWORD"
-            },
-            {
-                "name": "FileHeader",
-                "type": "IMAGE_FILE_HEADER"
-            },
-            {
-                "name": "OptionalHeader",
-                "type": "IMAGE_OPTIONAL_HEADER64"
-            }
-        ]
-    },
-    "CustomTypes": [
-        {
-            "TypeName": "IMAGE_DATA_DIRECTORY",
-            "Fields": [
-                {
-                    "name": "VirtualAddress",
-                    "type": "DWORD"
-                },
-                {
-                    "name": "Size",
-                    "type": "DWORD"
-                }
-            ]
-        },
-        {
-            "TypeName": "IMAGE_OPTIONAL_HEADER64",
-            "clrBk": "#C0C0C0",
-            "Fields": [
-                {
-                    "name": "Magic",
-                    "type": "WORD"
-                },
-                {
-                    "name": "MajorLinkerVersion",
-                    "type": "byte"
-                },
-                {
-                    "name": "MinorLinkerVersion",
-                    "type": "byte"
-                },
-                {
-                    "name": "SizeOfCode",
-                    "type": "DWORD"
-                },
-                {
-                    "name": "SizeOfInitializedData",
-                    "type": "DWORD"
-                },
-                {
-                    "name": "SizeOfUninitializedData",
-                    "type": "DWORD"
-                },
-                {
-                    "name": "AddressOfEntryPoint",
-                    "type": "DWORD"
-                },
-                {
-                    "name": "BaseOfCode",
-                    "type": "DWORD"
-                },
-                {
-                    "name": "ImageBase",
-                    "type": "QWORD"
-                },
-                {
-                    "name": "SectionAlignment",
-                    "type": "DWORD"
-                },
-                {
-                    "name": "FileAlignment",
-                    "type": "DWORD"
-                },
-                {
-                    "name": "MajorOperatingSystemVersion",
-                    "type": "WORD"
-                },
-                {
-                    "name": "MinorOperatingSystemVersion",
-                    "type": "WORD"
-                },
-                {
-                    "name": "MajorImageVersion",
-                    "type": "WORD"
-                },
-                {
-                    "name": "MinorImageVersion",
-                    "type": "WORD"
-                },
-                {
-                    "name": "MajorSubsystemVersion",
-                    "type": "WORD"
-                },
-                {
-                    "name": "MinorSubsystemVersion",
-                    "type": "WORD"
-                },
-                {
-                    "name": "Win32VersionValue",
-                    "type": "DWORD"
-                },
-                {
-                    "name": "SizeOfImage",
-                    "type": "DWORD"
-                },
-                {
-                    "name": "SizeOfHeaders",
-                    "type": "DWORD"
-                },
-                {
-                    "name": "CheckSum",
-                    "type": "DWORD"
-                },
-                {
-                    "name": "Subsystem",
-                    "type": "WORD"
-                },
-                {
-                    "name": "DllCharacteristics",
-                    "type": "WORD"
-                },
-                {
-                    "name": "SizeOfStackReserve",
-                    "type": "QWORD"
-                },
-                {
-                    "name": "SizeOfStackCommit",
-                    "type": "QWORD"
-                },
-                {
-                    "name": "SizeOfHeapReserve",
-                    "type": "QWORD"
-                },
-                {
-                    "name": "SizeOfHeapCommit",
-                    "type": "QWORD"
-                },
-                {
-                    "name": "LoaderFlags",
-                    "type": "DWORD"
-                },
-                {
-                    "name": "NumberOfRvaAndSizes",
-                    "type": "DWORD",
-                    "clrBk": "#00AA00"
-                },
-                {
-                    "name": "DataDirectory",
-                    "type": "IMAGE_DATA_DIRECTORY",
-                    "array": 16
-                }
-            ]
-        },
-        {
-            "TypeName": "IMAGE_FILE_HEADER",
-            "clrBk": "#909090",
-            "Fields": [
-                {
-                    "name": "Machine",
-                    "type": "WORD"
-                },
-                {
-                    "name": "NumberOfSections",
-                    "type": "WORD"
-                },
-                {
-                    "name": "TimeDateStamp",
-                    "type": "DWORD"
-                },
-                {
-                    "name": "PointerToSymbolTable",
-                    "type": "DWORD",
-                    "jump": {
-                        "anchor": "dataStart",
-                        "direction": "forward",
-                        "units": "byte"
-                    }
-                },
-                {
-                    "name": "NumberOfSymbols",
-                    "type": "DWORD"
-                },
-                {
-                    "name": "SizeOfOptionalHeader",
-                    "type": "WORD",
-                    "jump": {
-                        "anchor": "here",
-                        "direction": "forward",
-                        "units": "byte"
-                    }
-                },
-                {
-                    "name": "Characteristics",
-                    "type": "WORD"
-                }
-            ]
-        }
+  "$schema": "https://raw.githubusercontent.com/jovibor/HexCtrl/master/docs/HexCtrl.Templates.Schema.json",
+  "TemplateName": "IMAGE_NT_HEADERS64",
+  "Data": {
+    "endianness": "little",
+    "clrBk": "#606060",
+    "clrText": "#FFFFFF",
+    "Fields": [
+      {
+        "name": "Signature",
+        "type": "DWORD"
+      },
+      {
+        "name": "FileHeader",
+        "type": "IMAGE_FILE_HEADER"
+      },
+      {
+        "name": "OptionalHeader",
+        "type": "IMAGE_OPTIONAL_HEADER64"
+      }
     ]
+  },
+  "CustomTypes": [
+    {
+      "TypeName": "IMAGE_DATA_DIRECTORY",
+      "Fields": [
+        {
+          "name": "VirtualAddress",
+          "type": "DWORD"
+        },
+        {
+          "name": "Size",
+          "type": "DWORD"
+        }
+      ]
+    },
+    {
+      "TypeName": "IMAGE_OPTIONAL_HEADER64",
+      "clrBk": "#C0C0C0",
+      "Fields": [
+        {
+          "name": "Magic",
+          "type": "WORD"
+        },
+        {
+          "name": "MajorLinkerVersion",
+          "type": "byte"
+        },
+        {
+          "name": "MinorLinkerVersion",
+          "type": "byte"
+        },
+        {
+          "name": "SizeOfCode",
+          "type": "DWORD"
+        },
+        {
+          "name": "SizeOfInitializedData",
+          "type": "DWORD"
+        },
+        {
+          "name": "SizeOfUninitializedData",
+          "type": "DWORD"
+        },
+        {
+          "name": "AddressOfEntryPoint",
+          "type": "DWORD"
+        },
+        {
+          "name": "BaseOfCode",
+          "type": "DWORD"
+        },
+        {
+          "name": "ImageBase",
+          "type": "QWORD"
+        },
+        {
+          "name": "SectionAlignment",
+          "type": "DWORD"
+        },
+        {
+          "name": "FileAlignment",
+          "type": "DWORD"
+        },
+        {
+          "name": "MajorOperatingSystemVersion",
+          "type": "WORD"
+        },
+        {
+          "name": "MinorOperatingSystemVersion",
+          "type": "WORD"
+        },
+        {
+          "name": "MajorImageVersion",
+          "type": "WORD"
+        },
+        {
+          "name": "MinorImageVersion",
+          "type": "WORD"
+        },
+        {
+          "name": "MajorSubsystemVersion",
+          "type": "WORD"
+        },
+        {
+          "name": "MinorSubsystemVersion",
+          "type": "WORD"
+        },
+        {
+          "name": "Win32VersionValue",
+          "type": "DWORD"
+        },
+        {
+          "name": "SizeOfImage",
+          "type": "DWORD"
+        },
+        {
+          "name": "SizeOfHeaders",
+          "type": "DWORD"
+        },
+        {
+          "name": "CheckSum",
+          "type": "DWORD"
+        },
+        {
+          "name": "Subsystem",
+          "type": "WORD"
+        },
+        {
+          "name": "DllCharacteristics",
+          "type": "WORD"
+        },
+        {
+          "name": "SizeOfStackReserve",
+          "type": "QWORD"
+        },
+        {
+          "name": "SizeOfStackCommit",
+          "type": "QWORD"
+        },
+        {
+          "name": "SizeOfHeapReserve",
+          "type": "QWORD"
+        },
+        {
+          "name": "SizeOfHeapCommit",
+          "type": "QWORD"
+        },
+        {
+          "name": "LoaderFlags",
+          "type": "DWORD"
+        },
+        {
+          "name": "NumberOfRvaAndSizes",
+          "type": "DWORD",
+          "clrBk": "#00AA00"
+        },
+        {
+          "name": "DataDirectory",
+          "type": "IMAGE_DATA_DIRECTORY",
+          "array": 16
+        }
+      ]
+    },
+    {
+      "TypeName": "IMAGE_FILE_HEADER",
+      "clrBk": "#909090",
+      "Fields": [
+        {
+          "name": "Machine",
+          "type": "WORD"
+        },
+        {
+          "name": "NumberOfSections",
+          "type": "WORD"
+        },
+        {
+          "name": "TimeDateStamp",
+          "type": "DWORD"
+        },
+        {
+          "name": "PointerToSymbolTable",
+          "type": "DWORD",
+          "jump": {
+            "anchor": "dataStart",
+            "direction": "forward",
+            "units": "byte"
+          }
+        },
+        {
+          "name": "NumberOfSymbols",
+          "type": "DWORD"
+        },
+        {
+          "name": "SizeOfOptionalHeader",
+          "type": "WORD",
+          "jump": {
+            "anchor": "here",
+            "direction": "forward",
+            "units": "byte"
+          }
+        },
+        {
+          "name": "Characteristics",
+          "type": "WORD"
+        }
+      ]
+    }
+  ]
 }

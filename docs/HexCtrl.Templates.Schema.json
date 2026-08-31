@@ -1,165 +1,153 @@
 {
-    "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "$id": "https://raw.githubusercontent.com/jovibor/HexCtrl/master/docs/HexCtrl.Templates.Schema.json",
-    "title": "HexCtrl Templates Schema",
-    "$defs": {
-        "Fields": {
-            "type": "array",
-            "items": {
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/jovibor/HexCtrl/master/docs/HexCtrl.Templates.Schema.json",
+  "title": "HexCtrl Templates Schema",
+  "$defs": {
+    "Fields": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "type": { "type": "string" },
+          "size": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "array": {
+            "anyOf": [
+              {
                 "type": "object",
                 "properties": {
-                    "name": {
-                        "type": "string"
-                    },
-                    "description": {
-                        "type": "string"
-                    },
-                    "type": {
-                        "type": "string"
-                    },
-                    "size": {
-                        "type": "integer",
-                        "minimum": 1
-                    },
-                    "array": {
-                        "type": "integer",
-                        "minimum": 1
-                    },
-                    "endianness": {
+                  "sizefield": { "type": "string" },
+                  "limit": {
+                    "type": "object",
+                    "properties": {
+                      "min": { "type": "integer" },
+                      "max": { "type": "integer" },
+                      "onbeyond": {
                         "type": "string",
-                        "enum": [
-                            "little",
-                            "big"
-                        ]
-                    },
-                    "clrBk": {
-                        "type": "string",
-                        "format": "color"
-                    },
-                    "clrText": {
-                        "type": "string",
-                        "format": "color"
-                    },
-                    "jump": {
-                        "type": "object",
-                        "properties": {
-                            "anchor": {
-                                "type": "string"
-                            },
-                            "direction": {
-                                "type": "string",
-                                "enum": [
-                                    "forward",
-                                    "backward"
-                                ]
-                            },
-                            "units": {
-                                "type": [
-                                    "string",
-                                    "integer"
-                                ]
-                            }
-                        },
-                        "additionalProperties": false
-                    },
-                    "Fields": {
-                        "$ref": "#/$defs/Fields"
+                        "enum": ["stop", "ask", "uselimit"]
+                      }
                     }
+                  }
                 },
-                "additionalProperties": false,
-                "required": [
-                    "name"
-                ],
-                "oneOf": [
-                    {
-                        "anyOf": [
-                            {
-                                "required": [
-                                    "type"
-                                ]
-                            },
-                            {
-                                "required": [
-                                    "size"
-                                ]
-                            }
-                        ]
-                    },
-                    {
-                        "required": [
-                            "Fields"
-                        ]
-                    }
-                ]
-            }
-        }
-    },
-    "type": "object",
-    "properties": {
-        "$schema": {
-            "type": "string"
-        },
-        "TemplateName": {
-            "type": "string"
-        },
-        "Data": {
+                "required": ["sizefield"],
+                "additionalProperties": false
+              },
+              {
+                "type": "integer",
+                "minimum": 1
+              }
+            ],
+            "additionalProperties": false
+          },
+          "endianness": {
+            "type": "string",
+            "enum": ["little", "big"]
+          },
+          "clrBk": {
+            "type": "string",
+            "format": "color"
+          },
+          "clrText": {
+            "type": "string",
+            "format": "color"
+          },
+          "jump": {
             "type": "object",
             "properties": {
-                "endianness": {
-                    "type": "string",
-                    "enum": [
-                        "little",
-                        "big"
-                    ]
-                },
-                "clrBk": {
-                    "type": "string",
-                    "format": "color"
-                },
-                "clrText": {
-                    "type": "string",
-                    "format": "color"
-                },
-                "Fields": {
-                    "$ref": "#/$defs/Fields"
-                }
+              "anchor": { "type": "string" },
+              "direction": {
+                "type": "string",
+                "enum": ["forward", "backward"]
+              },
+              "units": { "type": ["string", "integer"] }
             },
             "additionalProperties": false
+          },
+          "Fields": {
+            "$ref": "#/$defs/Fields"
+          }
         },
-        "CustomTypes": {
-            "type": "array",
-            "items": {
-                "type": "object",
-                "properties": {
-                    "TypeName": {
-                        "type": "string"
-                    },
-                    "endianness": {
-                        "type": "string",
-                        "enum": [
-                            "little",
-                            "big"
-                        ]
-                    },
-                    "clrBk": {
-                        "type": "string",
-                        "format": "color"
-                    },
-                    "clrText": {
-                        "type": "string",
-                        "format": "color"
-                    },
-                    "Fields": {
-                        "$ref": "#/$defs/Fields"
-                    }
-                },
-                "additionalProperties": false
-            }
-        }
+        "additionalProperties": false,
+        "required": ["name"],
+        "oneOf": [
+          {
+            "anyOf": [
+              {
+                "required": ["type"]
+              },
+              {
+                "required": ["size"]
+              }
+            ]
+          },
+          {
+            "required": ["Fields"]
+          }
+        ]
+      }
+    }
+  },
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string"
     },
-    "additionalProperties": false,
-    "required": [
-        "TemplateName",
-        "Data"
-    ]
+    "TemplateName": {
+      "type": "string"
+    },
+    "Data": {
+      "type": "object",
+      "properties": {
+        "endianness": {
+          "type": "string",
+          "enum": ["little", "big"]
+        },
+        "clrBk": {
+          "type": "string",
+          "format": "color"
+        },
+        "clrText": {
+          "type": "string",
+          "format": "color"
+        },
+        "Fields": {
+          "$ref": "#/$defs/Fields"
+        }
+      },
+      "additionalProperties": false
+    },
+    "CustomTypes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "TypeName": {
+            "type": "string"
+          },
+          "endianness": {
+            "type": "string",
+            "enum": ["little", "big"]
+          },
+          "clrBk": {
+            "type": "string",
+            "format": "color"
+          },
+          "clrText": {
+            "type": "string",
+            "format": "color"
+          },
+          "Fields": {
+            "$ref": "#/$defs/Fields"
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false,
+  "required": ["TemplateName", "Data"]
 }

@@ -367,21 +367,41 @@ The **Fields**'s properties include:
 - **type** - [optional, string] - field type, such as:  
 `bool`, `char`, `unsigned char`, `byte`, `short`, `unsigned short`, `WORD`, `long`, `unsigned long`, `int`, `unsigned int`, `DWORD`, `long long`, `unsigned long long`, `QWORD`, `float`, `double`, `time32_t`, `time64_t`, `FILETIME`, `SYSTEMTIME`, `GUID`, or any custom type defined in the **CustomTypes** section
 - **size** - [optional, int] - size of the field in bytes, if the **type** field is not provided
-- **array** - [optional, int] - size of the array, if the given field is an array of fields
+- **array** - [optional, int or object] - It can be an **int**, meaning it's a size of the array, or it can be an object:
+  ```json
+  "array": {
+    "sizefield": "sizefieldName",
+    "limit": {
+      "min": 1,
+      "max": 15,
+      "onbeyond": "ask"
+    }
+  }
+  ```
+  - **sizefield** - Name of the field to take the size of the array from. The field name must already be defined somewhere above in the template.
+  - **limit** [optional, object] - describes limits of the **sizefield** value:
+     - **min** [optional] - minimum value of the **sizefield** data
+     - **max** [optional] - maximum value of the **sizefield** data
+     - **onbeyond** [optional] - string, describing what to do if the **sizefield** value is beyond the limits:
+       - **stop** - stop any further template processing and exit
+       - **ask** - ask the user what to do next
+       - **uselimit** - if the value is less than **min**, use the **min** value. If the value is bigger than **max**, use the **max** value.
+
+
 - **endianness** - [optional, string] - field endianness, "little" or "big". By default all fields are little-endian.
 - **clrBk** - [optional, string] - field background color
 - **clrText** - [optional, string] - field text color
 - **jump** - [optional, object] - field is a pointer to another place in the data
-    ```json
-    "jump": {
-        "anchor": "anchorName",
-        "direction": "directionName",
-        "units": "unitsName"
-    }
-    ```
-    - **anchorName** can be any of: **dataStart**, **dataEnd**, **fieldFirst** (or **structStart**), **fieldThis** (or **here**), or any custom offset number, e.g. **0xff**
-    - **directionName** can be any of: **forward**, or **backward**
-    - **unitsName** can be any of: **byte**, **word**, **dword**, **qword**, or any arbitrary number
+  ```json
+  "jump": {
+      "anchor": "dataStart",
+      "direction": "forward",
+      "units": "byte"
+  }
+  ```
+    - **anchor** can be any of: **dataStart**, **dataEnd**, **fieldFirst** (or **structStart**), **fieldThis** (or **here**), or any custom offset number, e.g. **0xff**
+    - **direction** can be any of: **forward**, or **backward**
+    - **units** can be any of: **byte**, **word**, **dword**, **qword**, or any arbitrary number
 
     All names are case-insensitive.
 

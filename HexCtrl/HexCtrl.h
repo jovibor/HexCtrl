@@ -212,7 +212,9 @@ namespace HEXCTRL {
 		virtual bool OnHexGetColor(HEXCOLORINFO&) = 0; //Should return true if colors are set.
 	};
 
-
+	/********************************************************************************************
+	* HEXTEMPLATEAPPLIED: Template file path and applied offset.                                *
+	********************************************************************************************/
 	struct HEXTEMPLATEAPPLIED {
 		std::wstring  wstrFilePath;
 		std::uint64_t u64Offset { };
