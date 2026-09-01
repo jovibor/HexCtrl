@@ -18,6 +18,10 @@
           "array": {
             "anyOf": [
               {
+                "type": "integer",
+                "minimum": 1
+              },
+              {
                 "type": "object",
                 "properties": {
                   "sizefield": { "type": "string" },
@@ -30,18 +34,14 @@
                         "type": "string",
                         "enum": ["stop", "ask", "uselimit"]
                       }
-                    }
+                    },
+                    "additionalProperties": false
                   }
                 },
                 "required": ["sizefield"],
                 "additionalProperties": false
-              },
-              {
-                "type": "integer",
-                "minimum": 1
               }
-            ],
-            "additionalProperties": false
+            ]
           },
           "endianness": {
             "type": "string",

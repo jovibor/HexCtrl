@@ -285,70 +285,86 @@ The `OnHexGetColor` method of this interface takes [`HEXCOLORINFO`](#hexcolorinf
 **HexCtrl**'s templates is a powerful system of a data structures' description with a simple `.json` file. These files can be loaded through the **HexControl**'s internal template manager, or through the [API](#gettemplates).  
 ```json
 {
-    "$schema": "https://raw.githubusercontent.com/jovibor/HexCtrl/master/docs/HexCtrl.Templates.Schema.json",
-    "TemplateName": "SampleTemplate",
-    "Data": {
-        "endianness": "little",
-        "clrBk": "#999999",
-        "clrText": "#FFFFFF",
-        "Fields": [
-            {
-                "name": "MyCustomDataSingle",
-                "type": "MyCustomType"
-            },
-            {
-                "name": "CustomComplexData",
-                "type": "MyCustomComplexType"
-            },
-            {
-                "name": "ArrayOfDWORDs",
-                "type": "DWORD",
-                "array": 10
-            },
-            {
-                "name": "MyCustomDataArray",
-                "type": "MyCustomType",
-                "array": 4
-            },
-            {
-                "name": "Jump field",
-                "type": "DWORD",
-                "jump": {
-                    "anchor": "here",
-                    "direction": "forward",
-                    "units": "byte"
-                }
-            }
-        ]
-    },
-    "CustomTypes": [
+  "$schema": "https://raw.githubusercontent.com/jovibor/HexCtrl/master/docs/HexCtrl.Templates.Schema.json",
+  "TemplateName": "SampleTemplate",
+  "Data": {
+    "endianness": "little",
+    "clrBk": "#999999",
+    "clrText": "#FFFFFF",
+    "Fields": [
+      {
+        "name": "First field",
+        "type": "dword"
+      },
+      {
+        "name": "MyCustomDataSingle",
+        "type": "MyCustomType"
+      },
+      {
+        "name": "CustomComplexData",
+        "type": "MyCustomComplexType"
+      },
+      {
+        "name": "ArrayOfDWORDs",
+        "type": "DWORD",
+        "array": 10
+      },
+      {
+        "name": "MyCustomDataArray",
+        "type": "MyCustomType",
+        "array": 4
+      },
+      {
+        "name": "Jump field",
+        "type": "DWORD",
+        "jump": {
+          "anchor": "here",
+          "direction": "forward",
+          "units": "byte"
+        }
+      },
+      {
+        "name": "Dynamic array",
+        "type": "dword",
+        "array": {
+          "sizefield": "First field",
+          "limit": {
+            "min": 1,
+            "max": 15,
+            "onbeyond": "ask"
+          }
+        }
+      }
+    ]
+  },
+  "CustomTypes": [
+    {
+      "TypeName": "MyCustomType",
+      "Fields": [
         {
-            "TypeName": "MyCustomType",
-            "Fields": [
-                {
-                    "name": "myCustomTypeField1",
-                    "type": "DWORD"
-                },
-                {
-                    "name": "myCustomTypeField2",
-                    "type": "DWORD"
-                }
-            ]
+          "name": "myCustomTypeField1",
+          "type": "DWORD"
         },
         {
-            "TypeName": "MyCustomComplexType",
-            "Fields": [
-                {
-                    "name": "MyCustomTypeData1",
-                    "type": "MyCustomType"
-                },
-                {
-                    "name": "MyCustomTypeData2",
-                    "type": "MyCustomType"
-                }
-            ]
+          "name": "myCustomTypeField2",
+          "type": "DWORD"
         }
-    ]
+      ]
+    },
+    {
+      "TypeName": "MyCustomComplexType",
+      "Fields": [
+        {
+          "name": "MyCustomTypeData1",
+          "type": "MyCustomType"
+        },
+        {
+          "name": "MyCustomTypeData2",
+          "type": "MyCustomType"
+        }
+      ]
+    }
+  ]
 }
 ```
 Every such file contains the following properties:  
@@ -386,7 +402,6 @@ The **Fields**'s properties include:
        - **stop** - stop any further template processing and exit
        - **ask** - ask the user what to do next
        - **uselimit** - if the value is less than **min**, use the **min** value. If the value is bigger than **max**, use the **max** value.
-
 
 - **endianness** - [optional, string] - field endianness, "little" or "big". By default all fields are little-endian.
 - **clrBk** - [optional, string] - field background color
