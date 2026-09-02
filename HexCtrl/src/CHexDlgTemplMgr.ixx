@@ -32,9 +32,12 @@ import :HexUtility;
 
 namespace HEXCTRL::INTERNAL {
 	struct HEXTEMPLFIELD;
-	using PtrHexTemplField = std::unique_ptr<HEXTEMPLFIELD>;
-	using VecHexTemplFields = std::vector<PtrHexTemplField>; //Vector for the template fields.
 	using PCHEXTEMPLFIELD = const HEXTEMPLFIELD*;
+	using PtrHexTemplField = std::unique_ptr<HEXTEMPLFIELD>; //Unique ptr for the template field.
+	using VecHexTemplFields = std::vector<PtrHexTemplField>; //Vector of the template fields.
+	using PtrVecTemplFields = std::unique_ptr<VecHexTemplFields>; //Unique ptr for the vector of the template fields.
+	using UmapCustomTypes = std::unordered_map<int, VecHexTemplFields>;
+	using PCHexVecTemplFields = const VecHexTemplFields*;
 
 	//Predefined types of a template field.
 	enum class EHexTemplFieldType : std::uint8_t {
@@ -97,13 +100,9 @@ namespace HEXCTRL::INTERNAL {
 	};
 	using PCHEXTEMPLATE = const HEXTEMPLATE*;
 
-	using IterJSONMember = rapidjson::Value::ConstMemberIterator;
-	using UmapCustomTypes = std::unordered_map<int, VecHexTemplFields>;
-	using PCHexVecTemplFields = const VecHexTemplFields*;
-
 	class CHexDlgTemplMgr final : public IHexTemplates {
 	public:
-		struct FIELDSDEFPROPS; //Forward declarations.
+		struct PARSEFIELDS;
 		bool AddTemplateFile(const wchar_t* pwszFilePath)override;
 		void ApplyCurr(std::uint64_t u64Offset);
 		auto ApplyTemplate(const wchar_t* pwszFilePath, std::uint64_t u64Offset) -> int override;
@@ -128,22 +127,26 @@ namespace HEXCTRL::INTERNAL {
 		void ShowTooltips(bool fShow)override;
 		void ShowWindow(int iCmdShow);
 		void UpdateData();
-		[[nodiscard]] static auto GetDataFromField(const HEXTEMPLFIELD* pField, PCHEXTEMPLATE pTemplate, IHexCtrl* pHexCtrl)
-			-> std::optional<std::uint64_t>;
 		[[nodiscard]] static auto JSONColors(const rapidjson::Value* pValue, const char* pszColorName) -> std::optional<COLORREF>;
 		[[nodiscard]] static auto JSONIsBigEndianness(const rapidjson::Value* pValue) -> std::optional<bool>;
-		[[nodiscard]] static auto JSONFindMember(const rapidjson::Value* pValue, const char* pszName) -> std::optional<IterJSONMember>;
+		[[nodiscard]] static auto JSONFindMember(const rapidjson::Value* pValue, const char* pszName)
+			-> std::optional<const rapidjson::Value*>;
 		[[nodiscard]] static auto JSONFindMemberAsInt32(const rapidjson::Value* pValue, const char* pszName) -> std::optional<int>;
-		[[nodiscard]] static auto JSONFindMemberAsUInt32(const rapidjson::Value* pValue, const char* pszName) -> std::optional<std::uint32_t>;
+		[[nodiscard]] static auto JSONFindMemberAsUInt32(const rapidjson::Value* pValue, const char* pszName)
+			-> std::optional<std::uint32_t>;
 		[[nodiscard]] static auto JSONFindMemberAsObject(const rapidjson::Value* pValue, const char* pszName)
 			-> std::optional<const rapidjson::Value*>;
 		[[nodiscard]] static auto JSONFindMemberAsString(const rapidjson::Value* pValue, const char* pszName)
 			-> std::optional<const char*>;
-		[[nodiscard]] static bool JSONParseFields(IterJSONMember itFieldsArray, VecHexTemplFields& vecFields,
-			const FIELDSDEFPROPS& defProps, UmapCustomTypes& umapCustomT, int* pFieldOffset, IHexCtrl* pHexCtrl);
-		[[nodiscard]] static auto JSONProcessLimitObject(const rapidjson::Value* pValue, std::uint64_t u64ActualData) -> std::optional<std::uint64_t>;
+		[[nodiscard]] static auto JSONParseFields(const PARSEFIELDS& pf) -> std::optional<VecHexTemplFields>;
+		[[nodiscard]] static auto JSONProcessLimitObject(const rapidjson::Value* pValue, std::uint64_t u64ActualData)
+			-> std::optional<std::uint64_t>;
 		[[nodiscard]] static bool IsEqualNoCase(std::string_view sv1, std::string_view sv2);
-		[[nodiscard]] static auto TMPLFindFieldName(PCHEXTEMPLATE pTemplate, std::wstring_view wsvFieldName) -> PCHEXTEMPLFIELD;
+		[[nodiscard]] static auto TMPLFindFieldName(const VecHexTemplFields& vecFields, std::wstring_view wsvFieldName)
+			-> PCHEXTEMPLFIELD;
+		[[nodiscard]] static auto TMPLGetDataFromField(const HEXTEMPLFIELD* pField, PCHEXTEMPLATE pTemplate, IHexCtrl* pHexCtrl)
+			-> std::optional<std::uint64_t>;
+		[[nodiscard]] static auto TMPLGetFieldsTotalSize(const VecHexTemplFields& vecFields) -> int;
 	private:
 		void CreateArrows();
 		[[nodiscard]] auto GetHexCtrl()const -> IHexCtrl*;
@@ -280,11 +283,14 @@ enum CHexDlgTemplMgr::EListColumns : std::int8_t {
 	COL_DATA = 4, COL_ENDIAN = 5, COL_DESCR = 6, COL_COLORS = 7
 };
 
-struct CHexDlgTemplMgr::FIELDSDEFPROPS { //Helper struct for convenient argument passing through recursive fields' parsing.
-	HEXCOLOR        stClr;
-	PCHEXTEMPLATE   pTemplate { }; //Same for all fields.
-	PCHEXTEMPLFIELD pFieldParent { nullptr };
-	bool            fBigEndian { false };
+struct CHexDlgTemplMgr::PARSEFIELDS {
+	const rapidjson::Value* pValue { };       //Fields array pointer.
+	const UmapCustomTypes*  pumapCT { };      //Pointer to the map of fields of Custom types.
+	PCHEXTEMPLATE           pTemplate { };    //Same for all fields.
+	PCHEXTEMPLFIELD         pFieldParent { }; //Parent of this field.
+	IHexCtrl*               pHexCtrl { };
+	HEXCOLOR                clrDefault;       //Default colors, if no colors defined for field.
+	bool                    fBigEndian { };   //Default BigEndian value, if no "endianness" defined for field.
 };
 
 
@@ -332,6 +338,12 @@ auto CHexDlgTemplMgr::ApplyTemplate(const wchar_t* pwszFilePath, std::uint64_t u
 		return -1;
 	}
 
+	const auto objData = docJSON.FindMember("Data");
+	if (objData == docJSON.MemberEnd() || !objData->value.IsObject()) {
+		ut::DBG_REPORT(std::format(L"{}\r\nNo 'Data' object member in the template.", pwszFilePath).data());
+		return -1;
+	}
+
 	auto pTemplateUtr = std::make_unique<HEXTEMPLATE>();
 	const auto pTemplate = pTemplateUtr.get();
 	pTemplate->wstrFilePath = pwszFilePath;
@@ -345,57 +357,52 @@ auto CHexDlgTemplMgr::ApplyTemplate(const wchar_t* pwszFilePath, std::uint64_t u
 		for (auto pCustomType = objCustomTypes->value.Begin(); pCustomType != objCustomTypes->value.End();
 			++pCustomType, ++uCustomTypeID) {
 			if (!pCustomType->IsObject()) {
-				ut::DBG_REPORT(std::format(L"{}\r\nEach CustomTypes' array entry must be an Object.", pwszFilePath).data());
+				ut::DBG_REPORT(std::format(L"{}\r\nEach 'CustomTypes' array entry must be an Object.", pwszFilePath).data());
 				return -1;
 			}
 
-			const auto optName = CHexDlgTemplMgr::JSONFindMemberAsString(pCustomType, "TypeName");
-			if (!optName) {
+			const auto optTypeName = CHexDlgTemplMgr::JSONFindMemberAsString(pCustomType, "TypeName");
+			if (!optTypeName) {
 				ut::DBG_REPORT(std::format(L"{}\r\nEach array entry (Object) must have a string 'TypeName' property.", pwszFilePath).data());
 				return -1;
 			}
 
-			const auto wstrTypeName = ut::StrToWstr(*optName);
-			const auto clrBk = CHexDlgTemplMgr::JSONColors(pCustomType, "clrBk").value_or(-1);
-			const auto clrText = CHexDlgTemplMgr::JSONColors(pCustomType, "clrText").value_or(-1);
-			const auto fBigEndian = CHexDlgTemplMgr::JSONIsBigEndianness(pCustomType).value_or(false);
-
-			const auto optFieldsArray = CHexDlgTemplMgr::JSONFindMember(pCustomType, "Fields");
-			if (!optFieldsArray || !(*optFieldsArray)->value.IsArray()) {
+			const auto optFieldMember = CHexDlgTemplMgr::JSONFindMember(pCustomType, "Fields");
+			if (!optFieldMember || !(*optFieldMember)->IsArray()) {
 				ut::DBG_REPORT(std::format(L"{}\r\nEach 'Fields' must be an array.", pwszFilePath).data());
 				return -1;
 			}
 
-			umapCT.try_emplace(uCustomTypeID, VecHexTemplFields { });
-			const CHexDlgTemplMgr::FIELDSDEFPROPS stDefTypes { .stClr { clrBk, clrText }, .pTemplate { pTemplate },
-				.fBigEndian { fBigEndian } };
-			if (!CHexDlgTemplMgr::JSONParseFields(*optFieldsArray, umapCT[uCustomTypeID], stDefTypes, umapCT, nullptr,
-				GetHexCtrl())) {
-				return { }; //Something went wrong during template parsing.
+			const CHexDlgTemplMgr::PARSEFIELDS pf {
+				.pValue { *optFieldMember }, .pumapCT { &umapCT }, .pTemplate { pTemplate },
+				.pFieldParent { nullptr }, .pHexCtrl { GetHexCtrl() },
+				.clrDefault { .clrBk { CHexDlgTemplMgr::JSONColors(pCustomType, "clrBk").value_or(-1) },
+				.clrText { CHexDlgTemplMgr::JSONColors(pCustomType, "clrText").value_or(-1) } },
+				.fBigEndian { CHexDlgTemplMgr::JSONIsBigEndianness(pCustomType).value_or(false) } };
+			auto optVec = CHexDlgTemplMgr::JSONParseFields(pf);
+			if (!optVec) {
+				return -1; //Something went wrong during template parsing.
 			}
-			pTemplate->vecCustomType.emplace_back(std::move(wstrTypeName), uCustomTypeID);
+
+			umapCT.try_emplace(uCustomTypeID, std::move(*optVec));
+			pTemplate->vecCustomType.emplace_back(ut::StrToWstr(*optTypeName), uCustomTypeID);
 		}
 	}
 
-	const auto objData = docJSON.FindMember("Data");
-	if (objData == docJSON.MemberEnd() || !objData->value.IsObject()) {
-		ut::DBG_REPORT(std::format(L"{}\r\nNo 'Data' object member in the template.", pwszFilePath).data());
+	const CHexDlgTemplMgr::PARSEFIELDS pf {
+		.pValue { *CHexDlgTemplMgr::JSONFindMember(&objData->value, "Fields") },
+		.pumapCT { &umapCT }, .pTemplate { pTemplate }, .pFieldParent { nullptr }, .pHexCtrl { GetHexCtrl() },
+		.clrDefault { .clrBk { CHexDlgTemplMgr::JSONColors(&objData->value, "clrBk").value_or(-1) },
+		.clrText { CHexDlgTemplMgr::JSONColors(&objData->value, "clrText").value_or(-1) } },
+		.fBigEndian { CHexDlgTemplMgr::JSONIsBigEndianness(&objData->value).value_or(false) } };
+	auto optVec = CHexDlgTemplMgr::JSONParseFields(pf);
+	if (!optVec) {
 		return -1;
 	}
 
-	const auto clrBk = CHexDlgTemplMgr::JSONColors(&objData->value, "clrBk").value_or(-1);
-	const auto clrText = CHexDlgTemplMgr::JSONColors(&objData->value, "clrText").value_or(-1);
-	const auto fBigEndian = CHexDlgTemplMgr::JSONIsBigEndianness(&objData->value).value_or(false);
-	const CHexDlgTemplMgr::FIELDSDEFPROPS stDefFields { .stClr { clrBk, clrText }, .pTemplate { pTemplate },
-		.fBigEndian { fBigEndian } };
-
-	const auto optFieldsArray = CHexDlgTemplMgr::JSONFindMember(&objData->value, "Fields");
-	auto& vecFields = pTemplate->vecFields;
-	if (!CHexDlgTemplMgr::JSONParseFields(*optFieldsArray, vecFields, stDefFields, umapCT, nullptr, GetHexCtrl())) {
-		return -1;
-	}
-
-	pTemplate->iSizeTotal = std::reduce(vecFields.begin(), vecFields.end(), 0,
+	pTemplate->vecFields = std::move(*optVec);
+	const auto& vecFields = pTemplate->vecFields;
+	pTemplate->iSizeTotal = std::reduce(vecFields.cbegin(), vecFields.cend(), 0,
 		[](auto iTotal, const std::unique_ptr<HEXTEMPLFIELD>& pData) { return iTotal + pData->iSize; });
 	pTemplate->iTemplateID = TMPLGetIDForNewTemplate();
 	m_vecTemplates.emplace_back(std::move(pTemplateUtr));
@@ -497,28 +504,24 @@ auto CHexDlgTemplMgr::HitTest(std::uint64_t u64Offset)const->PCHEXTEMPLFIELD {
 	const auto pTemplate = rit->get();
 	const auto ullOffsetApplied = pTemplate->u64Offset;
 	const auto& vecFields = pTemplate->vecFields;
-	const auto lmbFind = [u64Offset, ullOffsetApplied](const VecHexTemplFields& vecFields)->PCHEXTEMPLFIELD {
-		const auto _lmbFind = [u64Offset, ullOffsetApplied]
-		(const auto& lmbSelf, const VecHexTemplFields& vecFields)->PCHEXTEMPLFIELD {
-			for (const auto& pField : vecFields) {
-				if (pField->vecNested.empty()) {
-					const auto ullOffsetCurr = ullOffsetApplied + pField->iOffset;
-					if (u64Offset < (ullOffsetCurr + pField->iSize)) {
-						return pField.get();
-					}
-				}
-				else {
-					if (const auto pFieldInner = lmbSelf(lmbSelf, pField->vecNested); pFieldInner != nullptr) {
-						return pFieldInner; //Return only if we Hit a pointer in the inner lambda, continue the loop otherwise.
-					}
+	const auto lmbFind = [u64Offset, ullOffsetApplied](const auto& lmbSelf, const VecHexTemplFields& vecFields)
+		->PCHEXTEMPLFIELD {
+		for (const auto& pField : vecFields) {
+			if (pField->vecNested.empty()) {
+				const auto ullOffsetCurr = ullOffsetApplied + pField->iOffset;
+				if (u64Offset < (ullOffsetCurr + pField->iSize)) {
+					return pField.get();
 				}
 			}
-			return nullptr;
-			};
-		return _lmbFind(_lmbFind, vecFields);
+			else {
+				if (const auto pFieldInner = lmbSelf(lmbSelf, pField->vecNested); pFieldInner != nullptr) {
+					return pFieldInner; //Return only if we Hit a pointer in the inner lambda, continue the loop otherwise.
+				}
+			}
+		}
+		return nullptr;
 		};
-
-	return lmbFind(vecFields);
+	return lmbFind(lmbFind, vecFields);
 }
 
 void CHexDlgTemplMgr::Initialize(IHexCtrl &HexCtrl, HINSTANCE hInstRes) {
@@ -598,68 +601,6 @@ void CHexDlgTemplMgr::UpdateData() {
 	m_ListEx.RedrawWindow();
 }
 
-auto CHexDlgTemplMgr::GetDataFromField(const HEXTEMPLFIELD* pField, PCHEXTEMPLATE pTemplate, IHexCtrl* pHexCtrl)
-->std::optional<std::uint64_t> {
-	//Retrieves data from HexCtrl by template+pField offset and field size.
-
-	assert(pHexCtrl != nullptr);
-	const auto u64HexDataSize = pHexCtrl->GetDataSize();
-	const auto u64FieldOffset = pTemplate->u64Offset + pField->iOffset;
-
-	using enum EHexTemplFieldType;
-	switch (pField->eType) {
-	case type_int8:
-	case type_uint8:
-		if ((u64FieldOffset + 1) > u64HexDataSize) {
-			return std::nullopt;
-		}
-
-		return ut::GetIHexTData<std::uint8_t>(*pHexCtrl, u64FieldOffset);
-	case type_int16:
-	case type_uint16:
-	{
-		if ((u64FieldOffset + 2) > u64HexDataSize) {
-			return std::nullopt;
-		}
-
-		auto u16 = ut::GetIHexTData<std::uint16_t>(*pHexCtrl, u64FieldOffset);
-		if (pField->fBigEndian) {
-			u16 = ut::ByteSwap(u16);
-		}
-		return u16;
-	}
-	case type_int32:
-	case type_uint32:
-	{
-		if ((u64FieldOffset + 4) > u64HexDataSize) {
-			return std::nullopt;
-		}
-
-		auto u32 = ut::GetIHexTData<std::uint16_t>(*pHexCtrl, u64FieldOffset);
-		if (pField->fBigEndian) {
-			u32 = ut::ByteSwap(u32);
-		}
-		return u32;
-	}
-	case type_int64:
-	case type_uint64:
-	{
-		if ((u64FieldOffset + 8) > u64HexDataSize) {
-			return std::nullopt;
-		}
-
-		auto u64 = ut::GetIHexTData<std::uint16_t>(*pHexCtrl, u64FieldOffset);
-		if (pField->fBigEndian) {
-			u64 = ut::ByteSwap(u64);
-		}
-		return u64;
-	}
-	default:
-		ut::DBG_REPORT(L"Only integral types are allowed as field types.");
-		return std::nullopt;
-	}
-}
-
 auto CHexDlgTemplMgr::JSONIsBigEndianness(const rapidjson::Value* pValue)->std::optional<bool> {
 	const auto optEndianness = CHexDlgTemplMgr::JSONFindMemberAsString(pValue, "endianness");
 	if (!optEndianness) {
@@ -675,32 +616,30 @@ auto CHexDlgTemplMgr::JSONIsBigEndianness(const rapidjson::Value* pValue)->std::
 	return svEndianness == "big";
 }
 
-auto CHexDlgTemplMgr::JSONFindMember(const rapidjson::Value* pValue, const char* pszName)->std::optional<IterJSONMember> {
+auto CHexDlgTemplMgr::JSONFindMember(const rapidjson::Value* pValue, const char* pszName)->std::optional<const rapidjson::Value*> {
 	const auto itMember = pValue->FindMember(pszName);
-	return itMember != pValue->MemberEnd() ? std::optional<IterJSONMember>{ itMember } : std::nullopt;
+	return itMember != pValue->MemberEnd() ? std::optional<const rapidjson::Value*>{ &itMember->value } : std::nullopt;
 }
 
 auto CHexDlgTemplMgr::JSONFindMemberAsInt32(const rapidjson::Value* pValue, const char* pszName)->std::optional<int> {
 	const auto optMember = JSONFindMember(pValue, pszName);
-	return (optMember && (*optMember)->value.IsInt()) ? std::optional<int>{(*optMember)->value.GetInt()} : std::nullopt;
+	return (optMember && (*optMember)->IsInt()) ? std::optional<int>{(*optMember)->GetInt()} : std::nullopt;
 }
 
 auto CHexDlgTemplMgr::JSONFindMemberAsUInt32(const rapidjson::Value* pValue, const char* pszName)->std::optional<std::uint32_t> {
 	const auto optMember = JSONFindMember(pValue, pszName);
-	return (optMember && (*optMember)->value.IsUint()) ? std::optional<int>{(*optMember)->value.GetUint()} : std::nullopt;
+	return (optMember && (*optMember)->IsUint()) ? std::optional<int>{(*optMember)->GetUint()} : std::nullopt;
 }
 
 auto CHexDlgTemplMgr::JSONFindMemberAsObject(const rapidjson::Value* pValue, const char* pszName)
 ->std::optional<const rapidjson::Value*> {
 	const auto optMember = JSONFindMember(pValue, pszName);
-	return (optMember && (*optMember)->value.IsObject()) ?
-		std::optional<const rapidjson::Value*>{&((*optMember)->value)} : std::nullopt;
+	return (optMember && (*optMember)->IsObject()) ? std::optional<const rapidjson::Value*>{*optMember} : std::nullopt;
 }
 
 auto CHexDlgTemplMgr::JSONFindMemberAsString(const rapidjson::Value* pValue, const char* pszName)->std::optional<const char*> {
 	const auto optMember = JSONFindMember(pValue, pszName);
-	return (optMember && (*optMember)->value.IsString()) ?
-		std::optional<const char*>{(*optMember)->value.GetString()} : std::nullopt;
+	return (optMember && (*optMember)->IsString()) ? std::optional<const char*>{(*optMember)->GetString()} : std::nullopt;
 }
 
 auto CHexDlgTemplMgr::JSONColors(const rapidjson::Value* pValue, const char* pszColorName)->std::optional<COLORREF> {
@@ -720,8 +659,9 @@ auto CHexDlgTemplMgr::JSONColors(const rapidjson::Value* pValue, const char* psz
 	return RGB(R, G, B);
 }
 
-bool CHexDlgTemplMgr::JSONParseFields(const IterJSONMember itFieldsArray, VecHexTemplFields& vecFields,
-	const FIELDSDEFPROPS& defProps, UmapCustomTypes& umapCustomT, int* pFieldOffset, IHexCtrl* pHexCtrl) {
+auto CHexDlgTemplMgr::JSONParseFields(const PARSEFIELDS& pf)->std::optional<VecHexTemplFields> {
+	//This function parses array of fields in JSON, and returns VecHexTemplFields of these fields, or std::nullopt.
+
 	using enum EHexTemplFieldType;
 
 	//Mapping from the JSON 'type' string to EHexTemplFieldType enum.
@@ -751,194 +691,187 @@ bool CHexDlgTemplMgr::JSONParseFields(const IterJSONMember itFieldsArray, VecHex
 		{ type_systemtime, static_cast<int>(sizeof(SYSTEMTIME)) }, { type_guid, static_cast<int>(sizeof(GUID)) }
 	};
 
-	const auto lmbTotalSize = [](const VecHexTemplFields& vecFields)->int {
-		//Counts the total size of all fields in the VecHexTemplFields, recursively.
-		const auto _lmbTotalSize = [](const auto& lmbSelf, const VecHexTemplFields& vecFields)->int {
-			return std::reduce(vecFields.begin(), vecFields.end(), 0,
-				[&lmbSelf](auto ullTotal, const std::unique_ptr<HEXTEMPLFIELD>& pField) {
-					if (!pField->vecNested.empty()) {
-						return ullTotal + lmbSelf(lmbSelf, pField->vecNested);
-					}
-					return ullTotal + pField->iSize; });
-			};
-		return _lmbTotalSize(_lmbTotalSize, vecFields);
-		};
+	int iFirstFieldOffset { 0 }; //Default starting field offset.
 
-	int iOffset { 0 }; //Default starting field offset.
-	if (pFieldOffset == nullptr) {
-		pFieldOffset = &iOffset;
-	}
-
-	for (auto pField = itFieldsArray->value.Begin(); pField != itFieldsArray->value.End(); ++pField) {
-		if (!pField->IsObject()) {
-			ut::DBG_REPORT(L"Each 'Fields' array entry must be an Object {}.");
-			return false;
-		}
-
-		std::wstring wstrNameField;
-		if (const auto optName = JSONFindMemberAsString(pField, "name"); optName) {
-			wstrNameField = ut::StrToWstr(*optName);
-		}
-		else {
-			ut::DBG_REPORT(L"Each array entry (Object) must have a 'name' property.");
-			return false;
-		}
-
-		const auto& pNewField = vecFields.emplace_back(std::make_unique<HEXTEMPLFIELD>());
-		pNewField->wstrName = wstrNameField;
-		pNewField->iOffset = *pFieldOffset;
-		pNewField->stClr.clrBk = JSONColors(pField, "clrBk").value_or(defProps.stClr.clrBk);
-		pNewField->stClr.clrText = JSONColors(pField, "clrText").value_or(defProps.stClr.clrText);
-		pNewField->pFieldParent = defProps.pFieldParent;
-		pNewField->eType = type_custom;
-		pNewField->fBigEndian = JSONIsBigEndianness(pField).value_or(defProps.fBigEndian);
-
-		if (const auto optNestedFields = JSONFindMember(pField, "Fields"); optNestedFields) {
-			if (!(*optNestedFields)->value.IsArray()) {
-				ut::DBG_REPORT(L"Each 'Fields' must be an Array.");
-				return false;
-			}
-
-			//Setting defaults for the next nested fields.
-			const FIELDSDEFPROPS stDefsNested { .stClr { pNewField->stClr }, .pTemplate { defProps.pTemplate },
-				.pFieldParent { pNewField.get() }, .fBigEndian { pNewField->fBigEndian } };
-
-			//Recursion for nested fields starts here.
-			if (!JSONParseFields(*optNestedFields, pNewField->vecNested, stDefsNested, umapCustomT, pFieldOffset, pHexCtrl)) {
-				return false;
-			}
-
-			pNewField->iSize = lmbTotalSize(pNewField->vecNested); //Total size of all nested fields.
-		}
-		else {
-			if (const auto optDescr = JSONFindMemberAsString(pField, "description"); optDescr) {
-				pNewField->wstrDescr = ut::StrToWstr(*optDescr);
-			}
-
-			//The "array" field can be an int or an Object.
-			std::uint32_t uArraySize { 0 };
-			if (const auto optArray = JSONFindMember(pField, "array"); optArray) {
-				if ((*optArray)->value.IsInt() && ((*optArray)->value.GetInt() > 1)) { //Array is a plain int.
-					uArraySize = (*optArray)->value.GetInt();
-				}
-				else if ((*optArray)->value.IsObject()) { //Array is an object.
-					const auto pArrayObj = &((*optArray)->value);
-					const auto optSizeFieldName = JSONFindMemberAsString(pArrayObj, "sizefield");
-					if (!optSizeFieldName) {
-						ut::DBG_REPORT(L"Each 'array' object entry must have a 'sizefield' property.");
-						return false;
-					}
-
-					//Field name to get the size from.
-					const auto wstrSizeFieldName = ut::StrToWstr(*optSizeFieldName);
-					//Field to get the size of the array from.
-					const auto pSizeField = TMPLFindFieldName(defProps.pTemplate, wstrSizeFieldName);
-					if (pSizeField == nullptr) {
-						ut::DBG_REPORT(std::format(L"Field '{}' could not be found.", wstrSizeFieldName).data());
-						return false;
-					}
-
-					if (!pHexCtrl->IsDataSet()) {
-						ut::DBG_REPORT(L"Dynamic templates require data to be set in order to work.");
-						return false;
-					}
-
-					const auto optData = GetDataFromField(pSizeField, defProps.pTemplate, pHexCtrl);
-					if (!optData) {
-						ut::DBG_REPORT(L"Could not retrieve the data from the HexCtrl.");
-						return false;
-					}
-
-					const auto optLimitData = JSONProcessLimitObject(pArrayObj, *optData);
-					if (!optLimitData) {
-						return false;
-					}
-
-					uArraySize = static_cast<std::uint32_t>(*optLimitData);
-				}
-			}
-
-			if (const auto optJump = JSONFindMemberAsObject(pField, "jump"); optJump) {
-				//The "anchor" is a mandatory field.
-				if (const auto optAnchor = JSONFindMemberAsString(*optJump, "anchor"); optAnchor) {
-					auto uptrJump = std::make_unique<HEXTEMPLJUMP>();
-					using enum EHexTemplJumpAnchor;
-
-					if (IsEqualNoCase(*optAnchor, "datastart")) {
-						uptrJump->eAnchor = DATA_START;
-					}
-					else if (IsEqualNoCase(*optAnchor, "dataend")) {
-						uptrJump->eAnchor = DATA_END;
-					}
-					else if (IsEqualNoCase(*optAnchor, "fieldthis") || IsEqualNoCase(*optAnchor, "here")) {
-						uptrJump->eAnchor = FIELD_THIS;
-					}
-					else if (IsEqualNoCase(*optAnchor, "fieldfirst") || IsEqualNoCase(*optAnchor, "structstart")) {
-						uptrJump->eAnchor = FIELD_FIRST;
-					}
-					else {
-						uptrJump->eAnchor = OFFSET_CUSTOM;
-						uptrJump->u64Anchor = stn::StrToUInt64(*optAnchor).value_or(0ULL);
-					}
-
-					if (const auto optDirection = JSONFindMemberAsString(*optJump, "direction"); optDirection) {
-						using enum EHexTemplJumpDirection;
-						uptrJump->eDirection = IsEqualNoCase(*optDirection, "backward") ? JUMP_BACKWARD : JUMP_FORWARD;
-					}
-
-					if (const auto optUnits = JSONFindMemberAsString(*optJump, "units"); optUnits) {
-						if (IsEqualNoCase(*optUnits, "byte")) {
-							uptrJump->u32Units = 1;
-						}
-						else if (IsEqualNoCase(*optUnits, "word")) {
-							uptrJump->u32Units = 2;
-						}
-						else if (IsEqualNoCase(*optUnits, "dword")) {
-							uptrJump->u32Units = 4;
-						}
-						else if (IsEqualNoCase(*optUnits, "qword")) {
-							uptrJump->u32Units = 8;
-						}
-						else {
-							uptrJump->u32Units = stn::StrToUInt32(*optUnits).value_or(1UL);
-						}
-					}
-
-					pNewField->pJump = std::move(uptrJump);
-				}
-			}
-
-			int iSize { 0 }; //Current field's size, via "type" or "size" property.
-			if (const auto optType = JSONFindMember(pField, "type"); optType) {
-				if (!(*optType)->value.IsString()) {
-					ut::DBG_REPORT(L"Field 'type' must be a string.");
+	//This is the top level vector of fields.
+	//We pass it as the argument, to fill it up with fields, recursively, and also we capture it
+	//in the lambda capture list. This is mostly for dynamic arrays, to search for already defined fields.
+	VecHexTemplFields vecFieldsTopLevel;
+	const auto lmbRecursive = [&vecFieldsTopLevel](const auto& lmbSelf, const PARSEFIELDS& pf,
+		VecHexTemplFields& vecFields, int& iFieldOffset)->bool {
+			for (const auto* pField = pf.pValue->Begin(); pField != pf.pValue->End(); ++pField) {
+				if (!pField->IsObject()) {
+					ut::DBG_REPORT(L"Each 'Fields' array entry must be an Object {}.");
 					return false;
 				}
 
-				const auto pszType = (*optType)->value.GetString();
-				std::string strTypeLowerCase = pszType; //Lowering the case of the 'type' string.
-				std::ranges::transform(strTypeLowerCase, strTypeLowerCase.begin(),
-					[](char ch) { return static_cast<char>(std::tolower(ch)); });
-
-				if (const auto itMapType = umapStrToEType.find(strTypeLowerCase); itMapType != umapStrToEType.end()) {
-					pNewField->eType = itMapType->second;
-					iSize = umapTypeToSize.at(itMapType->second);
+				std::wstring wstrNameField;
+				if (const auto optName = JSONFindMemberAsString(pField, "name"); optName) {
+					wstrNameField = ut::StrToWstr(*optName);
 				}
-				else { //If it's not any standard type, we try to find custom type with the given name.
-					const auto& vecCTypes = defProps.pTemplate->vecCustomType;
-					const auto itVecCT = std::find_if(vecCTypes.begin(), vecCTypes.end(),
-						[=](const HEXTEMPLCT& ct) { return ct.wstrTypeName == ut::StrToWstr(pszType); });
-					if (itVecCT == vecCTypes.end()) {
-						ut::DBG_REPORT(L"Unknown 'type' of the field.");
+				else {
+					ut::DBG_REPORT(L"Each array entry (Object) must have a 'name' property.");
+					return false;
+				}
+
+				const auto& pNewField = vecFields.emplace_back(std::make_unique<HEXTEMPLFIELD>());
+				pNewField->wstrName = wstrNameField;
+				pNewField->iOffset = iFieldOffset;
+				pNewField->stClr.clrBk = JSONColors(pField, "clrBk").value_or(pf.clrDefault.clrBk);
+				pNewField->stClr.clrText = JSONColors(pField, "clrText").value_or(pf.clrDefault.clrText);
+				pNewField->pFieldParent = pf.pFieldParent;
+				pNewField->eType = type_custom;
+				pNewField->fBigEndian = JSONIsBigEndianness(pField).value_or(pf.fBigEndian);
+
+				if (const auto optNestedFields = JSONFindMember(pField, "Fields"); optNestedFields) {
+					if (!(*optNestedFields)->IsArray()) {
+						ut::DBG_REPORT(L"Each 'Fields' must be an Array.");
 						return false;
 					}
 
-					pNewField->iCustomTypeID = itVecCT->iTypeID; //Custom type ID.
-					pNewField->eType = type_custom;
-					const auto lmbCopyCustomType = [](const VecHexTemplFields& vecCustomFields,
-						const PtrHexTemplField& pField, int& iOffset)->void {
-							const auto _lmbCustomTypeCopy = [](const auto& lmbSelf,
-								const VecHexTemplFields& vecCustomFields, const PtrHexTemplField& pField, int& iOffset)->void {
+					//Setting the defaults for the next nested fields.
+					PARSEFIELDS pfNested = pf;
+					pfNested.pValue = *optNestedFields;
+					pfNested.clrDefault = pNewField->stClr;
+					pfNested.pFieldParent = pNewField.get();
+					pfNested.fBigEndian = pNewField->fBigEndian;
+
+					//Recursion for nested fields starts here.
+					if (!lmbSelf(lmbSelf, pfNested, pNewField->vecNested, iFieldOffset)) {
+						return false;
+					}
+
+					pNewField->iSize = TMPLGetFieldsTotalSize(pNewField->vecNested); //Total size of all nested fields.
+				}
+				else {
+					if (const auto optDescr = JSONFindMemberAsString(pField, "description"); optDescr) {
+						pNewField->wstrDescr = ut::StrToWstr(*optDescr);
+					}
+
+					//The "array" field can be an int or an Object.
+					std::uint32_t uArraySize { 0 };
+					if (const auto optArray = JSONFindMember(pField, "array"); optArray) {
+						if ((*optArray)->IsInt() && ((*optArray)->GetInt() > 1)) { //Array is a plain int.
+							uArraySize = (*optArray)->GetInt();
+						}
+						else if ((*optArray)->IsObject()) { //Array is an object.
+							const auto pArrayObj = *optArray;
+							const auto optSizeFieldName = JSONFindMemberAsString(pArrayObj, "sizefield");
+							if (!optSizeFieldName) {
+								ut::DBG_REPORT(L"Each 'array' object entry must have a 'sizefield' property.");
+								return false;
+							}
+
+							//Field name to get the size from.
+							const auto wstrSizeFieldName = ut::StrToWstr(*optSizeFieldName);
+							//Field to get the size of the array from.
+							const auto pSizeField = TMPLFindFieldName(vecFieldsTopLevel, wstrSizeFieldName);
+							if (pSizeField == nullptr) {
+								ut::DBG_REPORT(std::format(L"Field '{}' could not be found.", wstrSizeFieldName).data());
+								return false;
+							}
+
+							if (!pf.pHexCtrl->IsDataSet()) {
+								ut::DBG_REPORT(L"Dynamic templates require data to be set in order to work.");
+								return false;
+							}
+
+							const auto optData = TMPLGetDataFromField(pSizeField, pf.pTemplate, pf.pHexCtrl);
+							if (!optData) {
+								ut::DBG_REPORT(L"Could not retrieve the data from the HexCtrl.");
+								return false;
+							}
+
+							const auto optLimitData = JSONProcessLimitObject(pArrayObj, *optData);
+							if (!optLimitData) {
+								return false;
+							}
+
+							uArraySize = static_cast<std::uint32_t>(*optLimitData);
+						}
+					}
+
+					if (const auto optJump = JSONFindMemberAsObject(pField, "jump"); optJump) {
+						//The "anchor" is a mandatory field.
+						if (const auto optAnchor = JSONFindMemberAsString(*optJump, "anchor"); optAnchor) {
+							auto uptrJump = std::make_unique<HEXTEMPLJUMP>();
+							using enum EHexTemplJumpAnchor;
+
+							if (IsEqualNoCase(*optAnchor, "datastart")) {
+								uptrJump->eAnchor = DATA_START;
+							}
+							else if (IsEqualNoCase(*optAnchor, "dataend")) {
+								uptrJump->eAnchor = DATA_END;
+							}
+							else if (IsEqualNoCase(*optAnchor, "fieldthis") || IsEqualNoCase(*optAnchor, "here")) {
+								uptrJump->eAnchor = FIELD_THIS;
+							}
+							else if (IsEqualNoCase(*optAnchor, "fieldfirst") || IsEqualNoCase(*optAnchor, "structstart")) {
+								uptrJump->eAnchor = FIELD_FIRST;
+							}
+							else {
+								uptrJump->eAnchor = OFFSET_CUSTOM;
+								uptrJump->u64Anchor = stn::StrToUInt64(*optAnchor).value_or(0ULL);
+							}
+
+							if (const auto optDirection = JSONFindMemberAsString(*optJump, "direction"); optDirection) {
+								using enum EHexTemplJumpDirection;
+								uptrJump->eDirection = IsEqualNoCase(*optDirection, "backward") ? JUMP_BACKWARD : JUMP_FORWARD;
+							}
+
+							if (const auto optUnits = JSONFindMemberAsString(*optJump, "units"); optUnits) {
+								if (IsEqualNoCase(*optUnits, "byte")) {
+									uptrJump->u32Units = 1;
+								}
+								else if (IsEqualNoCase(*optUnits, "word")) {
+									uptrJump->u32Units = 2;
+								}
+								else if (IsEqualNoCase(*optUnits, "dword")) {
+									uptrJump->u32Units = 4;
+								}
+								else if (IsEqualNoCase(*optUnits, "qword")) {
+									uptrJump->u32Units = 8;
+								}
+								else {
+									uptrJump->u32Units = stn::StrToUInt32(*optUnits).value_or(1UL);
+								}
+							}
+
+							pNewField->pJump = std::move(uptrJump);
+						}
+					}
+
+					int iSize { 0 }; //Current field's size, via "type" or "size" property.
+					if (const auto optType = JSONFindMember(pField, "type"); optType) {
+						if (!(*optType)->IsString()) {
+							ut::DBG_REPORT(L"Field 'type' must be a string.");
+							return false;
+						}
+
+						const auto pszType = (*optType)->GetString();
+						std::string strTypeLowerCase = pszType; //Lowering the case of the 'type' string.
+						std::ranges::transform(strTypeLowerCase, strTypeLowerCase.begin(),
+							[](char ch) { return static_cast<char>(std::tolower(ch)); });
+
+						if (const auto itMapType = umapStrToEType.find(strTypeLowerCase); itMapType != umapStrToEType.end()) {
+							pNewField->eType = itMapType->second;
+							iSize = umapTypeToSize.at(itMapType->second);
+						}
+						else { //If it's not any standard type, we try to find custom type with the given name.
+							const auto& vecCTypes = pf.pTemplate->vecCustomType;
+							const auto itVecCT = std::find_if(vecCTypes.begin(), vecCTypes.end(),
+								[=](const HEXTEMPLCT& ct) { return ct.wstrTypeName == ut::StrToWstr(pszType); });
+							if (itVecCT == vecCTypes.end()) {
+								ut::DBG_REPORT(L"Unknown 'type' of the field.");
+								return false;
+							}
+
+							pNewField->iCustomTypeID = itVecCT->iTypeID; //Custom type ID.
+							pNewField->eType = type_custom;
+
+							//Lambda for deep copy Custom type.
+							const auto lmbCopyCT = [](const auto& lmbSelf, const VecHexTemplFields& vecCustomFields,
+								const PtrHexTemplField& pField, int& iOffset)->void {
 									for (const auto& pCustomField : vecCustomFields) {
 										const auto& pNewField = pField->vecNested.emplace_back(std::make_unique<HEXTEMPLFIELD>());
 										const auto& CFClr = pCustomField->stClr;
@@ -949,7 +882,8 @@ bool CHexDlgTemplMgr::JSONParseFields(const IterJSONMember itFieldsArray, VecHex
 										pNewField->stClr.clrBk = CFClr.clrBk == -1 ? pField->stClr.clrBk : CFClr.clrBk;
 										pNewField->stClr.clrText = CFClr.clrText == -1 ? pField->stClr.clrText : CFClr.clrText;
 										pNewField->pFieldParent = pField.get();
-										pNewField->pJump = pField->pJump != nullptr ? std::make_unique<HEXTEMPLJUMP>(*pField->pJump) : nullptr;
+										pNewField->pJump = pField->pJump != nullptr ?
+											std::make_unique<HEXTEMPLJUMP>(*pField->pJump) : nullptr;
 										pNewField->eType = pCustomField->eType;
 										pNewField->iCustomTypeID = pCustomField->iCustomTypeID;
 										pNewField->fBigEndian = pCustomField->fBigEndian;
@@ -962,18 +896,56 @@ bool CHexDlgTemplMgr::JSONParseFields(const IterJSONMember itFieldsArray, VecHex
 										}
 									}
 								};
-							_lmbCustomTypeCopy(_lmbCustomTypeCopy, vecCustomFields, pField, iOffset);
-						};
 
-					auto iOffsetCustomType = *pFieldOffset;
-					if (uArraySize <= 1) {
-						lmbCopyCustomType(umapCustomT[itVecCT->iTypeID], pNewField, iOffsetCustomType);
+							auto iOffsetCustomType = iFieldOffset;
+							if (uArraySize <= 1) {
+								lmbCopyCT(lmbCopyCT, pf.pumapCT->at(itVecCT->iTypeID), pNewField, iOffsetCustomType);
+							}
+							else { //Creating array of Custom types.								
+								for (auto uArrIndex = 0U; uArrIndex < uArraySize; ++uArrIndex) {
+									const auto& pFieldArray = pNewField->vecNested.emplace_back(std::make_unique<HEXTEMPLFIELD>());
+									pFieldArray->wstrName = std::format(L"{}[{}]", wstrNameField, uArrIndex);
+									pFieldArray->iOffset = iOffsetCustomType;
+									pFieldArray->stClr = pNewField->stClr;
+									pFieldArray->pFieldParent = pNewField.get();
+									pFieldArray->pJump = pNewField->pJump != nullptr ?
+										std::make_unique<HEXTEMPLJUMP>(*pNewField->pJump) : nullptr;
+									pFieldArray->eType = pNewField->eType;
+									pFieldArray->iCustomTypeID = pNewField->iCustomTypeID;
+									pFieldArray->fBigEndian = pNewField->fBigEndian;
+
+									//Copy Custom type fields into the pFieldArray->vecNested.
+									lmbCopyCT(lmbCopyCT, pf.pumapCT->at(itVecCT->iTypeID), pFieldArray, iOffsetCustomType);
+									pFieldArray->iSize = TMPLGetFieldsTotalSize(pFieldArray->vecNested);
+								}
+								pNewField->wstrName = std::format(L"{}[{}]", wstrNameField, uArraySize);
+							}
+
+							iSize = TMPLGetFieldsTotalSize(pNewField->vecNested);
+						}
 					}
-					else { //Creating array of Custom Types.
+					else { //No "type" property was found.
+						const auto optSize = JSONFindMemberAsInt32(pField, "size");
+						if (!optSize) {
+							ut::DBG_REPORT(L"No integer 'size', or 'type' property was found.");
+							return false;
+						}
+
+						if (*optSize < 1) {
+							ut::DBG_REPORT(L"The 'size' must be > 0.");
+							return false;
+						}
+
+						iSize = *optSize;
+						pNewField->eType = custom_size;
+					}
+
+					if (uArraySize > 1 && pNewField->eType != type_custom) { //Creating array of standard/default types.
 						for (auto uArrIndex = 0U; uArrIndex < uArraySize; ++uArrIndex) {
 							const auto& pFieldArray = pNewField->vecNested.emplace_back(std::make_unique<HEXTEMPLFIELD>());
 							pFieldArray->wstrName = std::format(L"{}[{}]", wstrNameField, uArrIndex);
-							pFieldArray->iOffset = iOffsetCustomType;
+							pFieldArray->iOffset = iFieldOffset + (uArrIndex * iSize);
+							pFieldArray->iSize = iSize;
 							pFieldArray->stClr = pNewField->stClr;
 							pFieldArray->pFieldParent = pNewField.get();
 							pFieldArray->pJump = pNewField->pJump != nullptr ?
@@ -981,57 +953,30 @@ bool CHexDlgTemplMgr::JSONParseFields(const IterJSONMember itFieldsArray, VecHex
 							pFieldArray->eType = pNewField->eType;
 							pFieldArray->iCustomTypeID = pNewField->iCustomTypeID;
 							pFieldArray->fBigEndian = pNewField->fBigEndian;
-
-							//Copy Custom Type fields into the pFieldArray->vecNested.
-							lmbCopyCustomType(umapCustomT[itVecCT->iTypeID], pFieldArray, iOffsetCustomType);
-							pFieldArray->iSize = lmbTotalSize(pFieldArray->vecNested);
 						}
 						pNewField->wstrName = std::format(L"{}[{}]", wstrNameField, uArraySize);
+						iSize *= uArraySize;
 					}
 
-					iSize = lmbTotalSize(pNewField->vecNested);
+					pNewField->iSize = iSize;
+					iFieldOffset += iSize;
 				}
 			}
-			else { //No "type" property was found.
-				const auto optSize = JSONFindMemberAsInt32(pField, "size");
-				if (!optSize) {
-					ut::DBG_REPORT(L"No integer 'size', or 'type' property was found.");
-					return false;
-				}
 
-				if (*optSize < 1) {
-					ut::DBG_REPORT(L"The 'size' must be > 0.");
-					return false;
-				}
+			return true;
+		};
 
-				iSize = *optSize;
-				pNewField->eType = custom_size;
-			}
-
-			if (uArraySize > 1 && pNewField->eType != type_custom) { //Creating array of standard/default types.
-				for (auto uArrIndex = 0U; uArrIndex < uArraySize; ++uArrIndex) {
-					const auto& pFieldArray = pNewField->vecNested.emplace_back(std::make_unique<HEXTEMPLFIELD>());
-					pFieldArray->wstrName = std::format(L"{}[{}]", wstrNameField, uArrIndex);
-					pFieldArray->iOffset = *pFieldOffset + (uArrIndex * iSize);
-					pFieldArray->iSize = iSize;
-					pFieldArray->stClr = pNewField->stClr;
-					pFieldArray->pFieldParent = pNewField.get();
-					pFieldArray->pJump = pNewField->pJump != nullptr ?
-						std::make_unique<HEXTEMPLJUMP>(*pNewField->pJump) : nullptr;
-					pFieldArray->eType = pNewField->eType;
-					pFieldArray->iCustomTypeID = pNewField->iCustomTypeID;
-					pFieldArray->fBigEndian = pNewField->fBigEndian;
-				}
-				pNewField->wstrName = std::format(L"{}[{}]", wstrNameField, uArraySize);
-				iSize *= uArraySize;
-			}
-
-			pNewField->iSize = iSize;
-			*pFieldOffset += iSize;
+	try {
+		if (!lmbRecursive(lmbRecursive, pf, vecFieldsTopLevel, iFirstFieldOffset)) {
+			return std::nullopt;
 		}
 	}
+	catch (...) {
+		vecFieldsTopLevel.clear();
+		return std::nullopt;
+	}
 
-	return true;
+	return { std::move(vecFieldsTopLevel) };
 }
 
 auto CHexDlgTemplMgr::JSONProcessLimitObject(const rapidjson::Value* pValue, std::uint64_t u64ActualData)
@@ -1127,31 +1072,103 @@ bool CHexDlgTemplMgr::IsEqualNoCase(std::string_view sv1, std::string_view sv2) 
 		[](unsigned char c) { return std::tolower(c); });
 }
 
-auto CHexDlgTemplMgr::TMPLFindFieldName(PCHEXTEMPLATE pTemplate, std::wstring_view wsvFieldName)->PCHEXTEMPLFIELD {
+auto CHexDlgTemplMgr::TMPLGetDataFromField(const HEXTEMPLFIELD* pField, PCHEXTEMPLATE pTemplate, IHexCtrl* pHexCtrl)
+->std::optional<std::uint64_t> {
+	//Retrieves data from HexCtrl by template+pField offset and field size.
+
+	assert(pHexCtrl != nullptr);
+	const auto u64HexDataSize = pHexCtrl->GetDataSize();
+	const auto u64FieldOffset = pTemplate->u64Offset + pField->iOffset;
+
+	using enum EHexTemplFieldType;
+	switch (pField->eType) {
+	case type_int8:
+	case type_uint8:
+		if ((u64FieldOffset + 1) > u64HexDataSize) {
+			return std::nullopt;
+		}
+
+		return ut::GetIHexTData<std::uint8_t>(*pHexCtrl, u64FieldOffset);
+	case type_int16:
+	case type_uint16:
+	{
+		if ((u64FieldOffset + 2) > u64HexDataSize) {
+			return std::nullopt;
+		}
+
+		auto u16 = ut::GetIHexTData<std::uint16_t>(*pHexCtrl, u64FieldOffset);
+		if (pField->fBigEndian) {
+			u16 = ut::ByteSwap(u16);
+		}
+		return u16;
+	}
+	case type_int32:
+	case type_uint32:
+	{
+		if ((u64FieldOffset + 4) > u64HexDataSize) {
+			return std::nullopt;
+		}
+
+		auto u32 = ut::GetIHexTData<std::uint16_t>(*pHexCtrl, u64FieldOffset);
+		if (pField->fBigEndian) {
+			u32 = ut::ByteSwap(u32);
+		}
+		return u32;
+	}
+	case type_int64:
+	case type_uint64:
+	{
+		if ((u64FieldOffset + 8) > u64HexDataSize) {
+			return std::nullopt;
+		}
+
+		auto u64 = ut::GetIHexTData<std::uint16_t>(*pHexCtrl, u64FieldOffset);
+		if (pField->fBigEndian) {
+			u64 = ut::ByteSwap(u64);
+		}
+		return u64;
+	}
+	default:
+		ut::DBG_REPORT(L"Only integral types are allowed as field types.");
+		return std::nullopt;
+	}
+}
+
+auto CHexDlgTemplMgr::TMPLFindFieldName(const VecHexTemplFields& vecFields, std::wstring_view wsvFieldName)->PCHEXTEMPLFIELD {
 	//Recursively searches for the field name wsvFieldName in all template fields (HEXTEMPLFIELD::wstrName).
+	const auto lmbFindFieldName = [](const auto& lmbSelf, const VecHexTemplFields& vecFields, std::wstring_view wsvFieldName)
+		->PCHEXTEMPLFIELD {
+		if (const auto it = std::ranges::find_if(vecFields, [wsvFieldName](const PtrHexTemplField& uptr) {
+			return uptr->wstrName == wsvFieldName; });
+			it != vecFields.end()) { //We found "sizefield"'s string as a field name.
+			return it->get();
+		}
 
-	assert(pTemplate != nullptr);
-	const auto lmbFindFieldName = [](const VecHexTemplFields& vecFields, std::wstring_view wsvFieldName)->PCHEXTEMPLFIELD {
-		const auto _lmbFindFieldName = [](const auto& lmbSelf, const VecHexTemplFields& vecFields, std::wstring_view wsvFieldName)
-			->PCHEXTEMPLFIELD {
-			if (const auto it = std::ranges::find_if(vecFields, [wsvFieldName](const PtrHexTemplField& uptr) {
-				return uptr->wstrName == wsvFieldName; });
-				it != vecFields.end()) { //We found "sizefield"'s string as a field name.
-				return it->get();
+		for (const auto& uptr : vecFields) {
+			if (const auto pField = lmbSelf(lmbSelf, uptr->vecNested, wsvFieldName); pField != nullptr) {
+				return pField;
 			}
+		}
 
-			for (const auto& uptr : vecFields) {
-				if (const auto pField = lmbSelf(lmbSelf, uptr->vecNested, wsvFieldName); pField != nullptr) {
-					return pField;
-				}
-			}
+		return nullptr;
 
-			return nullptr;
-			};
-
-		return _lmbFindFieldName(_lmbFindFieldName, vecFields, wsvFieldName);
 		};
-	return lmbFindFieldName(pTemplate->vecFields, wsvFieldName);
+	return lmbFindFieldName(lmbFindFieldName, vecFields, wsvFieldName);
+}
+
+auto CHexDlgTemplMgr::TMPLGetFieldsTotalSize(const VecHexTemplFields& vecFields)->int {
+	//This method counts total size of all fields in the vecFields recursively.
+
+	const auto lmbTotalSize = [](const auto& lmbSelf, const VecHexTemplFields& vecFields)->int {
+		return std::reduce(vecFields.begin(), vecFields.end(), 0,
+			[&lmbSelf](auto ullTotal, const std::unique_ptr<HEXTEMPLFIELD>& pField) {
+				if (!pField->vecNested.empty()) {
+					return ullTotal + lmbSelf(lmbSelf, pField->vecNested);
+				}
+				return ullTotal + pField->iSize; });
+		};
+
+	return lmbTotalSize(lmbTotalSize, vecFields);
 }
 
 
