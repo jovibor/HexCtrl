@@ -100,34 +100,24 @@ namespace HEXCTRL::INTERNAL {
 	};
 	using PCHEXTEMPLATE = const HEXTEMPLATE*;
 
-	class CHexDlgTemplMgr final : public IHexTemplates {
+	//This is the main class for HexCtrl templates.
+	class CHexTemplates {
 	public:
-		struct PARSEFIELDS;
-		bool AddTemplateFile(const wchar_t* pwszFilePath)override;
-		void ApplyCurr(std::uint64_t u64Offset);
-		auto ApplyTemplate(const wchar_t* pwszFilePath, std::uint64_t u64Offset) -> int override;
-		void CreateDlg()const;
-		void DestroyDlg();
-		void DisapplyAll()override;
-		void DisapplyByID(int iTemplateID)override; //Disapply template with the given TemplateID.
-		void DisapplyByOffset(std::uint64_t u64Offset)override;
-		[[nodiscard]] auto GetAllApplied() -> VecHexTemplatesApplied override;
-		[[nodiscard]] auto GetDlgItemHandle(EHexDlgItem eItem)const -> HWND;
-		[[nodiscard]] auto GetTemplateFilesList() -> std::vector<std::wstring> override;
-		[[nodiscard]] auto GetHWND()const -> HWND;
-		[[nodiscard]] bool HasCurrent()const;
+		struct PARSEFIELDS; //Forward declaration.
+		auto ApplyTemplate(const wchar_t* pwszFilePath, std::uint64_t u64Offset) -> int;
+		void DisapplyAll();
+		void DisapplyByID(int iTemplateID);
+		void DisapplyByOffset(std::uint64_t u64Offset);
+		[[nodiscard]] auto GetAllApplied() -> VecHexTemplatesApplied;
+		[[nodiscard]] auto GetTemplateByID(int iTemplateID)const -> PCHEXTEMPLATE;
+		[[nodiscard]] auto GetTemplateByOffset(std::uint64_t u64Offset)const -> PCHEXTEMPLATE;
 		[[nodiscard]] bool HasApplied()const;
-		[[nodiscard]] auto HitTest(std::uint64_t u64Offset)const -> PCHEXTEMPLFIELD; //Template hittest by offset.
-		void Initialize(IHexCtrl &HexCtrl, HINSTANCE hInstRes);
-		[[nodiscard]] bool IsShowTooltips()const;
-		[[nodiscard]] bool PreTranslateMsg(MSG* pMsg);
-		[[nodiscard]] auto ProcessMsg(const MSG& msg) -> INT_PTR;
-		void RemoveAllTemplates()override;
-		void RemoveTemplateFile(const wchar_t* pwszFilePath)override;
-		void SetDlgProperties(std::uint64_t u64Flags);
-		void ShowTooltips(bool fShow)override;
-		void ShowWindow(int iCmdShow);
-		void UpdateData();
+		[[nodiscard]] auto HitTest(std::uint64_t u64Offset)const -> PCHEXTEMPLFIELD;
+		void Initialize(IHexCtrl& HexCtrl);
+		void RandomizeTemplateColors(int iTemplateID);
+		void RemoveAllTemplates();
+		void RemoveAppliedByFilePath(const wchar_t* pwszFilePath);
+		void RemoveAppliedByID(int iTemplateID);
 		[[nodiscard]] static auto JSONColors(const rapidjson::Value* pValue, const char* pszColorName) -> std::optional<COLORREF>;
 		[[nodiscard]] static auto JSONIsBigEndianness(const rapidjson::Value* pValue) -> std::optional<bool>;
 		[[nodiscard]] static auto JSONFindMember(const rapidjson::Value* pValue, const char* pszName)
@@ -139,6 +129,7 @@ namespace HEXCTRL::INTERNAL {
 			-> std::optional<const rapidjson::Value*>;
 		[[nodiscard]] static auto JSONFindMemberAsString(const rapidjson::Value* pValue, const char* pszName)
 			-> std::optional<const char*>;
+		[[nodiscard]] static auto JSONGetTemplateNameProperty(const wchar_t* pwszFilePath) -> std::wstring;
 		[[nodiscard]] static auto JSONParseFields(const PARSEFIELDS& pf) -> std::optional<VecHexTemplFields>;
 		[[nodiscard]] static auto JSONProcessLimitObject(const rapidjson::Value* pValue, std::uint64_t u64ActualData)
 			-> std::optional<std::uint64_t>;
@@ -149,144 +140,17 @@ namespace HEXCTRL::INTERNAL {
 			-> std::optional<std::uint64_t>;
 		[[nodiscard]] static auto TMPLGetFieldsTotalSize(const VecHexTemplFields& vecFields) -> int;
 	private:
-		void CreateArrows();
+		[[nodiscard]] auto CreateIDForNewTemplate()const -> int;
 		[[nodiscard]] auto GetHexCtrl()const -> IHexCtrl*;
-		[[nodiscard]] auto GUIGetComboCurrTemplateFilePath()const -> wchar_t*;
-		[[nodiscard]] auto GUIGetTemplateIDFromTree(HTREEITEM hTreeItem) -> int;
-		[[nodiscard]] auto GUIGetTreeSelectedTemplate() -> PCHEXTEMPLATE; //Currently selected Template ptr in the tree.
-		[[nodiscard]] auto GUIGetTreeSelectedTemplateID() -> int;         //Currently selected TemplateID in the tree.
-		void GUIOnTemplateApplyDisapply(int iTemplateID, bool fApply);
-		void GUIOnTemplateAddRemove(const wchar_t* pwszFilePath, bool fAdd);
-		[[nodiscard]] auto GUITreeItemFromListItem(int iListItem)const -> HTREEITEM;
-		void GUIUpdateDateTimeFormat();
-		void GUIUpdateEditBoxOffsetToCurrHexCaret();
-		void GUIUpdateStaticText();
-		[[nodiscard]] bool IsHighlight()const;
-		[[nodiscard]] bool IsMinimized()const;
-		[[nodiscard]] bool IsNoEsc()const;
-		[[nodiscard]] bool IsShowAsHex()const;
-		[[nodiscard]] bool IsSwapEndian()const;
-		void OnBnAddTemplate();
-		void OnBnRemoveTemplate();
-		void OnBnApply();
-		void OnCancel();
-		void OnCheckHex();
-		void OnCheckSwapEndian();
-		void OnCheckMin();
-		void OnOK();
-		void PreTranslateComboTempl(MSG* pMsg);
-		void RedrawHexCtrl();
-		[[nodiscard]] bool SetDataBool(LPCWSTR pwszText, ULONGLONG ullOffset)const;
-		template<typename T> requires ut::TSize1248<T>
-		[[nodiscard]] bool SetDataNUMBER(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const;
-		[[nodiscard]] bool SetDataTime32(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const;
-		[[nodiscard]] bool SetDataTime64(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const;
-		[[nodiscard]] bool SetDataFILETIME(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const;
-		[[nodiscard]] bool SetDataSYSTEMTIME(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const;
-		[[nodiscard]] bool SetDataGUID(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const;
-		void SetDlgButtonsState(); //Enable/disable button states depending on templates existence.
-		void SetHexSelByField(PCHEXTEMPLFIELD pField);
-		template <ut::TSize1248 T> void SetTData(T tData, ULONGLONG ullOffset, bool fShouldSwap)const;
-		void ShowListDataBool(LPWSTR pwsz, std::uint8_t u8Data)const;
-		template<typename T> requires ut::TSize1248<T>
-		void ShowListDataNUMBER(LPWSTR pwsz, T tData, bool fShouldSwap)const;
-		void ShowListDataTime32(LPWSTR pwsz, __time32_t lTime32, bool fShouldSwap)const;
-		void ShowListDataTime64(LPWSTR pwsz, __time64_t llTime64, bool fShouldSwap)const;
-		void ShowListDataFILETIME(LPWSTR pwsz, FILETIME stFTime, bool fShouldSwap)const;
-		void ShowListDataSYSTEMTIME(LPWSTR pwsz, SYSTEMTIME stSTime, bool fShouldSwap)const;
-		void ShowListDataGUID(LPWSTR pwsz, GUID stGUID, bool fShouldSwap)const;
-		auto TMPLAddTemplateFile(const wchar_t* pwszFilePath) -> const wchar_t*;
-		[[nodiscard]] auto TMPLGetIDForNewTemplate()const -> int;
-		[[nodiscard]] auto TMPLGetTemplateByFilePath(const wchar_t* pwszFilePath)const -> PCHEXTEMPLATE;
-		[[nodiscard]] auto TMPLGetTemplateByID(int iTemplateID)const -> PCHEXTEMPLATE;
-		[[nodiscard]] auto TMPLGetTemplateByOffset(ULONGLONG ullOffset)const -> PCHEXTEMPLATE;
-		[[nodiscard]] bool TMPLHasTemplateFiles()const;
-		void TMPLRandomizeTemplateColors(int iTemplateID);
-		void TMPLRemoveAppliedByID(int iTemplateID);
-		void TMPLRemoveAppliedByFilePath(const wchar_t* pwszFilePath);
-		void TMPLRemoveTemplateFile(const wchar_t* pwszFilePath);
-		auto WMActivate(const MSG& msg) -> INT_PTR;
-		auto WMCommand(const MSG& msg) -> INT_PTR;
-		auto WMClose() -> INT_PTR;
-		auto WMCtlColorStatic(const MSG& msg) -> INT_PTR;
-		auto WMDestroy() -> INT_PTR;
-		auto WMDPIChanged(const MSG& msg) -> INT_PTR;
-		auto WMDrawItem(const MSG& msg) -> INT_PTR;
-		auto WMGetDPIScaledSize(const MSG& msg) -> INT_PTR;
-		auto WMInitDialog(const MSG& msg) -> INT_PTR;
-		auto WMLButtonDown(const MSG& msg) -> INT_PTR;
-		auto WMLButtonUp(const MSG& msg) -> INT_PTR;
-		auto WMMeasureItem(const MSG& msg) -> INT_PTR;
-		auto WMMouseActivate(const MSG& msg) -> INT_PTR;
-		auto WMNotify(const MSG& msg) -> INT_PTR;
-		void WMNotifyListDblClick(NMHDR* pNMHDR);
-		void WMNotifyListEditBegin(NMHDR* pNMHDR);
-		void WMNotifyListEnterPressed(NMHDR* pNMHDR);
-		void WMNotifyListGetColor(NMHDR* pNMHDR);
-		void WMNotifyListGetDispInfo(NMHDR* pNMHDR);
-		void WMNotifyListHdrRClick(NMHDR* pNMHDR);
-		void WMNotifyListItemChanged(NMHDR* pNMHDR);
-		void WMNotifyListLinkClick(NMHDR* pNMHDR);
-		void WMNotifyListRClick(NMHDR* pNMHDR);
-		void WMNotifyListSetData(NMHDR* pNMHDR);
-		void WMNotifyTreeGetDispInfo(NMHDR* pNMHDR);
-		void WMNotifyTreeItemChanged(NMHDR* pNMHDR);
-		void WMNotifyTreeLClick(NMHDR* pNMHDR);
-		void WMNotifyTreeRClick(NMHDR* pNMHDR);
-		auto WMSize(const MSG& msg) -> INT_PTR;
-		[[nodiscard]] static auto JSONGetTemplateNameProperty(const wchar_t* pwszFilePath) -> std::wstring;
-		static auto CALLBACK TreeSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
-			UINT_PTR uIDSubclass, DWORD_PTR dwRefData)->LRESULT;
 	private:
-		enum class EMenuID : std::uint16_t;
-		enum EListColumns : std::int8_t;
-		GDIUT::CSplitter m_SplitVert;
-		GDIUT::CDynLayout m_DynLayout;
-		HINSTANCE m_hInstRes { };
-		GDIUT::CWnd m_Wnd;
-		GDIUT::CWnd m_WndStatOffset;     //Static text "Template offset:".
-		GDIUT::CWnd m_WndStatSize;       //Static text Template size:".
-		GDIUT::CWndEdit m_WndEditOffset; //"Offset" edit box.
-		GDIUT::CWndBtn m_WndBtnTT;       //Check-box "Show tooltips".
-		GDIUT::CWndBtn m_WndBtnMin;      //Check-box min-max.
-		GDIUT::CWndBtn m_WndBtnHighlight; //Check-box "Highlight selected".
-		GDIUT::CWndBtn m_WndBtnHex;      //Check-box "Hex numbers".
-		GDIUT::CWndBtn m_WndBtnEndian;   //Check-box "Swap endian".
-		GDIUT::CWndCombo m_WndCmbTempl;  //Currently available templates list.
-		GDIUT::CWndTree m_WndTree;       //Tree control.
-		GDIUT::CMenu m_MenuTree;         //Menu for the tree control.
-		GDIUT::CMenu m_MenuListHdr;      //Menu for the list header.
-		LISTEX::CListEx m_ListEx;
-		std::vector<std::unique_ptr<std::wstring>> m_vecTemplateFiles; //Template files paths.
-		std::vector<std::unique_ptr<HEXTEMPLATE>> m_vecTemplates;      //Applied templates.
+		std::vector<std::unique_ptr<HEXTEMPLATE>> m_vecTemplates; //Applied templates.
 		IHexCtrl* m_pHexCtrl { };
-		PCHexVecTemplFields m_pVecFieldsCurr { }; //Currently selected Fields vector.
-		HTREEITEM m_hTreeCurrParent { };   //Currently selected Tree node's parent.
-		HBITMAP m_hBmpMin { };             //Bitmap for the min checkbox.
-		HBITMAP m_hBmpMax { };             //Bitmap for the max checkbox.
-		std::uint64_t m_u64Flags { };      //Data from SetDlgProperties.
-		DWORD m_dwDateFormat { };          //Date format.
-		wchar_t m_wchDateSepar { };        //Date separator.
-		bool m_fListGuardEvent { false };  //To not proceed with OnListItemChanged, same as pTree->action == TVC_UNKNOWN.
-		bool m_fTreeClickedWithMouse { false }; //Indicates that tree item was changed with a mouse.
 	};
 }
 
 using namespace HEXCTRL::INTERNAL;
 
-enum class CHexDlgTemplMgr::EMenuID : std::uint16_t {
-	IDM_TREE_RNDCOLORS = 0x8000, IDM_TREE_DISAPPLY, IDM_TREE_DISAPPLYALL,
-	IDM_LIST_HDR_TYPE, IDM_LIST_HDR_NAME, IDM_LIST_HDR_OFFSET, IDM_LIST_HDR_SIZE,
-	IDM_LIST_HDR_DATA, IDM_LIST_HDR_ENDIANNESS, IDM_LIST_HDR_DESCRIPTION, IDM_LIST_HDR_COLORS,
-	IDM_COMBOBOX_OPENFILE
-};
-
-enum CHexDlgTemplMgr::EListColumns : std::int8_t {
-	COL_TYPE = 0, COL_NAME = 1, COL_OFFSET = 2, COL_SIZE = 3,
-	COL_DATA = 4, COL_ENDIAN = 5, COL_DESCR = 6, COL_COLORS = 7
-};
-
-struct CHexDlgTemplMgr::PARSEFIELDS {
+struct CHexTemplates::PARSEFIELDS {
 	const rapidjson::Value* pValue { };       //Fields array pointer.
 	const UmapCustomTypes*  pumapCT { };      //Pointer to the map of fields of Custom types.
 	PCHEXTEMPLATE           pTemplate { };    //Same for all fields.
@@ -297,25 +161,7 @@ struct CHexDlgTemplMgr::PARSEFIELDS {
 };
 
 
-bool CHexDlgTemplMgr::AddTemplateFile(const wchar_t* pwszFilePath) {
-	const auto pwszTemplatePathInternally = TMPLAddTemplateFile(pwszFilePath);
-	if (pwszTemplatePathInternally == nullptr) {
-		return false;
-	}
-
-	GUIOnTemplateAddRemove(pwszTemplatePathInternally, true);
-
-	return true;
-}
-
-void CHexDlgTemplMgr::ApplyCurr(std::uint64_t u64Offset) {
-	if (!m_Wnd.IsWindow() || !HasCurrent())
-		return;
-
-	ApplyTemplate(GUIGetComboCurrTemplateFilePath(), u64Offset);
-}
-
-auto CHexDlgTemplMgr::ApplyTemplate(const wchar_t* pwszFilePath, std::uint64_t u64Offset)->int {
+auto CHexTemplates::ApplyTemplate(const wchar_t* pwszFilePath, std::uint64_t u64Offset)->int {
 	if (pwszFilePath == nullptr) {
 		ut::DBG_REPORT(L"pwszFilePath == nullptr");
 		return -1;
@@ -364,25 +210,25 @@ auto CHexDlgTemplMgr::ApplyTemplate(const wchar_t* pwszFilePath, std::uint64_t u
 				return -1;
 			}
 
-			const auto optTypeName = CHexDlgTemplMgr::JSONFindMemberAsString(pCustomType, "TypeName");
+			const auto optTypeName = CHexTemplates::JSONFindMemberAsString(pCustomType, "TypeName");
 			if (!optTypeName) {
 				ut::DBG_REPORT(std::format(L"{}\r\nEach array entry (Object) must have a string 'TypeName' property.", pwszFilePath).data());
 				return -1;
 			}
 
-			const auto optFieldMember = CHexDlgTemplMgr::JSONFindMember(pCustomType, "Fields");
+			const auto optFieldMember = CHexTemplates::JSONFindMember(pCustomType, "Fields");
 			if (!optFieldMember || !(*optFieldMember)->IsArray()) {
 				ut::DBG_REPORT(std::format(L"{}\r\nEach 'Fields' must be an array.", pwszFilePath).data());
 				return -1;
 			}
 
-			const CHexDlgTemplMgr::PARSEFIELDS pf {
+			const PARSEFIELDS pf {
 				.pValue { *optFieldMember }, .pumapCT { &umapCT }, .pTemplate { pTemplate },
 				.pFieldParent { nullptr }, .pHexCtrl { GetHexCtrl() },
-				.clrDefault { .clrBk { CHexDlgTemplMgr::JSONColors(pCustomType, "clrBk").value_or(-1) },
-				.clrText { CHexDlgTemplMgr::JSONColors(pCustomType, "clrText").value_or(-1) } },
-				.fBigEndian { CHexDlgTemplMgr::JSONIsBigEndianness(pCustomType).value_or(false) } };
-			auto optVec = CHexDlgTemplMgr::JSONParseFields(pf);
+				.clrDefault { .clrBk { CHexTemplates::JSONColors(pCustomType, "clrBk").value_or(-1) },
+				.clrText { CHexTemplates::JSONColors(pCustomType, "clrText").value_or(-1) } },
+				.fBigEndian { CHexTemplates::JSONIsBigEndianness(pCustomType).value_or(false) } };
+			auto optVec = CHexTemplates::JSONParseFields(pf);
 			if (!optVec) {
 				return -1; //Something went wrong during template parsing.
 			}
@@ -392,13 +238,13 @@ auto CHexDlgTemplMgr::ApplyTemplate(const wchar_t* pwszFilePath, std::uint64_t u
 		}
 	}
 
-	const CHexDlgTemplMgr::PARSEFIELDS pf {
-		.pValue { *CHexDlgTemplMgr::JSONFindMember(&objData->value, "Fields") },
+	const PARSEFIELDS pf {
+		.pValue { *CHexTemplates::JSONFindMember(&objData->value, "Fields") },
 		.pumapCT { &umapCT }, .pTemplate { pTemplate }, .pFieldParent { nullptr }, .pHexCtrl { GetHexCtrl() },
-		.clrDefault { .clrBk { CHexDlgTemplMgr::JSONColors(&objData->value, "clrBk").value_or(-1) },
-		.clrText { CHexDlgTemplMgr::JSONColors(&objData->value, "clrText").value_or(-1) } },
-		.fBigEndian { CHexDlgTemplMgr::JSONIsBigEndianness(&objData->value).value_or(false) } };
-	auto optVec = CHexDlgTemplMgr::JSONParseFields(pf);
+		.clrDefault { .clrBk { CHexTemplates::JSONColors(&objData->value, "clrBk").value_or(-1) },
+		.clrText { CHexTemplates::JSONColors(&objData->value, "clrText").value_or(-1) } },
+		.fBigEndian { CHexTemplates::JSONIsBigEndianness(&objData->value).value_or(false) } };
+	auto optVec = CHexTemplates::JSONParseFields(pf);
 	if (!optVec) {
 		return -1;
 	}
@@ -407,58 +253,17 @@ auto CHexDlgTemplMgr::ApplyTemplate(const wchar_t* pwszFilePath, std::uint64_t u
 	const auto& vecFields = pTemplate->vecFields;
 	pTemplate->iSizeTotal = std::reduce(vecFields.cbegin(), vecFields.cend(), 0,
 		[](auto iTotal, const std::unique_ptr<HEXTEMPLFIELD>& pData) { return iTotal + pData->iSize; });
-	pTemplate->iTemplateID = TMPLGetIDForNewTemplate();
+	pTemplate->iTemplateID = CreateIDForNewTemplate();
 	m_vecTemplates.emplace_back(std::move(pTemplateUtr));
-	GUIOnTemplateApplyDisapply(pTemplate->iTemplateID, true);
-	RedrawHexCtrl();
 
 	return pTemplate->iTemplateID;
 }
 
-void CHexDlgTemplMgr::CreateDlg()const
-{
-	//m_Wnd is set in the WMInitDialog().
-	if (const auto hWnd = ::CreateDialogParamW(m_hInstRes, MAKEINTRESOURCEW(IDD_HEXCTRL_TEMPLMGR),
-		m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN), GDIUT::DlgProc<CHexDlgTemplMgr>, reinterpret_cast<LPARAM>(this));
-		hWnd == nullptr) {
-		ut::DBG_REPORT(L"CreateDialogParamW failed.");
-	}
-}
-
-void CHexDlgTemplMgr::DestroyDlg() {
-	if (m_Wnd.IsWindow()) {
-		m_Wnd.DestroyWindow();
-	}
-}
-
-void CHexDlgTemplMgr::DisapplyAll() {
-	if (m_Wnd.IsWindow()) { //Dialog must be created and alive to work with its members.
-		m_WndTree.DeleteAllItems();
-		m_ListEx.SetItemCountEx(0);
-		GUIUpdateStaticText();
-	}
-
-	m_pVecFieldsCurr = nullptr;
-	m_hTreeCurrParent = nullptr;
+void CHexTemplates::DisapplyAll() {
 	m_vecTemplates.clear();
-	RedrawHexCtrl();
 }
 
-void CHexDlgTemplMgr::DisapplyByID(int iTemplateID) {
-	GUIOnTemplateApplyDisapply(iTemplateID, false);
-	TMPLRemoveAppliedByID(iTemplateID);
-	RedrawHexCtrl();
-}
-
-void CHexDlgTemplMgr::DisapplyByOffset(std::uint64_t u64Offset) {
-	if (const auto pAppl = TMPLGetTemplateByOffset(u64Offset); pAppl != nullptr) {
-		GUIOnTemplateApplyDisapply(pAppl->iTemplateID, false);
-		TMPLRemoveAppliedByID(pAppl->iTemplateID);
-		RedrawHexCtrl();
-	}
-}
-
-auto CHexDlgTemplMgr::GetAllApplied()->VecHexTemplatesApplied {
+auto CHexTemplates::GetAllApplied()->VecHexTemplatesApplied {
 	VecHexTemplatesApplied vec;
 	for (const auto& uptr : m_vecTemplates) {
 		vec.emplace_back(HEXTEMPLATEAPPLIED { .wstrFilePath { uptr->wstrFilePath }, .u64Offset { uptr->u64Offset } });
@@ -467,45 +272,24 @@ auto CHexDlgTemplMgr::GetAllApplied()->VecHexTemplatesApplied {
 	return vec;
 }
 
-auto CHexDlgTemplMgr::GetDlgItemHandle(EHexDlgItem eItem)const->HWND
-{
-	if (!m_Wnd.IsWindow()) {
-		return { };
-	}
-
-	using enum EHexDlgItem;
-	switch (eItem) {
-	case TEMPLMGR_CHK_MIN: return m_WndBtnMin;
-	case TEMPLMGR_CHK_TT: return m_WndBtnTT;
-	case TEMPLMGR_CHK_HGL: return m_WndBtnHighlight;
-	case TEMPLMGR_CHK_HEX: return m_WndBtnHex;
-	case TEMPLMGR_CHK_SWAP: return m_WndBtnEndian;
-	default: return { };
-	}
+auto CHexTemplates::GetTemplateByID(int iTemplateID)const->PCHEXTEMPLATE {
+	const auto it = std::find_if(m_vecTemplates.begin(), m_vecTemplates.end(),
+		[iTemplateID](const std::unique_ptr<HEXTEMPLATE>& uptr) { return uptr->iTemplateID == iTemplateID; });
+	return it != m_vecTemplates.end() ? it->get() : nullptr;
 }
 
-auto CHexDlgTemplMgr::GetTemplateFilesList()->std::vector<std::wstring> {
-	std::vector<std::wstring> vec;
-	vec.reserve(m_vecTemplateFiles.size());
-	std::ranges::transform(m_vecTemplateFiles, std::back_inserter(vec), [](const std::unique_ptr<std::wstring>& uptr) {
-		return *uptr; });
-
-	return vec;
+auto CHexTemplates::GetTemplateByOffset(std::uint64_t u64Offset)const->PCHEXTEMPLATE {
+	const auto rit = std::find_if(m_vecTemplates.rbegin(), m_vecTemplates.rend(),
+		[u64Offset](const std::unique_ptr<HEXTEMPLATE>& uptr) {
+			return u64Offset >= uptr->u64Offset && u64Offset < (uptr->u64Offset + uptr->iSizeTotal); });
+	return rit != m_vecTemplates.rend() ? rit->get() : nullptr;
 }
 
-auto CHexDlgTemplMgr::GetHWND()const->HWND {
-	return m_Wnd;
-}
-
-bool CHexDlgTemplMgr::HasApplied()const {
+bool CHexTemplates::HasApplied()const {
 	return !m_vecTemplates.empty();
 }
 
-bool CHexDlgTemplMgr::HasCurrent()const {
-	return m_Wnd.IsWindow() && TMPLHasTemplateFiles();
-}
-
-auto CHexDlgTemplMgr::HitTest(std::uint64_t u64Offset)const->PCHEXTEMPLFIELD {
+auto CHexTemplates::HitTest(std::uint64_t u64Offset)const->PCHEXTEMPLFIELD {
 	const auto rit = std::find_if(m_vecTemplates.rbegin(), m_vecTemplates.rend(),
 		[u64Offset](const std::unique_ptr<HEXTEMPLATE>& uptr) {
 			return u64Offset >= uptr->u64Offset && u64Offset < uptr->u64Offset + uptr->iSizeTotal; });
@@ -536,127 +320,43 @@ auto CHexDlgTemplMgr::HitTest(std::uint64_t u64Offset)const->PCHEXTEMPLFIELD {
 	return lmbFind(lmbFind, vecFields);
 }
 
-void CHexDlgTemplMgr::Initialize(IHexCtrl &HexCtrl, HINSTANCE hInstRes) {
+void CHexTemplates::Initialize(IHexCtrl& HexCtrl) {
 	m_pHexCtrl = &HexCtrl;
-	m_hInstRes = hInstRes;
 }
 
-bool CHexDlgTemplMgr::IsShowTooltips()const {
-	return m_WndBtnTT.IsWindow() && m_WndBtnTT.IsChecked();
-}
-
-bool CHexDlgTemplMgr::PreTranslateMsg(MSG* pMsg) {
-	PreTranslateComboTempl(pMsg);
-	return m_Wnd.IsDlgMessage(pMsg);
-}
-
-auto CHexDlgTemplMgr::ProcessMsg(const MSG& msg)->INT_PTR
-{
-	switch (msg.message) {
-	case WM_ACTIVATE: return WMActivate(msg);
-	case WM_CLOSE: return WMClose();
-	case WM_COMMAND: return WMCommand(msg);
-	case WM_CTLCOLORSTATIC: return WMCtlColorStatic(msg);
-	case WM_DESTROY: return WMDestroy();
-	case WM_DPICHANGED: return WMDPIChanged(msg);
-	case WM_DRAWITEM: return WMDrawItem(msg);
-	case WM_GETDPISCALEDSIZE: return WMGetDPIScaledSize(msg);
-	case WM_INITDIALOG: return WMInitDialog(msg);
-	case WM_LBUTTONDOWN: return WMLButtonDown(msg);
-	case WM_LBUTTONUP: return WMLButtonUp(msg);
-	case WM_MEASUREITEM: return WMMeasureItem(msg);
-	case WM_MOUSEACTIVATE: return WMMouseActivate(msg);
-	case WM_NOTIFY: return WMNotify(msg);
-	case WM_SIZE: return WMSize(msg);
-	default:
-		return 0;
-	}
-}
-
-void CHexDlgTemplMgr::RemoveAllTemplates() {
-	DisapplyAll(); //m_vecTemplates is empty after that.
-
-	for (const auto& uptr : m_vecTemplateFiles) {
-		GUIOnTemplateAddRemove(uptr->data(), false);
-	}
-
-	m_vecTemplateFiles.clear();
-}
-
-void CHexDlgTemplMgr::RemoveTemplateFile(const wchar_t* pwszFilePath) {
-	GUIOnTemplateAddRemove(pwszFilePath, false);
-	TMPLRemoveAppliedByFilePath(pwszFilePath);
-	TMPLRemoveTemplateFile(pwszFilePath);
-	SetDlgButtonsState();
-}
-
-void CHexDlgTemplMgr::SetDlgProperties(std::uint64_t u64Flags) {
-	m_u64Flags = u64Flags;
-}
-
-void CHexDlgTemplMgr::ShowTooltips(bool fShow) {
-	m_WndBtnTT.SetCheck(fShow);
-}
-
-void CHexDlgTemplMgr::ShowWindow(int iCmdShow) {
-	if (!m_Wnd.IsWindow()) {
-		CreateDlg();
-	}
-
-	m_Wnd.ShowWindow(iCmdShow);
-}
-
-void CHexDlgTemplMgr::UpdateData() {
-	if (!m_Wnd.IsWindow() || !m_Wnd.IsWindowVisible()) {
+void CHexTemplates::RandomizeTemplateColors(int iTemplateID) {
+	const auto pTemplate = GetTemplateByID(iTemplateID);
+	if (pTemplate == nullptr)
 		return;
-	}
 
-	m_ListEx.RedrawWindow();
+	std::mt19937 gen(std::random_device { }());
+	std::uniform_int_distribution<unsigned int> distrib(50, 230);
+	const auto lmbRndColors = [&distrib, &gen](const VecHexTemplFields& vecFields) {
+		const auto _lmbCount = [&distrib, &gen](const auto& lmbSelf, const VecHexTemplFields& vecFields)->void {
+			for (const auto& pField : vecFields) {
+				if (pField->vecNested.empty()) {
+					pField->stClr.clrBk = RGB(distrib(gen), distrib(gen), distrib(gen));
+				}
+				else { lmbSelf(lmbSelf, pField->vecNested); }
+			}
+			};
+		return _lmbCount(_lmbCount, vecFields);
+		};
+	lmbRndColors(pTemplate->vecFields);
 }
 
-auto CHexDlgTemplMgr::JSONIsBigEndianness(const rapidjson::Value* pValue)->std::optional<bool> {
-	const auto optEndianness = CHexDlgTemplMgr::JSONFindMemberAsString(pValue, "endianness");
-	if (!optEndianness) {
-		return std::nullopt;
-	}
-
-	const std::string_view svEndianness = *optEndianness;
-	if (svEndianness != "big" && svEndianness != "little") {
-		ut::DBG_REPORT(L"Unknown 'endianness'.");
-		return std::nullopt;
-	}
-
-	return svEndianness == "big";
+void CHexTemplates::RemoveAppliedByFilePath(const wchar_t* pwszFilePath) {
+	std::erase_if(m_vecTemplates, [pwszFilePath](const std::unique_ptr<HEXTEMPLATE>& uptr) {
+		return uptr->wstrFilePath == pwszFilePath; });
 }
 
-auto CHexDlgTemplMgr::JSONFindMember(const rapidjson::Value* pValue, const char* pszName)->std::optional<const rapidjson::Value*> {
-	const auto itMember = pValue->FindMember(pszName);
-	return itMember != pValue->MemberEnd() ? std::optional<const rapidjson::Value*>{ &itMember->value } : std::nullopt;
+void CHexTemplates::RemoveAppliedByID(int iTemplateID) {
+	std::erase_if(m_vecTemplates, [iTemplateID](const std::unique_ptr<HEXTEMPLATE>& uptr) {
+		return uptr->iTemplateID == iTemplateID; });
 }
 
-auto CHexDlgTemplMgr::JSONFindMemberAsInt32(const rapidjson::Value* pValue, const char* pszName)->std::optional<int> {
-	const auto optMember = JSONFindMember(pValue, pszName);
-	return (optMember && (*optMember)->IsInt()) ? std::optional<int>{(*optMember)->GetInt()} : std::nullopt;
-}
-
-auto CHexDlgTemplMgr::JSONFindMemberAsUInt32(const rapidjson::Value* pValue, const char* pszName)->std::optional<std::uint32_t> {
-	const auto optMember = JSONFindMember(pValue, pszName);
-	return (optMember && (*optMember)->IsUint()) ? std::optional<int>{(*optMember)->GetUint()} : std::nullopt;
-}
-
-auto CHexDlgTemplMgr::JSONFindMemberAsObject(const rapidjson::Value* pValue, const char* pszName)
-->std::optional<const rapidjson::Value*> {
-	const auto optMember = JSONFindMember(pValue, pszName);
-	return (optMember && (*optMember)->IsObject()) ? std::optional<const rapidjson::Value*>{*optMember} : std::nullopt;
-}
-
-auto CHexDlgTemplMgr::JSONFindMemberAsString(const rapidjson::Value* pValue, const char* pszName)->std::optional<const char*> {
-	const auto optMember = JSONFindMember(pValue, pszName);
-	return (optMember && (*optMember)->IsString()) ? std::optional<const char*>{(*optMember)->GetString()} : std::nullopt;
-}
-
-auto CHexDlgTemplMgr::JSONColors(const rapidjson::Value* pValue, const char* pszColorName)->std::optional<COLORREF> {
-	const auto optClr = CHexDlgTemplMgr::JSONFindMemberAsString(pValue, pszColorName);
+auto CHexTemplates::JSONColors(const rapidjson::Value* pValue, const char* pszColorName)->std::optional<COLORREF> {
+	const auto optClr = CHexTemplates::JSONFindMemberAsString(pValue, pszColorName);
 	if (!optClr) {
 		return std::nullopt;
 	}
@@ -672,7 +372,77 @@ auto CHexDlgTemplMgr::JSONColors(const rapidjson::Value* pValue, const char* psz
 	return RGB(R, G, B);
 }
 
-auto CHexDlgTemplMgr::JSONParseFields(const PARSEFIELDS& pf)->std::optional<VecHexTemplFields> {
+auto CHexTemplates::JSONFindMember(const rapidjson::Value* pValue, const char* pszName)->std::optional<const rapidjson::Value*> {
+	const auto itMember = pValue->FindMember(pszName);
+	return itMember != pValue->MemberEnd() ? std::optional<const rapidjson::Value*>{ &itMember->value } : std::nullopt;
+}
+
+auto CHexTemplates::JSONFindMemberAsInt32(const rapidjson::Value* pValue, const char* pszName)->std::optional<int> {
+	const auto optMember = JSONFindMember(pValue, pszName);
+	return (optMember && (*optMember)->IsInt()) ? std::optional<int>{(*optMember)->GetInt()} : std::nullopt;
+}
+
+auto CHexTemplates::JSONFindMemberAsUInt32(const rapidjson::Value* pValue, const char* pszName)->std::optional<std::uint32_t> {
+	const auto optMember = JSONFindMember(pValue, pszName);
+	return (optMember && (*optMember)->IsUint()) ? std::optional<int>{(*optMember)->GetUint()} : std::nullopt;
+}
+
+auto CHexTemplates::JSONFindMemberAsObject(const rapidjson::Value* pValue, const char* pszName)
+->std::optional<const rapidjson::Value*> {
+	const auto optMember = JSONFindMember(pValue, pszName);
+	return (optMember && (*optMember)->IsObject()) ? std::optional<const rapidjson::Value*>{*optMember} : std::nullopt;
+}
+
+auto CHexTemplates::JSONFindMemberAsString(const rapidjson::Value* pValue, const char* pszName)->std::optional<const char*> {
+	const auto optMember = JSONFindMember(pValue, pszName);
+	return (optMember && (*optMember)->IsString()) ? std::optional<const char*>{(*optMember)->GetString()} : std::nullopt;
+}
+
+auto CHexTemplates::JSONGetTemplateNameProperty(const wchar_t* pwszFilePath)->std::wstring {
+	if (pwszFilePath == nullptr) {
+		ut::DBG_REPORT(L"pwszFilePath == nullptr");
+		return { };
+	}
+
+	std::ifstream ifs(pwszFilePath);
+	if (!ifs.is_open()) {
+		ut::DBG_REPORT(std::format(L"{}\r\n!ifs.is_open()", pwszFilePath).data());
+		return { };
+	}
+
+	rapidjson::IStreamWrapper isw { ifs };
+	rapidjson::Document docJSON;
+	docJSON.ParseStream(isw);
+	if (docJSON.IsNull()) {
+		ut::DBG_REPORT(std::format(L"{}\r\ndocJSON.IsNull()", pwszFilePath).data());
+		return { };
+	}
+
+	const auto itTName = docJSON.FindMember("TemplateName");
+	if (itTName == docJSON.MemberEnd() || !itTName->value.IsString()) {
+		ut::DBG_REPORT(std::format(L"{}\r\nTemplate must have a string type name.", pwszFilePath).data());
+		return { };
+	}
+
+	return ut::StrToWstr(itTName->value.GetString());
+}
+
+auto CHexTemplates::JSONIsBigEndianness(const rapidjson::Value* pValue)->std::optional<bool> {
+	const auto optEndianness = CHexTemplates::JSONFindMemberAsString(pValue, "endianness");
+	if (!optEndianness) {
+		return std::nullopt;
+	}
+
+	const std::string_view svEndianness = *optEndianness;
+	if (svEndianness != "big" && svEndianness != "little") {
+		ut::DBG_REPORT(L"Unknown 'endianness'.");
+		return std::nullopt;
+	}
+
+	return svEndianness == "big";
+}
+
+auto CHexTemplates::JSONParseFields(const PARSEFIELDS& pf)->std::optional<VecHexTemplFields> {
 	//This function parses array of fields in JSON, and returns VecHexTemplFields of these fields, or std::nullopt.
 
 	using enum EHexTemplFieldType;
@@ -994,7 +764,7 @@ auto CHexDlgTemplMgr::JSONParseFields(const PARSEFIELDS& pf)->std::optional<VecH
 	return { std::move(vecFieldsTopLevel) };
 }
 
-auto CHexDlgTemplMgr::JSONProcessLimitObject(const rapidjson::Value* pValue, std::uint64_t u64ActualData)
+auto CHexTemplates::JSONProcessLimitObject(const rapidjson::Value* pValue, std::uint64_t u64ActualData)
 ->std::optional<std::uint64_t> {
 	//Finds and parses "limit" object, comparing its min/max properties against u64ActualData.
 
@@ -1082,12 +852,12 @@ auto CHexDlgTemplMgr::JSONProcessLimitObject(const rapidjson::Value* pValue, std
 	return std::nullopt;
 }
 
-bool CHexDlgTemplMgr::IsEqualNoCase(std::string_view sv1, std::string_view sv2) {
+bool CHexTemplates::IsEqualNoCase(std::string_view sv1, std::string_view sv2) {
 	return std::ranges::equal(sv1, sv2, { }, [](unsigned char c) { return std::tolower(c); },
 		[](unsigned char c) { return std::tolower(c); });
 }
 
-auto CHexDlgTemplMgr::TMPLGetDataFromField(const HEXTEMPLFIELD* pField, PCHEXTEMPLATE pTemplate, IHexCtrl* pHexCtrl)
+auto CHexTemplates::TMPLGetDataFromField(const HEXTEMPLFIELD* pField, PCHEXTEMPLATE pTemplate, IHexCtrl* pHexCtrl)
 ->std::optional<std::uint64_t> {
 	//Retrieves data from HexCtrl by template+pField offset and field size.
 
@@ -1149,7 +919,7 @@ auto CHexDlgTemplMgr::TMPLGetDataFromField(const HEXTEMPLFIELD* pField, PCHEXTEM
 	}
 }
 
-auto CHexDlgTemplMgr::TMPLFindFieldName(const VecHexTemplFields& vecFields, std::wstring_view wsvFieldName)->PCHEXTEMPLFIELD {
+auto CHexTemplates::TMPLFindFieldName(const VecHexTemplFields& vecFields, std::wstring_view wsvFieldName)->PCHEXTEMPLFIELD {
 	//Recursively searches for the field name wsvFieldName in all template fields (HEXTEMPLFIELD::wstrName).
 	const auto lmbFindFieldName = [](const auto& lmbSelf, const VecHexTemplFields& vecFields, std::wstring_view wsvFieldName)
 		->PCHEXTEMPLFIELD {
@@ -1171,7 +941,7 @@ auto CHexDlgTemplMgr::TMPLFindFieldName(const VecHexTemplFields& vecFields, std:
 	return lmbFindFieldName(lmbFindFieldName, vecFields, wsvFieldName);
 }
 
-auto CHexDlgTemplMgr::TMPLGetFieldsTotalSize(const VecHexTemplFields& vecFields)->int {
+auto CHexTemplates::TMPLGetFieldsTotalSize(const VecHexTemplFields& vecFields)->int {
 	//This method counts total size of all fields in the vecFields recursively.
 
 	const auto lmbTotalSize = [](const auto& lmbSelf, const VecHexTemplFields& vecFields)->int {
@@ -1186,6 +956,388 @@ auto CHexDlgTemplMgr::TMPLGetFieldsTotalSize(const VecHexTemplFields& vecFields)
 	return lmbTotalSize(lmbTotalSize, vecFields);
 }
 
+
+//Private methods.
+
+auto CHexTemplates::CreateIDForNewTemplate()const->int {
+	auto iTemplateID = 1; //TemplateID starts at 1.
+	if (const auto it = std::max_element(m_vecTemplates.begin(), m_vecTemplates.end(),
+		[](const std::unique_ptr<HEXTEMPLATE>& p1, const std::unique_ptr<HEXTEMPLATE>& p2) {
+			return p1->iTemplateID < p2->iTemplateID; }); it != m_vecTemplates.end()) {
+		iTemplateID = it->get()->iTemplateID + 1; //Increasing next Template's ID by 1.
+	}
+
+	return iTemplateID;
+}
+
+auto CHexTemplates::GetHexCtrl()const->IHexCtrl* {
+	return m_pHexCtrl;
+}
+
+
+namespace HEXCTRL::INTERNAL {
+	class CHexDlgTemplMgr final : public IHexTemplates {
+	public:
+		bool AddTemplateFile(const wchar_t* pwszFilePath)override;
+		void ApplyCurr(std::uint64_t u64Offset);
+		auto ApplyTemplate(const wchar_t* pwszFilePath, std::uint64_t u64Offset) -> int override;
+		void CreateDlg()const;
+		void DestroyDlg();
+		void DisapplyAll()override;
+		void DisapplyByID(int iTemplateID)override;
+		void DisapplyByOffset(std::uint64_t u64Offset)override;
+		[[nodiscard]] auto GetAllApplied() -> VecHexTemplatesApplied override;
+		[[nodiscard]] auto GetDlgItemHandle(EHexDlgItem eItem)const -> HWND;
+		[[nodiscard]] auto GetTemplateFilesList() -> std::vector<std::wstring> override;
+		[[nodiscard]] auto GetHWND()const -> HWND;
+		[[nodiscard]] bool HasCurrent()const;
+		[[nodiscard]] bool HasApplied()const;
+		[[nodiscard]] auto HitTest(std::uint64_t u64Offset)const -> PCHEXTEMPLFIELD; //Template hit-test by offset.
+		void Initialize(IHexCtrl &HexCtrl, HINSTANCE hInstRes);
+		[[nodiscard]] bool IsShowTooltips()const;
+		[[nodiscard]] bool PreTranslateMsg(MSG* pMsg);
+		[[nodiscard]] auto ProcessMsg(const MSG& msg) -> INT_PTR;
+		void RemoveAllTemplates()override;
+		void RemoveTemplateFile(const wchar_t* pwszFilePath)override;
+		void SetDlgProperties(std::uint64_t u64Flags);
+		void ShowTooltips(bool fShow)override;
+		void ShowWindow(int iCmdShow);
+		void UpdateData();
+	private:
+		void CreateArrows();
+		[[nodiscard]] auto GetHexCtrl()const -> IHexCtrl*;
+		[[nodiscard]] auto GetComboCurrTemplateFilePath()const -> wchar_t*;
+		[[nodiscard]] auto GetTemplateIDFromTree(HTREEITEM hTreeItem) -> int;
+		[[nodiscard]] auto GetTreeItemFromListItem(int iListItem)const -> HTREEITEM;
+		[[nodiscard]] auto GetTreeSelectedTemplate() -> PCHEXTEMPLATE; //Currently selected Template ptr in the tree.
+		[[nodiscard]] auto GetTreeSelectedTemplateID() -> int;         //Currently selected TemplateID in the tree.
+		[[nodiscard]] bool HasTemplateFiles()const;
+		[[nodiscard]] bool IsHighlight()const;
+		[[nodiscard]] bool IsMinimized()const;
+		[[nodiscard]] bool IsNoEsc()const;
+		[[nodiscard]] bool IsShowAsHex()const;
+		[[nodiscard]] bool IsSwapEndian()const;
+		void OnBnAddTemplate();
+		void OnBnRemoveTemplate();
+		void OnBnApply();
+		void OnCancel();
+		void OnCheckHex();
+		void OnCheckSwapEndian();
+		void OnCheckMin();
+		void OnOK();
+		void OnTemplateApplyDisapply(int iTemplateID, bool fApply);
+		void OnTemplateAddRemove(const wchar_t* pwszFilePath, bool fAdd);
+		void PreTranslateComboTempl(MSG* pMsg);
+		void RedrawHexCtrl();
+		[[nodiscard]] bool SetDataBool(LPCWSTR pwszText, ULONGLONG ullOffset)const;
+		template<typename T> requires ut::TSize1248<T>
+		[[nodiscard]] bool SetDataNUMBER(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const;
+		[[nodiscard]] bool SetDataTime32(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const;
+		[[nodiscard]] bool SetDataTime64(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const;
+		[[nodiscard]] bool SetDataFILETIME(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const;
+		[[nodiscard]] bool SetDataSYSTEMTIME(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const;
+		[[nodiscard]] bool SetDataGUID(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const;
+		void SetDlgButtonsState(); //Enable/disable button states depending on templates existence.
+		void SetHexSelByField(PCHEXTEMPLFIELD pField);
+		template <ut::TSize1248 T> void SetTData(T tData, ULONGLONG ullOffset, bool fShouldSwap)const;
+		void ShowListDataBool(LPWSTR pwsz, std::uint8_t u8Data)const;
+		template<typename T> requires ut::TSize1248<T>
+		void ShowListDataNUMBER(LPWSTR pwsz, T tData, bool fShouldSwap)const;
+		void ShowListDataTime32(LPWSTR pwsz, __time32_t lTime32, bool fShouldSwap)const;
+		void ShowListDataTime64(LPWSTR pwsz, __time64_t llTime64, bool fShouldSwap)const;
+		void ShowListDataFILETIME(LPWSTR pwsz, FILETIME stFTime, bool fShouldSwap)const;
+		void ShowListDataSYSTEMTIME(LPWSTR pwsz, SYSTEMTIME stSTime, bool fShouldSwap)const;
+		void ShowListDataGUID(LPWSTR pwsz, GUID stGUID, bool fShouldSwap)const;
+		void UpdateDateTimeFormat();
+		void UpdateEditBoxOffsetToCurrHexCaret();
+		void UpdateStaticText();
+		auto WMActivate(const MSG& msg) -> INT_PTR;
+		auto WMCommand(const MSG& msg) -> INT_PTR;
+		auto WMClose() -> INT_PTR;
+		auto WMCtlColorStatic(const MSG& msg) -> INT_PTR;
+		auto WMDestroy() -> INT_PTR;
+		auto WMDPIChanged(const MSG& msg) -> INT_PTR;
+		auto WMDrawItem(const MSG& msg) -> INT_PTR;
+		auto WMGetDPIScaledSize(const MSG& msg) -> INT_PTR;
+		auto WMInitDialog(const MSG& msg) -> INT_PTR;
+		auto WMLButtonDown(const MSG& msg) -> INT_PTR;
+		auto WMLButtonUp(const MSG& msg) -> INT_PTR;
+		auto WMMeasureItem(const MSG& msg) -> INT_PTR;
+		auto WMMouseActivate(const MSG& msg) -> INT_PTR;
+		auto WMNotify(const MSG& msg) -> INT_PTR;
+		void WMNotifyListDblClick(NMHDR* pNMHDR);
+		void WMNotifyListEditBegin(NMHDR* pNMHDR);
+		void WMNotifyListEnterPressed(NMHDR* pNMHDR);
+		void WMNotifyListGetColor(NMHDR* pNMHDR);
+		void WMNotifyListGetDispInfo(NMHDR* pNMHDR);
+		void WMNotifyListHdrRClick(NMHDR* pNMHDR);
+		void WMNotifyListItemChanged(NMHDR* pNMHDR);
+		void WMNotifyListLinkClick(NMHDR* pNMHDR);
+		void WMNotifyListRClick(NMHDR* pNMHDR);
+		void WMNotifyListSetData(NMHDR* pNMHDR);
+		void WMNotifyTreeGetDispInfo(NMHDR* pNMHDR);
+		void WMNotifyTreeItemChanged(NMHDR* pNMHDR);
+		void WMNotifyTreeLClick(NMHDR* pNMHDR);
+		void WMNotifyTreeRClick(NMHDR* pNMHDR);
+		auto WMSize(const MSG& msg) -> INT_PTR;
+		static auto CALLBACK TreeSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
+			UINT_PTR uIDSubclass, DWORD_PTR dwRefData)->LRESULT;
+	private:
+		enum class EMenuID : std::uint16_t;
+		enum EListColumns : std::int8_t;
+		GDIUT::CSplitter m_SplitVert;
+		GDIUT::CDynLayout m_DynLayout;
+		GDIUT::CWnd m_Wnd;
+		GDIUT::CWnd m_WndStatOffset;     //Static text "Template offset:".
+		GDIUT::CWnd m_WndStatSize;       //Static text Template size:".
+		GDIUT::CWndEdit m_WndEditOffset; //"Offset" edit box.
+		GDIUT::CWndBtn m_WndBtnTT;       //Check-box "Show tooltips".
+		GDIUT::CWndBtn m_WndBtnMin;      //Check-box min-max.
+		GDIUT::CWndBtn m_WndBtnHighl;    //Check-box "Highlight selected".
+		GDIUT::CWndBtn m_WndBtnHex;      //Check-box "Hex numbers".
+		GDIUT::CWndBtn m_WndBtnEndian;   //Check-box "Swap endian".
+		GDIUT::CWndCombo m_WndCmbTempl;  //Currently available templates list.
+		GDIUT::CWndTree m_WndTree;       //Tree control.
+		GDIUT::CMenu m_MenuTree;         //Menu for the tree control.
+		GDIUT::CMenu m_MenuListHdr;      //Menu for the list header.
+		HINSTANCE m_hInstRes { };
+		LISTEX::CListEx m_ListEx;
+		CHexTemplates m_templates;       //Main templates object.
+		std::vector<std::unique_ptr<std::wstring>> m_vecTemplateFiles; //Template files list.
+		IHexCtrl* m_pHexCtrl { };
+		PCHexVecTemplFields m_pVecFieldsCurr { }; //Currently selected Fields vector.
+		HTREEITEM m_hTreeCurrParent { };  //Currently selected Tree node's parent.
+		HBITMAP m_hBmpMin { };            //Bitmap for the min checkbox.
+		HBITMAP m_hBmpMax { };            //Bitmap for the max checkbox.
+		std::uint64_t m_u64Flags { };     //Data from SetDlgProperties.
+		DWORD m_dwDateFormat { };         //Date format.
+		wchar_t m_wchDateSepar { };       //Date separator.
+		bool m_fListGuardEvent { false }; //To not proceed with OnListItemChanged, same as pTree->action == TVC_UNKNOWN.
+		bool m_fTreeClickedWithMouse { false }; //Indicates that tree item was changed with a mouse.
+	};
+}
+
+enum class CHexDlgTemplMgr::EMenuID : std::uint16_t {
+	IDM_TREE_RNDCOLORS = 0x8000, IDM_TREE_DISAPPLY, IDM_TREE_DISAPPLYALL,
+	IDM_LIST_HDR_TYPE, IDM_LIST_HDR_NAME, IDM_LIST_HDR_OFFSET, IDM_LIST_HDR_SIZE,
+	IDM_LIST_HDR_DATA, IDM_LIST_HDR_ENDIANNESS, IDM_LIST_HDR_DESCRIPTION, IDM_LIST_HDR_COLORS,
+	IDM_COMBOBOX_OPENFILE
+};
+
+enum CHexDlgTemplMgr::EListColumns : std::int8_t {
+	COL_TYPE = 0, COL_NAME = 1, COL_OFFSET = 2, COL_SIZE = 3,
+	COL_DATA = 4, COL_ENDIAN = 5, COL_DESCR = 6, COL_COLORS = 7
+};
+
+
+bool CHexDlgTemplMgr::AddTemplateFile(const wchar_t* pwszFilePath) {
+	const wchar_t* pwszFilePathInternally;
+	if (const auto it = std::find_if(m_vecTemplateFiles.begin(), m_vecTemplateFiles.end(),
+		[pwszFilePath](const std::unique_ptr<std::wstring>& uptr) {	return *uptr == pwszFilePath; });
+		it != m_vecTemplateFiles.end()) { //Already exists.
+		pwszFilePathInternally = it->get()->data();
+	}
+	else {
+		const auto wstrTemplateName = CHexTemplates::JSONGetTemplateNameProperty(pwszFilePath);
+		if (wstrTemplateName.empty()) {
+			return false; //No "TemplateName" property, or wrong/incorrect file.
+		}
+
+		pwszFilePathInternally = m_vecTemplateFiles.emplace_back(std::make_unique<std::wstring>(pwszFilePath))->data();
+	}
+
+	OnTemplateAddRemove(pwszFilePathInternally, true);
+
+	return true;
+}
+
+void CHexDlgTemplMgr::ApplyCurr(std::uint64_t u64Offset) {
+	if (!m_Wnd.IsWindow() || !HasCurrent())
+		return;
+
+	ApplyTemplate(GetComboCurrTemplateFilePath(), u64Offset);
+}
+
+auto CHexDlgTemplMgr::ApplyTemplate(const wchar_t* pwszFilePath, std::uint64_t u64Offset)->int {
+	const auto iTemplateID = m_templates.ApplyTemplate(pwszFilePath, u64Offset);
+	if (iTemplateID <= 0) { //Valid template IDs start from 1.
+		return -1;
+	}
+
+	OnTemplateApplyDisapply(iTemplateID, true);
+	RedrawHexCtrl();
+
+	return iTemplateID;
+}
+
+void CHexDlgTemplMgr::CreateDlg()const
+{
+	//m_Wnd is set in the WMInitDialog().
+	if (const auto hWnd = ::CreateDialogParamW(m_hInstRes, MAKEINTRESOURCEW(IDD_HEXCTRL_TEMPLMGR),
+		m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN), GDIUT::DlgProc<CHexDlgTemplMgr>, reinterpret_cast<LPARAM>(this));
+		hWnd == nullptr) {
+		ut::DBG_REPORT(L"CreateDialogParamW failed.");
+	}
+}
+
+void CHexDlgTemplMgr::DestroyDlg() {
+	if (m_Wnd.IsWindow()) {
+		m_Wnd.DestroyWindow();
+	}
+}
+
+void CHexDlgTemplMgr::DisapplyAll() {
+	if (m_Wnd.IsWindow()) { //Dialog must be created and alive to work with its members.
+		m_WndTree.DeleteAllItems();
+		m_ListEx.SetItemCountEx(0);
+		UpdateStaticText();
+	}
+
+	m_pVecFieldsCurr = nullptr;
+	m_hTreeCurrParent = nullptr;
+	m_templates.DisapplyAll();
+	RedrawHexCtrl();
+}
+
+void CHexDlgTemplMgr::DisapplyByID(int iTemplateID) {
+	OnTemplateApplyDisapply(iTemplateID, false);
+	m_templates.RemoveAppliedByID(iTemplateID);
+	RedrawHexCtrl();
+}
+
+void CHexDlgTemplMgr::DisapplyByOffset(std::uint64_t u64Offset) {
+	if (const auto pAppl = m_templates.GetTemplateByOffset(u64Offset); pAppl != nullptr) {
+		OnTemplateApplyDisapply(pAppl->iTemplateID, false);
+		m_templates.RemoveAppliedByID(pAppl->iTemplateID);
+		RedrawHexCtrl();
+	}
+}
+
+auto CHexDlgTemplMgr::GetAllApplied()->VecHexTemplatesApplied {
+	return m_templates.GetAllApplied();
+}
+
+auto CHexDlgTemplMgr::GetDlgItemHandle(EHexDlgItem eItem)const->HWND
+{
+	if (!m_Wnd.IsWindow()) {
+		return { };
+	}
+
+	using enum EHexDlgItem;
+	switch (eItem) {
+	case TEMPLMGR_CHK_MIN: return m_WndBtnMin;
+	case TEMPLMGR_CHK_TT: return m_WndBtnTT;
+	case TEMPLMGR_CHK_HGL: return m_WndBtnHighl;
+	case TEMPLMGR_CHK_HEX: return m_WndBtnHex;
+	case TEMPLMGR_CHK_SWAP: return m_WndBtnEndian;
+	default: return { };
+	}
+}
+
+auto CHexDlgTemplMgr::GetTemplateFilesList()->std::vector<std::wstring> {
+	std::vector<std::wstring> vec;
+	vec.reserve(m_vecTemplateFiles.size());
+	std::ranges::transform(m_vecTemplateFiles, std::back_inserter(vec), [](const std::unique_ptr<std::wstring>& uptr) {
+		return *uptr; });
+
+	return vec;
+}
+
+auto CHexDlgTemplMgr::GetHWND()const->HWND {
+	return m_Wnd;
+}
+
+bool CHexDlgTemplMgr::HasApplied()const {
+	return m_templates.HasApplied();
+}
+
+bool CHexDlgTemplMgr::HasCurrent()const {
+	return m_Wnd.IsWindow() && HasTemplateFiles();
+}
+
+auto CHexDlgTemplMgr::HitTest(std::uint64_t u64Offset)const->PCHEXTEMPLFIELD {
+	return m_templates.HitTest(u64Offset);
+}
+
+void CHexDlgTemplMgr::Initialize(IHexCtrl &HexCtrl, HINSTANCE hInstRes) {
+	m_pHexCtrl = &HexCtrl;
+	m_hInstRes = hInstRes;
+	m_templates.Initialize(HexCtrl);
+}
+
+bool CHexDlgTemplMgr::IsShowTooltips()const {
+	return m_WndBtnTT.IsWindow() && m_WndBtnTT.IsChecked();
+}
+
+bool CHexDlgTemplMgr::PreTranslateMsg(MSG* pMsg) {
+	PreTranslateComboTempl(pMsg);
+	return m_Wnd.IsDlgMessage(pMsg);
+}
+
+auto CHexDlgTemplMgr::ProcessMsg(const MSG& msg)->INT_PTR
+{
+	switch (msg.message) {
+	case WM_ACTIVATE: return WMActivate(msg);
+	case WM_CLOSE: return WMClose();
+	case WM_COMMAND: return WMCommand(msg);
+	case WM_CTLCOLORSTATIC: return WMCtlColorStatic(msg);
+	case WM_DESTROY: return WMDestroy();
+	case WM_DPICHANGED: return WMDPIChanged(msg);
+	case WM_DRAWITEM: return WMDrawItem(msg);
+	case WM_GETDPISCALEDSIZE: return WMGetDPIScaledSize(msg);
+	case WM_INITDIALOG: return WMInitDialog(msg);
+	case WM_LBUTTONDOWN: return WMLButtonDown(msg);
+	case WM_LBUTTONUP: return WMLButtonUp(msg);
+	case WM_MEASUREITEM: return WMMeasureItem(msg);
+	case WM_MOUSEACTIVATE: return WMMouseActivate(msg);
+	case WM_NOTIFY: return WMNotify(msg);
+	case WM_SIZE: return WMSize(msg);
+	default:
+		return 0;
+	}
+}
+
+void CHexDlgTemplMgr::RemoveAllTemplates() {
+	DisapplyAll(); //m_vecTemplates is empty after that.
+
+	for (const auto& uptr : m_vecTemplateFiles) {
+		OnTemplateAddRemove(uptr->data(), false);
+	}
+
+	m_vecTemplateFiles.clear();
+}
+
+void CHexDlgTemplMgr::RemoveTemplateFile(const wchar_t* pwszFilePath) {
+	OnTemplateAddRemove(pwszFilePath, false);
+	std::erase_if(m_vecTemplateFiles, [pwszFilePath](const std::unique_ptr<std::wstring>& uptr) {
+		return *uptr == pwszFilePath; }); //Remove template file name.
+	m_templates.RemoveAppliedByFilePath(pwszFilePath);
+	SetDlgButtonsState();
+}
+
+void CHexDlgTemplMgr::SetDlgProperties(std::uint64_t u64Flags) {
+	m_u64Flags = u64Flags;
+}
+
+void CHexDlgTemplMgr::ShowTooltips(bool fShow) {
+	m_WndBtnTT.SetCheck(fShow);
+}
+
+void CHexDlgTemplMgr::ShowWindow(int iCmdShow) {
+	if (!m_Wnd.IsWindow()) {
+		CreateDlg();
+	}
+
+	m_Wnd.ShowWindow(iCmdShow);
+}
+
+void CHexDlgTemplMgr::UpdateData() {
+	if (!m_Wnd.IsWindow() || !m_Wnd.IsWindowVisible()) {
+		return;
+	}
+
+	m_ListEx.RedrawWindow();
+}
 
 //Private methods.
 
@@ -1206,7 +1358,7 @@ auto CHexDlgTemplMgr::GetHexCtrl()const->IHexCtrl* {
 	return m_pHexCtrl;
 }
 
-auto CHexDlgTemplMgr::GUIGetComboCurrTemplateFilePath()const->wchar_t* {
+auto CHexDlgTemplMgr::GetComboCurrTemplateFilePath()const->wchar_t* {
 	const auto iIndex = m_WndCmbTempl.GetCurSel();
 	if (iIndex == CB_ERR) {
 		return { };
@@ -1215,7 +1367,7 @@ auto CHexDlgTemplMgr::GUIGetComboCurrTemplateFilePath()const->wchar_t* {
 	return reinterpret_cast<wchar_t*>(m_WndCmbTempl.GetItemData(iIndex));
 }
 
-auto CHexDlgTemplMgr::GUIGetTemplateIDFromTree(HTREEITEM hTreeItem)->int {
+auto CHexDlgTemplMgr::GetTemplateIDFromTree(HTREEITEM hTreeItem)->int {
 	auto hRoot = hTreeItem;
 	while (hRoot != nullptr) { //Root node.
 		hTreeItem = hRoot;
@@ -1225,123 +1377,7 @@ auto CHexDlgTemplMgr::GUIGetTemplateIDFromTree(HTREEITEM hTreeItem)->int {
 	return static_cast<int>(m_WndTree.GetItemData(hTreeItem));
 }
 
-auto CHexDlgTemplMgr::GUIGetTreeSelectedTemplate()->PCHEXTEMPLATE {
-	return TMPLGetTemplateByID(GUIGetTreeSelectedTemplateID());
-}
-
-auto CHexDlgTemplMgr::GUIGetTreeSelectedTemplateID()->int {
-	return GUIGetTemplateIDFromTree(m_WndTree.GetSelectedItem());
-}
-
-void CHexDlgTemplMgr::GUIOnTemplateApplyDisapply(int iTemplateID, bool fApply)
-{
-	if (!m_Wnd.IsWindow()) //Only if dialog window is created and alive we proceed with its members.
-		return;
-
-	const auto pTemplate = TMPLGetTemplateByID(iTemplateID);
-	if (pTemplate == nullptr)
-		return;
-
-	if (fApply) {
-		//Tree root node.
-		TVINSERTSTRUCTW tvi { .hParent { TVI_ROOT }, .itemex { .mask { TVIF_CHILDREN | TVIF_TEXT | TVIF_PARAM },
-			.pszText { LPSTR_TEXTCALLBACK }, .cChildren { static_cast<int>(pTemplate->vecFields.size()) },
-			.lParam { iTemplateID } } }; //Tree root node has iTemplateID in lParam.
-		const auto hTreeRootNode = m_WndTree.InsertItem(&tvi);
-
-		const auto lmbFill = [&](HTREEITEM hTreeRoot, const VecHexTemplFields& vecFields)->void {
-			const auto _lmbFill = [&](const auto& lmbSelf, HTREEITEM hTreeRoot, const VecHexTemplFields& vecFields)->void {
-				for (const auto& pField : vecFields) {
-					tvi.hParent = hTreeRoot;
-					tvi.itemex.cChildren = static_cast<int>(pField->vecNested.size());
-					tvi.itemex.lParam = reinterpret_cast<LPARAM>(pField.get()); //Tree child nodes have PCHEXTEMPLFIELD.
-					const auto hCurrentRoot = m_WndTree.InsertItem(&tvi);
-					if (tvi.itemex.cChildren > 0) {
-						lmbSelf(lmbSelf, hCurrentRoot, pField->vecNested);
-					}
-				}
-				};
-			_lmbFill(_lmbFill, hTreeRoot, vecFields);
-			};
-		lmbFill(hTreeRootNode, pTemplate->vecFields);
-	}
-	else {
-		auto hItem = m_WndTree.GetRootItem();
-		while (hItem != nullptr) {
-			if (const auto iID = GUIGetTemplateIDFromTree(hItem); iID == iTemplateID) {
-				if (iID == GUIGetTreeSelectedTemplateID()) {
-					m_ListEx.SetItemCountEx(0);
-					m_ListEx.RedrawWindow();
-					m_pVecFieldsCurr = nullptr;
-					m_hTreeCurrParent = nullptr;
-				}
-				m_WndTree.DeleteItem(hItem);
-				GUIUpdateStaticText();
-				break;
-			}
-
-			hItem = m_WndTree.GetNextItem(hItem, TVGN_NEXT); //Get next Root sibling item.
-		}
-	}
-}
-
-void CHexDlgTemplMgr::GUIOnTemplateAddRemove(const wchar_t* pwszFilePath, bool fAdd) {
-	if (!m_Wnd.IsWindow()) //Only if dialog window is created and alive we proceed with its members.
-		return;
-
-	if (fAdd) {
-		const auto wstrTemplateName = JSONGetTemplateNameProperty(pwszFilePath);
-		if (wstrTemplateName.empty()) {
-			return; //No "TemplateName" string property, or incorrect file.
-		}
-
-		for (auto iIndex = 0; iIndex < m_WndCmbTempl.GetCount(); ++iIndex) { //Check if such file path already exists.
-			if (const std::wstring_view wsv = reinterpret_cast<wchar_t*>(m_WndCmbTempl.GetItemData(iIndex));
-				wsv == pwszFilePath) {
-				return; //Already exists in the list.
-			}
-		}
-
-		const auto iIndex = m_WndCmbTempl.AddString(wstrTemplateName.data());
-		m_WndCmbTempl.SetItemData(iIndex, reinterpret_cast<DWORD_PTR>(pwszFilePath));
-		m_WndCmbTempl.SetCurSel(iIndex);
-		SetDlgButtonsState();
-	}
-	else {
-		//Remove tree nodes with such pwszFilePath.
-		std::vector<HTREEITEM> vecToRemove;
-		auto hItem = m_WndTree.GetRootItem();
-		while (hItem != nullptr) {
-			const auto pTemplate = TMPLGetTemplateByID(GUIGetTemplateIDFromTree(hItem));
-			if (pTemplate->wstrFilePath == pwszFilePath) {
-				vecToRemove.emplace_back(hItem);
-			}
-			hItem = m_WndTree.GetNextItem(hItem, TVGN_NEXT); //Get next Root sibling item.
-		}
-		for (const auto item : vecToRemove) {
-			m_WndTree.DeleteItem(item);
-		}
-
-		//Remove combo-box item with such pwszFilePath.
-		for (auto iIndex = 0; iIndex < m_WndCmbTempl.GetCount(); ++iIndex) { //Remove Template name from ComboBox.
-			if (const std::wstring_view wsv = reinterpret_cast<wchar_t*>(m_WndCmbTempl.GetItemData(iIndex)); wsv == pwszFilePath) {
-				m_WndCmbTempl.DeleteString(iIndex);
-				m_WndCmbTempl.SetCurSel(0);
-				break;
-			}
-		}
-
-		m_ListEx.SetItemCountEx(0);
-		m_pVecFieldsCurr = nullptr;
-		m_hTreeCurrParent = nullptr;
-		m_ListEx.RedrawWindow();
-		GUIUpdateStaticText();
-		SetDlgButtonsState();
-		RedrawHexCtrl();
-	}
-}
-
-auto CHexDlgTemplMgr::GUITreeItemFromListItem(int iListItem)const->HTREEITEM {
+auto CHexDlgTemplMgr::GetTreeItemFromListItem(int iListItem)const->HTREEITEM {
 	auto hChildItem = m_WndTree.GetNextItem(m_hTreeCurrParent, TVGN_CHILD);
 	for (auto itListItems = 0; itListItems < iListItem; ++itListItems) {
 		hChildItem = m_WndTree.GetNextSiblingItem(hChildItem);
@@ -1350,37 +1386,20 @@ auto CHexDlgTemplMgr::GUITreeItemFromListItem(int iListItem)const->HTREEITEM {
 	return hChildItem;
 }
 
-void CHexDlgTemplMgr::GUIUpdateDateTimeFormat() {
-	const auto [dwFormat, wchSepar] = GetHexCtrl()->GetDateInfo();
-	m_dwDateFormat = dwFormat;
-	m_wchDateSepar = wchSepar;
-	m_ListEx.RedrawWindow();
+auto CHexDlgTemplMgr::GetTreeSelectedTemplate()->PCHEXTEMPLATE {
+	return m_templates.GetTemplateByID(GetTreeSelectedTemplateID());
 }
 
-void CHexDlgTemplMgr::GUIUpdateEditBoxOffsetToCurrHexCaret() {
-	if (const auto pHex = GetHexCtrl(); pHex != nullptr && pHex->IsCreated() && pHex->IsDataSet()) {
-		const auto wstr = std::format(L"0x{:X}", GetHexCtrl()->GetCaretPos());
-		m_WndEditOffset.SetWndText(wstr);
-	}
+auto CHexDlgTemplMgr::GetTreeSelectedTemplateID()->int {
+	return GetTemplateIDFromTree(m_WndTree.GetSelectedItem());
 }
 
-void CHexDlgTemplMgr::GUIUpdateStaticText() {
-	std::wstring wstrOffset;
-	std::wstring wstrSize;
-	const auto pTemplate = GUIGetTreeSelectedTemplate();
-
-	if (pTemplate != nullptr && GetHexCtrl()->IsDataSet()) { //If pTemplate == nullptr set empty text.
-		const auto ullOffset = GetHexCtrl()->GetOffset(pTemplate->u64Offset, true); //Show virtual offset.
-		wstrOffset = std::vformat(IsShowAsHex() ? L"0x{:X}" : L"{}", std::make_wformat_args(ullOffset));
-		wstrSize = std::vformat(IsShowAsHex() ? L"0x{:X}" : L"{}", std::make_wformat_args(pTemplate->iSizeTotal));
-	}
-
-	m_WndStatOffset.SetWndText(wstrOffset);
-	m_WndStatSize.SetWndText(wstrSize);
+bool CHexDlgTemplMgr::HasTemplateFiles()const {
+	return !m_vecTemplateFiles.empty();
 }
 
 bool CHexDlgTemplMgr::IsHighlight()const {
-	return m_WndBtnHighlight.IsChecked();
+	return m_WndBtnHighl.IsChecked();
 }
 
 bool CHexDlgTemplMgr::IsMinimized()const {
@@ -1452,7 +1471,7 @@ void CHexDlgTemplMgr::OnBnAddTemplate()
 }
 
 void CHexDlgTemplMgr::OnBnRemoveTemplate() {
-	RemoveTemplateFile(GUIGetComboCurrTemplateFilePath());
+	RemoveTemplateFile(GetComboCurrTemplateFilePath());
 }
 
 void CHexDlgTemplMgr::OnBnApply()
@@ -1472,7 +1491,7 @@ void CHexDlgTemplMgr::OnBnApply()
 		return;
 	}
 
-	ApplyTemplate(GUIGetComboCurrTemplateFilePath(), GetHexCtrl()->GetOffset(*optOffset, false));
+	ApplyTemplate(GetComboCurrTemplateFilePath(), GetHexCtrl()->GetOffset(*optOffset, false));
 }
 
 void CHexDlgTemplMgr::OnCancel() {
@@ -1483,7 +1502,7 @@ void CHexDlgTemplMgr::OnCancel() {
 }
 
 void CHexDlgTemplMgr::OnCheckHex() {
-	GUIUpdateStaticText();
+	UpdateStaticText();
 	m_ListEx.RedrawWindow();
 }
 
@@ -1548,11 +1567,119 @@ void CHexDlgTemplMgr::OnOK()
 	}
 }
 
+void CHexDlgTemplMgr::OnTemplateApplyDisapply(int iTemplateID, bool fApply)
+{
+	if (!m_Wnd.IsWindow()) //Only if dialog window is created and alive we proceed with its members.
+		return;
+
+	const auto pTemplate = m_templates.GetTemplateByID(iTemplateID);
+	if (pTemplate == nullptr)
+		return;
+
+	if (fApply) {
+		//Tree root node.
+		TVINSERTSTRUCTW tvi { .hParent { TVI_ROOT }, .itemex { .mask { TVIF_CHILDREN | TVIF_TEXT | TVIF_PARAM },
+			.pszText { LPSTR_TEXTCALLBACK }, .cChildren { static_cast<int>(pTemplate->vecFields.size()) },
+			.lParam { iTemplateID } } }; //Tree root node has iTemplateID in lParam.
+		const auto hTreeRootNode = m_WndTree.InsertItem(&tvi);
+
+		const auto lmbFill = [&](HTREEITEM hTreeRoot, const VecHexTemplFields& vecFields)->void {
+			const auto _lmbFill = [&](const auto& lmbSelf, HTREEITEM hTreeRoot, const VecHexTemplFields& vecFields)->void {
+				for (const auto& pField : vecFields) {
+					tvi.hParent = hTreeRoot;
+					tvi.itemex.cChildren = static_cast<int>(pField->vecNested.size());
+					tvi.itemex.lParam = reinterpret_cast<LPARAM>(pField.get()); //Tree child nodes have PCHEXTEMPLFIELD.
+					const auto hCurrentRoot = m_WndTree.InsertItem(&tvi);
+					if (tvi.itemex.cChildren > 0) {
+						lmbSelf(lmbSelf, hCurrentRoot, pField->vecNested);
+					}
+				}
+				};
+			_lmbFill(_lmbFill, hTreeRoot, vecFields);
+			};
+		lmbFill(hTreeRootNode, pTemplate->vecFields);
+	}
+	else {
+		auto hItem = m_WndTree.GetRootItem();
+		while (hItem != nullptr) {
+			if (const auto iID = GetTemplateIDFromTree(hItem); iID == iTemplateID) {
+				if (iID == GetTreeSelectedTemplateID()) {
+					m_ListEx.SetItemCountEx(0);
+					m_ListEx.RedrawWindow();
+					m_pVecFieldsCurr = nullptr;
+					m_hTreeCurrParent = nullptr;
+				}
+				m_WndTree.DeleteItem(hItem);
+				UpdateStaticText();
+				break;
+			}
+
+			hItem = m_WndTree.GetNextItem(hItem, TVGN_NEXT); //Get next Root sibling item.
+		}
+	}
+}
+
+void CHexDlgTemplMgr::OnTemplateAddRemove(const wchar_t* pwszFilePath, bool fAdd) {
+	if (!m_Wnd.IsWindow()) //Only if dialog window is created and alive we proceed with its members.
+		return;
+
+	if (fAdd) {
+		const auto wstrTemplateName = CHexTemplates::JSONGetTemplateNameProperty(pwszFilePath);
+		if (wstrTemplateName.empty()) {
+			return; //No "TemplateName" string property, or incorrect file.
+		}
+
+		for (auto iIndex = 0; iIndex < m_WndCmbTempl.GetCount(); ++iIndex) { //Check if such file path already exists.
+			if (const std::wstring_view wsv = reinterpret_cast<wchar_t*>(m_WndCmbTempl.GetItemData(iIndex));
+				wsv == pwszFilePath) {
+				return; //Already exists in the list.
+			}
+		}
+
+		const auto iIndex = m_WndCmbTempl.AddString(wstrTemplateName.data());
+		m_WndCmbTempl.SetItemData(iIndex, reinterpret_cast<DWORD_PTR>(pwszFilePath));
+		m_WndCmbTempl.SetCurSel(iIndex);
+		SetDlgButtonsState();
+	}
+	else {
+		//Remove tree nodes with such pwszFilePath.
+		std::vector<HTREEITEM> vecToRemove;
+		auto hItem = m_WndTree.GetRootItem();
+		while (hItem != nullptr) {
+			const auto pTemplate = m_templates.GetTemplateByID(GetTemplateIDFromTree(hItem));
+			if (pTemplate->wstrFilePath == pwszFilePath) {
+				vecToRemove.emplace_back(hItem);
+			}
+			hItem = m_WndTree.GetNextItem(hItem, TVGN_NEXT); //Get next Root sibling item.
+		}
+		for (const auto item : vecToRemove) {
+			m_WndTree.DeleteItem(item);
+		}
+
+		//Remove combo-box item with such pwszFilePath.
+		for (auto iIndex = 0; iIndex < m_WndCmbTempl.GetCount(); ++iIndex) { //Remove Template name from ComboBox.
+			if (const std::wstring_view wsv = reinterpret_cast<wchar_t*>(m_WndCmbTempl.GetItemData(iIndex)); wsv == pwszFilePath) {
+				m_WndCmbTempl.DeleteString(iIndex);
+				m_WndCmbTempl.SetCurSel(0);
+				break;
+			}
+		}
+
+		m_ListEx.SetItemCountEx(0);
+		m_pVecFieldsCurr = nullptr;
+		m_hTreeCurrParent = nullptr;
+		m_ListEx.RedrawWindow();
+		UpdateStaticText();
+		SetDlgButtonsState();
+		RedrawHexCtrl();
+	}
+}
+
 void CHexDlgTemplMgr::PreTranslateComboTempl(MSG* pMsg) {
 	if (m_WndCmbTempl.IsNull() || pMsg->hwnd != m_WndCmbTempl || pMsg->message != WM_RBUTTONUP)
 		return;
 
-	const auto pwszFilePath = GUIGetComboCurrTemplateFilePath();
+	const auto pwszFilePath = GetComboCurrTemplateFilePath();
 	if (pwszFilePath == nullptr)
 		return;
 
@@ -1762,7 +1889,7 @@ bool CHexDlgTemplMgr::SetDataGUID(LPCWSTR pwszText, ULONGLONG ullOffset, bool fS
 
 void CHexDlgTemplMgr::SetDlgButtonsState()
 {
-	const auto fHasTempl = TMPLHasTemplateFiles();
+	const auto fHasTempl = HasTemplateFiles();
 	if (const auto btnApply = m_Wnd.GetDlgItem(IDC_HEXCTRL_TEMPLMGR_BTN_APPLY); !btnApply.IsNull()) {
 		btnApply.EnableWindow(fHasTempl);
 	}
@@ -1774,7 +1901,7 @@ void CHexDlgTemplMgr::SetDlgButtonsState()
 
 void CHexDlgTemplMgr::SetHexSelByField(PCHEXTEMPLFIELD pField)
 {
-	const auto pTemplate = GUIGetTreeSelectedTemplate();
+	const auto pTemplate = GetTreeSelectedTemplate();
 	if (!IsHighlight() || !m_pHexCtrl->IsDataSet() || pField == nullptr || pTemplate == nullptr)
 		return;
 
@@ -1949,96 +2076,40 @@ void CHexDlgTemplMgr::ShowListDataGUID(LPWSTR pwsz, GUID stGUID, bool fShouldSwa
 		stGUID.Data4[3], stGUID.Data4[4], stGUID.Data4[5], stGUID.Data4[6], stGUID.Data4[7]) = L'\0';
 }
 
-auto CHexDlgTemplMgr::TMPLAddTemplateFile(const wchar_t* pwszFilePath)->const wchar_t* {
-	if (const auto it = std::find_if(m_vecTemplateFiles.begin(), m_vecTemplateFiles.end(),
-		[pwszFilePath](const std::unique_ptr<std::wstring>& uptr) {	return *uptr == pwszFilePath; });
-		it != m_vecTemplateFiles.end()) { //Already exists.
-		return it->get()->data();
+void CHexDlgTemplMgr::UpdateDateTimeFormat() {
+	const auto [dwFormat, wchSepar] = GetHexCtrl()->GetDateInfo();
+	m_dwDateFormat = dwFormat;
+	m_wchDateSepar = wchSepar;
+	m_ListEx.RedrawWindow();
+}
+
+void CHexDlgTemplMgr::UpdateEditBoxOffsetToCurrHexCaret() {
+	if (const auto pHex = GetHexCtrl(); pHex != nullptr && pHex->IsCreated() && pHex->IsDataSet()) {
+		const auto wstr = std::format(L"0x{:X}", GetHexCtrl()->GetCaretPos());
+		m_WndEditOffset.SetWndText(wstr);
+	}
+}
+
+void CHexDlgTemplMgr::UpdateStaticText() {
+	std::wstring wstrOffset;
+	std::wstring wstrSize;
+	const auto pTemplate = GetTreeSelectedTemplate();
+
+	if (pTemplate != nullptr && GetHexCtrl()->IsDataSet()) { //If pTemplate == nullptr set empty text.
+		const auto ullOffset = GetHexCtrl()->GetOffset(pTemplate->u64Offset, true); //Show virtual offset.
+		wstrOffset = std::vformat(IsShowAsHex() ? L"0x{:X}" : L"{}", std::make_wformat_args(ullOffset));
+		wstrSize = std::vformat(IsShowAsHex() ? L"0x{:X}" : L"{}", std::make_wformat_args(pTemplate->iSizeTotal));
 	}
 
-	const auto wstrTemplateName = JSONGetTemplateNameProperty(pwszFilePath);
-	if (wstrTemplateName.empty()) {
-		return nullptr; //No "TemplateName" property, or wrong/incorrect file.
-	}
-
-	return m_vecTemplateFiles.emplace_back(std::make_unique<std::wstring>(pwszFilePath))->data();
-}
-
-auto CHexDlgTemplMgr::TMPLGetTemplateByOffset(std::uint64_t u64Offset)const->PCHEXTEMPLATE {
-	const auto rit = std::find_if(m_vecTemplates.rbegin(), m_vecTemplates.rend(),
-		[u64Offset](const std::unique_ptr<HEXTEMPLATE>& uptr) {
-			return u64Offset >= uptr->u64Offset && u64Offset < (uptr->u64Offset + uptr->iSizeTotal); });
-	return rit != m_vecTemplates.rend() ? rit->get() : nullptr;
-}
-
-auto CHexDlgTemplMgr::TMPLGetIDForNewTemplate()const->int {
-	auto iTemplateID = 1; //TemplateID starts at 1.
-	if (const auto it = std::max_element(m_vecTemplates.begin(), m_vecTemplates.end(),
-		[](const std::unique_ptr<HEXTEMPLATE>& p1, const std::unique_ptr<HEXTEMPLATE>& p2) {
-			return p1->iTemplateID < p2->iTemplateID; }); it != m_vecTemplates.end()) {
-		iTemplateID = it->get()->iTemplateID + 1; //Increasing next Template's ID by 1.
-	}
-
-	return iTemplateID;
-}
-
-auto CHexDlgTemplMgr::TMPLGetTemplateByID(int iTemplateID)const->PCHEXTEMPLATE {
-	const auto it = std::find_if(m_vecTemplates.begin(), m_vecTemplates.end(),
-		[iTemplateID](const std::unique_ptr<HEXTEMPLATE>& uptr) { return uptr->iTemplateID == iTemplateID; });
-	return it != m_vecTemplates.end() ? it->get() : nullptr;
-}
-
-auto CHexDlgTemplMgr::TMPLGetTemplateByFilePath(const wchar_t* pwszFilePath)const->PCHEXTEMPLATE {
-	const auto it = std::find_if(m_vecTemplates.begin(), m_vecTemplates.end(),
-		[pwszFilePath](const std::unique_ptr<HEXTEMPLATE>& uptr) { return uptr->wstrFilePath == pwszFilePath; });
-	return it != m_vecTemplates.end() ? it->get() : nullptr;
-}
-
-bool CHexDlgTemplMgr::TMPLHasTemplateFiles()const {
-	return !m_vecTemplateFiles.empty();
-}
-
-void CHexDlgTemplMgr::TMPLRandomizeTemplateColors(int iTemplateID) {
-	const auto pTemplate = TMPLGetTemplateByID(iTemplateID);
-	if (pTemplate == nullptr)
-		return;
-
-	std::mt19937 gen(std::random_device { }());
-	std::uniform_int_distribution<unsigned int> distrib(50, 230);
-	const auto lmbRndColors = [&distrib, &gen](const VecHexTemplFields& vecFields) {
-		const auto _lmbCount = [&distrib, &gen](const auto& lmbSelf, const VecHexTemplFields& vecFields)->void {
-			for (const auto& pField : vecFields) {
-				if (pField->vecNested.empty()) {
-					pField->stClr.clrBk = RGB(distrib(gen), distrib(gen), distrib(gen));
-				}
-				else { lmbSelf(lmbSelf, pField->vecNested); }
-			}
-			};
-		return _lmbCount(_lmbCount, vecFields);
-		};
-	lmbRndColors(pTemplate->vecFields);
-}
-
-void CHexDlgTemplMgr::TMPLRemoveAppliedByID(int iTemplateID) {
-	std::erase_if(m_vecTemplates, [iTemplateID](const std::unique_ptr<HEXTEMPLATE>& uptr) {
-		return uptr->iTemplateID == iTemplateID; });
-}
-
-void CHexDlgTemplMgr::TMPLRemoveAppliedByFilePath(const wchar_t* pwszFilePath) {
-	std::erase_if(m_vecTemplates, [pwszFilePath](const std::unique_ptr<HEXTEMPLATE>& uptr) {
-		return uptr->wstrFilePath == pwszFilePath; });
-}
-
-void CHexDlgTemplMgr::TMPLRemoveTemplateFile(const wchar_t* pwszFilePath) {
-	std::erase_if(m_vecTemplateFiles, [pwszFilePath](const std::unique_ptr<std::wstring>& uptr) {
-		return *uptr == pwszFilePath; }); //Remove template file name.
+	m_WndStatOffset.SetWndText(wstrOffset);
+	m_WndStatSize.SetWndText(wstrSize);
 }
 
 auto CHexDlgTemplMgr::WMActivate(const MSG& msg)->INT_PTR
 {
 	if (const auto pHex = GetHexCtrl();
 		pHex != nullptr && pHex->IsCreated() && pHex->IsDataSet() && LOWORD(msg.wParam) == WA_ACTIVE) {
-		GUIUpdateDateTimeFormat();
+		UpdateDateTimeFormat();
 	}
 
 	return 0;
@@ -2076,12 +2147,12 @@ auto CHexDlgTemplMgr::WMCommand(const MSG& msg)->INT_PTR
 		using enum EMenuID;
 		switch (static_cast<EMenuID>(uCtrlID)) {
 		case IDM_TREE_RNDCOLORS:
-			TMPLRandomizeTemplateColors(GUIGetTreeSelectedTemplateID());
+			m_templates.RandomizeTemplateColors(GetTreeSelectedTemplateID());
 			m_ListEx.RedrawWindow();
 			RedrawHexCtrl();
 			break;
 		case IDM_TREE_DISAPPLY:
-			DisapplyByID(GUIGetTreeSelectedTemplateID());
+			DisapplyByID(GetTreeSelectedTemplateID());
 			break;
 		case IDM_TREE_DISAPPLYALL:
 			DisapplyAll();
@@ -2172,7 +2243,7 @@ auto CHexDlgTemplMgr::WMInitDialog(const MSG& msg)->INT_PTR
 	m_WndEditOffset.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_TEMPLMGR_EDIT_OFFSET));
 	m_WndBtnTT.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_TEMPLMGR_CHK_TT));
 	m_WndBtnMin.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_TEMPLMGR_CHK_MIN));
-	m_WndBtnHighlight.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_TEMPLMGR_CHK_HGL));
+	m_WndBtnHighl.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_TEMPLMGR_CHK_HGL));
 	m_WndBtnHex.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_TEMPLMGR_CHK_HEX));
 	m_WndBtnEndian.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_TEMPLMGR_CHK_SWAP));
 	m_WndCmbTempl.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_TEMPLMGR_COMBO_TEMPLATES));
@@ -2218,7 +2289,7 @@ auto CHexDlgTemplMgr::WMInitDialog(const MSG& msg)->INT_PTR
 
 	m_WndEditOffset.SetWndText(L"0x0");
 	m_WndBtnTT.SetCheck(true);
-	m_WndBtnHighlight.SetCheck(IsHighlight());
+	m_WndBtnHighl.SetCheck(IsHighlight());
 	m_WndBtnHex.SetCheck(IsShowAsHex());
 
 	m_SplitVert.Initialize(m_Wnd, m_ListEx, GDIUT::CSplitter::EAnchorSide::SIDE_LEFT);
@@ -2236,12 +2307,12 @@ auto CHexDlgTemplMgr::WMInitDialog(const MSG& msg)->INT_PTR
 	SetDlgButtonsState();
 
 	for (const auto& uptr : m_vecTemplateFiles) {
-		GUIOnTemplateAddRemove(uptr.get()->data(), true);
+		OnTemplateAddRemove(uptr.get()->data(), true);
 	}
 
 	CreateArrows();
-	GUIUpdateDateTimeFormat();
-	GUIUpdateEditBoxOffsetToCurrHexCaret();
+	UpdateDateTimeFormat();
+	UpdateEditBoxOffsetToCurrHexCaret();
 
 	return TRUE;
 }
@@ -2273,8 +2344,8 @@ auto CHexDlgTemplMgr::WMMeasureItem(const MSG& msg)->INT_PTR
 auto CHexDlgTemplMgr::WMMouseActivate([[maybe_unused]] const MSG& msg)->INT_PTR
 {
 	if (const auto pHex = GetHexCtrl(); pHex != nullptr && pHex->IsCreated() && pHex->IsDataSet()) {
-		GUIUpdateDateTimeFormat();
-		GUIUpdateEditBoxOffsetToCurrHexCaret();
+		UpdateDateTimeFormat();
+		UpdateEditBoxOffsetToCurrHexCaret();
 	}
 
 	return MA_ACTIVATE;
@@ -2328,7 +2399,7 @@ void CHexDlgTemplMgr::WMNotifyListDblClick(NMHDR* pNMHDR)
 	m_fListGuardEvent = true; //To prevent nasty OnListItemChanged to fire after this method ends.
 	m_pVecFieldsCurr = &vec[iItem]->vecNested;
 
-	const auto hItem = GUITreeItemFromListItem(iItem);
+	const auto hItem = GetTreeItemFromListItem(iItem);
 	m_hTreeCurrParent = hItem;
 	m_WndTree.Expand(hItem, TVE_EXPAND);
 
@@ -2434,7 +2505,7 @@ void CHexDlgTemplMgr::WMNotifyListGetDispInfo(NMHDR* pNMHDR)
 		{ type_guid, L"GUID" }
 	};
 
-	const auto pTemplateCurr = GUIGetTreeSelectedTemplate();
+	const auto pTemplateCurr = GetTreeSelectedTemplate();
 	switch (pItem->iSubItem) {
 	case COL_TYPE:
 		if (pField->eType == type_custom) {
@@ -2613,7 +2684,7 @@ void CHexDlgTemplMgr::WMNotifyListItemChanged(NMHDR* pNMHDR)
 	if (iItem < 0 || m_fListGuardEvent)
 		return;
 
-	m_WndTree.SelectItem(GUITreeItemFromListItem(iItem));
+	m_WndTree.SelectItem(GetTreeItemFromListItem(iItem));
 }
 
 void CHexDlgTemplMgr::WMNotifyListLinkClick(NMHDR* pNMHDR) {
@@ -2624,7 +2695,7 @@ void CHexDlgTemplMgr::WMNotifyListLinkClick(NMHDR* pNMHDR) {
 		return;
 
 	const auto& jump = pField->pJump;
-	const auto u64FieldOffset = GUIGetTreeSelectedTemplate()->u64Offset + pField->iOffset;
+	const auto u64FieldOffset = GetTreeSelectedTemplate()->u64Offset + pField->iOffset;
 	std::uint64_t u64FieldData { };
 
 	using enum EHexTemplFieldType;
@@ -2723,7 +2794,7 @@ void CHexDlgTemplMgr::WMNotifyListLinkClick(NMHDR* pNMHDR) {
 		break;
 	case FIELD_FIRST:
 	{
-		const auto u64FirstFieldOffset = GUIGetTreeSelectedTemplate()->u64Offset + (*m_pVecFieldsCurr)[0]->iOffset;
+		const auto u64FirstFieldOffset = GetTreeSelectedTemplate()->u64Offset + (*m_pVecFieldsCurr)[0]->iOffset;
 		if (jump->eDirection == JUMP_FORWARD) {
 			u64OffsetToJump = u64FirstFieldOffset + u64FieldData;
 		}
@@ -2751,7 +2822,7 @@ void CHexDlgTemplMgr::WMNotifyListLinkClick(NMHDR* pNMHDR) {
 	if (u64OffsetToJump < u64HexDataSize) {
 		pHex->GoToOffset(u64OffsetToJump);
 		pHex->SetCaretPos(u64OffsetToJump, true, true);
-		GUIUpdateEditBoxOffsetToCurrHexCaret();
+		UpdateEditBoxOffsetToCurrHexCaret();
 	}
 }
 
@@ -2768,7 +2839,7 @@ void CHexDlgTemplMgr::WMNotifyListSetData(NMHDR* pNMHDR)
 			return;
 		}
 
-		const auto ullOffset = GUIGetTreeSelectedTemplate()->u64Offset + pField->iOffset;
+		const auto ullOffset = GetTreeSelectedTemplate()->u64Offset + pField->iOffset;
 		const auto fShouldSwap = pField->fBigEndian == !IsSwapEndian();
 
 		bool fSetRet { };
@@ -2876,7 +2947,7 @@ void CHexDlgTemplMgr::WMNotifyTreeGetDispInfo(NMHDR* pNMHDR)
 	const std::wstring* pwstr;
 	const auto uzItemData = m_WndTree.GetItemData(pItem->hItem);
 	if (m_WndTree.GetParentItem(pItem->hItem) == nullptr) { //Root node.
-		pwstr = &TMPLGetTemplateByID(static_cast<int>(uzItemData))->wstrName;
+		pwstr = &m_templates.GetTemplateByID(static_cast<int>(uzItemData))->wstrName;
 	}
 	else {
 		pwstr = &reinterpret_cast<PCHEXTEMPLFIELD>(uzItemData)->wstrName;
@@ -2908,9 +2979,9 @@ void CHexDlgTemplMgr::WMNotifyTreeItemChanged(NMHDR* pNMHDR)
 	bool fRootNodeClick { false };
 	PCHEXTEMPLFIELD pFieldCurr { };
 	PCHexVecTemplFields pVecCurrFields { };
-	const auto iTemplateIDPrev = GUIGetTemplateIDFromTree(pItemOld->hItem);
-	const auto iTemplateIDCurr = GUIGetTemplateIDFromTree(pItemNew->hItem);
-	const auto pTemplateCurr = GUIGetTreeSelectedTemplate();
+	const auto iTemplateIDPrev = GetTemplateIDFromTree(pItemOld->hItem);
+	const auto iTemplateIDCurr = GetTemplateIDFromTree(pItemNew->hItem);
+	const auto pTemplateCurr = GetTreeSelectedTemplate();
 	m_ListEx.SetItemState(-1, 0, LVIS_SELECTED | LVIS_FOCUSED); //Deselect all items.
 
 	if (hItemParent == nullptr) { //Root item.
@@ -2951,7 +3022,7 @@ void CHexDlgTemplMgr::WMNotifyTreeItemChanged(NMHDR* pNMHDR)
 		m_ListEx.SetItemCountEx(static_cast<int>(m_pVecFieldsCurr->size()), LVSICF_NOSCROLL);
 	}
 
-	GUIUpdateStaticText();
+	UpdateStaticText();
 
 	if (!fRootNodeClick) {
 		int iIndexHighlight { 0 }; //Index to highlight in the list.
@@ -3012,35 +3083,6 @@ auto CHexDlgTemplMgr::WMSize(const MSG& msg)->INT_PTR
 	m_SplitVert.SetEdges(100, wWidth - 10);
 
 	return TRUE;
-}
-
-auto CHexDlgTemplMgr::JSONGetTemplateNameProperty(const wchar_t* pwszFilePath)->std::wstring {
-	if (pwszFilePath == nullptr) {
-		ut::DBG_REPORT(L"pwszFilePath == nullptr");
-		return { };
-	}
-
-	std::ifstream ifs(pwszFilePath);
-	if (!ifs.is_open()) {
-		ut::DBG_REPORT(std::format(L"{}\r\n!ifs.is_open()", pwszFilePath).data());
-		return { };
-	}
-
-	rapidjson::IStreamWrapper isw { ifs };
-	rapidjson::Document docJSON;
-	docJSON.ParseStream(isw);
-	if (docJSON.IsNull()) {
-		ut::DBG_REPORT(std::format(L"{}\r\ndocJSON.IsNull()", pwszFilePath).data());
-		return { };
-	}
-
-	const auto itTName = docJSON.FindMember("TemplateName");
-	if (itTName == docJSON.MemberEnd() || !itTName->value.IsString()) {
-		ut::DBG_REPORT(std::format(L"{}\r\nTemplate must have a string type name.", pwszFilePath).data());
-		return { };
-	}
-
-	return ut::StrToWstr(itTName->value.GetString());
 }
 
 auto CHexDlgTemplMgr::TreeSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR uIDSubclass,
