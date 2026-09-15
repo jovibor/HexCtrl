@@ -41,20 +41,23 @@ namespace HEXCTRL::INTERNAL::ut { //Utility methods and stuff.
 	constexpr auto g_ulFileTime1970_HIGH = 0x019db1deU; //Used for Unix and Java times.
 	constexpr auto g_ullUnixEpochDiff = 11644473600ULL; //Number of ticks from FILETIME epoch of 1st Jan 1601 to Unix epoch of 1st Jan 1970.
 
-	[[nodiscard]] auto StrToWstr(std::string_view sv, UINT uCodePage = CP_UTF8) -> std::wstring
-	{
+	[[nodiscard]] auto StrToWstr(std::string_view sv, UINT uCodePage = CP_UTF8) -> std::wstring {
 		const auto iSize = ::MultiByteToWideChar(uCodePage, 0, sv.data(), static_cast<int>(sv.size()), nullptr, 0);
 		std::wstring wstr(iSize, 0);
 		::MultiByteToWideChar(uCodePage, 0, sv.data(), static_cast<int>(sv.size()), wstr.data(), iSize);
 		return wstr;
 	}
 
-	[[nodiscard]] auto WstrToStr(std::wstring_view wsv, UINT uCodePage = CP_UTF8) -> std::string
-	{
+	[[nodiscard]] auto WstrToStr(std::wstring_view wsv, UINT uCodePage = CP_UTF8) -> std::string {
 		const auto iSize = ::WideCharToMultiByte(uCodePage, 0, wsv.data(), static_cast<int>(wsv.size()), nullptr, 0, nullptr, nullptr);
 		std::string str(iSize, 0);
 		::WideCharToMultiByte(uCodePage, 0, wsv.data(), static_cast<int>(wsv.size()), str.data(), iSize, nullptr, nullptr);
 		return str;
+	}
+
+	[[nodiscard]] bool IsEqualNoCase(std::string_view sv1, std::string_view sv2) {
+		return std::ranges::equal(sv1, sv2, { }, [](unsigned char c) { return std::tolower(c); },
+			[](unsigned char c) { return std::tolower(c); });
 	}
 
 #if defined(DEBUG) || defined(_DEBUG)
@@ -77,8 +80,7 @@ namespace HEXCTRL::INTERNAL::ut { //Utility methods and stuff.
 
 	//Get data from IHexCtrl's given offset converted to a necessary type.
 	template<typename T>
-	[[nodiscard]] T GetIHexTData(const IHexCtrl& HexCtrl, ULONGLONG ullOffset)
-	{
+	[[nodiscard]] T GetIHexTData(const IHexCtrl& HexCtrl, ULONGLONG ullOffset) {
 		const auto spnData = HexCtrl.GetData({ .ullOffset { ullOffset }, .ullSize { sizeof(T) } });
 		assert(!spnData.empty());
 		return *reinterpret_cast<T*>(spnData.data());
@@ -86,8 +88,7 @@ namespace HEXCTRL::INTERNAL::ut { //Utility methods and stuff.
 
 	//Set data of a necessary type to IHexCtrl's given offset.
 	template<typename T>
-	void SetIHexTData(IHexCtrl& HexCtrl, ULONGLONG ullOffset, T tData)
-	{
+	void SetIHexTData(IHexCtrl& HexCtrl, ULONGLONG ullOffset, T tData) {
 		if (ullOffset + sizeof(T) > HexCtrl.GetDataSize()) { //Data overflow check.
 			DBG_REPORT(L"Data overflow occurs.");
 			return;
@@ -98,8 +99,7 @@ namespace HEXCTRL::INTERNAL::ut { //Utility methods and stuff.
 			.vecSpan { { ullOffset, sizeof(T) } } });
 	}
 
-	void SetIHexTData(IHexCtrl& HexCtrl, ULONGLONG ullOffset, SpanCByte spnData)
-	{
+	void SetIHexTData(IHexCtrl& HexCtrl, ULONGLONG ullOffset, SpanCByte spnData) {
 		if (ullOffset + spnData.size() > HexCtrl.GetDataSize()) { //Data overflow check.
 			DBG_REPORT(L"Data overflow occurs.");
 			return;
@@ -112,8 +112,7 @@ namespace HEXCTRL::INTERNAL::ut { //Utility methods and stuff.
 	template<typename T> concept TSize1248 = (sizeof(T) == 1 || sizeof(T) == 2 || sizeof(T) == 4 || sizeof(T) == 8);
 
 	template<TSize1248 T>
-	[[nodiscard]] constexpr T ByteSwap(T tData)noexcept
-	{
+	[[nodiscard]] constexpr T ByteSwap(T tData)noexcept {
 		//Since a swapping-data type can be any type of 2, 4, or 8 bytes size,
 		//we first bit_cast swapping-data to an integral type of the same size,
 		//then byte-swapping and then bit_cast to the original type back.
@@ -161,8 +160,7 @@ namespace HEXCTRL::INTERNAL::ut { //Utility methods and stuff.
 
 	//Converts every two numeric wchars to one respective hex character: "56"->V(0x56), "7A"->z(0x7A), etc...
 	//chWc - a wildcard if any.
-	[[nodiscard]] auto NumStrToHex(std::wstring_view wsv, char chWc = 0) -> std::optional<std::string>
-	{
+	[[nodiscard]] auto NumStrToHex(std::wstring_view wsv, char chWc = 0) -> std::optional<std::string> {
 		const auto fWc = chWc != 0; //Is wildcard used?
 		std::wstring wstrFilter = L"0123456789AaBbCcDdEeFf"; //Allowed characters.
 
@@ -195,8 +193,7 @@ namespace HEXCTRL::INTERNAL::ut { //Utility methods and stuff.
 		return { std::move(strHexTmp) };
 	}
 
-	[[nodiscard]] auto StringToSystemTime(std::wstring_view wsv, DWORD dwFormat) -> std::optional<SYSTEMTIME>
-	{
+	[[nodiscard]] auto StringToSystemTime(std::wstring_view wsv, DWORD dwFormat) -> std::optional<SYSTEMTIME> {
 		//dwFormat is a locale specific date format https://docs.microsoft.com/en-gb/windows/win32/intl/locale-idate
 
 		if (wsv.empty())
@@ -246,8 +243,7 @@ namespace HEXCTRL::INTERNAL::ut { //Utility methods and stuff.
 		return stSysTime;
 	}
 
-	[[nodiscard]] auto StringToFileTime(std::wstring_view wsv, DWORD dwFormat) -> std::optional<FILETIME>
-	{
+	[[nodiscard]] auto StringToFileTime(std::wstring_view wsv, DWORD dwFormat) -> std::optional<FILETIME> {
 		std::optional<FILETIME> optFT { std::nullopt };
 		if (auto optSysTime = StringToSystemTime(wsv, dwFormat); optSysTime) {
 			if (FILETIME ftTime; ::SystemTimeToFileTime(&*optSysTime, &ftTime) != FALSE) {
@@ -257,8 +253,7 @@ namespace HEXCTRL::INTERNAL::ut { //Utility methods and stuff.
 		return optFT;
 	}
 
-	[[nodiscard]] auto SystemTimeToString(SYSTEMTIME st, DWORD dwFormat, wchar_t wchSepar) -> std::wstring
-	{
+	[[nodiscard]] auto SystemTimeToString(SYSTEMTIME st, DWORD dwFormat, wchar_t wchSepar) -> std::wstring {
 		if (dwFormat > 2 || st.wDay == 0 || st.wDay > 31 || st.wMonth == 0 || st.wMonth > 12
 			|| st.wYear > 9999 || st.wHour > 23 || st.wMinute > 59 || st.wSecond > 59 || st.wMilliseconds > 999)
 			return L"N/A";
@@ -282,8 +277,7 @@ namespace HEXCTRL::INTERNAL::ut { //Utility methods and stuff.
 			st.wHour, st.wMinute, st.wSecond, st.wMilliseconds, wchSepar));
 	}
 
-	[[nodiscard]] auto FileTimeToString(FILETIME ft, DWORD dwFormat, wchar_t wchSepar) -> std::wstring
-	{
+	[[nodiscard]] auto FileTimeToString(FILETIME ft, DWORD dwFormat, wchar_t wchSepar) -> std::wstring {
 		if (SYSTEMTIME stSysTime; ::FileTimeToSystemTime(&ft, &stSysTime) != FALSE) {
 			return SystemTimeToString(stSysTime, dwFormat, wchSepar);
 		}
@@ -292,8 +286,7 @@ namespace HEXCTRL::INTERNAL::ut { //Utility methods and stuff.
 	}
 
 	//String of a date/time in the given format with the given date separator.
-	[[nodiscard]] auto GetDateFormatString(DWORD dwFormat, wchar_t wchSepar) -> std::wstring
-	{
+	[[nodiscard]] auto GetDateFormatString(DWORD dwFormat, wchar_t wchSepar) -> std::wstring {
 		std::wstring_view wsvFmt;
 		switch (dwFormat) {
 		case 0:	//Month-Day-Year.
@@ -314,8 +307,7 @@ namespace HEXCTRL::INTERNAL::ut { //Utility methods and stuff.
 	}
 
 	template<typename T>
-	[[nodiscard]] auto RangeToVecBytes(const T& TData) -> std::vector<std::byte>
-	{
+	[[nodiscard]] auto RangeToVecBytes(const T& TData) -> std::vector<std::byte> {
 		const std::byte* pBegin;
 		const std::byte* pEnd;
 		if constexpr (std::is_same_v<T, std::string>) {
@@ -364,8 +356,7 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 	}
 
 	template<typename T>
-	auto CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)->LRESULT
-	{
+	auto CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)->LRESULT {
 		//Different IHexCtrl objects will share the same WndProc<ExactTypeHere> function.
 		//Hence, the map is needed to differentiate these objects. 
 		//The DlgProc<T> works absolutely the same way.
@@ -3908,8 +3899,7 @@ namespace HEXCTRL::INTERNAL::simd {
 	}
 
 	template<EVecType eVecType>
-	void ModifyOperVec(std::byte* pData, const HEXMODIFY& hms, [[maybe_unused]] SpanCByte)
-	{
+	void ModifyOperVec(std::byte* pData, const HEXMODIFY& hms, [[maybe_unused]] SpanCByte) {
 		assert(pData != nullptr);
 		using enum EHexDataType;
 
@@ -4113,8 +4103,7 @@ namespace HEXCTRL::INTERNAL::simd {
 	}
 
 	template<EVecType eVecType>
-	void ModifyOperVec(std::byte* pData, const HEXMODIFY& hms, [[maybe_unused]] SpanCByte)
-	{
+	void ModifyOperVec(std::byte* pData, const HEXMODIFY& hms, [[maybe_unused]] SpanCByte) {
 		assert(pData != nullptr);
 		using enum EHexDataType;
 
