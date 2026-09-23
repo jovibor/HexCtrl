@@ -63,18 +63,15 @@ auto CHexDlgProgress::DoModal(HWND hWndParent, HINSTANCE hInstRes)->INT_PTR {
 		hWndParent, GDIUT::DlgProc<CHexDlgProgress>, reinterpret_cast<LPARAM>(this));
 }
 
-bool CHexDlgProgress::IsCanceled()const
-{
+bool CHexDlgProgress::IsCanceled()const {
 	return m_fCancel;
 }
 
-void CHexDlgProgress::OnCancel()
-{
+void CHexDlgProgress::OnCancel() {
 	m_fCancel = true;
 }
 
-auto CHexDlgProgress::ProcessMsg(const MSG& msg)->INT_PTR
-{
+auto CHexDlgProgress::ProcessMsg(const MSG& msg)->INT_PTR {
 	switch (msg.message) {
 	case WM_CLOSE: return WMClose();
 	case WM_COMMAND: return WMCommand(msg);
@@ -86,27 +83,23 @@ auto CHexDlgProgress::ProcessMsg(const MSG& msg)->INT_PTR
 	}
 }
 
-void CHexDlgProgress::SetCount(ULONGLONG ullCount)
-{
+void CHexDlgProgress::SetCount(ULONGLONG ullCount) {
 	m_ullCount = ullCount;
 }
 
-void CHexDlgProgress::SetCurrent(ULONGLONG ullCurr)
-{
+void CHexDlgProgress::SetCurrent(ULONGLONG ullCurr) {
 	m_ullCurr = ullCurr;
 }
 
 
 //Private methods.
 
-auto CHexDlgProgress::WMClose()->INT_PTR
-{
+auto CHexDlgProgress::WMClose()->INT_PTR {
 	OnCancel();
 	return TRUE;
 }
 
-auto CHexDlgProgress::WMCommand(const MSG& msg)->INT_PTR
-{
+auto CHexDlgProgress::WMCommand(const MSG& msg)->INT_PTR {
 	const auto uCtrlID = LOWORD(msg.wParam);
 	switch (uCtrlID) {
 	case IDOK:
@@ -119,8 +112,7 @@ auto CHexDlgProgress::WMCommand(const MSG& msg)->INT_PTR
 	return TRUE;
 }
 
-auto CHexDlgProgress::WMCtlColorStatic(const MSG& msg)->INT_PTR
-{
+auto CHexDlgProgress::WMCtlColorStatic(const MSG& msg)->INT_PTR {
 	if (const auto hWndFrom = reinterpret_cast<HWND>(msg.lParam); hWndFrom == m_WndCount) {
 		const auto hDC = reinterpret_cast<HDC>(msg.wParam);
 		::SetTextColor(hDC, RGB(0, 200, 0));
@@ -131,8 +123,7 @@ auto CHexDlgProgress::WMCtlColorStatic(const MSG& msg)->INT_PTR
 	return FALSE; //Default handler.
 }
 
-auto CHexDlgProgress::WMInitDialog(const MSG& msg)->INT_PTR
-{
+auto CHexDlgProgress::WMInitDialog(const MSG& msg)->INT_PTR {
 	m_Wnd.Attach(msg.hwnd);
 	m_stProgBar.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_CALLBACK_PROGBAR));
 	m_Wnd.SetWndText(m_wstrOperName.data());
@@ -153,8 +144,7 @@ auto CHexDlgProgress::WMInitDialog(const MSG& msg)->INT_PTR
 	return TRUE;
 }
 
-auto CHexDlgProgress::WMTimer(const MSG& msg)->INT_PTR
-{
+auto CHexDlgProgress::WMTimer(const MSG& msg)->INT_PTR {
 	if (msg.wParam != m_uIDTCancelCheck)
 		return FALSE;
 

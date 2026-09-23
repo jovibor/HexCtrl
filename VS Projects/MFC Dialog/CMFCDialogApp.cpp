@@ -9,8 +9,7 @@
 
 CMFCDialogApp theApp;
 
-BOOL CMFCDialogApp::InitInstance()
-{
+BOOL CMFCDialogApp::InitInstance() {
 	CWinApp::InitInstance();
 
 	// Activate "Windows Native" visual manager for enabling themes in MFC controls
@@ -28,6 +27,6 @@ BOOL CMFCDialogApp::InitInstance()
 	delete pDlg;
 
 	// Since the dialog has been closed, return FALSE so that we exit the
-	//  application, rather than start the application's message pump.
+	// application, rather than start the application's message pump.
 	return FALSE;
 }

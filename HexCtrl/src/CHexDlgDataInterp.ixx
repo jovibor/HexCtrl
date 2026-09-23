@@ -171,8 +171,7 @@ struct CHexDlgDataInterp::LISTDATA {
 };
 
 
-void CHexDlgDataInterp::ClearData()
-{
+void CHexDlgDataInterp::ClearData() {
 	if (!m_Wnd.IsWindow()) {
 		return;
 	}
@@ -186,8 +185,7 @@ void CHexDlgDataInterp::ClearData()
 	m_ListEx.RedrawWindow();
 }
 
-void CHexDlgDataInterp::CreateDlg()const
-{
+void CHexDlgDataInterp::CreateDlg()const {
 	//m_Wnd is set in the WMInitDialog().
 	if (const auto hWnd = ::CreateDialogParamW(m_hInstRes, MAKEINTRESOURCEW(IDD_HEXCTRL_DATAINTERP),
 		m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN), GDIUT::DlgProc<CHexDlgDataInterp>, reinterpret_cast<LPARAM>(this));
@@ -196,23 +194,20 @@ void CHexDlgDataInterp::CreateDlg()const
 	}
 }
 
-void CHexDlgDataInterp::DestroyDlg()
-{
+void CHexDlgDataInterp::DestroyDlg() {
 	if (m_Wnd.IsWindow()) {
 		m_Wnd.DestroyWindow();
 	}
 }
 
-void CHexDlgDataInterp::DisableHighlight()
-{
+void CHexDlgDataInterp::DisableHighlight() {
 	if (HasHighlight()) {
 		SetHighlightSize(0);
 		RedrawHexCtrl();
 	}
 }
 
-auto CHexDlgDataInterp::GetDlgItemHandle(EHexDlgItem eItem)const->HWND
-{
+auto CHexDlgDataInterp::GetDlgItemHandle(EHexDlgItem eItem)const->HWND {
 	if (!m_Wnd.IsWindow()) {
 		return { };
 	}
@@ -228,34 +223,28 @@ auto CHexDlgDataInterp::GetDlgItemHandle(EHexDlgItem eItem)const->HWND
 	}
 }
 
-auto CHexDlgDataInterp::GetHighlightSize()const->DWORD
-{
+auto CHexDlgDataInterp::GetHighlightSize()const->DWORD {
 	return m_dwHighlightSize;
 }
 
-auto CHexDlgDataInterp::GetHWND()const->HWND
-{
+auto CHexDlgDataInterp::GetHWND()const->HWND {
 	return m_Wnd;
 }
 
-void CHexDlgDataInterp::Initialize(IHexCtrl &HexCtrl, HINSTANCE hInstRes)
-{
+void CHexDlgDataInterp::Initialize(IHexCtrl &HexCtrl, HINSTANCE hInstRes) {
 	m_pHexCtrl = &HexCtrl;
 	m_hInstRes = hInstRes;
 }
 
-bool CHexDlgDataInterp::HasHighlight()const
-{
+bool CHexDlgDataInterp::HasHighlight()const {
 	return GetHighlightSize() > 0;
 }
 
-bool CHexDlgDataInterp::PreTranslateMsg(MSG* pMsg)
-{
+bool CHexDlgDataInterp::PreTranslateMsg(MSG* pMsg) {
 	return m_Wnd.IsDlgMessage(pMsg);
 }
 
-auto CHexDlgDataInterp::ProcessMsg(const MSG& msg)->INT_PTR
-{
+auto CHexDlgDataInterp::ProcessMsg(const MSG& msg)->INT_PTR {
 	switch (msg.message) {
 	case WM_ACTIVATE: return WMActivate(msg);
 	case WM_COMMAND: return WMCommand(msg);
@@ -273,13 +262,11 @@ auto CHexDlgDataInterp::ProcessMsg(const MSG& msg)->INT_PTR
 	}
 }
 
-void CHexDlgDataInterp::SetDlgProperties(std::uint64_t u64Flags)
-{
+void CHexDlgDataInterp::SetDlgProperties(std::uint64_t u64Flags) {
 	m_u64Flags = u64Flags;
 }
 
-void CHexDlgDataInterp::ShowWindow(int iCmdShow)
-{
+void CHexDlgDataInterp::ShowWindow(int iCmdShow) {
 	if (!m_Wnd.IsWindow()) {
 		CreateDlg();
 	}
@@ -287,8 +274,7 @@ void CHexDlgDataInterp::ShowWindow(int iCmdShow)
 	m_Wnd.ShowWindow(iCmdShow);
 }
 
-void CHexDlgDataInterp::UpdateData()
-{
+void CHexDlgDataInterp::UpdateData() {
 	if (!m_Wnd.IsWindow() || !m_Wnd.IsWindowVisible()) {
 		return;
 	}
@@ -299,66 +285,54 @@ void CHexDlgDataInterp::UpdateData()
 
 //Private methods.
 
-auto CHexDlgDataInterp::GetCurrFieldName()const->EName
-{
+auto CHexDlgDataInterp::GetCurrFieldName()const->EName {
 	return m_eCurrField;
 }
 
-auto CHexDlgDataInterp::GetCurrFieldSize()const->std::uint8_t
-{
+auto CHexDlgDataInterp::GetCurrFieldSize()const->std::uint8_t {
 	return GetFieldSize(GetCurrFieldName());
 }
 
-auto CHexDlgDataInterp::GetFieldSize(EName eName)const->std::uint8_t
-{
+auto CHexDlgDataInterp::GetFieldSize(EName eName)const->std::uint8_t {
 	return GetListData(eName)->u8Size;
 }
 
-auto CHexDlgDataInterp::GetHexCtrl()const->IHexCtrl*
-{
+auto CHexDlgDataInterp::GetHexCtrl()const->IHexCtrl* {
 	return m_pHexCtrl;
 }
 
-auto CHexDlgDataInterp::GetListData(EName eName)->LISTDATA*
-{
+auto CHexDlgDataInterp::GetListData(EName eName)->LISTDATA* {
 	return &m_vecData[static_cast<std::uint8_t>(eName)];
 }
 
-auto CHexDlgDataInterp::GetListData(EName eName)const->const LISTDATA*
-{
+auto CHexDlgDataInterp::GetListData(EName eName)const->const LISTDATA* {
 	return &m_vecData[static_cast<std::uint8_t>(eName)];
 }
 
-auto CHexDlgDataInterp::GetListData(int iItem)->LISTDATA*
-{
+auto CHexDlgDataInterp::GetListData(int iItem)->LISTDATA* {
 	return GetListData(static_cast<EName>(iItem));
 }
 
-bool CHexDlgDataInterp::IsBigEndian()const
-{
+bool CHexDlgDataInterp::IsBigEndian()const {
 	return m_WndBtnBE.IsChecked();
 }
 
-bool CHexDlgDataInterp::IsNoEsc()const
-{
+bool CHexDlgDataInterp::IsNoEsc()const {
 	return m_u64Flags & HEXCTRL_FLAG_DLG_NOESC;
 }
 
-bool CHexDlgDataInterp::IsShowAsHex()const
-{
+bool CHexDlgDataInterp::IsShowAsHex()const {
 	return m_WndBtnHex.IsChecked();
 }
 
-void CHexDlgDataInterp::OnCancel()
-{
+void CHexDlgDataInterp::OnCancel() {
 	if (IsNoEsc()) //Not closing Dialog on Escape key.
 		return;
 
 	WMClose();
 }
 
-void CHexDlgDataInterp::OnCheckHex()
-{
+void CHexDlgDataInterp::OnCheckHex() {
 	UpdateListData();
 
 	//To ensure that data is highlighted in the HexCtrl, even if check-box was clicked on inactive dialog.
@@ -366,8 +340,7 @@ void CHexDlgDataInterp::OnCheckHex()
 	RedrawHexCtrl();
 }
 
-void CHexDlgDataInterp::OnCheckBigEndian()
-{
+void CHexDlgDataInterp::OnCheckBigEndian() {
 	UpdateListData();
 
 	//To ensure that data is highlighted in the HexCtrl, even if check-box was clicked on inactive dialog.
@@ -375,15 +348,13 @@ void CHexDlgDataInterp::OnCheckBigEndian()
 	RedrawHexCtrl();
 }
 
-void CHexDlgDataInterp::RedrawHexCtrl()const
-{
+void CHexDlgDataInterp::RedrawHexCtrl()const {
 	if (m_pHexCtrl != nullptr && m_pHexCtrl->IsCreated()) {
 		m_pHexCtrl->Redraw();
 	}
 }
 
-bool CHexDlgDataInterp::SetDataBinary(std::wstring_view wsv)const
-{
+bool CHexDlgDataInterp::SetDataBinary(std::wstring_view wsv)const {
 	const auto pListCurr = GetListData(GetCurrFieldName());
 	const auto u32SizeBits = static_cast<std::uint32_t>(pListCurr->u8Size) * 8;
 	std::wstring wstr { wsv };
@@ -456,8 +427,7 @@ bool CHexDlgDataInterp::SetDataBinary(std::wstring_view wsv)const
 }
 
 template<typename T> requires ut::TSize1248<T>
-bool CHexDlgDataInterp::SetDataNUMBER(std::wstring_view wsv)const
-{
+bool CHexDlgDataInterp::SetDataNUMBER(std::wstring_view wsv)const {
 	if (IsShowAsHex()) {
 		using UT = std::conditional_t<sizeof(T) == 1, std::uint8_t,
 			std::conditional_t<sizeof(T) == 2, std::uint16_t,
@@ -477,8 +447,7 @@ bool CHexDlgDataInterp::SetDataNUMBER(std::wstring_view wsv)const
 	return false;
 }
 
-bool CHexDlgDataInterp::SetDataTime32(std::wstring_view wsv)const
-{
+bool CHexDlgDataInterp::SetDataTime32(std::wstring_view wsv)const {
 	//The number of seconds since midnight January 1st 1970 UTC (32-bit). This wraps on 19 January 2038.
 	const auto optSysTime = ut::StringToSystemTime(wsv, m_dwDateFormat);
 	if (!optSysTime)
@@ -506,8 +475,7 @@ bool CHexDlgDataInterp::SetDataTime32(std::wstring_view wsv)const
 	return true;
 }
 
-bool CHexDlgDataInterp::SetDataTime64(std::wstring_view wsv)const
-{
+bool CHexDlgDataInterp::SetDataTime64(std::wstring_view wsv)const {
 	//The number of seconds since midnight January 1st 1970 UTC (32-bit). This wraps on 19 January 2038.
 	const auto optSysTime = ut::StringToSystemTime(wsv, m_dwDateFormat);
 	if (!optSysTime)
@@ -531,8 +499,7 @@ bool CHexDlgDataInterp::SetDataTime64(std::wstring_view wsv)const
 	return true;
 }
 
-bool CHexDlgDataInterp::SetDataFILETIME(std::wstring_view wsv)const
-{
+bool CHexDlgDataInterp::SetDataFILETIME(std::wstring_view wsv)const {
 	const auto optFileTime = ut::StringToFileTime(wsv, m_dwDateFormat);
 	if (!optFileTime)
 		return false;
@@ -543,8 +510,7 @@ bool CHexDlgDataInterp::SetDataFILETIME(std::wstring_view wsv)const
 	return true;
 }
 
-bool CHexDlgDataInterp::SetDataOLEDATETIME(std::wstring_view wsv)const
-{
+bool CHexDlgDataInterp::SetDataOLEDATETIME(std::wstring_view wsv)const {
 	auto optSysTime = ut::StringToSystemTime(wsv, m_dwDateFormat);
 	if (!optSysTime)
 		return false;
@@ -558,8 +524,7 @@ bool CHexDlgDataInterp::SetDataOLEDATETIME(std::wstring_view wsv)const
 	return true;
 }
 
-bool CHexDlgDataInterp::SetDataJAVATIME(std::wstring_view wsv)const
-{
+bool CHexDlgDataInterp::SetDataJAVATIME(std::wstring_view wsv)const {
 	const auto optFileTime = ut::StringToFileTime(wsv, m_dwDateFormat);
 	if (!optFileTime)
 		return false;
@@ -576,8 +541,7 @@ bool CHexDlgDataInterp::SetDataJAVATIME(std::wstring_view wsv)const
 	return true;
 }
 
-bool CHexDlgDataInterp::SetDataMSDOSTIME(std::wstring_view wsv)const
-{
+bool CHexDlgDataInterp::SetDataMSDOSTIME(std::wstring_view wsv)const {
 	const auto optFileTime = ut::StringToFileTime(wsv, m_dwDateFormat);
 	if (!optFileTime)
 		return false;
@@ -592,8 +556,7 @@ bool CHexDlgDataInterp::SetDataMSDOSTIME(std::wstring_view wsv)const
 	return true;
 }
 
-bool CHexDlgDataInterp::SetDataMSDTTMTIME(std::wstring_view wsv)const
-{
+bool CHexDlgDataInterp::SetDataMSDTTMTIME(std::wstring_view wsv)const {
 	const auto optSysTime = ut::StringToSystemTime(wsv, m_dwDateFormat);
 	if (!optSysTime)
 		return false;
@@ -609,8 +572,7 @@ bool CHexDlgDataInterp::SetDataMSDTTMTIME(std::wstring_view wsv)const
 	return true;
 }
 
-bool CHexDlgDataInterp::SetDataSYSTEMTIME(std::wstring_view wsv)const
-{
+bool CHexDlgDataInterp::SetDataSYSTEMTIME(std::wstring_view wsv)const {
 	const auto optSysTime = ut::StringToSystemTime(wsv, m_dwDateFormat);
 	if (!optSysTime)
 		return false;
@@ -631,8 +593,7 @@ bool CHexDlgDataInterp::SetDataSYSTEMTIME(std::wstring_view wsv)const
 	return true;
 }
 
-bool CHexDlgDataInterp::SetDataGUID(std::wstring_view wsv)const
-{
+bool CHexDlgDataInterp::SetDataGUID(std::wstring_view wsv)const {
 	GUID stGUID;
 	if (::IIDFromString(wsv.data(), &stGUID) != S_OK)
 		return false;
@@ -647,8 +608,7 @@ bool CHexDlgDataInterp::SetDataGUID(std::wstring_view wsv)const
 	return true;
 }
 
-bool CHexDlgDataInterp::SetDataGUIDTIME(std::wstring_view wsv)const
-{
+bool CHexDlgDataInterp::SetDataGUIDTIME(std::wstring_view wsv)const {
 	//This time is within NAME_GUID structure, and it depends on it.
 	//We can not just set a NAME_GUIDTIME for data range if it's not 
 	//a valid NAME_GUID range, so checking first.
@@ -696,8 +656,7 @@ bool CHexDlgDataInterp::SetDataGUIDTIME(std::wstring_view wsv)const
 	return true;
 }
 
-bool CHexDlgDataInterp::SetDataASCII(std::wstring_view wsv)const
-{
+bool CHexDlgDataInterp::SetDataASCII(std::wstring_view wsv)const {
 	if (wsv.size() != 1) {
 		return false;
 	}
@@ -712,8 +671,7 @@ bool CHexDlgDataInterp::SetDataASCII(std::wstring_view wsv)const
 	return true;
 }
 
-bool CHexDlgDataInterp::SetDataUTF8(std::wstring_view wsv)const
-{
+bool CHexDlgDataInterp::SetDataUTF8(std::wstring_view wsv)const {
 	const auto u8Size = GetFieldSize(EName::NAME_UTF8);
 	if (u8Size == 0) {
 		return false;
@@ -731,8 +689,7 @@ bool CHexDlgDataInterp::SetDataUTF8(std::wstring_view wsv)const
 	return false;
 }
 
-bool CHexDlgDataInterp::SetDataUTF16(std::wstring_view wsv)const
-{
+bool CHexDlgDataInterp::SetDataUTF16(std::wstring_view wsv)const {
 	const auto u8Size = GetFieldSize(EName::NAME_UTF16);
 	if (u8Size == 0 || wsv.size() > u8Size) {
 		return false;
@@ -760,13 +717,11 @@ void CHexDlgDataInterp::SetTData(T tData)const {
 	ut::SetIHexTData(*m_pHexCtrl, m_ullOffset, IsBigEndian() ? ut::ByteSwap(tData) : tData);
 }
 
-void CHexDlgDataInterp::SetHighlightSize(std::uint32_t u32Size)
-{
+void CHexDlgDataInterp::SetHighlightSize(std::uint32_t u32Size) {
 	m_dwHighlightSize = u32Size;
 }
 
-void CHexDlgDataInterp::ShowValueBinary()
-{
+void CHexDlgDataInterp::ShowValueBinary() {
 	const auto pListCurr = GetListData(GetCurrFieldName());
 	if (pListCurr->eName == EName::NAME_BINARY) //Show binary form only for other fields, not for self.
 		return;
@@ -892,8 +847,7 @@ void CHexDlgDataInterp::ShowValueBinary()
 	}
 }
 
-void CHexDlgDataInterp::ShowValueInt8(SpanCByte spn)
-{
+void CHexDlgDataInterp::ShowValueInt8(SpanCByte spn) {
 	if (const auto pList = GetListData(EName::NAME_INT8); spn.size() >= sizeof(std::int8_t)) {
 		const auto i8 = static_cast<std::int8_t>(spn[0]);
 		const auto u8 = static_cast<std::uint8_t>(spn[0]);
@@ -906,8 +860,7 @@ void CHexDlgDataInterp::ShowValueInt8(SpanCByte spn)
 	}
 }
 
-void CHexDlgDataInterp::ShowValueUInt8(SpanCByte spn)
-{
+void CHexDlgDataInterp::ShowValueUInt8(SpanCByte spn) {
 	if (const auto pList = GetListData(EName::NAME_UINT8); spn.size() >= sizeof(std::uint8_t)) {
 		const auto u8 = static_cast<std::uint8_t>(spn[0]);
 		pList->wstrValue = std::vformat(IsShowAsHex() ? L"0x{:02X}" : L"{}", std::make_wformat_args(u8));
@@ -919,8 +872,7 @@ void CHexDlgDataInterp::ShowValueUInt8(SpanCByte spn)
 	}
 }
 
-void CHexDlgDataInterp::ShowValueInt16(SpanCByte spn)
-{
+void CHexDlgDataInterp::ShowValueInt16(SpanCByte spn) {
 	if (const auto pList = GetListData(EName::NAME_INT16); spn.size() >= sizeof(std::int16_t)) {
 		auto u16 = *reinterpret_cast<const std::uint16_t*>(spn.data());
 		if (IsBigEndian()) { u16 = ut::ByteSwap(u16); }
@@ -934,8 +886,7 @@ void CHexDlgDataInterp::ShowValueInt16(SpanCByte spn)
 	}
 }
 
-void CHexDlgDataInterp::ShowValueUInt16(SpanCByte spn)
-{
+void CHexDlgDataInterp::ShowValueUInt16(SpanCByte spn) {
 	if (const auto pList = GetListData(EName::NAME_UINT16); spn.size() >= sizeof(std::uint16_t)) {
 		auto u16 = *reinterpret_cast<const std::uint16_t*>(spn.data());
 		if (IsBigEndian()) { u16 = ut::ByteSwap(u16); }
@@ -948,8 +899,7 @@ void CHexDlgDataInterp::ShowValueUInt16(SpanCByte spn)
 	}
 }
 
-void CHexDlgDataInterp::ShowValueInt32(SpanCByte spn)
-{
+void CHexDlgDataInterp::ShowValueInt32(SpanCByte spn) {
 	if (const auto pList = GetListData(EName::NAME_INT32); spn.size() >= sizeof(std::int32_t)) {
 		auto u32 = *reinterpret_cast<const std::uint32_t*>(spn.data());
 		if (IsBigEndian()) { u32 = ut::ByteSwap(u32); }
@@ -963,8 +913,7 @@ void CHexDlgDataInterp::ShowValueInt32(SpanCByte spn)
 	}
 }
 
-void CHexDlgDataInterp::ShowValueUInt32(SpanCByte spn)
-{
+void CHexDlgDataInterp::ShowValueUInt32(SpanCByte spn) {
 	if (const auto pList = GetListData(EName::NAME_UINT32); spn.size() >= sizeof(std::uint32_t)) {
 		auto u32 = *reinterpret_cast<const std::uint32_t*>(spn.data());
 		if (IsBigEndian()) { u32 = ut::ByteSwap(u32); }
@@ -977,8 +926,7 @@ void CHexDlgDataInterp::ShowValueUInt32(SpanCByte spn)
 	}
 }
 
-void CHexDlgDataInterp::ShowValueInt64(SpanCByte spn)
-{
+void CHexDlgDataInterp::ShowValueInt64(SpanCByte spn) {
 	if (const auto pList = GetListData(EName::NAME_INT64); spn.size() >= sizeof(std::int64_t)) {
 		auto u64 = *reinterpret_cast<const std::uint64_t*>(spn.data());
 		if (IsBigEndian()) { u64 = ut::ByteSwap(u64); }
@@ -992,8 +940,7 @@ void CHexDlgDataInterp::ShowValueInt64(SpanCByte spn)
 	}
 }
 
-void CHexDlgDataInterp::ShowValueUInt64(SpanCByte spn)
-{
+void CHexDlgDataInterp::ShowValueUInt64(SpanCByte spn) {
 	if (const auto pList = GetListData(EName::NAME_UINT64); spn.size() >= sizeof(std::uint64_t)) {
 		auto u64 = *reinterpret_cast<const std::uint64_t*>(spn.data());
 		if (IsBigEndian()) { u64 = ut::ByteSwap(u64); }
@@ -1006,8 +953,7 @@ void CHexDlgDataInterp::ShowValueUInt64(SpanCByte spn)
 	}
 }
 
-void CHexDlgDataInterp::ShowValueFloat(SpanCByte spn)
-{
+void CHexDlgDataInterp::ShowValueFloat(SpanCByte spn) {
 	if (const auto pList = GetListData(EName::NAME_FLOAT); spn.size() >= sizeof(float)) {
 		auto u32 = *reinterpret_cast<const std::uint32_t*>(spn.data());
 		if (IsBigEndian()) { u32 = ut::ByteSwap(u32); }
@@ -1021,8 +967,7 @@ void CHexDlgDataInterp::ShowValueFloat(SpanCByte spn)
 	}
 }
 
-void CHexDlgDataInterp::ShowValueDouble(SpanCByte spn)
-{
+void CHexDlgDataInterp::ShowValueDouble(SpanCByte spn) {
 	if (const auto pList = GetListData(EName::NAME_DOUBLE); spn.size() >= sizeof(double)) {
 		auto u64 = *reinterpret_cast<const std::uint64_t*>(spn.data());
 		if (IsBigEndian()) { u64 = ut::ByteSwap(u64); }
@@ -1036,8 +981,7 @@ void CHexDlgDataInterp::ShowValueDouble(SpanCByte spn)
 	}
 }
 
-void CHexDlgDataInterp::ShowValueTime32(SpanCByte spn)
-{
+void CHexDlgDataInterp::ShowValueTime32(SpanCByte spn) {
 	if (const auto pList = GetListData(EName::NAME_TIME32T); spn.size() >= sizeof(std::uint32_t)) {
 		auto u32 = *reinterpret_cast<const std::uint32_t*>(spn.data());
 		if (IsBigEndian()) { u32 = ut::ByteSwap(u32); }
@@ -1066,8 +1010,7 @@ void CHexDlgDataInterp::ShowValueTime32(SpanCByte spn)
 	}
 }
 
-void CHexDlgDataInterp::ShowValueTime64(SpanCByte spn)
-{
+void CHexDlgDataInterp::ShowValueTime64(SpanCByte spn) {
 	if (const auto pList = GetListData(EName::NAME_TIME64T); spn.size() >= sizeof(std::uint64_t)) {
 		auto u64 = *reinterpret_cast<const std::uint64_t*>(spn.data());
 		if (IsBigEndian()) { u64 = ut::ByteSwap(u64); }
@@ -1095,8 +1038,7 @@ void CHexDlgDataInterp::ShowValueTime64(SpanCByte spn)
 	}
 }
 
-void CHexDlgDataInterp::ShowValueFILETIME(SpanCByte spn)
-{
+void CHexDlgDataInterp::ShowValueFILETIME(SpanCByte spn) {
 	if (const auto pList = GetListData(EName::NAME_FILETIME); spn.size() >= sizeof(std::uint64_t)) {
 		auto u64 = *reinterpret_cast<const std::uint64_t*>(spn.data());
 		if (IsBigEndian()) { u64 = ut::ByteSwap(u64); }
@@ -1109,8 +1051,7 @@ void CHexDlgDataInterp::ShowValueFILETIME(SpanCByte spn)
 	}
 }
 
-void CHexDlgDataInterp::ShowValueOLEDATETIME(SpanCByte spn)
-{
+void CHexDlgDataInterp::ShowValueOLEDATETIME(SpanCByte spn) {
 	if (const auto pList = GetListData(EName::NAME_OLEDATETIME); spn.size() >= sizeof(std::uint64_t)) {
 		auto u64 = *reinterpret_cast<const std::uint64_t*>(spn.data());
 		if (IsBigEndian()) { u64 = ut::ByteSwap(u64); }
@@ -1132,8 +1073,7 @@ void CHexDlgDataInterp::ShowValueOLEDATETIME(SpanCByte spn)
 	}
 }
 
-void CHexDlgDataInterp::ShowValueJAVATIME(SpanCByte spn)
-{
+void CHexDlgDataInterp::ShowValueJAVATIME(SpanCByte spn) {
 	if (const auto pList = GetListData(EName::NAME_JAVATIME); spn.size() >= sizeof(std::uint64_t)) {
 		auto u64 = *reinterpret_cast<const std::uint64_t*>(spn.data());
 		if (IsBigEndian()) { u64 = ut::ByteSwap(u64); }
@@ -1154,8 +1094,7 @@ void CHexDlgDataInterp::ShowValueJAVATIME(SpanCByte spn)
 	}
 }
 
-void CHexDlgDataInterp::ShowValueMSDOSTIME(SpanCByte spn)
-{
+void CHexDlgDataInterp::ShowValueMSDOSTIME(SpanCByte spn) {
 	if (const auto pList = GetListData(EName::NAME_MSDOSTIME); spn.size() >= sizeof(std::uint32_t)) {
 		auto u32 = *reinterpret_cast<const std::uint32_t*>(spn.data());
 		if (IsBigEndian()) { u32 = ut::ByteSwap(u32); }
@@ -1174,8 +1113,7 @@ void CHexDlgDataInterp::ShowValueMSDOSTIME(SpanCByte spn)
 	}
 }
 
-void CHexDlgDataInterp::ShowValueMSDTTMTIME(SpanCByte spn)
-{
+void CHexDlgDataInterp::ShowValueMSDTTMTIME(SpanCByte spn) {
 	if (const auto pList = GetListData(EName::NAME_MSDTTMTIME); spn.size() >= sizeof(std::uint32_t)) {
 		auto u32 = *reinterpret_cast<const std::uint32_t*>(spn.data());
 		if (IsBigEndian()) { u32 = ut::ByteSwap(u32); }
@@ -1202,8 +1140,7 @@ void CHexDlgDataInterp::ShowValueMSDTTMTIME(SpanCByte spn)
 	}
 }
 
-void CHexDlgDataInterp::ShowValueSYSTEMTIME(SpanCByte spn)
-{
+void CHexDlgDataInterp::ShowValueSYSTEMTIME(SpanCByte spn) {
 	if (const auto pList = GetListData(EName::NAME_SYSTEMTIME); spn.size() >= sizeof(SYSTEMTIME)) {
 		auto syst = *reinterpret_cast<const SYSTEMTIME*>(spn.data());
 		if (IsBigEndian()) {
@@ -1225,8 +1162,7 @@ void CHexDlgDataInterp::ShowValueSYSTEMTIME(SpanCByte spn)
 	}
 }
 
-void CHexDlgDataInterp::ShowValueGUID(SpanCByte spn)
-{
+void CHexDlgDataInterp::ShowValueGUID(SpanCByte spn) {
 	if (const auto pList = GetListData(EName::NAME_GUID); spn.size() >= sizeof(GUID)) {
 		auto guid = *reinterpret_cast<const GUID*>(spn.data());
 		if (IsBigEndian()) {
@@ -1246,8 +1182,7 @@ void CHexDlgDataInterp::ShowValueGUID(SpanCByte spn)
 	}
 }
 
-void CHexDlgDataInterp::ShowValueGUIDTIME(SpanCByte spn)
-{
+void CHexDlgDataInterp::ShowValueGUIDTIME(SpanCByte spn) {
 	if (const auto pList = GetListData(EName::NAME_GUIDTIME); spn.size() >= sizeof(GUID)) {
 		auto guid = *reinterpret_cast<const GUID*>(spn.data());
 		if (IsBigEndian()) {
@@ -1288,8 +1223,7 @@ void CHexDlgDataInterp::ShowValueGUIDTIME(SpanCByte spn)
 	}
 }
 
-void CHexDlgDataInterp::ShowValueASCII(SpanCByte spn)
-{
+void CHexDlgDataInterp::ShowValueASCII(SpanCByte spn) {
 	if (const auto pList = GetListData(EName::NAME_ASCII); spn.size() >= sizeof(char)) {
 		if (const auto ch = *reinterpret_cast<const unsigned char*>(spn.data()); ch < 0x20 || ch > 0x7E) {
 			pList->wstrValue = L"N/A";
@@ -1305,8 +1239,7 @@ void CHexDlgDataInterp::ShowValueASCII(SpanCByte spn)
 	}
 }
 
-void CHexDlgDataInterp::ShowValueUTF8(SpanCByte spn)
-{
+void CHexDlgDataInterp::ShowValueUTF8(SpanCByte spn) {
 	const auto pListUTF8 = GetListData(EName::NAME_UTF8);
 	const auto lmbClear = [=] {
 		pListUTF8->wstrValue = L"N/A";
@@ -1380,8 +1313,7 @@ void CHexDlgDataInterp::ShowValueUTF8(SpanCByte spn)
 	pListUTF8->u8Size = u8UTF8Bytes;
 }
 
-void CHexDlgDataInterp::ShowValueUTF16(SpanCByte spn)
-{
+void CHexDlgDataInterp::ShowValueUTF16(SpanCByte spn) {
 	const auto pListUTF16 = GetListData(EName::NAME_UTF16);
 	const auto lmbClear = [=] {
 		pListUTF16->wstrValue = L"N/A";
@@ -1426,8 +1358,7 @@ void CHexDlgDataInterp::ShowValueUTF16(SpanCByte spn)
 	pListUTF16->u8Size = u8UTF16Bytes;
 }
 
-void CHexDlgDataInterp::UpdateDateTimeFormat()
-{
+void CHexDlgDataInterp::UpdateDateTimeFormat() {
 	const auto [dwFormat, wchSepar] = GetHexCtrl()->GetDateInfo();
 	m_dwDateFormat = dwFormat;
 	m_wchDateSepar = wchSepar;
@@ -1436,8 +1367,7 @@ void CHexDlgDataInterp::UpdateDateTimeFormat()
 	m_ListEx.RedrawWindow();
 }
 
-void CHexDlgDataInterp::UpdateListData()
-{
+void CHexDlgDataInterp::UpdateListData() {
 	const auto pHex = GetHexCtrl();
 	if (!pHex->IsDataSet()) {
 		ClearData();
@@ -1477,8 +1407,7 @@ void CHexDlgDataInterp::UpdateListData()
 	m_ListEx.RedrawWindow();
 }
 
-auto CHexDlgDataInterp::WMActivate(const MSG& msg)->INT_PTR
-{
+auto CHexDlgDataInterp::WMActivate(const MSG& msg)->INT_PTR {
 	if (const auto pHex = GetHexCtrl();
 		pHex != nullptr && pHex->IsCreated() && pHex->IsDataSet() && LOWORD(msg.wParam) == WA_ACTIVE) {
 		UpdateDateTimeFormat();
@@ -1488,14 +1417,12 @@ auto CHexDlgDataInterp::WMActivate(const MSG& msg)->INT_PTR
 	return 0;
 }
 
-auto CHexDlgDataInterp::WMClose()->INT_PTR
-{
+auto CHexDlgDataInterp::WMClose()->INT_PTR {
 	ShowWindow(SW_HIDE);
 	return TRUE;
 }
 
-auto CHexDlgDataInterp::WMCommand(const MSG& msg)->INT_PTR
-{
+auto CHexDlgDataInterp::WMCommand(const MSG& msg)->INT_PTR {
 	const auto uCtrlID = LOWORD(msg.wParam);
 	const auto uCode = HIWORD(msg.wParam);   //Control code, zero for menu.
 
@@ -1510,8 +1437,7 @@ auto CHexDlgDataInterp::WMCommand(const MSG& msg)->INT_PTR
 	return TRUE;
 }
 
-auto CHexDlgDataInterp::WMDestroy()->INT_PTR
-{
+auto CHexDlgDataInterp::WMDestroy()->INT_PTR {
 	m_vecData.clear();
 	m_u64Flags = { };
 	m_pHexCtrl = nullptr;
@@ -1520,14 +1446,12 @@ auto CHexDlgDataInterp::WMDestroy()->INT_PTR
 	return TRUE;
 }
 
-auto CHexDlgDataInterp::WMDPIChanged([[maybe_unused]] const MSG& msg)->INT_PTR
-{
+auto CHexDlgDataInterp::WMDPIChanged([[maybe_unused]] const MSG& msg)->INT_PTR {
 	m_DynLayout.Enable(true);
 	return 0;
 }
 
-auto CHexDlgDataInterp::WMDrawItem(const MSG& msg)->INT_PTR
-{
+auto CHexDlgDataInterp::WMDrawItem(const MSG& msg)->INT_PTR {
 	const auto pDIS = reinterpret_cast<LPDRAWITEMSTRUCT>(msg.lParam);
 	if (pDIS->CtlID == static_cast<UINT>(IDC_HEXCTRL_DATAINTERP_LIST)) {
 		m_ListEx.DrawItem(pDIS);
@@ -1536,8 +1460,7 @@ auto CHexDlgDataInterp::WMDrawItem(const MSG& msg)->INT_PTR
 	return TRUE;
 }
 
-auto CHexDlgDataInterp::WMGetDPIScaledSize([[maybe_unused]] const MSG& msg)->INT_PTR
-{
+auto CHexDlgDataInterp::WMGetDPIScaledSize([[maybe_unused]] const MSG& msg)->INT_PTR {
 	//This message is sent to top-level windows with a DPI_AWARENESS_CONTEXT
 	//of Per Monitor v2 before a WM_DPICHANGED message is sent.
 	//We use it to temporarily disable all dynamic layout resizes,
@@ -1547,8 +1470,7 @@ auto CHexDlgDataInterp::WMGetDPIScaledSize([[maybe_unused]] const MSG& msg)->INT
 	return 0;
 }
 
-auto CHexDlgDataInterp::WMInitDialog(const MSG& msg)->INT_PTR
-{
+auto CHexDlgDataInterp::WMInitDialog(const MSG& msg)->INT_PTR {
 	m_Wnd.Attach(msg.hwnd);
 	m_WndBtnHex.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_DATAINTERP_CHK_HEX));
 	m_WndBtnBE.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_DATAINTERP_CHK_BE));
@@ -1593,8 +1515,7 @@ auto CHexDlgDataInterp::WMInitDialog(const MSG& msg)->INT_PTR
 	return TRUE;
 }
 
-auto CHexDlgDataInterp::WMMeasureItem(const MSG& msg)->INT_PTR
-{
+auto CHexDlgDataInterp::WMMeasureItem(const MSG& msg)->INT_PTR {
 	const auto pMIS = reinterpret_cast<LPMEASUREITEMSTRUCT>(msg.lParam);
 	if (pMIS->CtlID == static_cast<UINT>(IDC_HEXCTRL_DATAINTERP_LIST)) {
 		m_ListEx.MeasureItem(pMIS);
@@ -1603,8 +1524,7 @@ auto CHexDlgDataInterp::WMMeasureItem(const MSG& msg)->INT_PTR
 	return TRUE;
 }
 
-auto CHexDlgDataInterp::WMMouseActivate([[maybe_unused]] const MSG& msg)->INT_PTR
-{
+auto CHexDlgDataInterp::WMMouseActivate([[maybe_unused]] const MSG& msg)->INT_PTR {
 	if (const auto pHex = GetHexCtrl(); pHex != nullptr && pHex->IsCreated() && pHex->IsDataSet()) {
 		UpdateDateTimeFormat();
 		UpdateListData();
@@ -1613,8 +1533,7 @@ auto CHexDlgDataInterp::WMMouseActivate([[maybe_unused]] const MSG& msg)->INT_PT
 	return MA_ACTIVATE;
 }
 
-auto CHexDlgDataInterp::WMNotify(const MSG& msg)->INT_PTR
-{
+auto CHexDlgDataInterp::WMNotify(const MSG& msg)->INT_PTR {
 	const auto pNMHDR = reinterpret_cast<NMHDR*>(msg.lParam);
 	switch (pNMHDR->idFrom) {
 	case IDC_HEXCTRL_DATAINTERP_LIST:
@@ -1633,8 +1552,7 @@ auto CHexDlgDataInterp::WMNotify(const MSG& msg)->INT_PTR
 	return TRUE;
 }
 
-void CHexDlgDataInterp::WMNotifyListEditBegin(NMHDR* pNMHDR)
-{
+void CHexDlgDataInterp::WMNotifyListEditBegin(NMHDR* pNMHDR) {
 	const auto pLDI = reinterpret_cast<LISTEX::PLISTEXDATAINFO>(pNMHDR);
 	const auto iItem = pLDI->iItem;
 	const auto iSubItem = pLDI->iSubItem;
@@ -1651,8 +1569,7 @@ void CHexDlgDataInterp::WMNotifyListEditBegin(NMHDR* pNMHDR)
 	}
 }
 
-void CHexDlgDataInterp::WMNotifyListGetColor(NMHDR* pNMHDR)
-{
+void CHexDlgDataInterp::WMNotifyListGetColor(NMHDR* pNMHDR) {
 	const auto pLCI = reinterpret_cast<LISTEX::PLISTEXCOLORINFO>(pNMHDR);
 	const auto iItem = pLCI->iItem;
 	const auto iSubItem = pLCI->iSubItem;
@@ -1672,8 +1589,7 @@ void CHexDlgDataInterp::WMNotifyListGetColor(NMHDR* pNMHDR)
 	}
 }
 
-void CHexDlgDataInterp::WMNotifyListGetDispInfo(NMHDR* pNMHDR)
-{
+void CHexDlgDataInterp::WMNotifyListGetDispInfo(NMHDR* pNMHDR) {
 	const auto pDispInfo = reinterpret_cast<NMLVDISPINFOW*>(pNMHDR);
 	const auto pItem = &pDispInfo->item;
 	if ((pItem->mask & LVIF_TEXT) == 0)
@@ -1691,8 +1607,7 @@ void CHexDlgDataInterp::WMNotifyListGetDispInfo(NMHDR* pNMHDR)
 	}
 }
 
-void CHexDlgDataInterp::WMNotifyListItemChanged(NMHDR* pNMHDR)
-{
+void CHexDlgDataInterp::WMNotifyListItemChanged(NMHDR* pNMHDR) {
 	const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
 	const auto iItem = pNMI->iItem;
 	const auto iSubitem = pNMI->iSubItem;
@@ -1711,8 +1626,7 @@ void CHexDlgDataInterp::WMNotifyListItemChanged(NMHDR* pNMHDR)
 	RedrawHexCtrl();
 }
 
-void CHexDlgDataInterp::WMNotifyListSetData(NMHDR* pNMHDR)
-{
+void CHexDlgDataInterp::WMNotifyListSetData(NMHDR* pNMHDR) {
 	const auto pListDataInfo = reinterpret_cast<LISTEX::PLISTEXDATAINFO>(pNMHDR);
 	const auto iItem = pListDataInfo->iItem;
 	if (!m_pHexCtrl->IsCreated() || !m_pHexCtrl->IsDataSet() || !m_pHexCtrl->IsMutable()

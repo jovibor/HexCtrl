@@ -282,16 +282,14 @@ struct CHexDlgSearch::SEARCHFUNCDATA {
 	bool fInverted { }; //Vectorized functions use templated st.fInverted, non-vectorized use runtime fInverted.
 };
 
-void CHexDlgSearch::ClearData()
-{
+void CHexDlgSearch::ClearData() {
 	if (!m_Wnd.IsWindow())
 		return;
 
 	ClearList();
 }
 
-void CHexDlgSearch::CreateDlg()const
-{
+void CHexDlgSearch::CreateDlg()const {
 	//m_Wnd is set in the WMInitDialog().
 	if (const auto hWnd = ::CreateDialogParamW(m_hInstRes, MAKEINTRESOURCEW(IDD_HEXCTRL_SEARCH),
 		m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN), GDIUT::DlgProc<CHexDlgSearch>, reinterpret_cast<LPARAM>(this));
@@ -300,15 +298,13 @@ void CHexDlgSearch::CreateDlg()const
 	}
 }
 
-void CHexDlgSearch::DestroyDlg()
-{
+void CHexDlgSearch::DestroyDlg() {
 	if (m_Wnd.IsWindow()) {
 		m_Wnd.DestroyWindow();
 	}
 }
 
-auto CHexDlgSearch::GetDlgItemHandle(EHexDlgItem eItem)const->HWND
-{
+auto CHexDlgSearch::GetDlgItemHandle(EHexDlgItem eItem)const->HWND {
 	if (!m_Wnd.IsWindow()) {
 		return { };
 	}
@@ -336,29 +332,24 @@ auto CHexDlgSearch::GetDlgItemHandle(EHexDlgItem eItem)const->HWND
 	}
 }
 
-auto CHexDlgSearch::GetHWND()const->HWND
-{
+auto CHexDlgSearch::GetHWND()const->HWND {
 	return m_Wnd;
 }
 
-void CHexDlgSearch::Initialize(IHexCtrl &HexCtrl, HINSTANCE hInstRes)
-{
+void CHexDlgSearch::Initialize(IHexCtrl &HexCtrl, HINSTANCE hInstRes) {
 	m_pHexCtrl = &HexCtrl;
 	m_hInstRes = hInstRes;
 }
 
-bool CHexDlgSearch::IsSearchAvail()const
-{
+bool CHexDlgSearch::IsSearchAvail()const {
 	return m_Wnd.IsWindow() && GetHexCtrl()->IsDataSet();
 }
 
-bool CHexDlgSearch::PreTranslateMsg(MSG* pMsg)
-{
+bool CHexDlgSearch::PreTranslateMsg(MSG* pMsg) {
 	return m_Wnd.IsDlgMessage(pMsg);
 }
 
-auto CHexDlgSearch::ProcessMsg(const MSG& msg)->INT_PTR
-{
+auto CHexDlgSearch::ProcessMsg(const MSG& msg)->INT_PTR {
 	switch (msg.message) {
 	case WM_ACTIVATE: return WMActivate(msg);
 	case WM_CLOSE: return WMClose();
@@ -375,8 +366,7 @@ auto CHexDlgSearch::ProcessMsg(const MSG& msg)->INT_PTR
 	}
 }
 
-void CHexDlgSearch::SearchNextPrev(bool fForward)
-{
+void CHexDlgSearch::SearchNextPrev(bool fForward) {
 	m_fForward = fForward;
 	m_fReplace = false;
 	m_fAll = false;
@@ -384,13 +374,11 @@ void CHexDlgSearch::SearchNextPrev(bool fForward)
 	Prepare();
 }
 
-void CHexDlgSearch::SetDlgProperties(std::uint64_t u64Flags)
-{
+void CHexDlgSearch::SetDlgProperties(std::uint64_t u64Flags) {
 	m_u64Flags = u64Flags;
 }
 
-void CHexDlgSearch::ShowWindow(int iCmdShow)
-{
+void CHexDlgSearch::ShowWindow(int iCmdShow) {
 	if (!m_Wnd.IsWindow()) {
 		CreateDlg();
 	}
@@ -401,8 +389,7 @@ void CHexDlgSearch::ShowWindow(int iCmdShow)
 
 //Private methods.
 
-void CHexDlgSearch::AddToList(ULONGLONG ullOffset)
-{
+void CHexDlgSearch::AddToList(ULONGLONG ullOffset) {
 	int iHighlight { -1 };
 	if (const auto it = std::find(m_vecSearchRes.begin(), m_vecSearchRes.end(), ullOffset);
 		it == m_vecSearchRes.end()) { //Max-found search occurences.
@@ -423,8 +410,7 @@ void CHexDlgSearch::AddToList(ULONGLONG ullOffset)
 	}
 }
 
-void CHexDlgSearch::CalcMemChunks(SEARCHFUNCDATA& sfd)const
-{
+void CHexDlgSearch::CalcMemChunks(SEARCHFUNCDATA& sfd)const {
 	const auto uzSizeSearch = sfd.spnFindFrom.size();
 	if (sfd.ullStartFrom + uzSizeSearch > GetSentinel()) {
 		sfd.ullChunks = { };
@@ -465,8 +451,7 @@ void CHexDlgSearch::CalcMemChunks(SEARCHFUNCDATA& sfd)const
 	sfd.fBigStep = fBigStep;
 }
 
-void CHexDlgSearch::ClearComboSearchType()
-{
+void CHexDlgSearch::ClearComboSearchType() {
 	m_WndCmbType.SetRedraw(false);
 	for (auto iIndex = m_WndCmbType.GetCount() - 1; iIndex >= 0; --iIndex) {
 		m_WndCmbType.DeleteString(iIndex);
@@ -474,14 +459,12 @@ void CHexDlgSearch::ClearComboSearchType()
 	m_WndCmbType.SetRedraw(true);
 }
 
-void CHexDlgSearch::ClearList()
-{
+void CHexDlgSearch::ClearList() {
 	m_ListEx.SetItemCountEx(0);
 	m_vecSearchRes.clear();
 }
 
-void CHexDlgSearch::ComboFindFill(LPCWSTR pwsz)
-{
+void CHexDlgSearch::ComboFindFill(LPCWSTR pwsz) {
 	//Insert text into ComboBox only if it's not already there.
 	if (!m_WndCmbFind.HasString(pwsz)) {
 		if (m_WndCmbFind.GetCount() == 50) { //Keep max 50 strings in the list.
@@ -491,8 +474,7 @@ void CHexDlgSearch::ComboFindFill(LPCWSTR pwsz)
 	}
 }
 
-void CHexDlgSearch::ComboReplaceFill(LPCWSTR pwsz)
-{
+void CHexDlgSearch::ComboReplaceFill(LPCWSTR pwsz) {
 	//Insert wstring into ComboBox only if it's not already presented.
 	if (!m_WndCmbReplace.HasString(pwsz)) {
 		if (m_WndCmbReplace.GetCount() == 50) { //Keep max 50 strings in the list.
@@ -502,8 +484,7 @@ void CHexDlgSearch::ComboReplaceFill(LPCWSTR pwsz)
 	}
 }
 
-auto CHexDlgSearch::CreateSearchData(CHexDlgProgress* pDlgProg)const->SEARCHFUNCDATA
-{
+auto CHexDlgSearch::CreateSearchData(CHexDlgProgress* pDlgProg)const->SEARCHFUNCDATA {
 	SEARCHFUNCDATA stData { .ullStartFrom { GetStartFrom() }, .ullRngStart { GetRngStart() },
 		.ullRngEnd { GetRngEnd() }, .ullStep { GetStep() }, .pDlgProg { pDlgProg }, .pHexCtrl { GetHexCtrl() },
 		.spnFindFrom { GetSearchDataFrom() }, .spnFindTo { GetSearchDataTo() }, .bWildcard { GetWildcard() },
@@ -515,8 +496,7 @@ auto CHexDlgSearch::CreateSearchData(CHexDlgProgress* pDlgProg)const->SEARCHFUNC
 	return stData;
 }
 
-void CHexDlgSearch::FindAll()
-{
+void CHexDlgSearch::FindAll() {
 	ClearList(); //Clearing all results.
 	m_dwCount = 0;
 	const auto pSearchFunc = GetSearchFunc(true, !IsSmallSearch());
@@ -574,8 +554,7 @@ void CHexDlgSearch::FindAll()
 	m_ListEx.SetItemCountEx(static_cast<int>(m_vecSearchRes.size()));
 }
 
-void CHexDlgSearch::FindForward()
-{
+void CHexDlgSearch::FindForward() {
 	FINDRESULT findRes;
 	const auto lmbFind = [&]() {
 		const auto pSearchFunc = GetSearchFunc(true, !IsSmallSearch());
@@ -617,8 +596,7 @@ void CHexDlgSearch::FindForward()
 	m_fFound = findRes.fFound;
 }
 
-void CHexDlgSearch::FindBackward()
-{
+void CHexDlgSearch::FindBackward() {
 	FINDRESULT findRes;
 	const auto lmbFind = [&]() {
 		const auto pSearchFunc = GetSearchFunc(false, !IsSmallSearch());
@@ -664,58 +642,47 @@ void CHexDlgSearch::FindBackward()
 	m_fFound = findRes.fFound;
 }
 
-auto CHexDlgSearch::GetHexCtrl()const->IHexCtrl*
-{
+auto CHexDlgSearch::GetHexCtrl()const->IHexCtrl* {
 	return m_pHexCtrl;
 }
 
-auto CHexDlgSearch::GetLastSearchOffset()const->ULONGLONG
-{
+auto CHexDlgSearch::GetLastSearchOffset()const->ULONGLONG {
 	return GetSentinel() - GetSearchDataSize();
 }
 
-auto CHexDlgSearch::GetReplaceSpan()const->SpanCByte
-{
+auto CHexDlgSearch::GetReplaceSpan()const->SpanCByte {
 	return m_vecReplaceData;
 }
 
-auto CHexDlgSearch::GetReplaceDataSize()const->DWORD
-{
+auto CHexDlgSearch::GetReplaceDataSize()const->DWORD {
 	return static_cast<DWORD>(m_vecReplaceData.size());
 }
 
-auto CHexDlgSearch::GetRngStart()const->ULONGLONG
-{
+auto CHexDlgSearch::GetRngStart()const->ULONGLONG {
 	return m_ullRngBegin;
 }
 
-auto CHexDlgSearch::GetRngEnd()const->ULONGLONG
-{
+auto CHexDlgSearch::GetRngEnd()const->ULONGLONG {
 	return m_ullRngEnd;
 }
 
-auto CHexDlgSearch::GetRngSize()const->ULONGLONG
-{
+auto CHexDlgSearch::GetRngSize()const->ULONGLONG {
 	return m_ullRngEnd - m_ullRngBegin + 1;
 }
 
-auto CHexDlgSearch::GetSearchDataFrom()const->SpanCByte
-{
+auto CHexDlgSearch::GetSearchDataFrom()const->SpanCByte {
 	return m_vecSearchDataFrom;
 }
 
-auto CHexDlgSearch::GetSearchDataTo()const->SpanCByte
-{
+auto CHexDlgSearch::GetSearchDataTo()const->SpanCByte {
 	return m_vecSearchDataTo;
 }
 
-auto CHexDlgSearch::GetSearchDataSize()const->DWORD
-{
+auto CHexDlgSearch::GetSearchDataSize()const->DWORD {
 	return static_cast<DWORD>(m_vecSearchDataFrom.size());
 }
 
-auto CHexDlgSearch::GetSearchFunc(bool fFwd, bool fDlgProg)const->PtrSearchFunc
-{
+auto CHexDlgSearch::GetSearchFunc(bool fFwd, bool fDlgProg)const->PtrSearchFunc {
 	using enum simd::EVecType;
 	switch (simd::GetVectorType()) {
 	case VECTOR_128:
@@ -729,8 +696,7 @@ auto CHexDlgSearch::GetSearchFunc(bool fFwd, bool fDlgProg)const->PtrSearchFunc
 }
 
 template<bool fDlgProg, simd::EVecType eVecType>
-auto CHexDlgSearch::GetSearchFuncFwd()const->PtrSearchFunc
-{
+auto CHexDlgSearch::GetSearchFuncFwd()const->PtrSearchFunc {
 	//The `fDlgProg` arg ensures that no runtime check will be performed for the 
 	//'SEARCHFUNCDATA::pDlgProg == nullptr', at the hot path inside the SearchFunc function.
 
@@ -842,8 +808,7 @@ auto CHexDlgSearch::GetSearchFuncFwd()const->PtrSearchFunc
 }
 
 template<bool fDlgProg, simd::EVecType eVecType>
-auto CHexDlgSearch::GetSearchFuncBack()const->PtrSearchFunc
-{
+auto CHexDlgSearch::GetSearchFuncBack()const->PtrSearchFunc {
 	//The `fDlgProg` arg ensures that no runtime check will be performed for the 
 	//'SEARCHFUNCDATA::pDlgProg == nullptr', at the hot path inside the SearchFunc function.
 
@@ -930,24 +895,20 @@ auto CHexDlgSearch::GetSearchFuncBack()const->PtrSearchFunc
 	return { };
 }
 
-auto CHexDlgSearch::GetSearchMode()const->CHexDlgSearch::ESearchMode
-{
+auto CHexDlgSearch::GetSearchMode()const->CHexDlgSearch::ESearchMode {
 	return static_cast<ESearchMode>(m_WndCmbMode.GetItemData(m_WndCmbMode.GetCurSel()));
 }
 
-auto CHexDlgSearch::GetSearchModePrev()const->ESearchMode
-{
+auto CHexDlgSearch::GetSearchModePrev()const->ESearchMode {
 	return m_eSearchModePrev;
 }
 
-auto CHexDlgSearch::GetSearchRngSize()const->ULONGLONG
-{
+auto CHexDlgSearch::GetSearchRngSize()const->ULONGLONG {
 	return IsForward() ? GetSentinel() - GetStartFrom() :
 		(GetStartFrom() - GetRngStart()) + GetSearchDataSize();
 }
 
-auto CHexDlgSearch::GetSearchType()const->ESearchType
-{
+auto CHexDlgSearch::GetSearchType()const->ESearchType {
 	if (GetSearchMode() == ESearchMode::MODE_HEXBYTES) {
 		return ESearchType::HEXBYTES;
 	}
@@ -955,23 +916,19 @@ auto CHexDlgSearch::GetSearchType()const->ESearchType
 	return static_cast<ESearchType>(m_WndCmbType.GetItemData(m_WndCmbType.GetCurSel()));
 }
 
-auto CHexDlgSearch::GetSentinel()const->ULONGLONG
-{
+auto CHexDlgSearch::GetSentinel()const->ULONGLONG {
 	return m_ullRngEnd + 1; //This offset is non-dereferenceable.
 }
 
-auto CHexDlgSearch::GetStartFrom()const->ULONGLONG
-{
+auto CHexDlgSearch::GetStartFrom()const->ULONGLONG {
 	return m_ullStartFrom;
 }
 
-auto CHexDlgSearch::GetStep()const->ULONGLONG
-{
+auto CHexDlgSearch::GetStep()const->ULONGLONG {
 	return m_ullStep;
 }
 
-auto CHexDlgSearch::GetWildcard()const->std::byte
-{
+auto CHexDlgSearch::GetWildcard()const->std::byte {
 	if (m_WndEditWC.IsWndTextEmpty()) {
 		m_WndEditWC.SetWndText(L"?"); //Set default wildcard character.
 	}
@@ -979,8 +936,7 @@ auto CHexDlgSearch::GetWildcard()const->std::byte
 	return static_cast<std::byte>(m_WndEditWC.GetWndText()[0]); //Use only the first character.
 }
 
-void CHexDlgSearch::HexCtrlHighlight(const VecHexSpan& vecSel)
-{
+void CHexDlgSearch::HexCtrlHighlight(const VecHexSpan& vecSel) {
 	const auto pHexCtrl = GetHexCtrl();
 	pHexCtrl->SetSelection(vecSel, true, IsSelection()); //Highlight selection?
 
@@ -989,126 +945,106 @@ void CHexDlgSearch::HexCtrlHighlight(const VecHexSpan& vecSel)
 	}
 }
 
-bool CHexDlgSearch::IsBigEndian()const
-{
+bool CHexDlgSearch::IsBigEndian()const {
 	return m_WndBtnBE.IsChecked();
 }
 
-bool CHexDlgSearch::IsForward()const
-{
+bool CHexDlgSearch::IsForward()const {
 	return m_fForward;
 }
 
-bool CHexDlgSearch::IsFreshSearch()const
-{
+bool CHexDlgSearch::IsFreshSearch()const {
 	return m_fFreshSearch;
 }
 
-bool CHexDlgSearch::IsInverted()const
-{
+bool CHexDlgSearch::IsInverted()const {
 	return m_WndBtnInv.IsChecked();
 }
 
-bool CHexDlgSearch::IsMatchCase()const
-{
+bool CHexDlgSearch::IsMatchCase()const {
 	//If window is disabled we also return true, to ensure 
 	//that no lower-case conversion is ever performed anywhere.
 	return !m_WndBtnMC.IsWindowEnabled() || m_WndBtnMC.IsChecked();
 }
 
-bool CHexDlgSearch::IsNoEsc()const
-{
+bool CHexDlgSearch::IsNoEsc()const {
 	return m_u64Flags & HEXCTRL_FLAG_DLG_NOESC;
 }
 
-bool CHexDlgSearch::IsNumRangeSearch()const
-{
+bool CHexDlgSearch::IsNumRangeSearch()const {
 	return m_fSearchNumRng;
 }
 
-bool CHexDlgSearch::IsReplace()const
-{
+bool CHexDlgSearch::IsReplace()const {
 	return m_fReplace;
 }
 
-bool CHexDlgSearch::IsSelection()const
-{
+bool CHexDlgSearch::IsSelection()const {
 	return m_WndBtnSel.IsChecked();
 }
 
-bool CHexDlgSearch::IsSmallSearch()const
-{
+bool CHexDlgSearch::IsSmallSearch()const {
 	constexpr auto uSizeQuick { 1024U * 1024U * 50U }; //50MB without creating a new thread.
 	return GetSearchRngSize() <= uSizeQuick;
 }
 
-bool CHexDlgSearch::IsWildcard()const
-{
+bool CHexDlgSearch::IsWildcard()const {
 	return m_WndBtnWC.IsWindowEnabled() && m_WndBtnWC.IsChecked();
 }
 
-void CHexDlgSearch::OnButtonSearchF()
-{
+void CHexDlgSearch::OnButtonSearchF() {
 	m_fForward = true;
 	m_fReplace = false;
 	m_fAll = false;
 	Prepare();
 }
 
-void CHexDlgSearch::OnButtonSearchB()
-{
+void CHexDlgSearch::OnButtonSearchB() {
 	m_fForward = false;
 	m_fReplace = false;
 	m_fAll = false;
 	Prepare();
 }
 
-void CHexDlgSearch::OnButtonFindAll()
-{
+void CHexDlgSearch::OnButtonFindAll() {
 	m_fForward = true;
 	m_fReplace = false;
 	m_fAll = true;
 	Prepare();
 }
 
-void CHexDlgSearch::OnButtonReplace()
-{
+void CHexDlgSearch::OnButtonReplace() {
 	m_fForward = true;
 	m_fReplace = true;
 	m_fAll = false;
 	Prepare();
 }
 
-void CHexDlgSearch::OnButtonReplaceAll()
-{
+void CHexDlgSearch::OnButtonReplaceAll() {
 	m_fForward = true;
 	m_fReplace = true;
 	m_fAll = true;
 	Prepare();
 }
 
-void CHexDlgSearch::OnCancel()
-{
+void CHexDlgSearch::OnCancel() {
 	if (IsNoEsc()) //Not closing Dialog on Escape key.
 		return;
 
 	WMClose();
 }
 
-void CHexDlgSearch::OnCheckSel()
-{
+void CHexDlgSearch::OnCheckSel() {
 	m_WndEditStart.EnableWindow(!IsSelection());
 	m_WndEditRngBegin.EnableWindow(!IsSelection());
 	m_WndEditRngEnd.EnableWindow(!IsSelection());
 }
 
-void CHexDlgSearch::OnCheckWildcard()
-{
+void CHexDlgSearch::OnCheckWildcard() {
 	m_WndEditWC.EnableWindow(IsWildcard());
 }
 
-void CHexDlgSearch::OnComboSearchModeChange()
-{
+void CHexDlgSearch::OnComboSearchModeChange() {
 	UpdateControlsState();
 	UpdateTTState();
 
@@ -1118,8 +1054,7 @@ void CHexDlgSearch::OnComboSearchModeChange()
 	}
 }
 
-void CHexDlgSearch::OnComboSearchModeHEXBYTES()
-{
+void CHexDlgSearch::OnComboSearchModeHEXBYTES() {
 	if (GetSearchMode() != GetSearchModePrev()) {
 		ClearComboSearchType();
 	}
@@ -1131,8 +1066,7 @@ void CHexDlgSearch::OnComboSearchModeHEXBYTES()
 	UpdateCueBanners();
 }
 
-void CHexDlgSearch::OnComboSearchModeNUMBERS()
-{
+void CHexDlgSearch::OnComboSearchModeNUMBERS() {
 	if (GetSearchMode() != GetSearchModePrev()) {
 		ClearComboSearchType();
 		using enum ESearchType;
@@ -1166,8 +1100,7 @@ void CHexDlgSearch::OnComboSearchModeNUMBERS()
 	UpdateCueBanners();
 }
 
-void CHexDlgSearch::OnComboSearchModeSTRUCTS()
-{
+void CHexDlgSearch::OnComboSearchModeSTRUCTS() {
 	if (GetSearchMode() != GetSearchModePrev()) {
 		ClearComboSearchType();
 		using enum ESearchType;
@@ -1183,8 +1116,7 @@ void CHexDlgSearch::OnComboSearchModeSTRUCTS()
 	UpdateCueBanners();
 }
 
-void CHexDlgSearch::OnComboSearchModeTEXT()
-{
+void CHexDlgSearch::OnComboSearchModeTEXT() {
 	using enum ESearchType;
 
 	if (GetSearchMode() != GetSearchModePrev()) {
@@ -1218,18 +1150,15 @@ void CHexDlgSearch::OnComboSearchModeTEXT()
 	UpdateCueBanners();
 }
 
-void CHexDlgSearch::OnComboSearchTypeChange()
-{
+void CHexDlgSearch::OnComboSearchTypeChange() {
 	UpdateControlsState();
 }
 
-void CHexDlgSearch::OnOK()
-{
+void CHexDlgSearch::OnOK() {
 	OnButtonSearchF();
 }
 
-void CHexDlgSearch::Prepare()
-{
+void CHexDlgSearch::Prepare() {
 	if (!m_Wnd.IsWindow())
 		return;
 
@@ -1447,8 +1376,7 @@ void CHexDlgSearch::Prepare()
 	m_Wnd.SetActiveWindow();
 }
 
-bool CHexDlgSearch::PrepareHexBytes()
-{
+bool CHexDlgSearch::PrepareHexBytes() {
 	static constexpr auto pwszWrongInput { L"Unacceptable input character.\r\nAllowed characters are: 0123456789AaBbCcDdEeFf" };
 	auto optData = ut::NumStrToHex(m_wstrSearch, IsWildcard() ? static_cast<char>(GetWildcard()) : 0);
 	if (!optData) {
@@ -1473,8 +1401,7 @@ bool CHexDlgSearch::PrepareHexBytes()
 	return true;
 }
 
-bool CHexDlgSearch::PrepareTextASCII()
-{
+bool CHexDlgSearch::PrepareTextASCII() {
 	auto strSearch = ut::WstrToStr(m_wstrSearch, CP_ACP); //Convert to the system default Windows ANSI code page.
 	if (!IsMatchCase()) { //Make the string lowercase.
 		std::transform(strSearch.begin(), strSearch.end(), strSearch.begin(),
@@ -1487,8 +1414,7 @@ bool CHexDlgSearch::PrepareTextASCII()
 	return true;
 }
 
-bool CHexDlgSearch::PrepareTextUTF16()
-{
+bool CHexDlgSearch::PrepareTextUTF16() {
 	auto wstrSearch = m_wstrSearch;
 	if (!IsMatchCase()) { //Make the string lowercase.
 		std::transform(wstrSearch.begin(), wstrSearch.end(), wstrSearch.begin(),
@@ -1501,8 +1427,7 @@ bool CHexDlgSearch::PrepareTextUTF16()
 	return true;
 }
 
-bool CHexDlgSearch::PrepareTextUTF8()
-{
+bool CHexDlgSearch::PrepareTextUTF8() {
 	m_vecSearchDataFrom = ut::RangeToVecBytes(ut::WstrToStr(m_wstrSearch, CP_UTF8)); //Convert to UTF-8 string.
 	m_vecReplaceData = ut::RangeToVecBytes(ut::WstrToStr(m_wstrReplace, CP_UTF8));
 
@@ -1510,8 +1435,7 @@ bool CHexDlgSearch::PrepareTextUTF8()
 }
 
 template<typename T> requires ut::TSize1248<T>
-bool CHexDlgSearch::PrepareNumbers()
-{
+bool CHexDlgSearch::PrepareNumbers() {
 	if (const auto uzRngColon = m_wstrSearch.find(L':'); uzRngColon != std::wstring::npos) { //Search in numbers range (e.g. -1:15).
 		const auto wsvRngFrom = std::wstring_view { m_wstrSearch }.substr(0, uzRngColon);
 		const auto wsvRngTo = std::wstring_view { m_wstrSearch }.substr(uzRngColon + 1);
@@ -1568,8 +1492,7 @@ bool CHexDlgSearch::PrepareNumbers()
 	return true;
 }
 
-bool CHexDlgSearch::PrepareFILETIME()
-{
+bool CHexDlgSearch::PrepareFILETIME() {
 	const auto [dwFormat, wchSepar] = GetHexCtrl()->GetDateInfo();
 	const std::wstring wstrErr = L"Wrong FILETIME format.\r\nA correct format is: " + ut::GetDateFormatString(dwFormat, wchSepar);
 	const auto optFTSearch = ut::StringToFileTime(m_wstrSearch, dwFormat);
@@ -1603,8 +1526,7 @@ bool CHexDlgSearch::PrepareFILETIME()
 	return true;
 }
 
-void CHexDlgSearch::ReplaceAll()
-{
+void CHexDlgSearch::ReplaceAll() {
 	ClearList();
 	m_dwCount = 0;
 	m_dwReplaced = 0;
@@ -1678,8 +1600,7 @@ void CHexDlgSearch::ReplaceAll()
 	m_ListEx.SetItemCountEx(static_cast<int>(m_vecSearchRes.size()));
 }
 
-void CHexDlgSearch::ResetSearch()
-{
+void CHexDlgSearch::ResetSearch() {
 	m_fFreshSearch = true;
 	m_ullStartFrom = { };
 	m_dwCount = { };
@@ -1694,8 +1615,7 @@ void CHexDlgSearch::ResetSearch()
 	m_WndStatResult.SetWndText(L"");
 }
 
-void CHexDlgSearch::Search()
-{
+void CHexDlgSearch::Search() {
 	const auto pHexCtrl = GetHexCtrl();
 	m_fFound = false;
 
@@ -1782,13 +1702,11 @@ void CHexDlgSearch::Search()
 	else { m_fSearchNext = false; }
 }
 
-void CHexDlgSearch::SetEditStartFrom(ULONGLONG ullOffset)
-{
+void CHexDlgSearch::SetEditStartFrom(ULONGLONG ullOffset) {
 	m_WndEditStart.SetWndText(std::format(L"0x{:X}", ullOffset));
 }
 
-void CHexDlgSearch::UpdateControlsState()
-{
+void CHexDlgSearch::UpdateControlsState() {
 	const auto pHexCtrl = GetHexCtrl();
 	if (!pHexCtrl->IsCreated() || !pHexCtrl->IsDataSet())
 		return;
@@ -1823,8 +1741,7 @@ void CHexDlgSearch::UpdateControlsState()
 	m_WndEditWC.EnableWindow(IsWildcard());
 }
 
-void CHexDlgSearch::UpdateCueBanners()
-{
+void CHexDlgSearch::UpdateCueBanners() {
 	using enum ESearchType;
 	switch (GetSearchType()) {
 	case STRUCT_FILETIME:
@@ -1842,15 +1759,13 @@ void CHexDlgSearch::UpdateCueBanners()
 	}
 }
 
-void CHexDlgSearch::UpdateTTState()
-{
+void CHexDlgSearch::UpdateTTState() {
 	const TTTOOLINFOW ti { .cbSize { sizeof(TTTOOLINFOW) }, .uFlags { TTF_IDISHWND | TTF_SUBCLASS }, .hwnd { m_Wnd },
 		.uId { reinterpret_cast<UINT_PTR>(m_WndCmbFind.GetComboBoxInfo().hwndItem) }, .lpszText { LPSTR_TEXTCALLBACKW } };
 	m_WndTT.SendMsg(GetSearchMode() == ESearchMode::MODE_NUMBERS ? TTM_ADDTOOLW : TTM_DELTOOLW, 0, reinterpret_cast<LPARAM>(&ti));
 }
 
-auto CHexDlgSearch::WMActivate(const MSG& msg)->INT_PTR
-{
+auto CHexDlgSearch::WMActivate(const MSG& msg)->INT_PTR {
 	if (const auto pHex = GetHexCtrl();
 		pHex != nullptr && pHex->IsCreated() && pHex->IsDataSet() && LOWORD(msg.wParam) == WA_ACTIVE) {
 		UpdateControlsState();
@@ -1859,14 +1774,12 @@ auto CHexDlgSearch::WMActivate(const MSG& msg)->INT_PTR
 	return 0;
 }
 
-auto CHexDlgSearch::WMClose()->INT_PTR
-{
+auto CHexDlgSearch::WMClose()->INT_PTR {
 	ShowWindow(SW_HIDE);
 	return TRUE;
 }
 
-auto CHexDlgSearch::WMCommand(const MSG& msg)->INT_PTR
-{
+auto CHexDlgSearch::WMCommand(const MSG& msg)->INT_PTR {
 	const auto uCtrlID = LOWORD(msg.wParam); //Control ID or menu ID.
 	const auto uCode = HIWORD(msg.wParam);   //Control code, zero for menu.
 	const auto hWndCtrl = reinterpret_cast<HWND>(msg.lParam); //Control HWND, zero for menu.
@@ -1919,8 +1832,7 @@ auto CHexDlgSearch::WMCommand(const MSG& msg)->INT_PTR
 	return TRUE;
 }
 
-auto CHexDlgSearch::WMCtlColorStatic(const MSG& msg)->INT_PTR
-{
+auto CHexDlgSearch::WMCtlColorStatic(const MSG& msg)->INT_PTR {
 	if (const auto hWndFrom = reinterpret_cast<HWND>(msg.lParam); hWndFrom == m_WndStatResult) {
 		const auto hDC = reinterpret_cast<HDC>(msg.wParam);
 		::SetTextColor(hDC, m_fFound ? RGB(0, 200, 0) : RGB(200, 0, 0));
@@ -1931,8 +1843,7 @@ auto CHexDlgSearch::WMCtlColorStatic(const MSG& msg)->INT_PTR
 	return FALSE; //Default handler.
 }
 
-auto CHexDlgSearch::WMDestroy()->INT_PTR
-{
+auto CHexDlgSearch::WMDestroy()->INT_PTR {
 	m_MenuList.DestroyMenu();
 	m_vecSearchRes.clear();
 	m_vecSearchDataFrom.clear();
@@ -1946,8 +1857,7 @@ auto CHexDlgSearch::WMDestroy()->INT_PTR
 	return TRUE;
 }
 
-auto CHexDlgSearch::WMDrawItem(const MSG& msg)->INT_PTR
-{
+auto CHexDlgSearch::WMDrawItem(const MSG& msg)->INT_PTR {
 	const auto pDIS = reinterpret_cast<LPDRAWITEMSTRUCT>(msg.lParam);
 	if (pDIS->CtlID == static_cast<UINT>(IDC_HEXCTRL_SEARCH_LIST)) {
 		m_ListEx.DrawItem(pDIS);
@@ -1956,8 +1866,7 @@ auto CHexDlgSearch::WMDrawItem(const MSG& msg)->INT_PTR
 	return TRUE;
 }
 
-auto CHexDlgSearch::WMInitDialog(const MSG& msg)->INT_PTR
-{
+auto CHexDlgSearch::WMInitDialog(const MSG& msg)->INT_PTR {
 	m_Wnd.Attach(msg.hwnd);
 	m_WndStatResult.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_SEARCH_STAT_RESULT));
 	m_WndCmbFind.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_SEARCH_COMBO_FIND));
@@ -2043,8 +1952,7 @@ auto CHexDlgSearch::WMInitDialog(const MSG& msg)->INT_PTR
 	return TRUE;
 }
 
-auto CHexDlgSearch::WMMeasureItem(const MSG& msg)->INT_PTR
-{
+auto CHexDlgSearch::WMMeasureItem(const MSG& msg)->INT_PTR {
 	const auto pMIS = reinterpret_cast<LPMEASUREITEMSTRUCT>(msg.lParam);
 	if (pMIS->CtlID == static_cast<UINT>(IDC_HEXCTRL_SEARCH_LIST)) {
 		m_ListEx.MeasureItem(pMIS);
@@ -2053,8 +1961,7 @@ auto CHexDlgSearch::WMMeasureItem(const MSG& msg)->INT_PTR
 	return TRUE;
 }
 
-auto CHexDlgSearch::WMMouseActivate([[maybe_unused]] const MSG& msg)->INT_PTR
-{
+auto CHexDlgSearch::WMMouseActivate([[maybe_unused]] const MSG& msg)->INT_PTR {
 	if (const auto pHex = GetHexCtrl(); pHex != nullptr && pHex->IsCreated() && pHex->IsDataSet()) {
 		UpdateControlsState();
 	}
@@ -2062,8 +1969,7 @@ auto CHexDlgSearch::WMMouseActivate([[maybe_unused]] const MSG& msg)->INT_PTR
 	return MA_ACTIVATE;
 }
 
-auto CHexDlgSearch::WMNotify(const MSG& msg)->INT_PTR
-{
+auto CHexDlgSearch::WMNotify(const MSG& msg)->INT_PTR {
 	const auto pNMHDR = reinterpret_cast<NMHDR*>(msg.lParam);
 
 	if (pNMHDR->code == TTN_GETDISPINFOW) { //Tooltips notifications.
@@ -2079,8 +1985,7 @@ auto CHexDlgSearch::WMNotify(const MSG& msg)->INT_PTR
 	return TRUE;
 }
 
-void CHexDlgSearch::WMNotifyList(NMHDR* pNMHDR)
-{
+void CHexDlgSearch::WMNotifyList(NMHDR* pNMHDR) {
 	switch (pNMHDR->code) {
 	case LVN_GETDISPINFOW: WMNotifyListGetDispInfo(pNMHDR); break;
 	case LVN_ITEMCHANGED: WMNotifyListItemChanged(pNMHDR); break;
@@ -2089,8 +1994,7 @@ void CHexDlgSearch::WMNotifyList(NMHDR* pNMHDR)
 	}
 }
 
-void CHexDlgSearch::WMNotifyListGetDispInfo(NMHDR* pNMHDR)
-{
+void CHexDlgSearch::WMNotifyListGetDispInfo(NMHDR* pNMHDR) {
 	const auto* const pDispInfo = reinterpret_cast<NMLVDISPINFOW*>(pNMHDR);
 	const auto* const pItem = &pDispInfo->item;
 	if ((pItem->mask & LVIF_TEXT) == 0)
@@ -2109,8 +2013,7 @@ void CHexDlgSearch::WMNotifyListGetDispInfo(NMHDR* pNMHDR)
 	}
 }
 
-void CHexDlgSearch::WMNotifyListItemChanged(NMHDR* pNMHDR)
-{
+void CHexDlgSearch::WMNotifyListItemChanged(NMHDR* pNMHDR) {
 	const auto* const pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
 	if (pNMI->iItem < 0 || pNMI->iSubItem < 0 || !(pNMI->uNewState & LVIS_SELECTED))
 		return;
@@ -2135,8 +2038,7 @@ void CHexDlgSearch::WMNotifyListItemChanged(NMHDR* pNMHDR)
 	m_ullStartFrom = ullOffset;
 }
 
-void CHexDlgSearch::WMNotifyListRClick([[maybe_unused]] NMHDR* pNMHDR)
-{
+void CHexDlgSearch::WMNotifyListRClick([[maybe_unused]] NMHDR* pNMHDR) {
 	const auto fEnabled { m_ListEx.GetItemCount() > 0 };
 	m_MenuList.EnableItem(static_cast<UINT>(EMenuID::IDM_SEARCH_ADDBKM), fEnabled);
 	m_MenuList.EnableItem(static_cast<UINT>(EMenuID::IDM_SEARCH_SELECTALL), fEnabled);
@@ -2147,8 +2049,7 @@ void CHexDlgSearch::WMNotifyListRClick([[maybe_unused]] NMHDR* pNMHDR)
 	m_MenuList.TrackPopupMenu(pt.x, pt.y, m_Wnd);
 }
 
-void CHexDlgSearch::WMNotifyTT(NMHDR* pNMHDR)
-{
+void CHexDlgSearch::WMNotifyTT(NMHDR* pNMHDR) {
 	const auto pTTDI = reinterpret_cast<NMTTDISPINFOW*>(pNMHDR);
 
 	if (pNMHDR->idFrom == reinterpret_cast<UINT_PTR>(m_WndBtnWC.GetHWND())) { //Wildcard tooltip.
@@ -2169,8 +2070,7 @@ void CHexDlgSearch::WMNotifyTT(NMHDR* pNMHDR)
 //Static functions.
 
 template<CHexDlgSearch::SEARCHTYPE st>
-bool CHexDlgSearch::MemCmpEQNum(const std::byte* pWhere, const std::byte* pWhat)
-{
+bool CHexDlgSearch::MemCmpEQNum(const std::byte* pWhere, const std::byte* pWhat) {
 	using enum EMemCmp;
 	if constexpr (st.eMemCmp == DATA_UINT8) {
 		return *reinterpret_cast<const std::uint8_t*>(pWhere) == *reinterpret_cast<const std::uint8_t*>(pWhat);
@@ -2187,8 +2087,7 @@ bool CHexDlgSearch::MemCmpEQNum(const std::byte* pWhere, const std::byte* pWhat)
 }
 
 template<CHexDlgSearch::SEARCHTYPE st>
-auto CHexDlgSearch::MemCmpEQNumRng(const std::byte* pWhere, const std::byte* pRngFrom, const std::byte* pRngTo)->bool
-{
+auto CHexDlgSearch::MemCmpEQNumRng(const std::byte* pWhere, const std::byte* pRngFrom, const std::byte* pRngTo)->bool {
 	using enum EMemCmp;
 	if constexpr (st.eMemCmp == DATA_INT8) {
 		const auto i8Where = *reinterpret_cast<const std::int8_t*>(pWhere);
@@ -2253,8 +2152,7 @@ auto CHexDlgSearch::MemCmpEQNumRng(const std::byte* pWhere, const std::byte* pRn
 }
 
 template<CHexDlgSearch::SEARCHTYPE st>
-auto CHexDlgSearch::MemCmpEQText(const std::byte* pWhere, const std::byte* pWhat, std::size_t uzSize, std::byte bWildcard)->bool
-{
+auto CHexDlgSearch::MemCmpEQText(const std::byte* pWhere, const std::byte* pWhat, std::size_t uzSize, std::byte bWildcard)->bool {
 	using enum EMemCmp;
 	if constexpr (st.eMemCmp == DATA_ASCII) {
 		for (std::size_t i { 0 }; i < uzSize; ++i, ++pWhere, ++pWhat) {
@@ -2306,15 +2204,13 @@ auto CHexDlgSearch::MemCmpEQText(const std::byte* pWhere, const std::byte* pWhat
 	}
 }
 
-void CHexDlgSearch::Replace(IHexCtrl* pHexCtrl, ULONGLONG ullIndex, SpanCByte spnReplace)
-{
+void CHexDlgSearch::Replace(IHexCtrl* pHexCtrl, ULONGLONG ullIndex, SpanCByte spnReplace) {
 	pHexCtrl->ModifyData({ .eModifyMode { EHexModifyMode::MODIFY_ONCE }, .spnData { spnReplace },
 		.vecSpan { { ullIndex, spnReplace.size() } } });
 }
 
 template<CHexDlgSearch::SEARCHTYPE st>
-auto CHexDlgSearch::SearchNumFwd(const SEARCHFUNCDATA& sfd)->FINDRESULT
-{
+auto CHexDlgSearch::SearchNumFwd(const SEARCHFUNCDATA& sfd)->FINDRESULT {
 	//Members locality is important for the best performance of the tight search loop below.
 	constexpr auto LOOP_UNROLL_SIZE = 8U; //How many comparisons we do at one loop cycle.
 	const auto ullOffsetSentinel = sfd.ullRngEnd + 1;
@@ -2424,8 +2320,7 @@ auto CHexDlgSearch::SearchNumFwd(const SEARCHFUNCDATA& sfd)->FINDRESULT
 }
 
 template<CHexDlgSearch::SEARCHTYPE st>
-auto CHexDlgSearch::SearchNumRngFwd(const SEARCHFUNCDATA& sfd)->FINDRESULT
-{
+auto CHexDlgSearch::SearchNumRngFwd(const SEARCHFUNCDATA& sfd)->FINDRESULT {
 	//Members locality is important for the best performance of the tight search loop below.
 	constexpr auto LOOP_UNROLL_SIZE = 8U; //How many comparisons we do at one loop cycle.
 	const auto ullOffsetSentinel = sfd.ullRngEnd + 1;
@@ -2536,8 +2431,7 @@ auto CHexDlgSearch::SearchNumRngFwd(const SEARCHFUNCDATA& sfd)->FINDRESULT
 }
 
 template<CHexDlgSearch::SEARCHTYPE st>
-auto CHexDlgSearch::SearchTextFwd(const SEARCHFUNCDATA& sfd)->FINDRESULT
-{
+auto CHexDlgSearch::SearchTextFwd(const SEARCHFUNCDATA& sfd)->FINDRESULT {
 	//Members locality is important for the best performance of the tight search loop below.
 	constexpr auto LOOP_UNROLL_SIZE = 8U; //How many comparisons we do at one loop cycle.
 	constexpr auto fInverted = st.fInverted;
@@ -2648,8 +2542,7 @@ auto CHexDlgSearch::SearchTextFwd(const SEARCHFUNCDATA& sfd)->FINDRESULT
 }
 
 template<CHexDlgSearch::SEARCHTYPE st>
-auto CHexDlgSearch::SearchNumBack(const SEARCHFUNCDATA& sfd)->FINDRESULT
-{
+auto CHexDlgSearch::SearchNumBack(const SEARCHFUNCDATA& sfd)->FINDRESULT {
 	//Members locality is important for the best performance of the tight search loop below.
 	constexpr auto LOOP_UNROLL_SIZE = 8U; //How many comparisons we do at one loop cycle.
 	const auto ullStartFrom = sfd.ullStartFrom;
@@ -2766,8 +2659,7 @@ auto CHexDlgSearch::SearchNumBack(const SEARCHFUNCDATA& sfd)->FINDRESULT
 }
 
 template<CHexDlgSearch::SEARCHTYPE st>
-auto CHexDlgSearch::SearchNumRngBack(const SEARCHFUNCDATA& sfd)->FINDRESULT
-{
+auto CHexDlgSearch::SearchNumRngBack(const SEARCHFUNCDATA& sfd)->FINDRESULT {
 	//Members locality is important for the best performance of the tight search loop below.
 	constexpr auto LOOP_UNROLL_SIZE = 8U; //How many comparisons we do at one loop cycle.
 	const auto ullStartFrom = sfd.ullStartFrom;
@@ -2885,8 +2777,7 @@ auto CHexDlgSearch::SearchNumRngBack(const SEARCHFUNCDATA& sfd)->FINDRESULT
 }
 
 template<CHexDlgSearch::SEARCHTYPE st>
-auto CHexDlgSearch::SearchTextBack(const SEARCHFUNCDATA& sfd)->FINDRESULT
-{
+auto CHexDlgSearch::SearchTextBack(const SEARCHFUNCDATA& sfd)->FINDRESULT {
 	//Members locality is important for the best performance of the tight search loop below.
 	constexpr auto LOOP_UNROLL_SIZE = 8U; //How many comparisons we do at one loop cycle.
 	const auto ullStartFrom = sfd.ullStartFrom;
@@ -3004,8 +2895,7 @@ auto CHexDlgSearch::SearchTextBack(const SEARCHFUNCDATA& sfd)->FINDRESULT
 }
 
 template<CHexDlgSearch::SEARCHTYPE st>
-auto CHexDlgSearch::SearchFwdVec1(const SEARCHFUNCDATA& sfd)->FINDRESULT
-{
+auto CHexDlgSearch::SearchFwdVec1(const SEARCHFUNCDATA& sfd)->FINDRESULT {
 	//Members locality is important for the best performance of the tight search loop below.
 	constexpr auto u32VecSize = simd::VecTypeToSize(st.eVecType); //Vector size 128/256.
 	constexpr auto fInverted = st.fInverted;
@@ -3070,8 +2960,7 @@ auto CHexDlgSearch::SearchFwdVec1(const SEARCHFUNCDATA& sfd)->FINDRESULT
 }
 
 template<CHexDlgSearch::SEARCHTYPE st>
-auto CHexDlgSearch::SearchFwdVec2(const SEARCHFUNCDATA& sfd)->FINDRESULT
-{
+auto CHexDlgSearch::SearchFwdVec2(const SEARCHFUNCDATA& sfd)->FINDRESULT {
 	//Members locality is important for the best performance of the tight search loop below.
 	constexpr auto u32VecSize = simd::VecTypeToSize(st.eVecType);
 	constexpr auto fInverted = st.fInverted;
@@ -3137,8 +3026,7 @@ auto CHexDlgSearch::SearchFwdVec2(const SEARCHFUNCDATA& sfd)->FINDRESULT
 }
 
 template<CHexDlgSearch::SEARCHTYPE st>
-auto CHexDlgSearch::SearchFwdVec4(const SEARCHFUNCDATA& sfd)->FINDRESULT
-{
+auto CHexDlgSearch::SearchFwdVec4(const SEARCHFUNCDATA& sfd)->FINDRESULT {
 	//Members locality is important for the best performance of the tight search loop below.
 	constexpr auto u32VecSize = simd::VecTypeToSize(st.eVecType);
 	constexpr auto fInverted = st.fInverted;

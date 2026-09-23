@@ -98,8 +98,7 @@ enum class CHexDlgBkmMgr::EMenuID : std::uint16_t {
 	IDM_BKMMGR_REMOVE = 0x8001, IDM_BKMMGR_REMOVEALL
 };
 
-auto CHexDlgBkmMgr::AddBkm(const HEXBKM& bkm)->ULONGLONG
-{
+auto CHexDlgBkmMgr::AddBkm(const HEXBKM& bkm)->ULONGLONG {
 	ULONGLONG ullID;
 	if (IsVirtual()) {
 		ullID = m_pVirtBkm->OnHexBkmAdd(bkm);
@@ -119,8 +118,7 @@ auto CHexDlgBkmMgr::AddBkm(const HEXBKM& bkm)->ULONGLONG
 	return ullID;
 }
 
-void CHexDlgBkmMgr::CreateDlg()const
-{
+void CHexDlgBkmMgr::CreateDlg()const {
 	//m_Wnd is set in the WMInitDialog().
 	if (const auto hWnd = ::CreateDialogParamW(m_hInstRes, MAKEINTRESOURCEW(IDD_HEXCTRL_BKMMGR),
 		m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN), GDIUT::DlgProc<CHexDlgBkmMgr>, reinterpret_cast<LPARAM>(this));
@@ -129,15 +127,13 @@ void CHexDlgBkmMgr::CreateDlg()const
 	}
 }
 
-void CHexDlgBkmMgr::DestroyDlg()
-{
+void CHexDlgBkmMgr::DestroyDlg() {
 	if (m_Wnd.IsWindow()) {
 		m_Wnd.DestroyWindow();
 	}
 }
 
-auto CHexDlgBkmMgr::GetAllBkms()->SpanHexBkm
-{
+auto CHexDlgBkmMgr::GetAllBkms()->SpanHexBkm {
 	if (IsVirtual()) {
 		return { };
 	}
@@ -145,8 +141,7 @@ auto CHexDlgBkmMgr::GetAllBkms()->SpanHexBkm
 	return m_vecBookmarks;
 }
 
-auto CHexDlgBkmMgr::GetByID(ULONGLONG ullID)->PHEXBKM
-{
+auto CHexDlgBkmMgr::GetByID(ULONGLONG ullID)->PHEXBKM {
 	if (IsVirtual()) {
 		return m_pVirtBkm->OnHexBkmGetByID(ullID);
 	}
@@ -159,8 +154,7 @@ auto CHexDlgBkmMgr::GetByID(ULONGLONG ullID)->PHEXBKM
 	return { };
 }
 
-auto CHexDlgBkmMgr::GetByIndex(ULONGLONG ullIndex)->PHEXBKM
-{
+auto CHexDlgBkmMgr::GetByIndex(ULONGLONG ullIndex)->PHEXBKM {
 	if (IsVirtual()) {
 		return m_pVirtBkm->OnHexBkmGetByIndex(ullIndex);
 	}
@@ -172,18 +166,15 @@ auto CHexDlgBkmMgr::GetByIndex(ULONGLONG ullIndex)->PHEXBKM
 	return { };
 }
 
-auto CHexDlgBkmMgr::GetCount()->ULONGLONG
-{
+auto CHexDlgBkmMgr::GetCount()->ULONGLONG {
 	return IsVirtual() ? m_pVirtBkm->OnHexBkmGetCount() : m_vecBookmarks.size();
 }
 
-auto CHexDlgBkmMgr::GetCurrent()const->ULONGLONG
-{
+auto CHexDlgBkmMgr::GetCurrent()const->ULONGLONG {
 	return m_u64IndexCurr;
 }
 
-auto CHexDlgBkmMgr::GetDlgItemHandle(EHexDlgItem eItem)const->HWND
-{
+auto CHexDlgBkmMgr::GetDlgItemHandle(EHexDlgItem eItem)const->HWND {
 	if (!m_Wnd.IsWindow()) {
 		return { };
 	}
@@ -199,13 +190,11 @@ auto CHexDlgBkmMgr::GetDlgItemHandle(EHexDlgItem eItem)const->HWND
 	}
 }
 
-auto CHexDlgBkmMgr::GetHWND()const->HWND
-{
+auto CHexDlgBkmMgr::GetHWND()const->HWND {
 	return m_Wnd;
 }
 
-void CHexDlgBkmMgr::GoBookmark(ULONGLONG ullIndex)
-{
+void CHexDlgBkmMgr::GoBookmark(ULONGLONG ullIndex) {
 	if (m_pHexCtrl == nullptr || !m_pHexCtrl->IsDataSet())
 		return;
 
@@ -219,8 +208,7 @@ void CHexDlgBkmMgr::GoBookmark(ULONGLONG ullIndex)
 	}
 }
 
-void CHexDlgBkmMgr::GoNext()
-{
+void CHexDlgBkmMgr::GoNext() {
 	if (m_pHexCtrl == nullptr || !m_pHexCtrl->IsDataSet())
 		return;
 
@@ -237,8 +225,7 @@ void CHexDlgBkmMgr::GoNext()
 	}
 }
 
-void CHexDlgBkmMgr::GoPrev()
-{
+void CHexDlgBkmMgr::GoPrev() {
 	if (m_pHexCtrl == nullptr || !m_pHexCtrl->IsDataSet())
 		return;
 
@@ -258,18 +245,15 @@ void CHexDlgBkmMgr::GoPrev()
 	}
 }
 
-bool CHexDlgBkmMgr::HasBkmAtOffset(ULONGLONG ullOffset)const
-{
+bool CHexDlgBkmMgr::HasBkmAtOffset(ULONGLONG ullOffset)const {
 	return HitTest(ullOffset) != nullptr;
 }
 
-bool CHexDlgBkmMgr::HasBookmarks()const
-{
+bool CHexDlgBkmMgr::HasBookmarks()const {
 	return IsVirtual() ? m_pVirtBkm->OnHexBkmGetCount() > 0 : !m_vecBookmarks.empty();
 }
 
-auto CHexDlgBkmMgr::HitTest(ULONGLONG ullOffset)->PHEXBKM
-{
+auto CHexDlgBkmMgr::HitTest(ULONGLONG ullOffset)->PHEXBKM {
 	if (IsVirtual()) {
 		return m_pVirtBkm->OnHexBkmHitTest(ullOffset);
 	}
@@ -285,34 +269,28 @@ auto CHexDlgBkmMgr::HitTest(ULONGLONG ullOffset)->PHEXBKM
 	return { };
 }
 
-auto CHexDlgBkmMgr::HitTest(ULONGLONG ullOffset)const->PHEXBKM
-{
+auto CHexDlgBkmMgr::HitTest(ULONGLONG ullOffset)const->PHEXBKM {
 	return const_cast<CHexDlgBkmMgr*>(this)->HitTest(ullOffset);
 }
 
-void CHexDlgBkmMgr::Initialize(IHexCtrl &HexCtrl, HINSTANCE hInstRes)
-{
+void CHexDlgBkmMgr::Initialize(IHexCtrl &HexCtrl, HINSTANCE hInstRes) {
 	m_pHexCtrl = &HexCtrl;
 	m_hInstRes = hInstRes;
 }
 
-bool CHexDlgBkmMgr::IsShowTooltips()const
-{
+bool CHexDlgBkmMgr::IsShowTooltips()const {
 	return m_WndBtnTT.IsWindow() && m_WndBtnTT.IsChecked();
 }
 
-bool CHexDlgBkmMgr::IsVirtual()const
-{
+bool CHexDlgBkmMgr::IsVirtual()const {
 	return m_pVirtBkm != nullptr;
 }
 
-bool CHexDlgBkmMgr::PreTranslateMsg(MSG* pMsg)
-{
+bool CHexDlgBkmMgr::PreTranslateMsg(MSG* pMsg) {
 	return m_Wnd.IsDlgMessage(pMsg);
 }
 
-auto CHexDlgBkmMgr::ProcessMsg(const MSG& msg)->INT_PTR
-{
+auto CHexDlgBkmMgr::ProcessMsg(const MSG& msg)->INT_PTR {
 	switch (msg.message) {
 	case WM_CLOSE: return WMClose();
 	case WM_COMMAND: return WMCommand(msg);
@@ -328,14 +306,12 @@ auto CHexDlgBkmMgr::ProcessMsg(const MSG& msg)->INT_PTR
 	}
 }
 
-void CHexDlgBkmMgr::RemoveAll()
-{
+void CHexDlgBkmMgr::RemoveAll() {
 	IsVirtual() ? m_pVirtBkm->OnHexBkmRemoveAll() : m_vecBookmarks.clear();
 	UpdateListCount();
 }
 
-void CHexDlgBkmMgr::RemoveByOffset(ULONGLONG ullOffset)
-{
+void CHexDlgBkmMgr::RemoveByOffset(ULONGLONG ullOffset) {
 	if (IsVirtual()) {
 		if (const auto* const pBkm = m_pVirtBkm->OnHexBkmHitTest(ullOffset); pBkm != nullptr) {
 			m_pVirtBkm->OnHexBkmRemoveByID(pBkm->ullID);
@@ -358,8 +334,7 @@ void CHexDlgBkmMgr::RemoveByOffset(ULONGLONG ullOffset)
 	UpdateListCount();
 }
 
-void CHexDlgBkmMgr::RemoveByID(ULONGLONG ullID)
-{
+void CHexDlgBkmMgr::RemoveByID(ULONGLONG ullID) {
 	if (IsVirtual()) {
 		m_pVirtBkm->OnHexBkmRemoveByID(ullID);
 	}
@@ -372,19 +347,16 @@ void CHexDlgBkmMgr::RemoveByID(ULONGLONG ullID)
 	UpdateListCount();
 }
 
-void CHexDlgBkmMgr::SetDlgProperties(std::uint64_t u64Flags)
-{
+void CHexDlgBkmMgr::SetDlgProperties(std::uint64_t u64Flags) {
 	m_u64Flags = u64Flags;
 }
 
-void CHexDlgBkmMgr::SetVirtualBkm(IHexVirtBookmarks* pVirtBkm)
-{
+void CHexDlgBkmMgr::SetVirtualBkm(IHexVirtBookmarks* pVirtBkm) {
 	m_pVirtBkm = pVirtBkm;
 	UpdateListCount();
 }
 
-void CHexDlgBkmMgr::ShowWindow(int iCmdShow)
-{
+void CHexDlgBkmMgr::ShowWindow(int iCmdShow) {
 	if (!m_Wnd.IsWindow()) {
 		CreateDlg();
 	}
@@ -392,8 +364,7 @@ void CHexDlgBkmMgr::ShowWindow(int iCmdShow)
 	m_Wnd.ShowWindow(iCmdShow);
 }
 
-void CHexDlgBkmMgr::Update(ULONGLONG ullID, const HEXBKM& bkm)
-{
+void CHexDlgBkmMgr::Update(ULONGLONG ullID, const HEXBKM& bkm) {
 	if (IsVirtual())
 		return;
 
@@ -408,50 +379,42 @@ void CHexDlgBkmMgr::Update(ULONGLONG ullID, const HEXBKM& bkm)
 
 //Private methods.
 
-auto CHexDlgBkmMgr::GetHexCtrl()const->IHexCtrl*
-{
+auto CHexDlgBkmMgr::GetHexCtrl()const->IHexCtrl* {
 	return m_pHexCtrl;
 }
 
-bool CHexDlgBkmMgr::IsNoEsc()const
-{
+bool CHexDlgBkmMgr::IsNoEsc()const {
 	return m_u64Flags & HEXCTRL_FLAG_DLG_NOESC;
 }
 
-bool CHexDlgBkmMgr::IsShowAsHex()const
-{
+bool CHexDlgBkmMgr::IsShowAsHex()const {
 	return m_WndBtnHex.IsChecked();
 }
 
-void CHexDlgBkmMgr::OnCancel()
-{
+void CHexDlgBkmMgr::OnCancel() {
 	if (IsNoEsc()) //Not closing Dialog on Escape key.
 		return;
 
 	WMClose();
 }
 
-void CHexDlgBkmMgr::OnCheckHex()
-{
+void CHexDlgBkmMgr::OnCheckHex() {
 	m_ListEx.RedrawWindow();
 }
-void CHexDlgBkmMgr::RedrawHexCtrl()
-{
+void CHexDlgBkmMgr::RedrawHexCtrl() {
 	if (m_pHexCtrl != nullptr && m_pHexCtrl->IsDataSet()) {
 		m_pHexCtrl->Redraw();
 	}
 }
 
-void CHexDlgBkmMgr::RemoveBkmByID(std::uint64_t ullID)
-{
+void CHexDlgBkmMgr::RemoveBkmByID(std::uint64_t ullID) {
 	if (const auto it = std::find_if(m_vecBookmarks.begin(), m_vecBookmarks.end(),
 		[ullID](const HEXBKM& bkm) { return ullID == bkm.ullID; }); it != m_vecBookmarks.end()) {
 		m_vecBookmarks.erase(it);
 	}
 }
 
-void CHexDlgBkmMgr::UpdateListCount(bool fPreserveSelected)
-{
+void CHexDlgBkmMgr::UpdateListCount(bool fPreserveSelected) {
 	if (!m_Wnd.IsWindow()) {
 		return;
 	}
@@ -468,14 +431,12 @@ void CHexDlgBkmMgr::UpdateListCount(bool fPreserveSelected)
 	}
 }
 
-auto CHexDlgBkmMgr::WMClose()->INT_PTR
-{
+auto CHexDlgBkmMgr::WMClose()->INT_PTR {
 	ShowWindow(SW_HIDE);
 	return TRUE;
 }
 
-auto CHexDlgBkmMgr::WMCommand(const MSG& msg) -> INT_PTR
-{
+auto CHexDlgBkmMgr::WMCommand(const MSG& msg) -> INT_PTR {
 	const auto uCtrlID = LOWORD(msg.wParam); //Control ID or menu ID.
 	const auto uCode = HIWORD(msg.wParam);   //Control code, zero for menu.
 	const auto hWndCtrl = reinterpret_cast<HWND>(msg.lParam); //Control HWND, zero for menu.
@@ -525,8 +486,7 @@ auto CHexDlgBkmMgr::WMCommand(const MSG& msg) -> INT_PTR
 	return TRUE;
 }
 
-auto CHexDlgBkmMgr::WMDestroy()->INT_PTR
-{
+auto CHexDlgBkmMgr::WMDestroy()->INT_PTR {
 	RemoveAll();
 	m_menuList.DestroyMenu();
 	m_u64Flags = { };
@@ -535,14 +495,12 @@ auto CHexDlgBkmMgr::WMDestroy()->INT_PTR
 	return TRUE;
 }
 
-auto CHexDlgBkmMgr::WMDPIChanged([[maybe_unused]] const MSG& msg)->INT_PTR
-{
+auto CHexDlgBkmMgr::WMDPIChanged([[maybe_unused]] const MSG& msg)->INT_PTR {
 	m_DynLayout.Enable(true);
 	return 0;
 }
 
-auto CHexDlgBkmMgr::WMDrawItem(const MSG& msg)->INT_PTR
-{
+auto CHexDlgBkmMgr::WMDrawItem(const MSG& msg)->INT_PTR {
 	const auto pDIS = reinterpret_cast<LPDRAWITEMSTRUCT>(msg.lParam);
 	if (pDIS->CtlID == static_cast<UINT>(IDC_HEXCTRL_BKMMGR_LIST)) {
 		m_ListEx.DrawItem(pDIS);
@@ -551,8 +509,7 @@ auto CHexDlgBkmMgr::WMDrawItem(const MSG& msg)->INT_PTR
 	return TRUE;
 }
 
-auto CHexDlgBkmMgr::WMGetDPIScaledSize([[maybe_unused]] const MSG& msg)->INT_PTR
-{
+auto CHexDlgBkmMgr::WMGetDPIScaledSize([[maybe_unused]] const MSG& msg)->INT_PTR {
 	//This message is sent to top-level windows with a DPI_AWARENESS_CONTEXT
 	//of Per Monitor v2 before a WM_DPICHANGED message is sent.
 	//We use it to temporarily disable all dynamic layout resizes,
@@ -562,8 +519,7 @@ auto CHexDlgBkmMgr::WMGetDPIScaledSize([[maybe_unused]] const MSG& msg)->INT_PTR
 	return 0;
 }
 
-auto CHexDlgBkmMgr::WMInitDialog(const MSG& msg)->INT_PTR
-{
+auto CHexDlgBkmMgr::WMInitDialog(const MSG& msg)->INT_PTR {
 	m_Wnd.Attach(msg.hwnd);
 	m_WndBtnHex.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_BKMMGR_CHK_HEX));
 	m_WndBtnTT.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_BKMMGR_CHK_TT));
@@ -598,8 +554,7 @@ auto CHexDlgBkmMgr::WMInitDialog(const MSG& msg)->INT_PTR
 	return TRUE;
 }
 
-auto CHexDlgBkmMgr::WMMeasureItem(const MSG& msg)->INT_PTR
-{
+auto CHexDlgBkmMgr::WMMeasureItem(const MSG& msg)->INT_PTR {
 	const auto pMIS = reinterpret_cast<LPMEASUREITEMSTRUCT>(msg.lParam);
 	if (pMIS->CtlID == static_cast<UINT>(IDC_HEXCTRL_BKMMGR_LIST)) {
 		m_ListEx.MeasureItem(pMIS);
@@ -608,8 +563,7 @@ auto CHexDlgBkmMgr::WMMeasureItem(const MSG& msg)->INT_PTR
 	return TRUE;
 }
 
-auto CHexDlgBkmMgr::WMNotify(const MSG& msg)->INT_PTR
-{
+auto CHexDlgBkmMgr::WMNotify(const MSG& msg)->INT_PTR {
 	const auto pNMHDR = reinterpret_cast<NMHDR*>(msg.lParam);
 	switch (pNMHDR->idFrom) {
 	case IDC_HEXCTRL_BKMMGR_LIST:
@@ -629,8 +583,7 @@ auto CHexDlgBkmMgr::WMNotify(const MSG& msg)->INT_PTR
 	return TRUE;
 }
 
-void CHexDlgBkmMgr::WMNotifyListColumnClick()
-{
+void CHexDlgBkmMgr::WMNotifyListColumnClick() {
 	if (IsVirtual())
 		return;
 
@@ -674,8 +627,7 @@ void CHexDlgBkmMgr::WMNotifyListColumnClick()
 	}
 }
 
-void CHexDlgBkmMgr::WMNotifyListDblClick(NMHDR* pNMHDR)
-{
+void CHexDlgBkmMgr::WMNotifyListDblClick(NMHDR* pNMHDR) {
 	const auto* const pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
 	if (pNMI->iSubItem != 4 && pNMI->iSubItem != 5) {
 		return;
@@ -709,8 +661,7 @@ void CHexDlgBkmMgr::WMNotifyListDblClick(NMHDR* pNMHDR)
 	m_pHexCtrl->Redraw();
 }
 
-void CHexDlgBkmMgr::WMNotifyListGetColor(NMHDR* pNMHDR)
-{
+void CHexDlgBkmMgr::WMNotifyListGetColor(NMHDR* pNMHDR) {
 	const auto pLCI = reinterpret_cast<LISTEX::PLISTEXCOLORINFO>(pNMHDR);
 
 	switch (pLCI->iSubItem) {
@@ -731,8 +682,7 @@ void CHexDlgBkmMgr::WMNotifyListGetColor(NMHDR* pNMHDR)
 	}
 }
 
-void CHexDlgBkmMgr::WMNotifyListGetDispInfo(NMHDR* pNMHDR)
-{
+void CHexDlgBkmMgr::WMNotifyListGetDispInfo(NMHDR* pNMHDR) {
 	const auto pDispInfo = reinterpret_cast<NMLVDISPINFOW*>(pNMHDR);
 	const auto pItem = &pDispInfo->item;
 	if ((pItem->mask & LVIF_TEXT) == 0)
@@ -774,8 +724,7 @@ void CHexDlgBkmMgr::WMNotifyListGetDispInfo(NMHDR* pNMHDR)
 	}
 }
 
-void CHexDlgBkmMgr::WMNotifyListItemChanged(NMHDR* pNMHDR)
-{
+void CHexDlgBkmMgr::WMNotifyListItemChanged(NMHDR* pNMHDR) {
 	//Go selected bookmark only with keyboard arrows and LMouse clicks.
 	//Does not trigger (LVN_ITEMCHANGED event) when updating bookmark: !(pLCI->uNewState & LVIS_SELECTED)
 	if (const auto* const pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
@@ -784,8 +733,7 @@ void CHexDlgBkmMgr::WMNotifyListItemChanged(NMHDR* pNMHDR)
 	}
 }
 
-void CHexDlgBkmMgr::WMNotifyListRClick(NMHDR* pNMHDR)
-{
+void CHexDlgBkmMgr::WMNotifyListRClick(NMHDR* pNMHDR) {
 	bool fEnabled { false };
 	if (const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
 		pNMI->iItem >= 0 && pNMI->iSubItem >= 0) {
@@ -801,8 +749,7 @@ void CHexDlgBkmMgr::WMNotifyListRClick(NMHDR* pNMHDR)
 	m_menuList.TrackPopupMenu(pt.x, pt.y, m_Wnd);
 }
 
-void CHexDlgBkmMgr::WMNotifyListSetData(NMHDR* pNMHDR)
-{
+void CHexDlgBkmMgr::WMNotifyListSetData(NMHDR* pNMHDR) {
 	const auto pLDI = reinterpret_cast<LISTEX::PLISTEXDATAINFO>(pNMHDR);
 	const auto pBkm = GetByIndex(static_cast<std::size_t>(pLDI->iItem));
 	if (pBkm == nullptr) {

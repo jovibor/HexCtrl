@@ -468,8 +468,7 @@ enum class CHexCtrl::EClipboard : std::uint8_t {
 	PASTE_HEX, PASTE_TEXT_UTF16, PASTE_TEXT_CP
 };
 
-CHexCtrl::CHexCtrl()
-{
+CHexCtrl::CHexCtrl() {
 	//CS_GLOBALCLASS flag creates window class which is global to a whole app.
 	//This window class can be accessed from the app itself and from any dll this app uses.
 	//If HexCtrl is used as a regular dll, its window class will be registered with
@@ -489,13 +488,11 @@ CHexCtrl::CHexCtrl()
 	}
 }
 
-CHexCtrl::~CHexCtrl()
-{
+CHexCtrl::~CHexCtrl() {
 	::UnregisterClassW(m_pwszClassName, nullptr);
 }
 
-void CHexCtrl::ClearData()
-{
+void CHexCtrl::ClearData() {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return; }
 
 	m_stData = { };
@@ -515,8 +512,7 @@ void CHexCtrl::ClearData()
 	RedrawImpl();
 }
 
-bool CHexCtrl::Create(const HEXCREATE& hcs)
-{
+bool CHexCtrl::Create(const HEXCREATE& hcs) {
 	if (IsCreated()) { ut::DBG_REPORT(L"Already created."); return false; }
 
 	if (hcs.fCustom) {
@@ -597,15 +593,13 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	return m_fCreated = true;
 }
 
-bool CHexCtrl::CreateDialogCtrl(UINT uCtrlID, HWND hWndParent)
-{
+bool CHexCtrl::CreateDialogCtrl(UINT uCtrlID, HWND hWndParent) {
 	if (IsCreated()) { ut::DBG_REPORT(L"Already created."); return false; }
 
 	return Create({ .hWndParent { hWndParent }, .uID { uCtrlID }, .fCustom { true } });
 }
 
-void CHexCtrl::Delete()
-{
+void CHexCtrl::Delete() {
 	//At this point the HexCtrl window should be destroyed anyway.
 	//This call is just to make sure it is.
 	DestroyWindow();
@@ -613,15 +607,13 @@ void CHexCtrl::Delete()
 	delete this;
 }
 
-void CHexCtrl::DestroyWindow()
-{
+void CHexCtrl::DestroyWindow() {
 	if (m_Wnd.IsWindow()) {
 		m_Wnd.DestroyWindow();
 	}
 }
 
-void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
-{
+void CHexCtrl::ExecuteCmd(EHexCmd eCmd) {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return; }
 	if (!IsCmdAvail(eCmd)) return;
 
@@ -853,66 +845,57 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 	}
 }
 
-int CHexCtrl::GetActualWidth()const
-{
+int CHexCtrl::GetActualWidth()const {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return { }; }
 
 	return m_iFourthVertLinePx + 1; //+1px is the Pen width the line was drawn with.
 }
 
-auto CHexCtrl::GetBookmarks()->IHexBookmarks*
-{
+auto CHexCtrl::GetBookmarks()->IHexBookmarks* {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return { }; }
 
 	return &m_DlgBkmMgr;
 }
 
-auto CHexCtrl::GetCacheSize()const->DWORD
-{
+auto CHexCtrl::GetCacheSize()const->DWORD {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return { }; }
 	if (!IsDataSetImpl()) { ut::DBG_REPORT_NO_DATA_SET(); return { }; }
 
 	return m_stData.dwCacheSize;
 }
 
-auto CHexCtrl::GetCapacity()const->DWORD
-{
+auto CHexCtrl::GetCapacity()const->DWORD {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return { }; }
 
 	return GetCapacityImpl();
 }
 
-auto CHexCtrl::GetCaretPos()const->ULONGLONG
-{
+auto CHexCtrl::GetCaretPos()const->ULONGLONG {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return { }; }
 	if (!IsDataSetImpl()) { ut::DBG_REPORT_NO_DATA_SET(); return { }; }
 
 	return GetCaretPosImpl();
 }
 
-auto CHexCtrl::GetCharsExtraSpace()const->DWORD
-{
+auto CHexCtrl::GetCharsExtraSpace()const->DWORD {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return { }; }
 
 	return m_dwCharsExtraSpace;
 }
 
-int CHexCtrl::GetCodepage()const
-{
+int CHexCtrl::GetCodepage()const {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return { }; }
 
 	return m_iCodePage;
 }
 
-auto CHexCtrl::GetColors()const->const HEXCOLORS&
-{
+auto CHexCtrl::GetColors()const->const HEXCOLORS& {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); }
 
 	return m_stColors;
 }
 
-auto CHexCtrl::GetData(HEXSPAN hss)const->SpanByte
-{
+auto CHexCtrl::GetData(HEXSPAN hss)const->SpanByte {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return { }; }
 	if (!IsDataSetImpl()) { ut::DBG_REPORT_NO_DATA_SET(); return { }; }
 	assert(hss.ullSize > 0);
@@ -933,22 +916,19 @@ auto CHexCtrl::GetData(HEXSPAN hss)const->SpanByte
 	return spnData;
 }
 
-auto CHexCtrl::GetDataSize()const->ULONGLONG
-{
+auto CHexCtrl::GetDataSize()const->ULONGLONG {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return { }; }
 
 	return GetDataSizeImpl();
 }
 
-auto CHexCtrl::GetDateInfo()const->std::tuple<DWORD, wchar_t>
-{
+auto CHexCtrl::GetDateInfo()const->std::tuple<DWORD, wchar_t> {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return { }; }
 
 	return { m_dwDateFormat, m_wchDateSepar };
 }
 
-auto CHexCtrl::GetDlgItemHandle(EHexDlgItem eItem)const->HWND
-{
+auto CHexCtrl::GetDlgItemHandle(EHexDlgItem eItem)const->HWND {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return { }; }
 
 	using enum EHexDlgItem;
@@ -973,8 +953,7 @@ auto CHexCtrl::GetDlgItemHandle(EHexDlgItem eItem)const->HWND
 	};
 }
 
-auto CHexCtrl::GetFont(bool fMain)const->LOGFONTW
-{
+auto CHexCtrl::GetFont(bool fMain)const->LOGFONTW {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return { }; }
 
 	LOGFONTW lf;
@@ -983,82 +962,71 @@ auto CHexCtrl::GetFont(bool fMain)const->LOGFONTW
 	return lf;
 }
 
-auto CHexCtrl::GetGroupSize()const->DWORD
-{
+auto CHexCtrl::GetGroupSize()const->DWORD {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return { }; }
 
 	return m_dwGroupSize;
 }
 
-auto CHexCtrl::GetMenuHandle()const->HMENU
-{
+auto CHexCtrl::GetMenuHandle()const->HMENU {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return { }; }
 
 	return m_MenuMain.GetSubMenu(0);
 }
 
-auto CHexCtrl::GetOffset(ULONGLONG ullOffset, bool fGetVirt)const->ULONGLONG
-{
+auto CHexCtrl::GetOffset(ULONGLONG ullOffset, bool fGetVirt)const->ULONGLONG {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return { }; }
 	if (!IsDataSetImpl()) { ut::DBG_REPORT_NO_DATA_SET(); return { }; }
 
 	return GetOffsetImpl(ullOffset, fGetVirt);
 }
 
-auto CHexCtrl::GetPagesCount()const->ULONGLONG
-{
+auto CHexCtrl::GetPagesCount()const->ULONGLONG {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return { }; }
 	if (!IsDataSetImpl()) { ut::DBG_REPORT_NO_DATA_SET(); return { }; }
 
 	return GetPagesCountImpl();
 }
 
-auto CHexCtrl::GetPagePos()const->ULONGLONG
-{
+auto CHexCtrl::GetPagePos()const->ULONGLONG {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return { }; }
 	if (!IsDataSetImpl()) { ut::DBG_REPORT_NO_DATA_SET(); return { }; }
 
 	return GetPagePosImpl();
 }
 
-auto CHexCtrl::GetPageSize()const->DWORD
-{
+auto CHexCtrl::GetPageSize()const->DWORD {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return { }; }
 
 	return GetPageSizeImpl();
 }
 
-auto CHexCtrl::GetScrollRatio()const->std::tuple<float, bool>
-{
+auto CHexCtrl::GetScrollRatio()const->std::tuple<float, bool> {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return { }; }
 
 	return { m_flScrollRatio, m_fScrollLines };
 }
 
-auto CHexCtrl::GetSelection()const->VecHexSpan
-{
+auto CHexCtrl::GetSelection()const->VecHexSpan {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return { }; }
 	if (!IsDataSetImpl()) { ut::DBG_REPORT_NO_DATA_SET(); return { }; }
 
 	return m_Selection.GetData();
 }
 
-auto CHexCtrl::GetTemplates()->IHexTemplates*
-{
+auto CHexCtrl::GetTemplates()->IHexTemplates* {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return { }; }
 
 	return &m_DlgTemplMgr;
 }
 
-auto CHexCtrl::GetUnprintableChar()const->wchar_t
-{
+auto CHexCtrl::GetUnprintableChar()const->wchar_t {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return { }; }
 
 	return m_wchUnprintable;
 }
 
-auto CHexCtrl::GetWndHandle(EHexWnd eWnd, bool fCreate)const->HWND
-{
+auto CHexCtrl::GetWndHandle(EHexWnd eWnd, bool fCreate)const->HWND {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return { }; }
 
 	switch (eWnd) {
@@ -1104,8 +1072,7 @@ auto CHexCtrl::GetWndHandle(EHexWnd eWnd, bool fCreate)const->HWND
 	}
 }
 
-void CHexCtrl::GoToOffset(ULONGLONG ullOffset, int iPosAt)
-{
+void CHexCtrl::GoToOffset(ULONGLONG ullOffset, int iPosAt) {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return; }
 	if (!IsDataSetImpl()) { ut::DBG_REPORT_NO_DATA_SET(); return; }
 	if (ullOffset >= GetDataSizeImpl()) return;
@@ -1139,22 +1106,19 @@ void CHexCtrl::GoToOffset(ULONGLONG ullOffset, int iPosAt)
 	}
 }
 
-bool CHexCtrl::HasInfoBar()const
-{
+bool CHexCtrl::HasInfoBar()const {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return false; }
 
 	return m_fInfoBar;
 }
 
-bool CHexCtrl::HasSelection()const
-{
+bool CHexCtrl::HasSelection()const {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return false; }
 
 	return m_Selection.HasSelection();
 }
 
-auto CHexCtrl::HitTest(POINT pt, bool fScreen)const->std::optional<HEXHITTEST>
-{
+auto CHexCtrl::HitTest(POINT pt, bool fScreen)const->std::optional<HEXHITTEST> {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return std::nullopt; }
 	if (!IsDataSetImpl()) { ut::DBG_REPORT_NO_DATA_SET(); return std::nullopt; }
 
@@ -1165,8 +1129,7 @@ auto CHexCtrl::HitTest(POINT pt, bool fScreen)const->std::optional<HEXHITTEST>
 	return HitTest(pt);
 }
 
-bool CHexCtrl::IsCmdAvail(EHexCmd eCmd)const
-{
+bool CHexCtrl::IsCmdAvail(EHexCmd eCmd)const {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return false; }
 
 	const auto fDataSet = IsDataSetImpl();
@@ -1257,42 +1220,36 @@ bool CHexCtrl::IsCmdAvail(EHexCmd eCmd)const
 	return fAvail;
 }
 
-bool CHexCtrl::IsCreated()const
-{
+bool CHexCtrl::IsCreated()const {
 	return m_fCreated;
 }
 
-bool CHexCtrl::IsDataSet()const
-{
+bool CHexCtrl::IsDataSet()const {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return false; }
 
 	return IsDataSetImpl();
 }
 
-bool CHexCtrl::IsHexCharsUpper()const
-{
+bool CHexCtrl::IsHexCharsUpper()const {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return false; }
 
 	return m_fHexCharsUpper;
 }
 
-bool CHexCtrl::IsMutable()const
-{
+bool CHexCtrl::IsMutable()const {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return false; }
 	if (!IsDataSetImpl()) { ut::DBG_REPORT_NO_DATA_SET(); return false; }
 
 	return IsMutableImpl();
 }
 
-bool CHexCtrl::IsOffsetAsHex()const
-{
+bool CHexCtrl::IsOffsetAsHex()const {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return false; }
 
 	return IsOffsetAsHexImpl();
 }
 
-auto CHexCtrl::IsOffsetVisible(ULONGLONG ullOffset)const->HEXVISION
-{
+auto CHexCtrl::IsOffsetVisible(ULONGLONG ullOffset)const->HEXVISION {
 	//Returns HEXVISION with two std::int8_t for vertical and horizontal visibility respectively.
 	//-1 - ullOffset is higher, or at the left, of the visible area
 	// 1 - lower, or at the right
@@ -1313,16 +1270,14 @@ auto CHexCtrl::IsOffsetVisible(ULONGLONG ullOffset)const->HEXVISION
 		.i8Horz { static_cast<std::int8_t>(iCx < 0 ? -1 : (iCx >= iMaxClientX ? 1 : 0)) } };
 }
 
-bool CHexCtrl::IsVirtual()const
-{
+bool CHexCtrl::IsVirtual()const {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return false; }
 	if (!IsDataSetImpl()) { ut::DBG_REPORT_NO_DATA_SET(); return false; }
 
 	return IsVirtualImpl();
 }
 
-void CHexCtrl::ModifyData(const HEXMODIFY& hms)
-{
+void CHexCtrl::ModifyData(const HEXMODIFY& hms) {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return; }
 	if (!IsMutableImpl()) return;
 	if (hms.vecSpan.empty()) { ut::DBG_REPORT(L"Data to modify is empty."); return; }
@@ -1576,8 +1531,7 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 	OnModifyData();
 }
 
-bool CHexCtrl::PreTranslateMsg(MSG* pMsg)
-{
+bool CHexCtrl::PreTranslateMsg(MSG* pMsg) {
 	if (m_DlgBkmMgr.PreTranslateMsg(pMsg)) { return true; }
 	if (m_DlgDataInterp.PreTranslateMsg(pMsg)) { return true; }
 	if (m_DlgModify.PreTranslateMsg(pMsg)) { return true; }
@@ -1589,8 +1543,7 @@ bool CHexCtrl::PreTranslateMsg(MSG* pMsg)
 	return false;
 }
 
-auto CHexCtrl::ProcessMsg(const MSG& msg)->LRESULT
-{
+auto CHexCtrl::ProcessMsg(const MSG& msg)->LRESULT {
 	switch (msg.message) {
 	case WM_CHAR: return WMChar(msg);
 	case WM_COMMAND: return WMCommand(msg);
@@ -1625,22 +1578,19 @@ auto CHexCtrl::ProcessMsg(const MSG& msg)->LRESULT
 	}
 }
 
-void CHexCtrl::Redraw()
-{
+void CHexCtrl::Redraw() {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return; }
 
 	RedrawImpl();
 }
 
-void CHexCtrl::SetCapacity(DWORD dwCapacity)
-{
+void CHexCtrl::SetCapacity(DWORD dwCapacity) {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return; }
 
 	SetCapacityImpl(dwCapacity);
 }
 
-void CHexCtrl::SetCaretPos(ULONGLONG ullOffset, bool fHighLow, bool fRedraw)
-{
+void CHexCtrl::SetCaretPos(ULONGLONG ullOffset, bool fHighLow, bool fRedraw) {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return; }
 	if (!IsDataSetImpl()) { ut::DBG_REPORT_NO_DATA_SET(); return; }
 	if (ullOffset >= GetDataSizeImpl()) { ut::DBG_REPORT(L"Offset is out of data range."); return; };
@@ -1655,8 +1605,7 @@ void CHexCtrl::SetCaretPos(ULONGLONG ullOffset, bool fHighLow, bool fRedraw)
 	OnCaretPosChange(ullOffset);
 }
 
-void CHexCtrl::SetCharsExtraSpace(DWORD dwSpace)
-{
+void CHexCtrl::SetCharsExtraSpace(DWORD dwSpace) {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return; }
 
 	m_dwCharsExtraSpace = (std::min)(dwSpace, 10UL);
@@ -1664,15 +1613,13 @@ void CHexCtrl::SetCharsExtraSpace(DWORD dwSpace)
 	RedrawImpl();
 }
 
-void CHexCtrl::SetCodepage(int iCodepage)
-{
+void CHexCtrl::SetCodepage(int iCodepage) {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return; }
 
 	SetCodepageImpl(iCodepage);
 }
 
-void CHexCtrl::SetColors(const HEXCOLORS& hcs)
-{
+void CHexCtrl::SetColors(const HEXCOLORS& hcs) {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return; }
 
 	m_stColors = hcs;
@@ -1682,15 +1629,13 @@ void CHexCtrl::SetColors(const HEXCOLORS& hcs)
 	RedrawImpl();
 }
 
-bool CHexCtrl::SetConfig(std::wstring_view wsvPath)
-{
+bool CHexCtrl::SetConfig(std::wstring_view wsvPath) {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return false; }
 
 	return SetConfigImpl(wsvPath);
 }
 
-void CHexCtrl::SetData(const HEXDATA& hd, bool fAdjust)
-{
+void CHexCtrl::SetData(const HEXDATA& hd, bool fAdjust) {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return; }
 	if (hd.spnData.empty()) { ut::DBG_REPORT(L"Data size can't be zero."); return; }
 
@@ -1741,15 +1686,13 @@ void CHexCtrl::SetData(const HEXDATA& hd, bool fAdjust)
 	m_DlgDataInterp.UpdateData(); //Update data if DI dialog is opened.
 }
 
-void CHexCtrl::SetDateInfo(DWORD dwFormat, wchar_t wchSepar)
-{
+void CHexCtrl::SetDateInfo(DWORD dwFormat, wchar_t wchSepar) {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return; }
 
 	SetDateInfoImpl(dwFormat, wchSepar);
 }
 
-void CHexCtrl::SetDlgProperties(EHexWnd eWnd, std::uint64_t u64Flags)
-{
+void CHexCtrl::SetDlgProperties(EHexWnd eWnd, std::uint64_t u64Flags) {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return; }
 
 	using enum EHexWnd;
@@ -1780,30 +1723,26 @@ void CHexCtrl::SetDlgProperties(EHexWnd eWnd, std::uint64_t u64Flags)
 	}
 }
 
-void CHexCtrl::SetFont(const LOGFONTW& lf, bool fMain)
-{
+void CHexCtrl::SetFont(const LOGFONTW& lf, bool fMain) {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return; }
 
 	SetFontImpl(lf, fMain);
 }
 
-void CHexCtrl::SetGroupSize(DWORD dwSize)
-{
+void CHexCtrl::SetGroupSize(DWORD dwSize) {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return; }
 
 	SetGroupSizeImpl(dwSize);
 }
 
-void CHexCtrl::SetHexCharsCase(bool fUpper)
-{
+void CHexCtrl::SetHexCharsCase(bool fUpper) {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return; }
 
 	m_fHexCharsUpper = fUpper;
 	RedrawImpl();
 }
 
-void CHexCtrl::SetMenuItem(EHexMenuItem eItem, const MENUITEMINFOW& mii)
-{
+void CHexCtrl::SetMenuItem(EHexMenuItem eItem, const MENUITEMINFOW& mii) {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return; }
 
 	const auto it = m_umapMenuItems.find(eItem);
@@ -1846,8 +1785,7 @@ void CHexCtrl::SetMenuItem(EHexMenuItem eItem, const MENUITEMINFOW& mii)
 	}
 }
 
-void CHexCtrl::SetMutable(bool fMutable)
-{
+void CHexCtrl::SetMutable(bool fMutable) {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return; }
 	if (!IsDataSetImpl()) { ut::DBG_REPORT_NO_DATA_SET(); return; }
 
@@ -1855,8 +1793,7 @@ void CHexCtrl::SetMutable(bool fMutable)
 	RedrawImpl();
 }
 
-void CHexCtrl::SetOffsetMode(bool fHex)
-{
+void CHexCtrl::SetOffsetMode(bool fHex) {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return; }
 
 	m_fOffsetHex = fHex;
@@ -1865,8 +1802,7 @@ void CHexCtrl::SetOffsetMode(bool fHex)
 	ParentNotify(HEXCTRL_MSG_SETOFFSETMODE);
 }
 
-void CHexCtrl::SetPageSize(DWORD dwSize, std::wstring_view wsvName)
-{
+void CHexCtrl::SetPageSize(DWORD dwSize, std::wstring_view wsvName) {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return; }
 
 	m_dwPageSize = dwSize;
@@ -1876,15 +1812,13 @@ void CHexCtrl::SetPageSize(DWORD dwSize, std::wstring_view wsvName)
 	}
 }
 
-void CHexCtrl::SetRedraw(bool fRedraw)
-{
+void CHexCtrl::SetRedraw(bool fRedraw) {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return; }
 
 	m_fRedraw = fRedraw;
 }
 
-void CHexCtrl::SetScrollRatio(float flRatio, bool fLines)
-{
+void CHexCtrl::SetScrollRatio(float flRatio, bool fLines) {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return; }
 
 	m_flScrollRatio = flRatio;
@@ -1892,8 +1826,7 @@ void CHexCtrl::SetScrollRatio(float flRatio, bool fLines)
 	m_ScrollV.SetScrollPageSize(GetScrollPageSize());
 }
 
-void CHexCtrl::SetSelection(SpanHexSpan spnSel, bool fRedraw, bool fHighlight)
-{
+void CHexCtrl::SetSelection(SpanHexSpan spnSel, bool fRedraw, bool fHighlight) {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return; }
 	if (!IsDataSetImpl()) { ut::DBG_REPORT_NO_DATA_SET(); return; }
 
@@ -1906,22 +1839,19 @@ void CHexCtrl::SetSelection(SpanHexSpan spnSel, bool fRedraw, bool fHighlight)
 	ParentNotify(HEXCTRL_MSG_SETSELECTION);
 }
 
-void CHexCtrl::SetUnprintableChar(wchar_t wch)
-{
+void CHexCtrl::SetUnprintableChar(wchar_t wch) {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return; }
 
 	SetUnprintableCharImpl(wch);
 }
 
-void CHexCtrl::SetWindowPos(HWND hWndAfter, int iX, int iY, int iWidth, int iHeight, UINT uFlags)
-{
+void CHexCtrl::SetWindowPos(HWND hWndAfter, int iX, int iY, int iWidth, int iHeight, UINT uFlags) {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return; }
 
 	m_Wnd.SetWindowPos(hWndAfter, iX, iY, iWidth, iHeight, uFlags);
 }
 
-void CHexCtrl::ShowInfoBar(bool fShow, HEXINFOBAR hib)
-{
+void CHexCtrl::ShowInfoBar(bool fShow, HEXINFOBAR hib) {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return; }
 
 	m_fInfoBar = fShow;
@@ -1933,8 +1863,7 @@ void CHexCtrl::ShowInfoBar(bool fShow, HEXINFOBAR hib)
 
 //CHexCtrl Private methods.
 
-auto CHexCtrl::BuildDataToDraw(ULONGLONG ullStartLine, int iLines)const->std::tuple<std::wstring, std::wstring>
-{
+auto CHexCtrl::BuildDataToDraw(ULONGLONG ullStartLine, int iLines)const->std::tuple<std::wstring, std::wstring> {
 	if (!IsDataSetImpl())
 		return { };
 
@@ -1983,8 +1912,7 @@ auto CHexCtrl::BuildDataToDraw(ULONGLONG ullStartLine, int iLines)const->std::tu
 	return { std::move(wstrHex), std::move(wstrText) };
 }
 
-void CHexCtrl::CaretMoveDown()
-{
+void CHexCtrl::CaretMoveDown() {
 	const auto ullOldPos = m_ullCaretPos;
 	const auto ullNewPos = ullOldPos + GetCapacity() >= GetDataSizeImpl() ? ullOldPos : ullOldPos + GetCapacity();
 	SetCaretPos(ullNewPos, m_fCaretHigh, false);
@@ -1998,8 +1926,7 @@ void CHexCtrl::CaretMoveDown()
 	RedrawImpl();
 }
 
-void CHexCtrl::CaretMoveLeft()
-{
+void CHexCtrl::CaretMoveLeft() {
 	const auto ullOldPos = m_ullCaretPos;
 	auto ullNewPos { 0ULL };
 
@@ -2035,8 +1962,7 @@ void CHexCtrl::CaretMoveLeft()
 	RedrawImpl();
 }
 
-void CHexCtrl::CaretMoveRight()
-{
+void CHexCtrl::CaretMoveRight() {
 	if (!IsDataSetImpl())
 		return;
 
@@ -2075,8 +2001,7 @@ void CHexCtrl::CaretMoveRight()
 	RedrawImpl();
 }
 
-void CHexCtrl::CaretMoveUp()
-{
+void CHexCtrl::CaretMoveUp() {
 	const auto ullOldPos = m_ullCaretPos;
 	const auto ullNewPos = ullOldPos >= GetCapacity() ? ullOldPos - GetCapacity() : ullOldPos;
 	SetCaretPos(ullNewPos, m_fCaretHigh, false);
@@ -2090,21 +2015,18 @@ void CHexCtrl::CaretMoveUp()
 	RedrawImpl();
 }
 
-void CHexCtrl::CaretToDataBeg()
-{
+void CHexCtrl::CaretToDataBeg() {
 	SetCaretPos(0ULL, true);
 	GoToOffset(0ULL);
 }
 
-void CHexCtrl::CaretToDataEnd()
-{
+void CHexCtrl::CaretToDataEnd() {
 	const auto ullPos = GetDataSizeImpl() - 1;
 	SetCaretPos(ullPos);
 	GoToOffset(ullPos);
 }
 
-void CHexCtrl::CaretToLineBeg()
-{
+void CHexCtrl::CaretToLineBeg() {
 	const auto dwCapacity = GetCapacity() > 0 ? GetCapacity() : 0xFFFFFFFFUL; //To suppress warning C4724.
 	const auto ullPos = GetCaretPosImpl() - (GetCaretPosImpl() % dwCapacity);
 	SetCaretPos(ullPos);
@@ -2113,8 +2035,7 @@ void CHexCtrl::CaretToLineBeg()
 	}
 }
 
-void CHexCtrl::CaretToLineEnd()
-{
+void CHexCtrl::CaretToLineEnd() {
 	auto ullPos = GetCaretPosImpl() + (GetCapacity() - (GetCaretPosImpl() % GetCapacity())) - 1;
 	if (ullPos >= GetDataSizeImpl()) {
 		ullPos = GetDataSizeImpl() - 1;
@@ -2125,8 +2046,7 @@ void CHexCtrl::CaretToLineEnd()
 	}
 }
 
-void CHexCtrl::CaretToPageBeg()
-{
+void CHexCtrl::CaretToPageBeg() {
 	if (GetPageSizeImpl() == 0)
 		return;
 
@@ -2137,8 +2057,7 @@ void CHexCtrl::CaretToPageBeg()
 	}
 }
 
-void CHexCtrl::CaretToPageEnd()
-{
+void CHexCtrl::CaretToPageEnd() {
 	if (GetPageSizeImpl() == 0)
 		return;
 
@@ -2152,8 +2071,7 @@ void CHexCtrl::CaretToPageEnd()
 	}
 }
 
-void CHexCtrl::ChooseFontDlg()
-{
+void CHexCtrl::ChooseFontDlg() {
 	auto lf = GetFont();
 	auto stClr = GetColors();
 	CHOOSEFONTW chf { .lStructSize { sizeof(CHOOSEFONTW) }, .hwndOwner { m_Wnd }, .lpLogFont { &lf },
@@ -2167,8 +2085,7 @@ void CHexCtrl::ChooseFontDlg()
 	}
 }
 
-void CHexCtrl::ClipboardCopy(EClipboard eType)const
-{
+void CHexCtrl::ClipboardCopy(EClipboard eType)const {
 	if (m_Selection.GetSelSize() > 1024 * 1024 * 8) { //8MB
 		::MessageBoxW(m_Wnd, L"Selection size is too big to copy.\r\nTry selecting less.", L"Error", MB_ICONERROR);
 		return;
@@ -2229,8 +2146,7 @@ void CHexCtrl::ClipboardCopy(EClipboard eType)const
 	::CloseClipboard();
 }
 
-void CHexCtrl::ClipboardPaste(EClipboard eType)
-{
+void CHexCtrl::ClipboardPaste(EClipboard eType) {
 	if (!IsMutableImpl() || !::OpenClipboard(m_Wnd))
 		return;
 
@@ -2314,8 +2230,7 @@ void CHexCtrl::ClipboardPaste(EClipboard eType)
 	RedrawImpl();
 }
 
-auto CHexCtrl::CopyBase64()const->std::wstring
-{
+auto CHexCtrl::CopyBase64()const->std::wstring {
 	static constexpr auto pwszBase64Map { L"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/" };
 	const auto ullSelSize = m_Selection.GetSelSize();
 	std::wstring wstrData;
@@ -2341,8 +2256,7 @@ auto CHexCtrl::CopyBase64()const->std::wstring
 	return wstrData;
 }
 
-auto CHexCtrl::CopyCArr()const->std::wstring
-{
+auto CHexCtrl::CopyCArr()const->std::wstring {
 	std::wstring wstrData;
 	const auto ullSelSize = m_Selection.GetSelSize();
 	const auto pwszHexChars = GetHexChars();
@@ -2373,8 +2287,7 @@ auto CHexCtrl::CopyCArr()const->std::wstring
 	return wstrData;
 }
 
-auto CHexCtrl::CopyGrepHex()const->std::wstring
-{
+auto CHexCtrl::CopyGrepHex()const->std::wstring {
 	std::wstring wstrData;
 	const auto ullSelSize = m_Selection.GetSelSize();
 	const auto pwszHexChars = GetHexChars();
@@ -2390,8 +2303,7 @@ auto CHexCtrl::CopyGrepHex()const->std::wstring
 	return wstrData;
 }
 
-auto CHexCtrl::CopyHex()const->std::wstring
-{
+auto CHexCtrl::CopyHex()const->std::wstring {
 	std::wstring wstrData;
 	const auto ullSelSize = m_Selection.GetSelSize();
 	const auto pwszHexChars = GetHexChars();
@@ -2406,8 +2318,7 @@ auto CHexCtrl::CopyHex()const->std::wstring
 	return wstrData;
 }
 
-auto CHexCtrl::CopyHexFmt()const->std::wstring
-{
+auto CHexCtrl::CopyHexFmt()const->std::wstring {
 	std::wstring wstrData;
 	const auto ullSelStart = m_Selection.GetSelStart();
 	const auto ullSelSize = m_Selection.GetSelSize();
@@ -2473,8 +2384,7 @@ auto CHexCtrl::CopyHexFmt()const->std::wstring
 	return wstrData;
 }
 
-auto CHexCtrl::CopyHexLE()const->std::wstring
-{
+auto CHexCtrl::CopyHexLE()const->std::wstring {
 	std::wstring wstrData;
 	const auto ullSelSize = m_Selection.GetSelSize();
 	const auto pwszHexChars = GetHexChars();
@@ -2489,13 +2399,11 @@ auto CHexCtrl::CopyHexLE()const->std::wstring
 	return wstrData;
 }
 
-auto CHexCtrl::CopyOffset()const->std::wstring
-{
+auto CHexCtrl::CopyOffset()const->std::wstring {
 	return (IsOffsetAsHexImpl() ? L"0x" : L"") + OffsetToWstr(GetCaretPosImpl());
 }
 
-auto CHexCtrl::CopyPrintScreen()const->std::wstring
-{
+auto CHexCtrl::CopyPrintScreen()const->std::wstring {
 	if (!m_Selection.HasContiguousSel()) //Only works with contiguous selection.
 		return { };
 
@@ -2565,8 +2473,7 @@ auto CHexCtrl::CopyPrintScreen()const->std::wstring
 	return wstrRet;
 }
 
-auto CHexCtrl::CopyTextCP()const->std::wstring
-{
+auto CHexCtrl::CopyTextCP()const->std::wstring {
 	const auto ullSelSize = m_Selection.GetSelSize();
 	std::string strData;
 	strData.reserve(static_cast<std::size_t>(ullSelSize));
@@ -2594,8 +2501,7 @@ auto CHexCtrl::CopyTextCP()const->std::wstring
 	return wstrText;
 }
 
-auto CHexCtrl::CreateCapacityString()const->std::wstring
-{
+auto CHexCtrl::CreateCapacityString()const->std::wstring {
 	const auto dwCapacity = GetCapacityImpl();
 	std::wstring wstrCapacity;
 	wstrCapacity.reserve(static_cast<std::size_t>(dwCapacity) * 3);
@@ -2616,8 +2522,7 @@ auto CHexCtrl::CreateCapacityString()const->std::wstring
 	return wstrCapacity;
 }
 
-void CHexCtrl::CreateMenu()
-{
+void CHexCtrl::CreateMenu() {
 	if (!m_MenuMain.IsMenu()) {
 		if (!m_MenuMain.LoadMenuW(m_hInstRes, IDR_HEXCTRL_MENU)) {
 			ut::DBG_REPORT(L"LoadMenuW failed.");
@@ -2719,16 +2624,14 @@ void CHexCtrl::CreateMenu()
 	m_umapMenuItems = std::move(umapMenuItems);
 }
 
-void CHexCtrl::CreatePens()
-{
+void CHexCtrl::CreatePens() {
 	::DeleteObject(m_hPenLinesMain);
 	::DeleteObject(m_hPenLinesTempl);
 	m_hPenLinesMain = ::CreatePen(PS_SOLID, 1, m_stColors.clrLinesMain);
 	m_hPenLinesTempl = ::CreatePen(PS_SOLID, 1, m_stColors.clrLinesTempl);
 }
 
-auto CHexCtrl::CreateTextAreaString()const->std::wstring
-{
+auto CHexCtrl::CreateTextAreaString()const->std::wstring {
 	const auto iCP = GetCodepage();
 	std::wstring_view wsvFmt;
 	switch (iCP) {
@@ -2746,8 +2649,7 @@ auto CHexCtrl::CreateTextAreaString()const->std::wstring
 	return std::vformat(wsvFmt, std::make_wformat_args(iCP));
 }
 
-void CHexCtrl::DrawWindow(HDC hDC)const
-{
+void CHexCtrl::DrawWindow(HDC hDC)const {
 	const auto iScrollH = static_cast<int>(m_ScrollH.GetScrollPos());
 	GDIUT::CRect rcClient(m_iFirstVertLinePx, m_iFirstHorzLinePx,
 		m_iFirstVertLinePx + m_iWidthClientAreaPx, m_iFirstHorzLinePx + m_iHeightClientAreaPx);
@@ -2818,8 +2720,7 @@ void CHexCtrl::DrawWindow(HDC hDC)const
 	dc.DrawTextW(CreateTextAreaString(), rcCaptionText, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 }
 
-void CHexCtrl::DrawInfoBar(HDC hDC)const
-{
+void CHexCtrl::DrawInfoBar(HDC hDC)const {
 	if (!IsDataSetImpl() || !HasInfoBar())
 		return;
 
@@ -2943,8 +2844,7 @@ void CHexCtrl::DrawInfoBar(HDC hDC)const
 	}
 }
 
-void CHexCtrl::DrawOffsets(HDC hDC, ULONGLONG ullStartLine, int iLines)const
-{
+void CHexCtrl::DrawOffsets(HDC hDC, ULONGLONG ullStartLine, int iLines)const {
 	const auto dwCapacity = GetCapacity();
 	const auto ullStartOffset = ullStartLine * dwCapacity;
 	const auto iScrollH = static_cast<int>(m_ScrollH.GetScrollPos());
@@ -2972,8 +2872,7 @@ void CHexCtrl::DrawOffsets(HDC hDC, ULONGLONG ullStartLine, int iLines)const
 	}
 }
 
-void CHexCtrl::DrawHexText(HDC hDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wsvHex, std::wstring_view wsvText)const
-{
+void CHexCtrl::DrawHexText(HDC hDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wsvHex, std::wstring_view wsvText)const {
 	struct POLYTEXTCLR {
 		POLYTEXTW stPoly { };
 		HEXCOLOR  stClr;
@@ -3083,8 +2982,7 @@ void CHexCtrl::DrawHexText(HDC hDC, ULONGLONG ullStartLine, int iLines, std::wst
 	}
 }
 
-void CHexCtrl::DrawTemplates(HDC hDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wsvHex, std::wstring_view wsvText)const
-{
+void CHexCtrl::DrawTemplates(HDC hDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wsvHex, std::wstring_view wsvText)const {
 	if (!m_DlgTemplMgr.HasApplied())
 		return;
 
@@ -3230,8 +3128,7 @@ void CHexCtrl::DrawTemplates(HDC hDC, ULONGLONG ullStartLine, int iLines, std::w
 	}
 }
 
-void CHexCtrl::DrawBookmarks(HDC hDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wsvHex, std::wstring_view wsvText)const
-{
+void CHexCtrl::DrawBookmarks(HDC hDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wsvHex, std::wstring_view wsvText)const {
 	if (!m_DlgBkmMgr.HasBookmarks())
 		return;
 
@@ -3345,8 +3242,7 @@ void CHexCtrl::DrawBookmarks(HDC hDC, ULONGLONG ullStartLine, int iLines, std::w
 	}
 }
 
-void CHexCtrl::DrawSelection(HDC hDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wsvHex, std::wstring_view wsvText)const
-{
+void CHexCtrl::DrawSelection(HDC hDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wsvHex, std::wstring_view wsvText)const {
 	if (!HasSelection())
 		return;
 
@@ -3431,8 +3327,7 @@ void CHexCtrl::DrawSelection(HDC hDC, ULONGLONG ullStartLine, int iLines, std::w
 	}
 }
 
-void CHexCtrl::DrawSelHighlight(HDC hDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wsvHex, std::wstring_view wsvText)const
-{
+void CHexCtrl::DrawSelHighlight(HDC hDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wsvHex, std::wstring_view wsvText)const {
 	if (!m_Selection.HasSelHighlight())
 		return;
 
@@ -3518,8 +3413,7 @@ void CHexCtrl::DrawSelHighlight(HDC hDC, ULONGLONG ullStartLine, int iLines, std
 	}
 }
 
-void CHexCtrl::DrawCaret(HDC hDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wsvHex, std::wstring_view wsvText)const
-{
+void CHexCtrl::DrawCaret(HDC hDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wsvHex, std::wstring_view wsvText)const {
 	const auto ullCaretPos = GetCaretPosImpl();
 	const auto dwCapacity = GetCapacity();
 	const auto ullFirstOffset = ullStartLine * dwCapacity;
@@ -3573,8 +3467,7 @@ void CHexCtrl::DrawCaret(HDC hDC, ULONGLONG ullStartLine, int iLines, std::wstri
 	}
 }
 
-void CHexCtrl::DrawDataInterp(HDC hDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wsvHex, std::wstring_view wsvText)const
-{
+void CHexCtrl::DrawDataInterp(HDC hDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wsvHex, std::wstring_view wsvText)const {
 	if (!m_DlgDataInterp.HasHighlight())
 		return;
 
@@ -3649,8 +3542,7 @@ void CHexCtrl::DrawDataInterp(HDC hDC, ULONGLONG ullStartLine, int iLines, std::
 	}
 }
 
-void CHexCtrl::DrawPageLines(HDC hDC, ULONGLONG ullStartLine, int iLines)const
-{
+void CHexCtrl::DrawPageLines(HDC hDC, ULONGLONG ullStartLine, int iLines)const {
 	if (!IsPageVisible())
 		return;
 
@@ -3682,8 +3574,7 @@ void CHexCtrl::DrawPageLines(HDC hDC, ULONGLONG ullStartLine, int iLines)const
 	}
 }
 
-void CHexCtrl::FillWithZeros()
-{
+void CHexCtrl::FillWithZeros() {
 	if (!IsDataSetImpl())
 		return;
 
@@ -3701,14 +3592,12 @@ auto CHexCtrl::FontScaledPixelsFromPoints(float flSizePoints)const->long {
 	return std::lround(GDIUT::FontPixelsFromPoints(flSizePoints) * GetDPIScale());
 }
 
-void CHexCtrl::FontSizeIncDec(bool fInc)
-{
+void CHexCtrl::FontSizeIncDec(bool fInc) {
 	const auto flFontSizePoints = FontPointsFromScaledPixels(GetFontSizeInPixels(true)) + (fInc ? 1 : -1);
 	SetFontSizeInPoints(flFontSizePoints, true);
 }
 
-auto CHexCtrl::GetBottomLine()const->ULONGLONG
-{
+auto CHexCtrl::GetBottomLine()const->ULONGLONG {
 	if (!IsDataSetImpl())
 		return { };
 
@@ -3732,28 +3621,23 @@ auto CHexCtrl::GetCapacityImpl()const->DWORD {
 	return m_dwCapacity;
 }
 
-auto CHexCtrl::GetCaretPosImpl()const->std::uint64_t
-{
+auto CHexCtrl::GetCaretPosImpl()const->std::uint64_t {
 	return m_ullCaretPos;
 }
 
-auto CHexCtrl::GetCharsWidthArray()const->int*
-{
+auto CHexCtrl::GetCharsWidthArray()const->int* {
 	return const_cast<int*>(m_vecCharsWidth.data());
 }
 
-auto CHexCtrl::GetCharWidthExtras()const->int
-{
+auto CHexCtrl::GetCharWidthExtras()const->int {
 	return GetCharWidthNative() + m_dwCharsExtraSpace;
 }
 
-auto CHexCtrl::GetCharWidthNative()const->int
-{
+auto CHexCtrl::GetCharWidthNative()const->int {
 	return m_sizeFontMain.cx;
 }
 
-auto CHexCtrl::GetCommandFromKey(UINT uKey, bool fCtrl, bool fShift, bool fAlt)const->std::optional<EHexCmd>
-{
+auto CHexCtrl::GetCommandFromKey(UINT uKey, bool fCtrl, bool fShift, bool fAlt)const->std::optional<EHexCmd> {
 	if (const auto it = std::find_if(m_vecKeyBind.begin(), m_vecKeyBind.end(), [=](const KEYBIND& kb) {
 		return kb.fCtrl == fCtrl && kb.fShift == fShift && kb.fAlt == fAlt && kb.uKey == uKey; });
 		it != m_vecKeyBind.end()) {
@@ -3763,8 +3647,7 @@ auto CHexCtrl::GetCommandFromKey(UINT uKey, bool fCtrl, bool fShift, bool fAlt)c
 	return std::nullopt;
 }
 
-auto CHexCtrl::GetCommandFromMenu(WORD wMenuID)const->std::optional<EHexCmd>
-{
+auto CHexCtrl::GetCommandFromMenu(WORD wMenuID)const->std::optional<EHexCmd> {
 	if (const auto it = std::find_if(m_vecKeyBind.begin(), m_vecKeyBind.end(), [=](const KEYBIND& kb) {
 		return kb.wMenuID == wMenuID; }); it != m_vecKeyBind.end()) {
 		return it->eCmd;
@@ -3773,33 +3656,27 @@ auto CHexCtrl::GetCommandFromMenu(WORD wMenuID)const->std::optional<EHexCmd>
 	return std::nullopt;
 }
 
-auto CHexCtrl::GetDataSizeImpl()const->std::uint64_t
-{
+auto CHexCtrl::GetDataSizeImpl()const->std::uint64_t {
 	return m_stData.spnData.size();
 }
 
-auto CHexCtrl::GetDigitsOffset()const->DWORD
-{
+auto CHexCtrl::GetDigitsOffset()const->DWORD {
 	return m_fOffsetHex ? m_dwDigitsOffsetHex : m_dwDigitsOffsetDec;
 }
 
-auto CHexCtrl::GetDPIScale()const->float
-{
+auto CHexCtrl::GetDPIScale()const->float {
 	return m_flDPIScale;
 }
 
-long CHexCtrl::GetFontSizeInPixels(bool fMain)const
-{
+long CHexCtrl::GetFontSizeInPixels(bool fMain)const {
 	return GetFont(fMain).lfHeight;
 }
 
-auto CHexCtrl::GetHexChars()const->const wchar_t*
-{
+auto CHexCtrl::GetHexChars()const->const wchar_t* {
 	return IsHexCharsUpper() ? L"0123456789ABCDEF" : L"0123456789abcdef";
 }
 
-auto CHexCtrl::GetOffsetImpl(std::uint64_t u64Offset, bool fGetVirt) const -> std::uint64_t
-{
+auto CHexCtrl::GetOffsetImpl(std::uint64_t u64Offset, bool fGetVirt) const -> std::uint64_t {
 	if (IsVirtualImpl()) {
 		HEXDATAINFO hdi { .hdr { m_Wnd, static_cast<UINT>(m_Wnd.GetDlgCtrlID()) }, .stHexSpan { .ullOffset { u64Offset } } };
 		m_stData.pHexVirtData->OnHexGetOffset(hdi, fGetVirt);
@@ -3809,18 +3686,15 @@ auto CHexCtrl::GetOffsetImpl(std::uint64_t u64Offset, bool fGetVirt) const -> st
 	return u64Offset;
 }
 
-auto CHexCtrl::GetPagePosImpl()const->std::uint64_t
-{
+auto CHexCtrl::GetPagePosImpl()const->std::uint64_t {
 	return GetCaretPosImpl() / GetPageSizeImpl();
 }
 
-auto CHexCtrl::GetPageSizeImpl()const->std::uint32_t
-{
+auto CHexCtrl::GetPageSizeImpl()const->std::uint32_t {
 	return m_dwPageSize;
 }
 
-auto CHexCtrl::GetPagesCountImpl()const->std::uint64_t
-{
+auto CHexCtrl::GetPagesCountImpl()const->std::uint64_t {
 	const auto u64PageSize = GetPageSizeImpl();
 	if (u64PageSize == 0) {
 		return { };
@@ -3830,14 +3704,12 @@ auto CHexCtrl::GetPagesCountImpl()const->std::uint64_t
 	return (ullDataSize / u64PageSize) + ((ullDataSize % u64PageSize) ? 1 : 0);
 }
 
-auto CHexCtrl::GetRectTextCaption()const->GDIUT::CRect
-{
+auto CHexCtrl::GetRectTextCaption()const->GDIUT::CRect {
 	const auto iScrollH { static_cast<int>(m_ScrollH.GetScrollPos()) };
 	return { m_iThirdVertLinePx - iScrollH, m_iFirstHorzLinePx, m_iFourthVertLinePx - iScrollH, m_iSecondHorzLinePx };
 }
 
-auto CHexCtrl::GetSelectedLines()const->ULONGLONG
-{
+auto CHexCtrl::GetSelectedLines()const->ULONGLONG {
 	if (!m_Selection.HasContiguousSel())
 		return 0ULL;
 
@@ -3853,24 +3725,20 @@ auto CHexCtrl::GetSelectedLines()const->ULONGLONG
 	return ullLines;
 }
 
-auto CHexCtrl::GetScrollPageSize()const->ULONGLONG
-{
+auto CHexCtrl::GetScrollPageSize()const->ULONGLONG {
 	const auto ullPageSize = static_cast<ULONGLONG>(m_flScrollRatio * (m_fScrollLines ? m_sizeFontMain.cy : m_iHeightWorkAreaPx));
 	return ullPageSize < m_sizeFontMain.cy ? m_sizeFontMain.cy : ullPageSize;
 }
 
-auto CHexCtrl::GetTopLine()const->ULONGLONG
-{
+auto CHexCtrl::GetTopLine()const->ULONGLONG {
 	return m_ScrollV.GetScrollPos() / m_sizeFontMain.cy;
 }
 
-auto CHexCtrl::GetVirtualOffset(ULONGLONG ullOffset)const->ULONGLONG
-{
+auto CHexCtrl::GetVirtualOffset(ULONGLONG ullOffset)const->ULONGLONG {
 	return GetOffsetImpl(ullOffset, true);
 }
 
-void CHexCtrl::HexChunkPoint(ULONGLONG ullOffset, int& iCx, int& iCy)const
-{
+void CHexCtrl::HexChunkPoint(ULONGLONG ullOffset, int& iCx, int& iCy)const {
 	//This func computes x and y pos of the given Hex chunk.
 	const auto dwCapacity = GetCapacity();
 	const DWORD dwMod = ullOffset % dwCapacity;
@@ -3883,8 +3751,7 @@ void CHexCtrl::HexChunkPoint(ULONGLONG ullOffset, int& iCx, int& iCy)const
 		(ullScrollV - (ullScrollV % m_sizeFontMain.cy)));
 }
 
-auto CHexCtrl::HitTest(POINT pt)const->std::optional<HEXHITTEST>
-{
+auto CHexCtrl::HitTest(POINT pt)const->std::optional<HEXHITTEST> {
 	HEXHITTEST stHit;
 	const auto iY = pt.y;
 	const auto iX = pt.x + static_cast<int>(m_ScrollH.GetScrollPos()); //To compensate horizontal scroll.
@@ -3940,48 +3807,39 @@ auto CHexCtrl::HitTest(POINT pt)const->std::optional<HEXHITTEST>
 	return fHit ? std::optional<HEXHITTEST> { stHit } : std::nullopt;
 }
 
-bool CHexCtrl::IsCurTextArea()const
-{
+bool CHexCtrl::IsCurTextArea()const {
 	return m_fCursorTextArea;
 }
 
-bool CHexCtrl::IsDataSetImpl()const
-{
+bool CHexCtrl::IsDataSetImpl()const {
 	return m_fDataSet;
 }
 
-bool CHexCtrl::IsDrawable()const
-{
+bool CHexCtrl::IsDrawable()const {
 	return m_fRedraw;
 }
 
-bool CHexCtrl::IsMutableImpl()const
-{
+bool CHexCtrl::IsMutableImpl()const {
 	return m_stData.fMutable;
 }
 
-bool CHexCtrl::IsOffsetAsHexImpl()const
-{
+bool CHexCtrl::IsOffsetAsHexImpl()const {
 	return m_fOffsetHex;
 }
 
-bool CHexCtrl::IsPageVisible()const
-{
+bool CHexCtrl::IsPageVisible()const {
 	return GetPageSizeImpl() > 0 && (GetPageSizeImpl() % GetCapacity() == 0) && GetPageSizeImpl() >= GetCapacity();
 }
 
-bool CHexCtrl::IsScrollCursor()const
-{
+bool CHexCtrl::IsScrollCursor()const {
 	return m_fScrollCursor;
 }
 
-bool CHexCtrl::IsVirtualImpl()const
-{
+bool CHexCtrl::IsVirtualImpl()const {
 	return m_stData.pHexVirtData != nullptr;
 }
 
-void CHexCtrl::ModifyWorker(const HEXCTRL::HEXMODIFY& hms, const auto& FuncWorker, const HEXCTRL::SpanCByte spnOper)const
-{
+void CHexCtrl::ModifyWorker(const HEXCTRL::HEXMODIFY& hms, const auto& FuncWorker, const HEXCTRL::SpanCByte spnOper)const {
 	if (spnOper.empty()) { ut::DBG_REPORT(L"Operation span is empty."); return; }
 
 	const auto& vecSpan = hms.vecSpan;
@@ -4112,15 +3970,13 @@ void CHexCtrl::ModifyWorker(const HEXCTRL::HEXMODIFY& hms, const auto& FuncWorke
 	}
 }
 
-auto CHexCtrl::OffsetToWstr(ULONGLONG ullOffset)const->std::wstring
-{
+auto CHexCtrl::OffsetToWstr(ULONGLONG ullOffset)const->std::wstring {
 	const auto dwDigitsOffset = GetDigitsOffset();
 	ullOffset = GetVirtualOffset(ullOffset);
 	return std::vformat(IsOffsetAsHexImpl() ? L"{:0{}X}" : L"{:0{}}", std::make_wformat_args(ullOffset, dwDigitsOffset));
 }
 
-void CHexCtrl::OnCaretPosChange(ULONGLONG ullOffset)
-{
+void CHexCtrl::OnCaretPosChange(ULONGLONG ullOffset) {
 	m_DlgDataInterp.UpdateData();
 
 	if (auto pBkm = m_DlgBkmMgr.HitTest(ullOffset); pBkm != nullptr) { //If clicked on bookmark.
@@ -4131,28 +3987,24 @@ void CHexCtrl::OnCaretPosChange(ULONGLONG ullOffset)
 	ParentNotify(HEXCTRL_MSG_SETCARET);
 }
 
-void CHexCtrl::OnModifyData()
-{
+void CHexCtrl::OnModifyData() {
 	ParentNotify(HEXCTRL_MSG_SETDATA);
 	m_DlgTemplMgr.UpdateData();
 	m_DlgDataInterp.UpdateData();
 }
 
 template<typename T> requires std::is_class_v<T>
-void CHexCtrl::ParentNotify(const T& t)const
-{
+void CHexCtrl::ParentNotify(const T& t)const {
 	if (const auto wndParent = m_Wnd.GetParent(); !wndParent.IsNull()) {
 		wndParent.SendMsg(WM_NOTIFY, m_Wnd.GetDlgCtrlID(), reinterpret_cast<LPARAM>(&t));
 	}
 }
 
-void CHexCtrl::ParentNotify(UINT uCode)const
-{
+void CHexCtrl::ParentNotify(UINT uCode)const {
 	ParentNotify(NMHDR { .hwndFrom { m_Wnd }, .idFrom { static_cast<UINT>(m_Wnd.GetDlgCtrlID()) }, .code { uCode } });
 }
 
-void CHexCtrl::Print()
-{
+void CHexCtrl::Print() {
 	PRINTPAGERANGE ppr { .nFromPage { 1 }, .nToPage { 1 } };
 	PRINTDLGEXW m_pdex { .lStructSize { sizeof(PRINTDLGEXW) }, .hwndOwner { m_Wnd },
 		.Flags { static_cast<DWORD>(PD_RETURNDC | PD_NOCURRENTPAGE | (m_Selection.HasContiguousSel() ?
@@ -4312,8 +4164,7 @@ void CHexCtrl::Print()
 	RedrawImpl();
 }
 
-void CHexCtrl::RecalcAll(bool fPrinter, HDC hDCPrinter, LPCRECT pRCPrinter)
-{
+void CHexCtrl::RecalcAll(bool fPrinter, HDC hDCPrinter, LPCRECT pRCPrinter) {
 	const GDIUT::CDC dcCurr = fPrinter ? hDCPrinter : m_Wnd.GetDC();
 	const auto ullCurLineV = GetTopLine();
 	TEXTMETRICW tm;
@@ -4365,8 +4216,7 @@ void CHexCtrl::RecalcAll(bool fPrinter, HDC hDCPrinter, LPCRECT pRCPrinter)
 	}
 }
 
-void CHexCtrl::RecalcClientArea(int iWidth, int iHeight)
-{
+void CHexCtrl::RecalcClientArea(int iWidth, int iHeight) {
 	m_iHeightClientAreaPx = iHeight;
 	m_iWidthClientAreaPx = iWidth;
 	m_iEndWorkAreaPx = m_iHeightClientAreaPx - m_iHeightBottomOffAreaPx -
@@ -4376,8 +4226,7 @@ void CHexCtrl::RecalcClientArea(int iWidth, int iHeight)
 	m_iFourthHorzLinePx = m_iThirdHorzLinePx + m_iHeightInfoBarPx;
 }
 
-void CHexCtrl::Redo()
-{
+void CHexCtrl::Redo() {
 	if (m_vecRedo.empty())
 		return;
 
@@ -4422,8 +4271,7 @@ void CHexCtrl::RedrawImpl() {
 	m_Wnd.RedrawWindow();
 }
 
-void CHexCtrl::ReplaceUnprintable(std::wstring& wstr, bool fASCII, bool fCRLF)const
-{
+void CHexCtrl::ReplaceUnprintable(std::wstring& wstr, bool fASCII, bool fCRLF)const {
 	//If fASCII is true, then only wchars in the 0x1F < ... < 0x7F range are considered printable.
 	//If fCRLF is false, then CR(0x0D) and LF(0x0A) wchars remain untouched.
 	if (fASCII) {
@@ -4436,8 +4284,7 @@ void CHexCtrl::ReplaceUnprintable(std::wstring& wstr, bool fASCII, bool fCRLF)co
 	}
 }
 
-void CHexCtrl::ScrollOffsetH(ULONGLONG ullOffset)
-{
+void CHexCtrl::ScrollOffsetH(ULONGLONG ullOffset) {
 	//Horizontally-only scrolls to a given offset.
 	if (!m_ScrollH.IsVisible())
 		return;
@@ -4460,8 +4307,7 @@ void CHexCtrl::ScrollOffsetH(ULONGLONG ullOffset)
 	m_ScrollH.SetScrollPos(ullNewScrollH);
 }
 
-void CHexCtrl::SelAll()
-{
+void CHexCtrl::SelAll() {
 	if (!IsDataSetImpl())
 		return;
 
@@ -4469,8 +4315,7 @@ void CHexCtrl::SelAll()
 	SetSelection({ &hs, 1 }); //Select all.
 }
 
-void CHexCtrl::SelAddDown()
-{
+void CHexCtrl::SelAddDown() {
 	const auto fHasSel = HasSelection();
 	const auto ullSelStart = fHasSel ? m_Selection.GetSelStart() : m_ullCaretPos;
 	const auto ullSelSize = fHasSel ? m_Selection.GetSelSize() : 1;
@@ -4532,8 +4377,7 @@ void CHexCtrl::SelAddDown()
 	}
 }
 
-void CHexCtrl::SelAddLeft()
-{
+void CHexCtrl::SelAddLeft() {
 	const auto fHasSel = HasSelection();
 	const auto ullSelStart = fHasSel ? m_Selection.GetSelStart() : m_ullCaretPos;
 	const auto ullSelSize = fHasSel ? m_Selection.GetSelSize() : 1;
@@ -4588,8 +4432,7 @@ void CHexCtrl::SelAddLeft()
 	}
 }
 
-void CHexCtrl::SelAddRight()
-{
+void CHexCtrl::SelAddRight() {
 	const auto fHasSel = HasSelection();
 	const auto ullSelStart = fHasSel ? m_Selection.GetSelStart() : m_ullCaretPos;
 	const auto ullSelSize = fHasSel ? m_Selection.GetSelSize() : 1;
@@ -4650,8 +4493,7 @@ void CHexCtrl::SelAddRight()
 	}
 }
 
-void CHexCtrl::SelAddUp()
-{
+void CHexCtrl::SelAddUp() {
 	const auto fHasSel = HasSelection();
 	const auto ullSelStart = fHasSel ? m_Selection.GetSelStart() : m_ullCaretPos;
 	const auto ullSelSize = fHasSel ? m_Selection.GetSelSize() : 1;
@@ -4722,8 +4564,7 @@ void CHexCtrl::SelAddUp()
 	}
 }
 
-void CHexCtrl::SetCapacityImpl(std::uint32_t dwCapacity, bool fRedraw, bool fNotify)
-{
+void CHexCtrl::SetCapacityImpl(std::uint32_t dwCapacity, bool fRedraw, bool fNotify) {
 	//SetCapacityImpl can be called with the current capacity size. This needs for the 
 	//SetGroupSizeImpl to recalc current capacity when group size has changed.
 	if (dwCapacity < 1UL || dwCapacity > 100UL) //Restrict capacity size in the [1-100] range.
@@ -4760,8 +4601,7 @@ void CHexCtrl::SetCapacityImpl(std::uint32_t dwCapacity, bool fRedraw, bool fNot
 	}
 }
 
-void CHexCtrl::SetCodepageImpl(int iCodepage, bool fRedraw, bool fNotify)
-{
+void CHexCtrl::SetCodepageImpl(int iCodepage, bool fRedraw, bool fNotify) {
 	if (iCodepage != -1 && iCodepage != 0) { //-1 - ASCII, 0 - UTF-16.
 		if (CPINFOEXW stCP; ::GetCPInfoExW(static_cast<UINT>(iCodepage), 0, &stCP) == FALSE) {
 			ut::DBG_REPORT(L"Unsupported codepage.");
@@ -4775,8 +4615,7 @@ void CHexCtrl::SetCodepageImpl(int iCodepage, bool fRedraw, bool fNotify)
 	if (fNotify) { ParentNotify(HEXCTRL_MSG_SETCODEPAGE); }
 }
 
-bool CHexCtrl::SetConfigImpl(std::wstring_view wsvPath)
-{
+bool CHexCtrl::SetConfigImpl(std::wstring_view wsvPath) {
 	using enum EHexCmd;
 	//Mapping between stringified EHexCmd::* and its value-menuID pairs.
 	const std::unordered_map<std::string_view, std::pair<EHexCmd, DWORD>> umapCmdMenu {
@@ -5026,8 +4865,7 @@ bool CHexCtrl::SetConfigImpl(std::wstring_view wsvPath)
 	return true;
 }
 
-void CHexCtrl::SetDateInfoImpl(std::uint32_t dwFormat, wchar_t wchSepar)
-{
+void CHexCtrl::SetDateInfoImpl(std::uint32_t dwFormat, wchar_t wchSepar) {
 	//dwFormat: 0xFFFFFFFFUL = User default, 0 = MMddYYYY, 1 = ddMMYYYY, 2 = YYYYMMdd
 	if (dwFormat > 2 && dwFormat != 0xFFFFFFFFUL) { ut::DBG_REPORT(L"Wrong format."); return; }
 
@@ -5045,8 +4883,7 @@ void CHexCtrl::SetDateInfoImpl(std::uint32_t dwFormat, wchar_t wchSepar)
 	m_wchDateSepar = wchSepar == L'\0' ? L'/' : wchSepar;
 }
 
-void CHexCtrl::SetDataVirtual(SpanByte spnData, const HEXSPAN& hss)const
-{
+void CHexCtrl::SetDataVirtual(SpanByte spnData, const HEXSPAN& hss)const {
 	//Note: Since this method can be executed asynchronously (in search/replace, etc...),
 	//the SendMesage(parent, ...) is impossible here because receiver window
 	//must be run in the same thread as a sender.
@@ -5058,8 +4895,7 @@ void CHexCtrl::SetDataVirtual(SpanByte spnData, const HEXSPAN& hss)const
 		.stHexSpan { hss }, .spnData { spnData } });
 }
 
-void CHexCtrl::SetFontImpl(const LOGFONTW& lf, bool fMain, bool fRedraw, bool fNotify)
-{
+void CHexCtrl::SetFontImpl(const LOGFONTW& lf, bool fMain, bool fRedraw, bool fNotify) {
 	if (fMain) {
 		::DeleteObject(m_hFntMain);
 		m_hFntMain = ::CreateFontIndirectW(&lf);
@@ -5077,8 +4913,7 @@ void CHexCtrl::SetFontImpl(const LOGFONTW& lf, bool fMain, bool fRedraw, bool fN
 	if (fNotify) { ParentNotify(HEXCTRL_MSG_SETFONT); }
 }
 
-void CHexCtrl::SetFontSizeInPoints(float flSizePoints, bool fMain)
-{
+void CHexCtrl::SetFontSizeInPoints(float flSizePoints, bool fMain) {
 	if (flSizePoints < 4.F || flSizePoints > 64.F) //Prevent font size from being too small or too big.
 		return;
 
@@ -5087,8 +4922,7 @@ void CHexCtrl::SetFontSizeInPoints(float flSizePoints, bool fMain)
 	SetFont(lf, fMain);
 }
 
-void CHexCtrl::SetGroupSizeImpl(DWORD dwSize, bool fRedraw, bool fNotify)
-{
+void CHexCtrl::SetGroupSizeImpl(DWORD dwSize, bool fRedraw, bool fNotify) {
 	if (dwSize < 1UL || dwSize > 64UL || dwSize == m_dwGroupSize) //Restrict group size in the [1-64] range.
 		return;
 
@@ -5144,8 +4978,7 @@ void CHexCtrl::SetGroupSizeImpl(DWORD dwSize, bool fRedraw, bool fNotify)
 	SetCapacityImpl(m_dwCapacity, fRedraw, fNotify); //To recalc current representation.
 }
 
-void CHexCtrl::SetScrollCursor(bool fSet)
-{
+void CHexCtrl::SetScrollCursor(bool fSet) {
 	m_fScrollCursor = fSet;
 
 	if (fSet) {
@@ -5157,14 +4990,12 @@ void CHexCtrl::SetScrollCursor(bool fSet)
 	}
 }
 
-void CHexCtrl::SetUnprintableCharImpl(wchar_t wch, bool fRedraw)
-{
+void CHexCtrl::SetUnprintableCharImpl(wchar_t wch, bool fRedraw) {
 	m_wchUnprintable = wch;
 	if (fRedraw) { RedrawImpl(); }
 }
 
-void CHexCtrl::SnapshotUndo(SpanHexSpan spnHexSpan)
-{
+void CHexCtrl::SnapshotUndo(SpanHexSpan spnHexSpan) {
 	constexpr auto dwUndoMax { 512U }; //Undo's max limit.
 	const auto ullTotalSize = std::reduce(spnHexSpan.begin(), spnHexSpan.end(), 0ULL,
 		[](ULONGLONG ullSumm, const HEXSPAN& hs) { return ullSumm + hs.ullSize; });
@@ -5217,8 +5048,7 @@ void CHexCtrl::SnapshotUndo(SpanHexSpan spnHexSpan)
 	}
 }
 
-void CHexCtrl::TextChunkPoint(ULONGLONG ullOffset, int& iCx, int& iCy)const
-{	//This func computes x and y pos of given Text chunk.
+void CHexCtrl::TextChunkPoint(ULONGLONG ullOffset, int& iCx, int& iCy)const {	//This func computes x and y pos of given Text chunk.
 	const auto dwCapacity = GetCapacity() > 0 ? GetCapacity() : 0xFFFFFFFFUL; //To suppress warning C4724.
 	const DWORD dwMod = ullOffset % dwCapacity;
 	iCx = static_cast<int>((m_iIndentTextXPx + dwMod * GetCharWidthExtras()) - m_ScrollH.GetScrollPos());
@@ -5228,8 +5058,7 @@ void CHexCtrl::TextChunkPoint(ULONGLONG ullOffset, int& iCx, int& iCy)const
 		(ullScrollV - (ullScrollV % m_sizeFontMain.cy)));
 }
 
-void CHexCtrl::TTTrackShow(bool fShow, bool fTimer, const wchar_t* pwszText)
-{
+void CHexCtrl::TTTrackShow(bool fShow, bool fTimer, const wchar_t* pwszText) {
 	//When fShow==true, the fTimer==true means to set a new timer for tooltip.
 	//When fShow==false, the fTimer==true means that this call is from the WMTimer, and tooltip showing time has run out.
 
@@ -5256,8 +5085,7 @@ void CHexCtrl::TTTrackShow(bool fShow, bool fTimer, const wchar_t* pwszText)
 	m_WndTT.SendMsg(TTM_TRACKACTIVATE, fShow, reinterpret_cast<LPARAM>(&ti));
 }
 
-void CHexCtrl::Undo()
-{
+void CHexCtrl::Undo() {
 	if (m_vecUndo.empty())
 		return;
 
@@ -5304,13 +5132,11 @@ void CHexCtrl::Undo()
 	RedrawImpl();
 }
 
-void CHexCtrl::UpdateDPIScale()
-{
+void CHexCtrl::UpdateDPIScale() {
 	m_flDPIScale = GDIUT::GetDPIScaleForHWND(m_Wnd);
 }
 
-auto CHexCtrl::WMChar(const MSG& msg)->LRESULT
-{
+auto CHexCtrl::WMChar(const MSG& msg)->LRESULT {
 	const auto wChar = LOWORD(msg.wParam); //LOWORD holds wchar_t symbol.
 	if (!IsDataSetImpl() || !IsMutableImpl() || !IsCurTextArea() || (::GetKeyState(VK_CONTROL) < 0)
 		|| !std::iswprint(wChar))
@@ -5336,8 +5162,7 @@ auto CHexCtrl::WMChar(const MSG& msg)->LRESULT
 	return 0;
 }
 
-auto CHexCtrl::WMCommand(const MSG& msg)->LRESULT
-{
+auto CHexCtrl::WMCommand(const MSG& msg)->LRESULT {
 	const auto wMenuID = LOWORD(msg.wParam);
 	if (const auto opt = GetCommandFromMenu(wMenuID); opt) {
 		ExecuteCmd(*opt);
@@ -5351,8 +5176,7 @@ auto CHexCtrl::WMCommand(const MSG& msg)->LRESULT
 	return 0;
 }
 
-auto CHexCtrl::WMContextMenu(const MSG& msg)->LRESULT
-{
+auto CHexCtrl::WMContextMenu(const MSG& msg)->LRESULT {
 	const POINT pt { .x { ut::GetXLPARAM(msg.lParam) }, .y { ut::GetYLPARAM(msg.lParam) } };
 
 	//Notify parent that we are about to display a context menu.
@@ -5366,8 +5190,7 @@ auto CHexCtrl::WMContextMenu(const MSG& msg)->LRESULT
 	return 0;
 }
 
-auto CHexCtrl::WMDestroy()->LRESULT
-{
+auto CHexCtrl::WMDestroy()->LRESULT {
 	//All these cleanups below are important when HexCtrl window is destroyed but IHexCtrl object
 	//itself is still alive. The IHexCtrl object is alive until the IHexCtrl::Delete() method is called.
 	//Child windows of the IHexCtrl (e.g. tooltips) will be destroyed automatically by Windows.
@@ -5407,8 +5230,7 @@ auto CHexCtrl::WMDestroy()->LRESULT
 	return 0;
 }
 
-auto CHexCtrl::WMDPIChangedAfterParent()->LRESULT
-{
+auto CHexCtrl::WMDPIChangedAfterParent()->LRESULT {
 	//Take the current font size, in points, with the old DPI.
 	const auto flFontPointsMain = FontPointsFromScaledPixels(GetFontSizeInPixels(true));
 	const auto flFontPointsInfo = FontPointsFromScaledPixels(GetFontSizeInPixels(false));
@@ -5425,29 +5247,24 @@ auto CHexCtrl::WMDPIChangedAfterParent()->LRESULT
 	return 0;
 }
 
-auto CHexCtrl::WMEraseBkgnd([[maybe_unused]] const MSG& msg)->LRESULT
-{
+auto CHexCtrl::WMEraseBkgnd([[maybe_unused]] const MSG& msg)->LRESULT {
 	return 1; //An application should return nonzero if it erases the background, or zero otherwise.
 }
 
-auto CHexCtrl::WMGetDlgCode([[maybe_unused]] const MSG& msg)->LRESULT
-{
+auto CHexCtrl::WMGetDlgCode([[maybe_unused]] const MSG& msg)->LRESULT {
 	return DLGC_WANTALLKEYS;
 }
 
-auto CHexCtrl::WMHelp([[maybe_unused]] const MSG& msg)->LRESULT
-{
+auto CHexCtrl::WMHelp([[maybe_unused]] const MSG& msg)->LRESULT {
 	return TRUE;
 }
 
-auto CHexCtrl::WMHScroll([[maybe_unused]] const MSG& msg)->LRESULT
-{
+auto CHexCtrl::WMHScroll([[maybe_unused]] const MSG& msg)->LRESULT {
 	RedrawImpl();
 	return 0;
 }
 
-auto CHexCtrl::WMInitMenuPopup(const MSG& msg)->LRESULT
-{
+auto CHexCtrl::WMInitMenuPopup(const MSG& msg)->LRESULT {
 	using enum EHexCmd;
 	//The LOWORD(lParam) specifies zero-based relative position of the menu, that opens drop-down menu or submenu.
 	switch (LOWORD(msg.lParam)) {
@@ -5517,8 +5334,7 @@ auto CHexCtrl::WMInitMenuPopup(const MSG& msg)->LRESULT
 	return 0;
 }
 
-auto CHexCtrl::WMKeyDown(const MSG& msg)->LRESULT
-{
+auto CHexCtrl::WMKeyDown(const MSG& msg)->LRESULT {
 	const auto wVKey = LOWORD(msg.wParam); //Virtual-key code (both: WM_KEYDOWN/WM_SYSKEYDOWN).
 
 	//LORE: If some key combinations (e.g. Ctrl+Alt+Num Plus) do not work for seemingly no reason,
@@ -5557,8 +5373,7 @@ auto CHexCtrl::WMKeyDown(const MSG& msg)->LRESULT
 	return 0;
 }
 
-auto CHexCtrl::WMKeyUp([[maybe_unused]] const MSG& msg)->LRESULT
-{
+auto CHexCtrl::WMKeyUp([[maybe_unused]] const MSG& msg)->LRESULT {
 	if (!IsDataSetImpl())
 		return 0;
 
@@ -5567,8 +5382,7 @@ auto CHexCtrl::WMKeyUp([[maybe_unused]] const MSG& msg)->LRESULT
 	return 0;
 }
 
-auto CHexCtrl::WMLButtonDblClk(const MSG& msg)->LRESULT
-{
+auto CHexCtrl::WMLButtonDblClk(const MSG& msg)->LRESULT {
 	const POINT pt { .x { ut::GetXLPARAM(msg.lParam) }, .y { ut::GetYLPARAM(msg.lParam) } };
 
 	if ((pt.x + static_cast<long>(m_ScrollH.GetScrollPos())) < m_iSecondVertLinePx) { //DblClick on "Offset" area.
@@ -5604,8 +5418,7 @@ auto CHexCtrl::WMLButtonDblClk(const MSG& msg)->LRESULT
 	return 0;
 }
 
-auto CHexCtrl::WMLButtonDown(const MSG& msg)->LRESULT
-{
+auto CHexCtrl::WMLButtonDown(const MSG& msg)->LRESULT {
 	const POINT pt { .x { ut::GetXLPARAM(msg.lParam) }, .y { ut::GetYLPARAM(msg.lParam) } };
 
 	m_Wnd.SetFocus(); //SetFocus is vital to give proper keyboard input to the main HexCtrl window.
@@ -5659,8 +5472,7 @@ auto CHexCtrl::WMLButtonDown(const MSG& msg)->LRESULT
 	return 0;
 }
 
-auto CHexCtrl::WMLButtonUp([[maybe_unused]] const MSG& msg)->LRESULT
-{
+auto CHexCtrl::WMLButtonUp([[maybe_unused]] const MSG& msg)->LRESULT {
 	m_fLMousePressed = false;
 	::ReleaseCapture();
 	m_ScrollV.WMLButtonUp();
@@ -5669,8 +5481,7 @@ auto CHexCtrl::WMLButtonUp([[maybe_unused]] const MSG& msg)->LRESULT
 	return 0;
 }
 
-auto CHexCtrl::WMMButtonDown(const MSG& msg)->LRESULT
-{
+auto CHexCtrl::WMMButtonDown(const MSG& msg)->LRESULT {
 	m_Wnd.SetFocus();
 	const auto wFlags = GET_KEYSTATE_WPARAM(msg.wParam);
 
@@ -5682,8 +5493,7 @@ auto CHexCtrl::WMMButtonDown(const MSG& msg)->LRESULT
 	return 0;
 }
 
-auto CHexCtrl::WMMouseMove(const MSG& msg)->LRESULT
-{
+auto CHexCtrl::WMMouseMove(const MSG& msg)->LRESULT {
 	const POINT pt { .x { ut::GetXLPARAM(msg.lParam) }, .y { ut::GetYLPARAM(msg.lParam) } };
 	const auto optHit = HitTest(pt);
 
@@ -5810,8 +5620,7 @@ auto CHexCtrl::WMMouseMove(const MSG& msg)->LRESULT
 	return 0;
 }
 
-auto CHexCtrl::WMMouseWheel(const MSG& msg)->LRESULT
-{
+auto CHexCtrl::WMMouseWheel(const MSG& msg)->LRESULT {
 	const auto uwDelta = GET_WHEEL_DELTA_WPARAM(msg.wParam);
 	const auto wFlags = GET_KEYSTATE_WPARAM(msg.wParam);
 
@@ -5823,16 +5632,14 @@ auto CHexCtrl::WMMouseWheel(const MSG& msg)->LRESULT
 	return 0;
 }
 
-auto CHexCtrl::WMNCActivate([[maybe_unused]] const MSG& msg)->LRESULT
-{
+auto CHexCtrl::WMNCActivate([[maybe_unused]] const MSG& msg)->LRESULT {
 	m_ScrollV.WMNCActivate();
 	m_ScrollH.WMNCActivate();
 
 	return TRUE;
 }
 
-auto CHexCtrl::WMNCCalcSize(const MSG& msg)->LRESULT
-{
+auto CHexCtrl::WMNCCalcSize(const MSG& msg)->LRESULT {
 	GDIUT::DefWndProc(msg);
 	const auto pNCSP = reinterpret_cast<LPNCCALCSIZE_PARAMS>(msg.lParam);
 
@@ -5843,8 +5650,7 @@ auto CHexCtrl::WMNCCalcSize(const MSG& msg)->LRESULT
 	return 0;
 }
 
-auto CHexCtrl::WMNCPaint(const MSG& msg)->LRESULT
-{
+auto CHexCtrl::WMNCPaint(const MSG& msg)->LRESULT {
 	GDIUT::DefWndProc(msg);
 	m_ScrollV.WMNCPaint();
 	m_ScrollH.WMNCPaint();
@@ -5852,8 +5658,7 @@ auto CHexCtrl::WMNCPaint(const MSG& msg)->LRESULT
 	return 0;
 }
 
-auto CHexCtrl::WMPaint()->LRESULT
-{
+auto CHexCtrl::WMPaint()->LRESULT {
 	GDIUT::CPaintDC dcPaint(m_Wnd);
 
 	if (!IsDrawable()) //Control should not be rendered atm.
@@ -5908,8 +5713,7 @@ auto CHexCtrl::WMPaint()->LRESULT
 	return 0;
 }
 
-auto CHexCtrl::WMRButtonDown([[maybe_unused]] const MSG& msg)->LRESULT
-{
+auto CHexCtrl::WMRButtonDown([[maybe_unused]] const MSG& msg)->LRESULT {
 	if (IsScrollCursor()) {
 		SetScrollCursor(false);
 		return 0;
@@ -5918,8 +5722,7 @@ auto CHexCtrl::WMRButtonDown([[maybe_unused]] const MSG& msg)->LRESULT
 	return 0;
 }
 
-auto CHexCtrl::WMSetCursor(const MSG& msg)->LRESULT
-{
+auto CHexCtrl::WMSetCursor(const MSG& msg)->LRESULT {
 	if (IsScrollCursor()) {
 		static const auto hCurScroll = static_cast<HCURSOR>(::LoadImageW(nullptr, MAKEINTRESOURCEW(32654),
 			IMAGE_CURSOR, 0, 0, LR_DEFAULTSIZE | LR_SHARED)); //Standard Windows scrolling cursor.
@@ -5935,15 +5738,13 @@ auto CHexCtrl::WMSetCursor(const MSG& msg)->LRESULT
 	return GDIUT::DefWndProc(msg); //To set appropriate cursor.
 }
 
-auto CHexCtrl::WMSetFocus([[maybe_unused]] const MSG& msg)->LRESULT
-{
+auto CHexCtrl::WMSetFocus([[maybe_unused]] const MSG& msg)->LRESULT {
 	m_DlgDataInterp.DisableHighlight();
 
 	return 0;
 }
 
-auto CHexCtrl::WMSize(const MSG& msg)->LRESULT
-{
+auto CHexCtrl::WMSize(const MSG& msg)->LRESULT {
 	if (!IsCreated())
 		return 0;
 
@@ -5955,8 +5756,7 @@ auto CHexCtrl::WMSize(const MSG& msg)->LRESULT
 	return 0;
 }
 
-auto CHexCtrl::WMTimer(const MSG& msg)->LRESULT
-{
+auto CHexCtrl::WMTimer(const MSG& msg)->LRESULT {
 	const auto uIDTimer = msg.wParam;
 
 	if (uIDTimer == m_uIDTTooltip) {
@@ -6000,8 +5800,7 @@ auto CHexCtrl::WMTimer(const MSG& msg)->LRESULT
 	return GDIUT::DefWndProc(msg);
 }
 
-auto CHexCtrl::WMVScroll([[maybe_unused]] const MSG& msg)->LRESULT
-{
+auto CHexCtrl::WMVScroll([[maybe_unused]] const MSG& msg)->LRESULT {
 	bool fRedraw { true };
 	if (m_stData.fHighLatency) {
 		fRedraw = m_ScrollV.IsThumbReleased();
@@ -6021,8 +5820,7 @@ auto CHexCtrl::WMVScroll([[maybe_unused]] const MSG& msg)->LRESULT
 	return 0;
 }
 
-void CHexCtrl::ModifyOperScalar(std::byte* pData, const HEXMODIFY& hms, [[maybe_unused]] SpanCByte)
-{
+void CHexCtrl::ModifyOperScalar(std::byte* pData, const HEXMODIFY& hms, [[maybe_unused]] SpanCByte) {
 	assert(pData != nullptr);
 	using enum EHexDataType;
 	using enum EHexOperMode;

@@ -122,7 +122,8 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] static auto JSONIsBigEndianness(const rapidjson::Value* pValue) -> std::optional<bool>;
 		[[nodiscard]] static auto JSONFindMember(const rapidjson::Value* pValue, const char* pszName)
 			-> std::optional<const rapidjson::Value*>;
-		[[nodiscard]] static auto JSONFindMemberAsInt32(const rapidjson::Value* pValue, const char* pszName) -> std::optional<int>;
+		[[nodiscard]] static auto JSONFindMemberAsInt32(const rapidjson::Value* pValue, const char* pszName)
+			-> std::optional<int>;
 		[[nodiscard]] static auto JSONFindMemberAsUInt32(const rapidjson::Value* pValue, const char* pszName)
 			-> std::optional<std::uint32_t>;
 		[[nodiscard]] static auto JSONFindMemberAsObject(const rapidjson::Value* pValue, const char* pszName)
@@ -132,16 +133,16 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] static auto JSONGetTemplateNameProperty(const wchar_t* pwszFilePath) -> std::wstring;
 		[[nodiscard]] static auto JSONParseFields(const PARSEFIELDS& pf) -> std::optional<VecHexTemplFields>;
 		[[nodiscard]] static auto JSONProcess_array(const rapidjson::Value* pValue, const PARSEFIELDS& pf,
-		const VecHexTemplFields& vecFields) -> std::optional<std::uint32_t>;
+		const VecHexTemplFields& vecFields) -> std::optional<std::optional<std::uint32_t>>;
 		[[nodiscard]] static auto JSONProcess_description(const rapidjson::Value* pValue) -> std::optional<const char*>;
 		[[nodiscard]] static auto JSONProcess_jump(const rapidjson::Value* pValue) -> std::optional<HEXTEMPLJUMP>;
 		[[nodiscard]] static auto JSONProcess_limit(const rapidjson::Value* pValue, std::uint64_t u64ActualData)
-			-> std::optional<std::uint64_t>;
+			-> std::optional<std::optional<std::uint64_t>>;
 		[[nodiscard]] static auto JSONProcess_name(const rapidjson::Value* pValue) -> std::optional<const char*>;
-		[[nodiscard]] static auto JSONProcess_size(const rapidjson::Value* pValue) -> std::optional<int>;
+		[[nodiscard]] static auto JSONProcess_size(const rapidjson::Value* pValue) -> std::optional<std::uint32_t>;
 		[[nodiscard]] static auto JSONProcess_type(const rapidjson::Value* pValue, const PARSEFIELDS& pf,
 			const PtrHexTemplField& pNewField, int iFieldOffset, std::uint32_t uArraySize, std::wstring_view wsvNameName)
-			-> std::optional<int>;
+			-> std::optional<std::optional<int>>;
 		[[nodiscard]] static auto TMPLFindFieldName(const VecHexTemplFields& vecFields, std::wstring_view wsvFieldName)
 			-> PCHEXTEMPLFIELD;
 		[[nodiscard]] static auto TMPLGetDataFromField(const HEXTEMPLFIELD* pField, PCHEXTEMPLATE pTemplate, IHexCtrl* pHexCtrl)
@@ -504,12 +505,16 @@ auto CHexTemplates::JSONParseFields(const PARSEFIELDS& pf)->std::optional<VecHex
 					pNewField->iSize = TMPLGetFieldsTotalSize(pNewField->vecNested); //Total size of all nested fields.
 				}
 				else {
-					const auto optArray = JSONProcess_array(pField, pf, vecFieldsTopLevel);
-					if (!optArray) {
-						return false;
-					}
 
-					const auto uArraySize = *optArray;
+					std::uint32_t uArraySize { 0 };
+					const auto optArray = JSONProcess_array(pField, pf, vecFieldsTopLevel);
+					if (optArray) {
+						if (!*optArray) {
+							return false;
+						}
+
+						uArraySize = **optArray;
+					}
 
 					if (const auto optDescr = JSONProcess_description(pField); optDescr) {
 						pNewField->wstrDescr = ut::StrToWstr(*optDescr);
@@ -519,19 +524,25 @@ auto CHexTemplates::JSONParseFields(const PARSEFIELDS& pf)->std::optional<VecHex
 						pNewField->pJump = std::make_unique<HEXTEMPLJUMP>(*optJump);
 					}
 
+					int iFieldSize { 0 }; //Current field's size, via "type" or "size" property.
 					const auto optType = JSONProcess_type(pField, pf, pNewField, iFieldOffset, uArraySize, wstrNameName);
-					if (!optType) { //The 'type' property was found but with errors.
-						return false;
+					if (optType) {
+						if (!*optType) { //The 'type' property was found but with errors.
+							return false;
+						}
+
+						iFieldSize = **optType;
 					}
 
-					int iFieldSize { 0 }; //Current field's size, via "type" or "size" property.
-					if (*optType > 0) {
-						iFieldSize = *optType;
-					}
-					else { //No "type" property was found.
+					if (iFieldSize == 0) { //No correct "type" property was found.
 						const auto optSize = JSONProcess_size(pField);
 						if (!optSize) {
 							ut::DBG_REPORT(L"No 'size' or 'type' property was found.");
+							return false;
+						}
+
+						if (*optSize < 1) {
+							ut::DBG_REPORT(L"The 'size' must be > 0.");
 							return false;
 						}
 
@@ -579,58 +590,63 @@ auto CHexTemplates::JSONParseFields(const PARSEFIELDS& pf)->std::optional<VecHex
 }
 
 auto CHexTemplates::JSONProcess_array(const rapidjson::Value* pValue, const PARSEFIELDS& pf, const VecHexTemplFields& vecFields)
-->std::optional<std::uint32_t> { //Returning std::nullopt means a hard error.
+->std::optional<std::optional<std::uint32_t>> {
+	//The first (outer) std::nullopt means no such field was found.
+	//The second (inner) std::nullopt means the field was found, but with parsing errors.
 
-	//The "array" field can be an int or an Object.
 	const auto optArray = JSONFindMember(pValue, "array");
 	if (!optArray)
-		return 0U; //Default array size is zero.
+		return std::nullopt;
 
+	//The "array" field can be a uint or an Object.
 	if ((*optArray)->IsUint()) { //Array is a plain uint.
 		return (*optArray)->GetUint();
 	}
-	else if ((*optArray)->IsObject()) { //Array is an object.
+
+	if ((*optArray)->IsObject()) { //Array is an object.
 		const auto pArrayObj = *optArray;
 		const auto optSizeFieldName = JSONFindMemberAsString(pArrayObj, "sizefield");
 		if (!optSizeFieldName) {
 			ut::DBG_REPORT(L"Each 'array' object entry must have a 'sizefield' property.");
-			return std::nullopt;
+			return std::optional<std::uint32_t>{ std::nullopt };
 		}
 
-		//Field name to get the size from.
+		//Field name to get the size of the array from.
 		const auto wstrSizeFieldName = ut::StrToWstr(*optSizeFieldName);
-		//Field to get the size of the array from.
+		//Field pointer to get the size of the array from.
 		const auto pSizeField = TMPLFindFieldName(vecFields, wstrSizeFieldName);
 		if (pSizeField == nullptr) {
 			ut::DBG_REPORT(std::format(L"Field '{}' could not be found.", wstrSizeFieldName).data());
-			return std::nullopt;
+			return std::optional<std::uint32_t>{ std::nullopt };
 		}
 
 		if (!pf.pHexCtrl->IsDataSet()) {
 			ut::DBG_REPORT(L"Dynamic templates require data to be set in order to work.");
-			return std::nullopt;
+			return std::optional<std::uint32_t>{ std::nullopt };
 		}
 
 		const auto optData = TMPLGetDataFromField(pSizeField, pf.pTemplate, pf.pHexCtrl);
 		if (!optData) {
 			ut::DBG_REPORT(L"Could not retrieve the data from the HexCtrl.");
-			return std::nullopt;
+			return std::optional<std::uint32_t>{ std::nullopt };
 		}
 
-		const auto optLimitData = JSONProcess_limit(pArrayObj, *optData);
-		if (!optLimitData) { //Returning std::nullopt means a hard error here.
-			return std::nullopt;
+		if (const auto optLimitData = JSONProcess_limit(pArrayObj, *optData); optLimitData) {
+			if (!*optLimitData) {
+				return std::optional<std::uint32_t>{ std::nullopt };
+			}
+
+			return static_cast<std::uint32_t>(**optLimitData);
 		}
 
-		return static_cast<std::uint32_t>(*optLimitData);
+		return static_cast<std::uint32_t>(*optData); //If no "limit" object found we just return back the actual data.
 	}
 
 	return std::nullopt;
 }
 
 auto CHexTemplates::JSONProcess_description(const rapidjson::Value* pValue)->std::optional<const char*> {
-	const auto optDescr = JSONFindMemberAsString(pValue, "description");
-	return optDescr ? optDescr : std::nullopt;
+	return JSONFindMemberAsString(pValue, "description");
 }
 
 auto CHexTemplates::JSONProcess_jump(const rapidjson::Value* pValue)->std::optional<HEXTEMPLJUMP> {
@@ -640,8 +656,10 @@ auto CHexTemplates::JSONProcess_jump(const rapidjson::Value* pValue)->std::optio
 
 	//The "anchor" is a mandatory field.
 	const auto optAnchor = JSONFindMemberAsString(*optJump, "anchor");
-	if (!optAnchor)
+	if (!optAnchor) {
+		ut::DBG_REPORT(L"The mandatory 'anchor' field is missing.");
 		return std::nullopt;
+	}
 
 	using enum EHexTemplJumpAnchor;
 	HEXTEMPLJUMP htj;
@@ -690,11 +708,11 @@ auto CHexTemplates::JSONProcess_jump(const rapidjson::Value* pValue)->std::optio
 }
 
 auto CHexTemplates::JSONProcess_limit(const rapidjson::Value* pValue, std::uint64_t u64ActualData)
-->std::optional<std::uint64_t> { //Returning std::nullopt means a hard error.
+->std::optional<std::optional<std::uint64_t>> {
 	//Finds and parses "limit" object, comparing its min/max properties against u64ActualData.
 	const auto optLimit = JSONFindMemberAsObject(pValue, "limit");
-	if (!optLimit) { //If no "limit" object found we just return back the actual data.
-		return u64ActualData;
+	if (!optLimit) {
+		return std::nullopt;
 	}
 
 	const auto pLimitObj = *optLimit;
@@ -727,7 +745,7 @@ auto CHexTemplates::JSONProcess_limit(const rapidjson::Value* pValue, std::uint6
 	if (u64ActualData < u64LimitMin) {
 		switch (eBeyond) {
 		case DO_STOP:
-			return std::nullopt;
+			return std::optional<std::uint64_t>{ std::nullopt };
 		case DO_ASK:
 		{
 			const auto optSizeFieldName = JSONFindMemberAsString(pValue, "sizefield");
@@ -750,7 +768,7 @@ auto CHexTemplates::JSONProcess_limit(const rapidjson::Value* pValue, std::uint6
 	else if (u64ActualData > u64LimitMax) {
 		switch (eBeyond) {
 		case DO_STOP:
-			return std::nullopt;
+			return std::optional<std::uint64_t>{ std::nullopt };
 		case DO_ASK:
 		{
 			const auto optSizeFieldName = JSONFindMemberAsString(pValue, "sizefield");
@@ -772,34 +790,19 @@ auto CHexTemplates::JSONProcess_limit(const rapidjson::Value* pValue, std::uint6
 		}
 	}
 
-	return std::nullopt;
+	return u64ActualData;
 }
 
 auto CHexTemplates::JSONProcess_name(const rapidjson::Value* pValue)->std::optional<const char*> {
-	const auto optName = JSONFindMemberAsString(pValue, "name");
-	return optName ? optName : std::nullopt;
+	return JSONFindMemberAsString(pValue, "name");
 }
 
-auto CHexTemplates::JSONProcess_size(const rapidjson::Value* pValue)->std::optional<int> {
-	//Returning std::nullopt means a hard error.
-
-	const auto optSize = JSONFindMemberAsUInt32(pValue, "size");
-	if (!optSize) {
-		return std::nullopt;
-	}
-
-	if (*optSize < 1) {
-		ut::DBG_REPORT(L"The 'size' must be > 0.");
-		return std::nullopt;
-	}
-
-	return *optSize;;
+auto CHexTemplates::JSONProcess_size(const rapidjson::Value* pValue)->std::optional<std::uint32_t> {
+	return JSONFindMemberAsUInt32(pValue, "size");
 }
 
 auto CHexTemplates::JSONProcess_type(const rapidjson::Value* pValue, const PARSEFIELDS& pf, const PtrHexTemplField& pNewField,
-	int iFieldOffset, std::uint32_t uArraySize, std::wstring_view wsvNameName)->std::optional<int> {
-	//Returning std::nullopt means a hard error.
-
+	int iFieldOffset, std::uint32_t uArraySize, std::wstring_view wsvNameName)->std::optional<std::optional<int>> {
 	using enum EHexTemplFieldType;
 
 	//Mapping from the JSON 'type' string to EHexTemplFieldType enum.
@@ -831,11 +834,11 @@ auto CHexTemplates::JSONProcess_type(const rapidjson::Value* pValue, const PARSE
 
 	const auto optType = JSONFindMember(pValue, "type");
 	if (!optType)
-		return 0; //No field found, just return zero size.
+		return std::nullopt;
 
 	if (!(*optType)->IsString()) {
 		ut::DBG_REPORT(L"Field 'type' must be a string.");
-		return std::nullopt;
+		return std::optional<int>{ std::nullopt };
 	}
 
 	const auto pszType = (*optType)->GetString();
@@ -856,7 +859,7 @@ auto CHexTemplates::JSONProcess_type(const rapidjson::Value* pValue, const PARSE
 		return ct.wstrTypeName == wstrTypeName; });
 	if (itVecCT == vecCTypes.end()) {
 		ut::DBG_REPORT(std::format(L"Unknown type '{}' of the field '{}'.", wstrTypeName, wsvNameName).data());
-		return std::nullopt;
+		return std::optional<int>{ std::nullopt };
 	}
 
 	pNewField->iCustomTypeID = itVecCT->iTypeID; //Custom type ID.

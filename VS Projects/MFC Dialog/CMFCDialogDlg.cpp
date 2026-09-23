@@ -36,8 +36,7 @@ void CMFCDialogDlg::SetStartupFile(LPCWSTR pwszFile) {
 
 CMFCDialogDlg::CMFCDialogDlg(CWnd* pParent) : CDialogEx(IDD_HEXCTRL_SAMPLE, pParent) { }
 
-void CMFCDialogDlg::CreateHexPopup()
-{
+void CMFCDialogDlg::CreateHexPopup() {
 	if (m_pHexPopup->IsCreated())
 		return;
 
@@ -72,8 +71,7 @@ void CMFCDialogDlg::CreateHexPopup()
 	}
 }
 
-void CMFCDialogDlg::CreateIconsForHexCtrl()
-{
+void CMFCDialogDlg::CreateIconsForHexCtrl() {
 	using enum HEXCTRL::EHexMenuItem;
 	m_vecHexIcons.clear();
 	const auto flDPIScale = GDIUT::GetDPIScaleForHWND(m_hWnd);
@@ -100,16 +98,14 @@ void CMFCDialogDlg::CreateIconsForHexCtrl()
 	m_vecHexIcons.emplace_back(IDM_APPEAR_CHOOSEFONT, hBitmap);
 }
 
-void CMFCDialogDlg::DoDataExchange(CDataExchange* pDX)
-{
+void CMFCDialogDlg::DoDataExchange(CDataExchange* pDX) {
 	CDialogEx::DoDataExchange(pDX);
 	DDX_Control(pDX, IDC_CHK_RW, m_chkRW);
 	DDX_Control(pDX, IDC_CHK_LNK, m_chkDRLNK);
 	DDX_Control(pDX, IDC_EDIT_DATASIZE, m_editDataSize);
 }
 
-void CMFCDialogDlg::FileOpen(std::wstring_view wsvPath, bool fResolveLnk)
-{
+void CMFCDialogDlg::FileOpen(std::wstring_view wsvPath, bool fResolveLnk) {
 	FileClose();
 
 	std::wstring wstrPath(wsvPath);
@@ -154,8 +150,7 @@ void CMFCDialogDlg::FileOpen(std::wstring_view wsvPath, bool fResolveLnk)
 	SetWindowTextW(wstrPath.data());
 }
 
-void CMFCDialogDlg::FileClose()
-{
+void CMFCDialogDlg::FileClose() {
 	if (!IsFileOpen())
 		return;
 
@@ -186,8 +181,7 @@ bool CMFCDialogDlg::IsRW()const {
 	return m_chkRW.GetCheck() == BST_CHECKED;
 }
 
-void CMFCDialogDlg::OnBnClearData()
-{
+void CMFCDialogDlg::OnBnClearData() {
 	FileClose();
 	m_pHexDlg->ClearData();
 	if (m_pHexPopup->IsCreated()) {
@@ -199,8 +193,7 @@ void CMFCDialogDlg::OnBnClearData()
 	SetWindowTextW(L"HexCtrl Sample Dialog");
 }
 
-void CMFCDialogDlg::OnBnSetRndData()
-{
+void CMFCDialogDlg::OnBnSetRndData() {
 	if (IsFileOpen()) {
 		FileClose();
 	}
@@ -238,15 +231,13 @@ void CMFCDialogDlg::OnBnSetRndData()
 	}
 }
 
-void CMFCDialogDlg::OnBnFileOpen()
-{
+void CMFCDialogDlg::OnBnFileOpen() {
 	if (const auto opt = OpenFileDlg(); opt) {
 		FileOpen((*opt).front(), false);
 	}
 }
 
-void CMFCDialogDlg::OnBnPopup()
-{
+void CMFCDialogDlg::OnBnPopup() {
 	if (!m_pHexPopup->IsCreated()) {
 		CreateHexPopup();
 		LoadTemplates(&*m_pHexPopup);
@@ -258,8 +249,7 @@ void CMFCDialogDlg::OnBnPopup()
 	}
 }
 
-void CMFCDialogDlg::OnChkRW()
-{
+void CMFCDialogDlg::OnChkRW() {
 	if (m_pHexDlg->IsDataSet()) {
 		m_pHexDlg->SetMutable(IsRW());
 		if (!IsFileOpen()) {
@@ -275,14 +265,12 @@ void CMFCDialogDlg::OnChkRW()
 	}
 }
 
-void CMFCDialogDlg::OnClose()
-{
+void CMFCDialogDlg::OnClose() {
 	FileClose();
 	CDialogEx::OnClose();
 }
 
-auto CMFCDialogDlg::OnDPIChanged(WPARAM /*wParam*/, LPARAM /*lParam*/)->LRESULT
-{
+auto CMFCDialogDlg::OnDPIChanged(WPARAM /*wParam*/, LPARAM /*lParam*/)->LRESULT {
 	const auto ret = CDialogEx::Default();
 	EnableDynamicLayout(TRUE);
 	LoadDynamicLayoutResource(MAKEINTRESOURCEW(IDD_HEXCTRL_SAMPLE));
@@ -295,8 +283,7 @@ auto CMFCDialogDlg::OnDPIChanged(WPARAM /*wParam*/, LPARAM /*lParam*/)->LRESULT
 	return ret;
 }
 
-void CMFCDialogDlg::OnDropFiles(HDROP hDropInfo)
-{
+void CMFCDialogDlg::OnDropFiles(HDROP hDropInfo) {
 	PVOID pOldValue;
 	::Wow64DisableWow64FsRedirection(&pOldValue);
 
@@ -313,14 +300,12 @@ void CMFCDialogDlg::OnDropFiles(HDROP hDropInfo)
 	::Wow64RevertWow64FsRedirection(pOldValue);
 }
 
-auto CMFCDialogDlg::OnGetDPIScaledSize(WPARAM /*wParam*/, LPARAM /*lParam*/)->LRESULT
-{
+auto CMFCDialogDlg::OnGetDPIScaledSize(WPARAM /*wParam*/, LPARAM /*lParam*/)->LRESULT {
 	EnableDynamicLayout(FALSE);
 	return CDialogEx::Default();
 }
 
-bool CMFCDialogDlg::OnHexGetColor(HEXCOLORINFO& hci)
-{
+bool CMFCDialogDlg::OnHexGetColor(HEXCOLORINFO& hci) {
 	//Sample code for custom colors:
 	if (hci.ullOffset < 18) {
 		static std::vector<HEXCOLOR> vec {
@@ -351,8 +336,7 @@ bool CMFCDialogDlg::OnHexGetColor(HEXCOLORINFO& hci)
 	return false;
 }
 
-BOOL CMFCDialogDlg::OnInitDialog()
-{
+BOOL CMFCDialogDlg::OnInitDialog() {
 	CDialogEx::OnInitDialog();
 
 	::CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
@@ -396,8 +380,7 @@ BOOL CMFCDialogDlg::OnInitDialog()
 	return TRUE;
 }
 
-BOOL CMFCDialogDlg::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
-{
+BOOL CMFCDialogDlg::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult) {
 	const auto pNMHDR = reinterpret_cast<PHEXMENUINFO>(lParam);
 	if (pNMHDR->hdr.idFrom == IDC_MY_HEX && pNMHDR->hdr.code == HEXCTRL_MSG_CONTEXTMENU) {
 		// pNMHDR->fShow = false; //Ability to disable HexCtrl context menu.
@@ -406,8 +389,7 @@ BOOL CMFCDialogDlg::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 	return CDialogEx::OnNotify(wParam, lParam, pResult);
 }
 
-BOOL CMFCDialogDlg::PreTranslateMessage(MSG* pMsg)
-{
+BOOL CMFCDialogDlg::PreTranslateMessage(MSG* pMsg) {
 	if ((m_pHexDlg->IsCreated() && m_pHexDlg->PreTranslateMsg(pMsg))
 		|| (m_pHexPopup->IsCreated() && m_pHexPopup->PreTranslateMsg(pMsg))) {
 		return TRUE;
@@ -416,8 +398,7 @@ BOOL CMFCDialogDlg::PreTranslateMessage(MSG* pMsg)
 	return CDialogEx::PreTranslateMessage(pMsg);
 }
 
-void CMFCDialogDlg::SetIconsForHexCtrl(IHexCtrl& HexCtrl)
-{
+void CMFCDialogDlg::SetIconsForHexCtrl(IHexCtrl& HexCtrl) {
 	if (!HexCtrl.IsCreated()) {
 		return;
 	}
@@ -432,16 +413,14 @@ void CMFCDialogDlg::SetIconsForHexCtrl(IHexCtrl& HexCtrl)
 
 //Static functions.
 
-auto CMFCDialogDlg::GetLastErrorWstr()->std::wstring
-{
+auto CMFCDialogDlg::GetLastErrorWstr()->std::wstring {
 	wchar_t wbuff[MAX_PATH];
 	::FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, nullptr,
 		::GetLastError(), 0, wbuff, MAX_PATH, nullptr);
 	return wbuff;
 }
 
-void CMFCDialogDlg::LoadTemplates(IHexCtrl* pHexCtrl)
-{
+void CMFCDialogDlg::LoadTemplates(IHexCtrl* pHexCtrl) {
 	wchar_t buff[MAX_PATH];
 	::GetModuleFileNameW(nullptr, buff, MAX_PATH);
 	std::wstring wstrPath = buff;

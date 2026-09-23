@@ -60,8 +60,7 @@ enum class CHexDlgGoTo::EGoMode : std::uint8_t {
 	MODE_PAGE, MODE_PAGEFWD, MODE_PAGEBACK, MODE_PAGEEND
 };
 
-void CHexDlgGoTo::CreateDlg()const
-{
+void CHexDlgGoTo::CreateDlg()const {
 	//m_Wnd is set in the WMInitDialog().
 	if (const auto hWnd = ::CreateDialogParamW(m_hInstRes, MAKEINTRESOURCEW(IDD_HEXCTRL_GOTO),
 		m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN), GDIUT::DlgProc<CHexDlgGoTo>, reinterpret_cast<LPARAM>(this));
@@ -70,36 +69,30 @@ void CHexDlgGoTo::CreateDlg()const
 	}
 }
 
-void CHexDlgGoTo::DestroyDlg()
-{
+void CHexDlgGoTo::DestroyDlg() {
 	if (m_Wnd.IsWindow()) {
 		m_Wnd.DestroyWindow();
 	}
 }
 
-void CHexDlgGoTo::Initialize(IHexCtrl &HexCtrl, HINSTANCE hInstRes)
-{
+void CHexDlgGoTo::Initialize(IHexCtrl &HexCtrl, HINSTANCE hInstRes) {
 	m_pHexCtrl = &HexCtrl;
 	m_hInstRes = hInstRes;
 }
 
-auto CHexDlgGoTo::GetHWND()const->HWND
-{
+auto CHexDlgGoTo::GetHWND()const->HWND {
 	return m_Wnd;
 }
 
-bool CHexDlgGoTo::IsRepeatAvail()const
-{
+bool CHexDlgGoTo::IsRepeatAvail()const {
 	return m_fRepeat;
 }
 
-bool CHexDlgGoTo::PreTranslateMsg(MSG* pMsg)
-{
+bool CHexDlgGoTo::PreTranslateMsg(MSG* pMsg) {
 	return m_Wnd.IsDlgMessage(pMsg);
 }
 
-auto CHexDlgGoTo::ProcessMsg(const MSG& msg)->INT_PTR
-{
+auto CHexDlgGoTo::ProcessMsg(const MSG& msg)->INT_PTR {
 	switch (msg.message) {
 	case WM_ACTIVATE: return WMActivate(msg);
 	case WM_CLOSE: return WMClose();
@@ -112,8 +105,7 @@ auto CHexDlgGoTo::ProcessMsg(const MSG& msg)->INT_PTR
 	}
 }
 
-void CHexDlgGoTo::Repeat(bool fFwd)
-{
+void CHexDlgGoTo::Repeat(bool fFwd) {
 	if (!IsRepeatAvail()) {
 		return;
 	}
@@ -121,13 +113,11 @@ void CHexDlgGoTo::Repeat(bool fFwd)
 	GoTo(fFwd);
 }
 
-void CHexDlgGoTo::SetDlgProperties(std::uint64_t u64Flags)
-{
+void CHexDlgGoTo::SetDlgProperties(std::uint64_t u64Flags) {
 	m_u64Flags = u64Flags;
 }
 
-void CHexDlgGoTo::ShowWindow(int iCmdShow)
-{
+void CHexDlgGoTo::ShowWindow(int iCmdShow) {
 	if (!m_Wnd.IsWindow()) {
 		CreateDlg();
 	}
@@ -138,18 +128,15 @@ void CHexDlgGoTo::ShowWindow(int iCmdShow)
 
 //Private methods.
 
-auto CHexDlgGoTo::GetHexCtrl()const->IHexCtrl*
-{
+auto CHexDlgGoTo::GetHexCtrl()const->IHexCtrl* {
 	return m_pHexCtrl;
 }
 
-auto CHexDlgGoTo::GetGoMode()const->EGoMode
-{
+auto CHexDlgGoTo::GetGoMode()const->EGoMode {
 	return static_cast<EGoMode>(m_WndCmbMode.GetItemData(m_WndCmbMode.GetCurSel()));
 }
 
-void CHexDlgGoTo::GoTo(bool fForward)
-{
+void CHexDlgGoTo::GoTo(bool fForward) {
 	m_fRepeat = false;
 	const auto pHexCtrl = GetHexCtrl();
 
@@ -220,26 +207,22 @@ void CHexDlgGoTo::GoTo(bool fForward)
 	}
 }
 
-bool CHexDlgGoTo::IsNoEsc()const
-{
+bool CHexDlgGoTo::IsNoEsc()const {
 	return m_u64Flags & HEXCTRL_FLAG_DLG_NOESC;
 }
 
-void CHexDlgGoTo::OnCancel()
-{
+void CHexDlgGoTo::OnCancel() {
 	if (IsNoEsc()) //Not closing Dialog on Escape key.
 		return;
 
 	WMClose();
 }
 
-void CHexDlgGoTo::OnOK()
-{
+void CHexDlgGoTo::OnOK() {
 	GoTo(true);
 }
 
-void CHexDlgGoTo::UpdateComboMode()
-{
+void CHexDlgGoTo::UpdateComboMode() {
 	constexpr auto iOffsetsTotal = 4; //Total amount of Offset's modes.
 	auto iCurrCount = m_WndCmbMode.GetCount();
 	const auto fHasPages = iCurrCount > iOffsetsTotal;
@@ -274,8 +257,7 @@ void CHexDlgGoTo::UpdateComboMode()
 	}
 }
 
-auto CHexDlgGoTo::WMActivate(const MSG& msg)->INT_PTR
-{
+auto CHexDlgGoTo::WMActivate(const MSG& msg)->INT_PTR {
 	if (const auto pHex = GetHexCtrl();
 		pHex != nullptr && pHex->IsCreated() && pHex->IsDataSet() && LOWORD(msg.wParam) == WA_ACTIVE) {
 		UpdateComboMode();
@@ -284,14 +266,12 @@ auto CHexDlgGoTo::WMActivate(const MSG& msg)->INT_PTR
 	return 0;
 }
 
-auto CHexDlgGoTo::WMClose()->INT_PTR
-{
+auto CHexDlgGoTo::WMClose()->INT_PTR {
 	ShowWindow(SW_HIDE);
 	return TRUE;
 }
 
-auto CHexDlgGoTo::WMCommand(const MSG& msg)->INT_PTR
-{
+auto CHexDlgGoTo::WMCommand(const MSG& msg)->INT_PTR {
 	const auto uCtrlID = LOWORD(msg.wParam);
 	switch (uCtrlID) {
 	case IDOK:
@@ -306,8 +286,7 @@ auto CHexDlgGoTo::WMCommand(const MSG& msg)->INT_PTR
 	return TRUE;
 }
 
-auto CHexDlgGoTo::WMDestroy()->INT_PTR
-{
+auto CHexDlgGoTo::WMDestroy()->INT_PTR {
 	m_u64Flags = { };
 	m_pHexCtrl = nullptr;
 	m_fRepeat = false;
@@ -315,8 +294,7 @@ auto CHexDlgGoTo::WMDestroy()->INT_PTR
 	return TRUE;
 }
 
-auto CHexDlgGoTo::WMInitDialog(const MSG& msg)->INT_PTR
-{
+auto CHexDlgGoTo::WMInitDialog(const MSG& msg)->INT_PTR {
 	using enum EGoMode;
 	m_Wnd.Attach(msg.hwnd);
 	m_WndCmbMode.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_GOTO_COMBO_MODE));
@@ -334,8 +312,7 @@ auto CHexDlgGoTo::WMInitDialog(const MSG& msg)->INT_PTR
 	return TRUE;
 }
 
-auto CHexDlgGoTo::WMMouseActivate([[maybe_unused]] const MSG& msg)->INT_PTR
-{
+auto CHexDlgGoTo::WMMouseActivate([[maybe_unused]] const MSG& msg)->INT_PTR {
 	if (const auto pHex = GetHexCtrl(); pHex != nullptr && pHex->IsCreated() && pHex->IsDataSet()) {
 		UpdateComboMode();
 	}
