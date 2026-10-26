@@ -29,8 +29,7 @@ export namespace GDIUT { //Windows GDI related stuff.
 	}
 
 	template<typename T>
-	auto CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)->LRESULT
-	{
+	auto CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)->LRESULT {
 		//Different IHexCtrl objects will share the same WndProc<ExactTypeHere> function.
 		//Hence, the map is needed to differentiate these objects. 
 		//The DlgProc<T> works absolutely the same way.
@@ -858,8 +857,7 @@ export namespace GDIUT { //Windows GDI related stuff.
 		std::uint16_t m_u16SizeHeightItem { };
 	};
 
-	auto CMenuColor::ProcessMsg(const MSG& msg)->LRESULT
-	{
+	auto CMenuColor::ProcessMsg(const MSG& msg)->LRESULT {
 		switch (msg.message) {
 		case WM_COMMAND:
 		case WM_ENTERMENULOOP:
@@ -877,13 +875,11 @@ export namespace GDIUT { //Windows GDI related stuff.
 		}
 	}
 
-	void CMenuColor::SetColors(const MENUCOLORS& clrs)
-	{
+	void CMenuColor::SetColors(const MENUCOLORS& clrs) {
 		m_clrs = clrs;
 	}
 
-	BOOL CMenuColor::TrackPopupMenu(int iX, int iY, HWND hWndOwner, UINT uFlags)
-	{
+	BOOL CMenuColor::TrackPopupMenu(int iX, int iY, HWND hWndOwner, UINT uFlags) {
 		constexpr auto pwszClassName { L"MenuColorWndMsg" };
 		WNDCLASSEXW wc { };
 		if (::GetClassInfoExW(nullptr, pwszClassName, &wc) == FALSE) {
@@ -957,8 +953,7 @@ export namespace GDIUT { //Windows GDI related stuff.
 
 	//Private methods.
 
-	auto CMenuColor::GetStringInfo(HDC hDC, std::wstring_view wsv)const->STRINGINFO
-	{
+	auto CMenuColor::GetStringInfo(HDC hDC, std::wstring_view wsv)const->STRINGINFO {
 		STRINGINFO si;
 		const auto sTabPos = wsv.find_first_of(L'\t');
 		if (sTabPos != std::wstring_view::npos) {
@@ -977,8 +972,7 @@ export namespace GDIUT { //Windows GDI related stuff.
 		return si;
 	}
 
-	void CMenuColor::MakeOwnerDraw(HMENU hMenu)
-	{
+	void CMenuColor::MakeOwnerDraw(HMENU hMenu) {
 		assert(hMenu != nullptr);
 		CMenu menu(hMenu);
 		for (auto i = 0; i < menu.GetItemsCount(); ++i) {
@@ -998,8 +992,7 @@ export namespace GDIUT { //Windows GDI related stuff.
 		}
 	}
 
-	auto CMenuColor::OnDrawItem(const MSG& msg)->LRESULT
-	{
+	auto CMenuColor::OnDrawItem(const MSG& msg)->LRESULT {
 		const auto pDIS = reinterpret_cast<LPDRAWITEMSTRUCT>(msg.lParam);
 		const auto pII = reinterpret_cast<ITEMINFO*>(pDIS->itemData);
 		const auto uPos = pII->wItemPos;
@@ -1072,8 +1065,7 @@ export namespace GDIUT { //Windows GDI related stuff.
 		return TRUE;
 	}
 
-	auto CMenuColor::OnMeasureItem(const MSG& msg)->LRESULT
-	{
+	auto CMenuColor::OnMeasureItem(const MSG& msg)->LRESULT {
 		const auto pMIS = reinterpret_cast<LPMEASUREITEMSTRUCT>(msg.lParam);
 		const auto pII = reinterpret_cast<ITEMINFO*>(pMIS->itemData);
 		const CMenu menu(pII->hMenu);

@@ -11,7 +11,6 @@ module;
 #include "res/HexCtrlRes.h"
 #include <Windows.h>
 #include <commctrl.h>
-#include <intrin.h>
 #include <algorithm>
 #include <bit>
 #include <cassert>

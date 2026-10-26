@@ -16,6 +16,7 @@ module;
 #include <memory>
 #include <optional>
 #include <random>
+#include <ratio>
 #include <string>
 #include <vector>
 export module HexCtrl_ListEx;
@@ -500,61 +501,52 @@ namespace HEXCTRL::LISTEX {
 
 using namespace HEXCTRL::LISTEX;
 
-void CListExHdr::DeleteColumn(int iIndex)
-{
+void CListExHdr::DeleteColumn(int iIndex) {
 	if (const auto ID = ColumnIndexToID(iIndex); ID > 0) {
 		std::erase_if(m_vecHidden, [=](const HIDDEN& ref) { return ref.uID == ID; });
 		std::erase_if(m_vecColumnData, [=](const COLUMNDATA& ref) { return ref.uID == ID; });
 	}
 }
 
-auto CListExHdr::GetClientRect()const->RECT
-{
+auto CListExHdr::GetClientRect()const->RECT {
 	assert(IsWindow());
 	RECT rc;
 	::GetClientRect(m_hWnd, &rc);
 	return rc;
 }
 
-UINT CListExHdr::GetHiddenCount()const
-{
+UINT CListExHdr::GetHiddenCount()const {
 	return static_cast<UINT>(m_vecHidden.size());
 }
 
-auto CListExHdr::GetImageList(int iList)const->HIMAGELIST
-{
+auto CListExHdr::GetImageList(int iList)const->HIMAGELIST {
 	assert(IsWindow());
 	return reinterpret_cast<HIMAGELIST>(::SendMessageW(m_hWnd, HDM_GETIMAGELIST, iList, 0L));
 }
 
-bool CListExHdr::GetItem(int iIndex, HDITEMW* pHDI)const
-{
+bool CListExHdr::GetItem(int iIndex, HDITEMW* pHDI)const {
 	assert(IsWindow());
 	return ::SendMessageW(m_hWnd, HDM_GETITEMW, iIndex, reinterpret_cast<LPARAM>(pHDI));
 }
 
-int CListExHdr::GetItemCount()const
-{
+int CListExHdr::GetItemCount()const {
 	assert(IsWindow());
 	return static_cast<int>(::SendMessageW(m_hWnd, HDM_GETITEMCOUNT, 0, 0L));
 }
 
-auto CListExHdr::GetItemRect(int iIndex)const->RECT
-{
+auto CListExHdr::GetItemRect(int iIndex)const->RECT {
 	RECT rc;
 	::SendMessageW(m_hWnd, HDM_GETITEMRECT, iIndex, reinterpret_cast<LPARAM>(&rc));
 	return rc;
 }
 
-int CListExHdr::GetItemWidth(int iIndex)const
-{
+int CListExHdr::GetItemWidth(int iIndex)const {
 	HDITEMW hdi { .mask { HDI_WIDTH } };
 	GetItem(iIndex, &hdi);
 	return hdi.cxy;
 }
 
-int CListExHdr::GetColumnDataAlign(int iIndex)const
-{
+int CListExHdr::GetColumnDataAlign(int iIndex)const {
 	if (const auto pData = GetColumnData(ColumnIndexToID(iIndex)); pData != nullptr) {
 		return pData->iDataAlign;
 	}
@@ -562,13 +554,11 @@ int CListExHdr::GetColumnDataAlign(int iIndex)const
 	return -1;
 }
 
-auto CListExHdr::GetHeight()const->DWORD
-{
+auto CListExHdr::GetHeight()const->DWORD {
 	return m_dwHdrHeight;
 }
 
-void CListExHdr::HideColumn(int iIndex, bool fHide)
-{
+void CListExHdr::HideColumn(int iIndex, bool fHide) {
 	const auto iColumnsCount = GetItemCount();
 	if (iIndex >= iColumnsCount) {
 		return;
@@ -621,23 +611,19 @@ void CListExHdr::HideColumn(int iIndex, bool fHide)
 	RedrawWindow();
 }
 
-bool CListExHdr::IsColumnHidden(int iIndex)const
-{
+bool CListExHdr::IsColumnHidden(int iIndex)const {
 	return IsHidden(ColumnIndexToID(iIndex)) != nullptr;
 }
 
-bool CListExHdr::IsColumnSortable(int iIndex)const
-{
+bool CListExHdr::IsColumnSortable(int iIndex)const {
 	return IsSortable(ColumnIndexToID(iIndex));
 }
 
-bool CListExHdr::IsColumnEditable(int iIndex)const
-{
+bool CListExHdr::IsColumnEditable(int iIndex)const {
 	return IsEditable(ColumnIndexToID(iIndex));
 }
 
-auto CListExHdr::ProcessMsg(const MSG& msg)->LRESULT
-{
+auto CListExHdr::ProcessMsg(const MSG& msg)->LRESULT {
 	switch (msg.message) {
 	case HDM_LAYOUT: return WMHDMLayout(msg);
 	case WM_DESTROY: return WMDestroy();
@@ -651,14 +637,12 @@ auto CListExHdr::ProcessMsg(const MSG& msg)->LRESULT
 	}
 }
 
-void CListExHdr::RedrawWindow()const
-{
+void CListExHdr::RedrawWindow()const {
 	assert(IsWindow());
 	::RedrawWindow(m_hWnd, nullptr, nullptr, RDW_INVALIDATE | RDW_UPDATENOW | RDW_ERASE);
 }
 
-void CListExHdr::SetColor(const LISTEXCOLORS& lcs)
-{
+void CListExHdr::SetColor(const LISTEXCOLORS& lcs) {
 	m_clrText = lcs.clrHdrText;
 	m_clrBk = lcs.clrHdrBk;
 	m_clrBkNWA = lcs.clrNWABk;
@@ -668,8 +652,7 @@ void CListExHdr::SetColor(const LISTEXCOLORS& lcs)
 	RedrawWindow();
 }
 
-void CListExHdr::SetColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText)
-{
+void CListExHdr::SetColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText) {
 	const auto ID = ColumnIndexToID(iColumn);
 	assert(ID > 0);
 	if (ID == 0) {
@@ -690,8 +673,7 @@ void CListExHdr::SetColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText)
 	RedrawWindow();
 }
 
-void CListExHdr::SetColumnDataAlign(int iColumn, int iAlign)
-{
+void CListExHdr::SetColumnDataAlign(int iColumn, int iAlign) {
 	const auto ID = ColumnIndexToID(iColumn);
 	if (ID == 0) {
 		assert(false);
@@ -706,8 +688,7 @@ void CListExHdr::SetColumnDataAlign(int iColumn, int iAlign)
 	}
 }
 
-void CListExHdr::SetColumnIcon(int iColumn, const LISTEXHDRICON& stIcon)
-{
+void CListExHdr::SetColumnIcon(int iColumn, const LISTEXHDRICON& stIcon) {
 	const auto ID = ColumnIndexToID(iColumn);
 	assert(ID > 0);
 	if (ID == 0) { return; }
@@ -722,8 +703,7 @@ void CListExHdr::SetColumnIcon(int iColumn, const LISTEXHDRICON& stIcon)
 	RedrawWindow();
 }
 
-void CListExHdr::SetColumnSortable(int iColumn, bool fSortable)
-{
+void CListExHdr::SetColumnSortable(int iColumn, bool fSortable) {
 	const auto ID = ColumnIndexToID(iColumn);
 	if (ID == 0) {
 		assert(false);
@@ -738,8 +718,7 @@ void CListExHdr::SetColumnSortable(int iColumn, bool fSortable)
 	}
 }
 
-void CListExHdr::SetColumnEditable(int iColumn, bool fEditable)
-{
+void CListExHdr::SetColumnEditable(int iColumn, bool fEditable) {
 	const auto ID = ColumnIndexToID(iColumn);
 	if (ID == 0) {
 		assert(false);
@@ -754,8 +733,7 @@ void CListExHdr::SetColumnEditable(int iColumn, bool fEditable)
 	}
 }
 
-void CListExHdr::SetFont(const LOGFONTW& lf)
-{
+void CListExHdr::SetFont(const LOGFONTW& lf) {
 	::DeleteObject(m_hFntHdr);
 	m_hFntHdr = ::CreateFontIndirectW(&lf);
 
@@ -771,38 +749,32 @@ void CListExHdr::SetFont(const LOGFONTW& lf)
 	}
 }
 
-void CListExHdr::SetHeight(DWORD dwHeight)
-{
+void CListExHdr::SetHeight(DWORD dwHeight) {
 	m_dwHdrHeight = dwHeight;
 	::SendMessageW(GetParent(), LVM_UPDATE, 0L, 0L); //To update header's layout.
 	RedrawWindow();
 }
 
-void CListExHdr::SetImageList(HIMAGELIST pList, int iList)
-{
+void CListExHdr::SetImageList(HIMAGELIST pList, int iList) {
 	::SendMessageW(m_hWnd, HDM_SETIMAGELIST, iList, reinterpret_cast<LPARAM>(pList));
 }
 
-void CListExHdr::SetItem(int iIndex, const HDITEMW& hdi)const
-{
+void CListExHdr::SetItem(int iIndex, const HDITEMW& hdi)const {
 	assert(IsWindow());
 	::SendMessageW(m_hWnd, HDM_SETITEMW, iIndex, reinterpret_cast<LPARAM>(&hdi));
 }
 
-void CListExHdr::SetItemWidth(int iIndex, int iWidth)const
-{
+void CListExHdr::SetItemWidth(int iIndex, int iWidth)const {
 	const HDITEMW hdi { .mask { HDI_WIDTH }, .cxy { iWidth } };
 	SetItem(iIndex, hdi);
 }
 
-void CListExHdr::SetSortable(bool fSortable)
-{
+void CListExHdr::SetSortable(bool fSortable) {
 	m_fSortable = fSortable;
 	RedrawWindow();
 }
 
-void CListExHdr::SetSortArrow(int iColumn, bool fAscending)
-{
+void CListExHdr::SetSortArrow(int iColumn, bool fAscending) {
 	UINT ID { 0 };
 	if (iColumn >= 0) {
 		ID = ColumnIndexToID(iColumn);
@@ -817,8 +789,7 @@ void CListExHdr::SetSortArrow(int iColumn, bool fAscending)
 	RedrawWindow();
 }
 
-void CListExHdr::SubclassHeader(HWND hWndHeader)
-{
+void CListExHdr::SubclassHeader(HWND hWndHeader) {
 	assert(hWndHeader != nullptr);
 	::SetWindowSubclass(hWndHeader, SubclassProc, reinterpret_cast<UINT_PTR>(this), 0);
 	m_hWnd = hWndHeader;
@@ -828,13 +799,11 @@ void CListExHdr::SubclassHeader(HWND hWndHeader)
 
 //CListExHdr private methods.
 
-void CListExHdr::AddColumnData(const COLUMNDATA& data)
-{
+void CListExHdr::AddColumnData(const COLUMNDATA& data) {
 	m_vecColumnData.emplace_back(data);
 }
 
-UINT CListExHdr::ColumnIndexToID(int iIndex)const
-{
+UINT CListExHdr::ColumnIndexToID(int iIndex)const {
 	//Each column has unique internal identifier in HDITEMW::lParam.
 	HDITEMW hdi { .mask { HDI_LPARAM } };
 	const auto ret = GetItem(iIndex, &hdi);
@@ -842,8 +811,7 @@ UINT CListExHdr::ColumnIndexToID(int iIndex)const
 	return ret ? static_cast<UINT>(hdi.lParam) : 0;
 }
 
-int CListExHdr::ColumnIDToIndex(UINT uID)const
-{
+int CListExHdr::ColumnIDToIndex(UINT uID)const {
 	for (int iterColumns = 0; iterColumns < GetItemCount(); ++iterColumns) {
 		HDITEMW hdi { .mask { HDI_LPARAM } };
 		GetItem(iterColumns, &hdi);
@@ -863,48 +831,41 @@ auto CListExHdr::FontScaledPixelsFromPoints(float flSizePoints)const->long {
 	return std::lround(GDIUT::FontPixelsFromPoints(flSizePoints) * GetDPIScale());
 }
 
-auto CListExHdr::GetDPIScale()const->float
-{
+auto CListExHdr::GetDPIScale()const->float {
 	return m_flDPIScale;
 }
 
-long CListExHdr::GetFontSizeInPixels() const
-{
+long CListExHdr::GetFontSizeInPixels() const {
 	LOGFONTW lf { };
 	::GetObjectW(m_hFntHdr, sizeof(lf), &lf);
 	return lf.lfHeight;
 }
 
-auto CListExHdr::GetParent()->HWND
-{
+auto CListExHdr::GetParent()->HWND {
 	assert(IsWindow());
 	return ::GetParent(m_hWnd);
 }
 
-auto CListExHdr::GetHdrColor(UINT ID)const->PLISTEXCOLOR
-{
+auto CListExHdr::GetHdrColor(UINT ID)const->PLISTEXCOLOR {
 	const auto pData = GetColumnData(ID);
 	return pData != nullptr ? &pData->clr : nullptr;
 }
 
-auto CListExHdr::GetColumnData(UINT uID)->COLUMNDATA*
-{
+auto CListExHdr::GetColumnData(UINT uID)->COLUMNDATA* {
 	const auto it = std::find_if(m_vecColumnData.begin(), m_vecColumnData.end(), [=](const COLUMNDATA& ref) {
 		return ref.uID == uID; });
 
 	return it == m_vecColumnData.end() ? nullptr : &*it;
 }
 
-auto CListExHdr::GetColumnData(UINT uID)const->const COLUMNDATA*
-{
+auto CListExHdr::GetColumnData(UINT uID)const->const COLUMNDATA* {
 	const auto it = std::find_if(m_vecColumnData.begin(), m_vecColumnData.end(), [=](const COLUMNDATA& ref) {
 		return ref.uID == uID; });
 
 	return it == m_vecColumnData.end() ? nullptr : &*it;
 }
 
-auto CListExHdr::GetHdrIcon(UINT ID)->CListExHdr::HDRICON*
-{
+auto CListExHdr::GetHdrIcon(UINT ID)->CListExHdr::HDRICON* {
 	if (GetImageList() == nullptr) {
 		return nullptr;
 	}
@@ -913,44 +874,37 @@ auto CListExHdr::GetHdrIcon(UINT ID)->CListExHdr::HDRICON*
 	return pData != nullptr && pData->icon.stIcon.iIndex != -1 ? &pData->icon : nullptr;
 }
 
-auto CListExHdr::GetListParent()->HWND
-{
+auto CListExHdr::GetListParent()->HWND {
 	const auto hWnd = GetParent();
 	assert(hWnd != nullptr);
 	return ::GetParent(hWnd);
 }
 
-int CListExHdr::HitTest(const HDHITTESTINFO hhti)
-{
+int CListExHdr::HitTest(const HDHITTESTINFO hhti) {
 	assert(IsWindow());
 	return static_cast<int>(::SendMessageW(m_hWnd, HDM_HITTEST, 0, reinterpret_cast<LPARAM>(&hhti)));
 }
 
-auto CListExHdr::IsHidden(UINT ID)const->const HIDDEN*
-{
+auto CListExHdr::IsHidden(UINT ID)const->const HIDDEN* {
 	const auto it = std::find_if(m_vecHidden.begin(), m_vecHidden.end(), [=](const HIDDEN& ref) { return ref.uID == ID; });
 	return it != m_vecHidden.end() ? &*it : nullptr;
 }
 
-bool CListExHdr::IsSortable(UINT ID)const
-{
+bool CListExHdr::IsSortable(UINT ID)const {
 	const auto pData = GetColumnData(ID);
 	return pData == nullptr || pData->fSortable; //It's sortable unless found explicitly as false.
 }
 
-bool CListExHdr::IsWindow()const
-{
+bool CListExHdr::IsWindow()const {
 	return ::IsWindow(m_hWnd);
 }
 
-bool CListExHdr::IsEditable(UINT ID)const
-{
+bool CListExHdr::IsEditable(UINT ID)const {
 	const auto pData = GetColumnData(ID);
 	return pData != nullptr && pData->fEditable; //It's editable only if found explicitly as true.
 }
 
-void CListExHdr::OnDrawItem(HDC hDC, int iItem, RECT rc, bool fPressed, bool fHighl)
-{
+void CListExHdr::OnDrawItem(HDC hDC, int iItem, RECT rc, bool fPressed, bool fHighl) {
 	const GDIUT::CRect rcOrig(rc);
 	const GDIUT::CDC dc(hDC);
 	//Non working area after last column. Or if column is resized to zero width.
@@ -1055,8 +1009,7 @@ void CListExHdr::OnDrawItem(HDC hDC, int iItem, RECT rc, bool fPressed, bool fHi
 	}
 }
 
-void CListExHdr::SetFontSizeInPoints(float flSizePoints)
-{
+void CListExHdr::SetFontSizeInPoints(float flSizePoints) {
 	//Prevent font size from being too small or too big.
 	if (flSizePoints < 4.F || flSizePoints > 64.F) {
 		return;
@@ -1072,16 +1025,14 @@ void CListExHdr::UpdateDPIScale() {
 	m_flDPIScale = GDIUT::GetDPIScaleForHWND(m_hWnd);
 }
 
-auto CListExHdr::WMDestroy()->LRESULT
-{
+auto CListExHdr::WMDestroy()->LRESULT {
 	m_vecHidden.clear();
 	m_vecColumnData.clear();
 
 	return 0;
 }
 
-auto CListExHdr::WMDPIChangedAfterParent()->LRESULT
-{
+auto CListExHdr::WMDPIChangedAfterParent()->LRESULT {
 	const auto flScaleOld = GetDPIScale();
 	//Take the current font size, in points, with the old DPI.
 	const auto flFontSizePoints = FontPointsFromScaledPixels(GetFontSizeInPixels());
@@ -1100,8 +1051,7 @@ auto CListExHdr::WMDPIChangedAfterParent()->LRESULT
 	return 0;
 }
 
-auto CListExHdr::WMHDMLayout(const MSG& msg)->LRESULT
-{
+auto CListExHdr::WMHDMLayout(const MSG& msg)->LRESULT {
 	GDIUT::DefSubclassProc(msg);
 	const auto pHDL = reinterpret_cast<LPHDLAYOUT>(msg.lParam);
 	pHDL->pwpos->cy = GetHeight(); //New header height.
@@ -1110,8 +1060,7 @@ auto CListExHdr::WMHDMLayout(const MSG& msg)->LRESULT
 	return TRUE;
 }
 
-auto CListExHdr::WMLButtonDown(const MSG& msg)->LRESULT
-{
+auto CListExHdr::WMLButtonDown(const MSG& msg)->LRESULT {
 	GDIUT::DefSubclassProc(msg);
 
 	const POINT pt { .x { GDIUT::GetXLPARAM(msg.lParam) }, .y { GDIUT::GetYLPARAM(msg.lParam) } };
@@ -1137,8 +1086,7 @@ auto CListExHdr::WMLButtonDown(const MSG& msg)->LRESULT
 	return GDIUT::DefSubclassProc(msg);
 }
 
-auto CListExHdr::WMLButtonUp(const MSG& msg)->LRESULT
-{
+auto CListExHdr::WMLButtonUp(const MSG& msg)->LRESULT {
 	GDIUT::DefSubclassProc(msg);
 
 	m_fLMousePressed = false;
@@ -1177,8 +1125,7 @@ auto CListExHdr::WMLButtonUp(const MSG& msg)->LRESULT
 	return 0;
 }
 
-auto CListExHdr::WMPaint()->LRESULT
-{
+auto CListExHdr::WMPaint()->LRESULT {
 	const GDIUT::CPaintDC dcPaint(m_hWnd);
 	GDIUT::CRect rcClient;
 	::GetClientRect(m_hWnd, rcClient);
@@ -1214,8 +1161,7 @@ auto CListExHdr::WMPaint()->LRESULT
 	return 0;
 }
 
-auto CListExHdr::WMRButtonDown(const MSG& msg)->LRESULT
-{
+auto CListExHdr::WMRButtonDown(const MSG& msg)->LRESULT {
 	const POINT pt { .x { GDIUT::GetXLPARAM(msg.lParam) }, .y { GDIUT::GetYLPARAM(msg.lParam) } };
 	const auto hWndParent = GetParent();
 	const auto uCtrlId = static_cast<UINT>(::GetDlgCtrlID(hWndParent));
@@ -1226,8 +1172,7 @@ auto CListExHdr::WMRButtonDown(const MSG& msg)->LRESULT
 	return GDIUT::DefSubclassProc(msg);
 }
 
-auto CListExHdr::WMRButtonUp(const MSG& msg)->LRESULT
-{
+auto CListExHdr::WMRButtonUp(const MSG& msg)->LRESULT {
 	const POINT pt { .x { GDIUT::GetXLPARAM(msg.lParam) }, .y { GDIUT::GetYLPARAM(msg.lParam) } };
 	const auto hWndParent = GetParent();
 	const auto uCtrlId = static_cast<UINT>(::GetDlgCtrlID(hWndParent));
@@ -1323,8 +1268,7 @@ namespace HEXCTRL::LISTEX {
 		bool SetItemState(int iItem, UINT uState, UINT uStateMask)const;
 		void SetItemText(int iItem, int iSubItem, LPCWSTR pwszText);
 		void SetRedraw(bool fRedraw)const;
-		void SetSortable(bool fSortable, PFNLVCOMPARE pfnCompare = nullptr,
-			EListExSortMode eSortMode = EListExSortMode::SORT_LEX);
+		void SetSortable(bool fSortable, PFNLVCOMPARE pfnCompare = nullptr, EListExSortMode eSortMode = EListExSortMode::SORT_LEX);
 		void SetWindowPos(HWND hWndAfter, int iX, int iY, int iWidth, int iHeight, UINT uFlags = SWP_NOACTIVATE | SWP_NOZORDER);
 		bool ShowWindow(int iCmdShow)const;
 		void SortItemsEx(PFNLVCOMPARE pfnCompare, DWORD_PTR dwData)const;
@@ -1444,8 +1388,7 @@ namespace HEXCTRL::LISTEX {
 	};
 }
 
-bool CListEx::Create(const LISTEXCREATE& lcs)
-{
+bool CListEx::Create(const LISTEXCREATE& lcs) {
 	assert(!IsCreated());
 	if (IsCreated()) { return false; }
 
@@ -1577,13 +1520,11 @@ bool CListEx::Create(const LISTEXCREATE& lcs)
 	return true;
 }
 
-void CListEx::CreateDialogCtrl(UINT uCtrlID, HWND hWndParent)
-{
+void CListEx::CreateDialogCtrl(UINT uCtrlID, HWND hWndParent) {
 	Create({ .hWndParent { hWndParent }, .uID { uCtrlID }, .fDialogCtrl { true } });
 }
 
-bool CListEx::DeleteAllItems()
-{
+bool CListEx::DeleteAllItems() {
 	assert(IsCreated());
 	if (!IsCreated()) { return FALSE; }
 
@@ -1592,8 +1533,7 @@ bool CListEx::DeleteAllItems()
 	return ::SendMessageW(m_hWnd, LVM_DELETEALLITEMS, 0, 0L) != 0;
 }
 
-bool CListEx::DeleteColumn(int iIndex)
-{
+bool CListEx::DeleteColumn(int iIndex) {
 	assert(IsCreated());
 	if (!IsCreated()) { return FALSE; }
 
@@ -1603,16 +1543,14 @@ bool CListEx::DeleteColumn(int iIndex)
 	return ::SendMessageW(m_hWnd, LVM_DELETECOLUMN, iIndex, 0) != 0;
 }
 
-bool CListEx::DeleteItem(int iItem)
-{
+bool CListEx::DeleteItem(int iItem) {
 	assert(IsCreated());
 	if (!IsCreated()) { return FALSE; }
 
 	return ::SendMessageW(m_hWnd, LVM_DELETEITEM, iItem, 0L) != 0;
 }
 
-void CListEx::DrawItem(LPDRAWITEMSTRUCT pDIS)
-{
+void CListEx::DrawItem(LPDRAWITEMSTRUCT pDIS) {
 	if (!IsCreated() || pDIS->hwndItem != m_hWnd)
 		return;
 
@@ -1719,8 +1657,7 @@ void CListEx::DrawItem(LPDRAWITEMSTRUCT pDIS)
 	}
 }
 
-bool CListEx::EnsureVisible(int iItem, bool fPartialOK)const
-{
+bool CListEx::EnsureVisible(int iItem, bool fPartialOK)const {
 	assert(IsCreated());
 	if (!IsCreated()) { return { }; }
 
@@ -1731,16 +1668,14 @@ auto CListEx::GetColors()const->const LISTEXCOLORS& {
 	return m_stColors;
 }
 
-bool CListEx::GetColumn(int iColumn, LVCOLUMNW* pColumn)const
-{
+bool CListEx::GetColumn(int iColumn, LVCOLUMNW* pColumn)const {
 	assert(IsCreated());
 	if (!IsCreated()) { return false; }
 
 	return ::SendMessageW(m_hWnd, LVM_GETCOLUMNW, iColumn, reinterpret_cast<LPARAM>(pColumn));
 }
 
-auto CListEx::GetColumnSortMode(int iColumn)const->EListExSortMode
-{
+auto CListEx::GetColumnSortMode(int iColumn)const->EListExSortMode {
 	assert(IsCreated());
 	if (!IsCreated()) { return { }; }
 
@@ -1752,40 +1687,35 @@ auto CListEx::GetColumnSortMode(int iColumn)const->EListExSortMode
 	return m_eDefSortMode;
 }
 
-int CListEx::GetColumnWidth(int iColumn)const
-{
+int CListEx::GetColumnWidth(int iColumn)const {
 	assert(IsCreated());
 	if (!IsCreated()) { return -1; }
 
 	return static_cast<int>(::SendMessageW(m_hWnd, LVM_GETCOLUMNWIDTH, iColumn, 0));
 }
 
-int CListEx::GetCountPerPage()const
-{
+int CListEx::GetCountPerPage()const {
 	assert(IsCreated());
 	if (!IsCreated()) { return -1; }
 
 	return static_cast<int>(::SendMessageW(m_hWnd, LVM_GETCOUNTPERPAGE, 0, 0));
 }
 
-int CListEx::GetDlgCtrlID()const
-{
+int CListEx::GetDlgCtrlID()const {
 	assert(IsCreated());
 	if (!IsCreated()) { return { }; }
 
 	return ::GetDlgCtrlID(m_hWnd);
 }
 
-auto CListEx::GetExtendedStyle()const->DWORD
-{
+auto CListEx::GetExtendedStyle()const->DWORD {
 	assert(IsCreated());
 	if (!IsCreated()) { return { }; }
 
 	return static_cast<DWORD>(::SendMessageW(m_hWnd, LVM_GETEXTENDEDLISTVIEWSTYLE, 0, 0));
 }
 
-auto CListEx::GetFont()const->LOGFONTW
-{
+auto CListEx::GetFont()const->LOGFONTW {
 	assert(IsCreated());
 	if (!IsCreated()) { return { }; }
 
@@ -1795,8 +1725,7 @@ auto CListEx::GetFont()const->LOGFONTW
 	return lf;
 }
 
-long CListEx::GetFontSizeInPixels()const
-{
+long CListEx::GetFontSizeInPixels()const {
 	assert(IsCreated());
 	if (!IsCreated()) { return { }; }
 
@@ -1806,39 +1735,34 @@ long CListEx::GetFontSizeInPixels()const
 	return lf.lfHeight;
 }
 
-auto CListEx::GetHWND()const->HWND
-{
+auto CListEx::GetHWND()const->HWND {
 	if (!IsCreated()) { return { }; }
 
 	return m_hWnd;
 }
 
-auto CListEx::GetImageList(int iList)const->HIMAGELIST
-{
+auto CListEx::GetImageList(int iList)const->HIMAGELIST {
 	assert(IsCreated());
 	if (!IsCreated()) { return { }; }
 
 	return reinterpret_cast<HIMAGELIST>(::SendMessageW(m_hWnd, LVM_GETIMAGELIST, iList, 0L));
 }
 
-void CListEx::GetItem(LVITEMW* pItem)const
-{
+void CListEx::GetItem(LVITEMW* pItem)const {
 	assert(IsCreated());
 	if (!IsCreated()) { return; }
 
 	::SendMessageW(m_hWnd, LVM_GETITEMW, 0, reinterpret_cast<LPARAM>(pItem));
 }
 
-int CListEx::GetItemCount()const
-{
+int CListEx::GetItemCount()const {
 	assert(IsCreated());
 	if (!IsCreated()) { return -1; }
 
 	return static_cast<int>(::SendMessageW(m_hWnd, LVM_GETITEMCOUNT, 0, 0L));
 }
 
-auto CListEx::GetItemData(int iItem)const->DWORD_PTR
-{
+auto CListEx::GetItemData(int iItem)const->DWORD_PTR {
 	assert(IsCreated());
 	if (!IsCreated()) { return { }; }
 
@@ -1848,8 +1772,7 @@ auto CListEx::GetItemData(int iItem)const->DWORD_PTR
 	return lvi.lParam;
 }
 
-auto CListEx::GetItemRect(int iItem, int iArea)const->RECT
-{
+auto CListEx::GetItemRect(int iItem, int iArea)const->RECT {
 	assert(IsCreated());
 	if (!IsCreated()) { return { }; }
 
@@ -1861,56 +1784,49 @@ auto CListEx::GetItemRect(int iItem, int iArea)const->RECT
 	return ret ? rc : RECT { };
 }
 
-auto CListEx::GetItemText(int iItem, int iSubItem)const->std::wstring
-{
+auto CListEx::GetItemText(int iItem, int iSubItem)const->std::wstring {
 	assert(IsCreated());
 	if (!IsCreated()) { return { }; }
 
 	return std::wstring { GetItemTextImpl(iItem, iSubItem) };
 }
 
-int CListEx::GetNextItem(int iItem, int iFlags)const
-{
+int CListEx::GetNextItem(int iItem, int iFlags)const {
 	assert(IsCreated());
 	if (!IsCreated()) { return { }; }
 
 	return static_cast<int>(::SendMessageW(m_hWnd, LVM_GETNEXTITEM, iItem, MAKELPARAM(iFlags, 0)));
 }
 
-auto CListEx::GetSelectedCount()const->UINT
-{
+auto CListEx::GetSelectedCount()const->UINT {
 	assert(IsCreated());
 	if (!IsCreated()) { return { }; }
 
 	return static_cast<UINT>(::SendMessageW(m_hWnd, LVM_GETSELECTEDCOUNT, 0, 0L));
 }
 
-int CListEx::GetSelectionMark()const
-{
+int CListEx::GetSelectionMark()const {
 	assert(IsCreated());
 	if (!IsCreated()) { return { }; }
 
 	return static_cast<int>(::SendMessageW(m_hWnd, LVM_GETSELECTIONMARK, 0, 0));
 }
 
-int CListEx::GetSortColumn()const
-{
+int CListEx::GetSortColumn()const {
 	assert(IsCreated());
 	if (!IsCreated()) { return -1; }
 
 	return m_iSortColumn;
 }
 
-bool CListEx::GetSortAscending()const
-{
+bool CListEx::GetSortAscending()const {
 	assert(IsCreated());
 	if (!IsCreated()) { return false; }
 
 	return m_fSortAsc;
 }
 
-auto CListEx::GetSubItemRect(int iItem, int iSubItem, int iArea)const->RECT
-{
+auto CListEx::GetSubItemRect(int iItem, int iSubItem, int iArea)const->RECT {
 	assert(IsCreated());
 	if (!IsCreated()) { return { }; }
 
@@ -1922,16 +1838,14 @@ auto CListEx::GetSubItemRect(int iItem, int iSubItem, int iArea)const->RECT
 	return ret ? rc : RECT { };
 }
 
-int CListEx::GetTopIndex()const
-{
+int CListEx::GetTopIndex()const {
 	assert(IsCreated());
 	if (!IsCreated()) { return { }; }
 
 	return static_cast<int>(::SendMessageW(m_hWnd, LVM_GETTOPINDEX, 0, 0));
 }
 
-void CListEx::HideColumn(int iIndex, bool fHide)
-{
+void CListEx::HideColumn(int iIndex, bool fHide) {
 	assert(IsCreated());
 	if (!IsCreated()) { return; }
 
@@ -1939,16 +1853,14 @@ void CListEx::HideColumn(int iIndex, bool fHide)
 	RedrawWindow();
 }
 
-bool CListEx::HitTest(LVHITTESTINFO* pHTI)const
-{
+bool CListEx::HitTest(LVHITTESTINFO* pHTI)const {
 	assert(IsCreated());
 	if (!IsCreated()) { return false; }
 
 	return ::SendMessageW(m_hWnd, LVM_SUBITEMHITTEST, 0, reinterpret_cast<LPARAM>(pHTI)) != -1;
 }
 
-int CListEx::InsertColumn(int iColumn, const LVCOLUMNW* pColumn)
-{
+int CListEx::InsertColumn(int iColumn, const LVCOLUMNW* pColumn) {
 	assert(IsCreated());
 	if (!IsCreated()) { return -1; }
 
@@ -1979,8 +1891,7 @@ int CListEx::InsertColumn(int iColumn, const LVCOLUMNW* pColumn)
 	return iNewIndex;
 }
 
-int CListEx::InsertColumn(int iColumn, const LVCOLUMNW* pColumn, int iDataAlign, bool fEditable)
-{
+int CListEx::InsertColumn(int iColumn, const LVCOLUMNW* pColumn, int iDataAlign, bool fEditable) {
 	assert(IsCreated());
 	if (!IsCreated()) { return -1; }
 
@@ -1991,8 +1902,7 @@ int CListEx::InsertColumn(int iColumn, const LVCOLUMNW* pColumn, int iDataAlign,
 	return iNewIndex;
 }
 
-int CListEx::InsertColumn(int iColumn, LPCWSTR pwszName, int iFormat, int iWidth, int iSubItem, int iDataAlign, bool fEditable)
-{
+int CListEx::InsertColumn(int iColumn, LPCWSTR pwszName, int iFormat, int iWidth, int iSubItem, int iDataAlign, bool fEditable) {
 	assert(IsCreated());
 	if (!IsCreated()) { return -1; }
 
@@ -2001,62 +1911,53 @@ int CListEx::InsertColumn(int iColumn, LPCWSTR pwszName, int iFormat, int iWidth
 	return InsertColumn(iColumn, &lvcol, iDataAlign, fEditable);
 }
 
-int CListEx::InsertItem(const LVITEMW* pItem)const
-{
+int CListEx::InsertItem(const LVITEMW* pItem)const {
 	assert(IsCreated());
 	if (!IsCreated()) { return -1; }
 
 	return static_cast<int>(::SendMessageW(m_hWnd, LVM_INSERTITEMW, 0, reinterpret_cast<LPARAM>(pItem)));
 }
 
-int CListEx::InsertItem(int iItem, LPCWSTR pwszName)const
-{
+int CListEx::InsertItem(int iItem, LPCWSTR pwszName)const {
 	return InsertItem(LVIF_TEXT, iItem, pwszName, 0, 0, 0, 0);
 }
 
-int CListEx::InsertItem(int iItem, LPCWSTR pwszName, int iImage)const
-{
+int CListEx::InsertItem(int iItem, LPCWSTR pwszName, int iImage)const {
 	return InsertItem(LVIF_TEXT | LVIF_IMAGE, iItem, pwszName, 0, 0, iImage, 0);
 }
 
-int CListEx::InsertItem(UINT uMask, int iItem, LPCWSTR pwszName, UINT uState, UINT uStateMask, int iImage, LPARAM lParam)const
-{
+int CListEx::InsertItem(UINT uMask, int iItem, LPCWSTR pwszName, UINT uState, UINT uStateMask, int iImage, LPARAM lParam)const {
 	const LVITEMW item { .mask { uMask }, .iItem { iItem }, .state { uState }, .stateMask { uStateMask },
 		.pszText { const_cast<LPWSTR>(pwszName) }, .iImage { iImage }, .lParam { lParam } };
 	return InsertItem(&item);
 }
 
-bool CListEx::IsCreated()const
-{
+bool CListEx::IsCreated()const {
 	return m_fCreated;
 }
 
-bool CListEx::IsColumnSortable(int iColumn)
-{
+bool CListEx::IsColumnSortable(int iColumn) {
 	assert(IsCreated());
 	if (!IsCreated()) { return { }; }
 
 	return GetHeaderCtrl().IsColumnSortable(iColumn);
 }
 
-auto CListEx::MapIndexToID(UINT uIndex)const->UINT
-{
+auto CListEx::MapIndexToID(UINT uIndex)const->UINT {
 	assert(IsCreated());
 	if (!IsCreated()) { return { }; }
 
 	return static_cast<UINT>(::SendMessageW(m_hWnd, LVM_MAPINDEXTOID, static_cast<WPARAM>(uIndex), 0));
 }
 
-auto CListEx::MapIDToIndex(UINT uID)const->UINT
-{
+auto CListEx::MapIDToIndex(UINT uID)const->UINT {
 	assert(IsCreated());
 	if (!IsCreated()) { return { }; }
 
 	return static_cast<UINT>(::SendMessageW(m_hWnd, LVM_MAPIDTOINDEX, static_cast<WPARAM>(uID), 0));
 }
 
-void CListEx::MeasureItem(LPMEASUREITEMSTRUCT pMIS)
-{
+void CListEx::MeasureItem(LPMEASUREITEMSTRUCT pMIS) {
 	if (!IsCreated() || pMIS->CtlID != static_cast<UINT>(GetDlgCtrlID()))
 		return;
 
@@ -2069,8 +1970,7 @@ void CListEx::MeasureItem(LPMEASUREITEMSTRUCT pMIS)
 	pMIS->itemHeight = tm.tmHeight + tm.tmExternalLeading + 2;
 }
 
-auto CListEx::ProcessMsg(const MSG& msg)->LRESULT
-{
+auto CListEx::ProcessMsg(const MSG& msg)->LRESULT {
 	switch (msg.message) {
 	case WM_COMMAND: return WMCommand(msg);
 	case WM_DESTROY: return WMDestroy();
@@ -2091,8 +1991,7 @@ auto CListEx::ProcessMsg(const MSG& msg)->LRESULT
 	}
 }
 
-void CListEx::ResetSort()
-{
+void CListEx::ResetSort() {
 	assert(IsCreated());
 	if (!IsCreated()) { return; }
 
@@ -2100,16 +1999,14 @@ void CListEx::ResetSort()
 	GetHeaderCtrl().SetSortArrow(-1, false);
 }
 
-void CListEx::Scroll(SIZE size)const
-{
+void CListEx::Scroll(SIZE size)const {
 	assert(IsCreated());
 	if (!IsCreated()) { return; }
 
 	::SendMessageW(m_hWnd, LVM_SCROLL, size.cx, size.cy);
 }
 
-void CListEx::SetColors(const LISTEXCOLORS& lcs)
-{
+void CListEx::SetColors(const LISTEXCOLORS& lcs) {
 	assert(IsCreated());
 	if (!IsCreated()) { return; }
 
@@ -2118,24 +2015,21 @@ void CListEx::SetColors(const LISTEXCOLORS& lcs)
 	RedrawWindow();
 }
 
-void CListEx::SetColumn(int iColumn, const LVCOLUMNW* pColumn)const
-{
+void CListEx::SetColumn(int iColumn, const LVCOLUMNW* pColumn)const {
 	assert(IsCreated());
 	if (!IsCreated()) { return; }
 
 	::SendMessageW(m_hWnd, LVM_SETCOLUMNW, iColumn, reinterpret_cast<LPARAM>(pColumn));
 }
 
-void CListEx::SetColumnEditable(int iColumn, bool fEditable)
-{
+void CListEx::SetColumnEditable(int iColumn, bool fEditable) {
 	assert(IsCreated());
 	if (!IsCreated()) { return; }
 
 	GetHeaderCtrl().SetColumnEditable(iColumn, fEditable);
 }
 
-void CListEx::SetColumnSortMode(int iColumn, bool fSortable, EListExSortMode eSortMode)
-{
+void CListEx::SetColumnSortMode(int iColumn, bool fSortable, EListExSortMode eSortMode) {
 	assert(IsCreated());
 	if (!IsCreated()) { return; }
 
@@ -2148,24 +2042,21 @@ void CListEx::SetColumnSortMode(int iColumn, bool fSortable, EListExSortMode eSo
 	GetHeaderCtrl().SetColumnSortable(iColumn, fSortable);
 }
 
-bool CListEx::SetColumnWidth(int iCol, int iWidth)
-{
+bool CListEx::SetColumnWidth(int iCol, int iWidth) {
 	assert(IsCreated());
 	if (!IsCreated()) { return false; }
 
 	return static_cast<bool>(::SendMessageW(m_hWnd, LVM_SETCOLUMNWIDTH, iCol, MAKELPARAM(iWidth, 0)));
 }
 
-auto CListEx::SetExtendedStyle(DWORD dwExStyle)const->DWORD
-{
+auto CListEx::SetExtendedStyle(DWORD dwExStyle)const->DWORD {
 	assert(IsCreated());
 	if (!IsCreated()) { return { }; }
 
 	return static_cast<DWORD>(::SendMessageW(m_hWnd, LVM_SETEXTENDEDLISTVIEWSTYLE, 0, dwExStyle));
 }
 
-void CListEx::SetFont(const LOGFONTW& lf)
-{
+void CListEx::SetFont(const LOGFONTW& lf) {
 	assert(IsCreated());
 	if (!IsCreated()) { return; }
 
@@ -2190,40 +2081,35 @@ void CListEx::SetFont(const LOGFONTW& lf)
 	}
 }
 
-void CListEx::SetHdrHeight(DWORD dwHeight)
-{
+void CListEx::SetHdrHeight(DWORD dwHeight) {
 	assert(IsCreated());
 	if (!IsCreated()) { return; }
 
 	GetHeaderCtrl().SetHeight(dwHeight);
 }
 
-void CListEx::SetHdrImageList(HIMAGELIST pList)
-{
+void CListEx::SetHdrImageList(HIMAGELIST pList) {
 	assert(IsCreated());
 	if (!IsCreated()) { return; }
 
 	GetHeaderCtrl().SetImageList(pList);
 }
 
-auto CListEx::SetImageList(HIMAGELIST hList, int iListType)->HIMAGELIST
-{
+auto CListEx::SetImageList(HIMAGELIST hList, int iListType)->HIMAGELIST {
 	assert(IsCreated());
 	if (!IsCreated()) { return { }; }
 
 	return reinterpret_cast<HIMAGELIST>(::SendMessageW(m_hWnd, LVM_SETIMAGELIST, iListType, reinterpret_cast<LPARAM>(hList)));
 }
 
-bool CListEx::SetItem(const LVITEMW* pItem)const
-{
+bool CListEx::SetItem(const LVITEMW* pItem)const {
 	assert(IsCreated());
 	if (!IsCreated()) { return { }; }
 
 	return ::SendMessageW(m_hWnd, LVM_SETITEMW, 0, reinterpret_cast<LPARAM>(pItem)) != 0;
 }
 
-void CListEx::SetItemCountEx(int iCount, DWORD dwFlags)const
-{
+void CListEx::SetItemCountEx(int iCount, DWORD dwFlags)const {
 	assert(IsCreated());
 	if (!IsCreated()) { return; }
 
@@ -2231,8 +2117,7 @@ void CListEx::SetItemCountEx(int iCount, DWORD dwFlags)const
 	::SendMessageW(m_hWnd, LVM_SETITEMCOUNT, iCount, dwFlags);
 }
 
-bool CListEx::SetItemData(int iItem, DWORD_PTR dwData)const
-{
+bool CListEx::SetItemData(int iItem, DWORD_PTR dwData)const {
 	assert(IsCreated());
 	if (!IsCreated()) { return { }; }
 
@@ -2240,16 +2125,14 @@ bool CListEx::SetItemData(int iItem, DWORD_PTR dwData)const
 	return SetItem(&lvi);
 }
 
-bool CListEx::SetItemState(int iItem, const LVITEMW* pItem)const
-{
+bool CListEx::SetItemState(int iItem, const LVITEMW* pItem)const {
 	assert(IsCreated());
 	if (!IsCreated()) { return false; }
 
 	return static_cast<bool>(::SendMessageW(m_hWnd, LVM_SETITEMSTATE, iItem, reinterpret_cast<LPARAM>(pItem)));
 }
 
-bool CListEx::SetItemState(int iItem, UINT uState, UINT uStateMask)const
-{
+bool CListEx::SetItemState(int iItem, UINT uState, UINT uStateMask)const {
 	assert(IsCreated());
 	if (!IsCreated()) { return false; }
 
@@ -2257,8 +2140,7 @@ bool CListEx::SetItemState(int iItem, UINT uState, UINT uStateMask)const
 	return SetItemState(iItem, &lvi);
 }
 
-void CListEx::SetItemText(int iItem, int iSubItem, LPCWSTR pwszText)
-{
+void CListEx::SetItemText(int iItem, int iSubItem, LPCWSTR pwszText) {
 	assert(IsCreated());
 	if (!IsCreated()) { return; }
 
@@ -2266,16 +2148,14 @@ void CListEx::SetItemText(int iItem, int iSubItem, LPCWSTR pwszText)
 	::SendMessageW(m_hWnd, LVM_SETITEMTEXTW, iItem, reinterpret_cast<LPARAM>(&lvi));
 }
 
-void CListEx::SetRedraw(bool fRedraw)const
-{
+void CListEx::SetRedraw(bool fRedraw)const {
 	assert(IsCreated());
 	if (!IsCreated()) { return; }
 
 	::SendMessageW(m_hWnd, WM_SETREDRAW, fRedraw, 0);
 }
 
-void CListEx::SetHdrFont(const LOGFONTW& lf)
-{
+void CListEx::SetHdrFont(const LOGFONTW& lf) {
 	assert(IsCreated());
 	if (!IsCreated()) { return; }
 
@@ -2284,8 +2164,7 @@ void CListEx::SetHdrFont(const LOGFONTW& lf)
 	GetHeaderCtrl().RedrawWindow();
 }
 
-void CListEx::SetHdrColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText)
-{
+void CListEx::SetHdrColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText) {
 	assert(IsCreated());
 	if (!IsCreated()) { return; }
 
@@ -2294,16 +2173,14 @@ void CListEx::SetHdrColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText)
 	GetHeaderCtrl().RedrawWindow();
 }
 
-void CListEx::SetHdrColumnIcon(int iColumn, const LISTEXHDRICON& stIcon)
-{
+void CListEx::SetHdrColumnIcon(int iColumn, const LISTEXHDRICON& stIcon) {
 	assert(IsCreated());
 	if (!IsCreated()) { return; }
 
 	GetHeaderCtrl().SetColumnIcon(iColumn, stIcon);
 }
 
-void CListEx::SetSortable(bool fSortable, PFNLVCOMPARE pfnCompare, EListExSortMode eSortMode)
-{
+void CListEx::SetSortable(bool fSortable, PFNLVCOMPARE pfnCompare, EListExSortMode eSortMode) {
 	assert(IsCreated());
 	if (!IsCreated()) { return; }
 
@@ -2314,24 +2191,21 @@ void CListEx::SetSortable(bool fSortable, PFNLVCOMPARE pfnCompare, EListExSortMo
 	GetHeaderCtrl().SetSortable(fSortable);
 }
 
-void CListEx::SetWindowPos(HWND hWndAfter, int iX, int iY, int iWidth, int iHeight, UINT uFlags)
-{
+void CListEx::SetWindowPos(HWND hWndAfter, int iX, int iY, int iWidth, int iHeight, UINT uFlags) {
 	assert(IsCreated());
 	if (!IsCreated()) { return; }
 
 	::SetWindowPos(m_hWnd, hWndAfter, iX, iY, iWidth, iHeight, uFlags);
 }
 
-bool CListEx::ShowWindow(int iCmdShow)const
-{
+bool CListEx::ShowWindow(int iCmdShow)const {
 	assert(IsCreated());
 	if (!IsCreated()) { return false; }
 
 	return ::ShowWindow(m_hWnd, iCmdShow) != FALSE;
 }
 
-void CListEx::SortItemsEx(PFNLVCOMPARE pfnCompare, DWORD_PTR dwData)const
-{
+void CListEx::SortItemsEx(PFNLVCOMPARE pfnCompare, DWORD_PTR dwData)const {
 	assert(IsCreated());
 	if (!IsCreated()) { return; }
 
@@ -2339,16 +2213,14 @@ void CListEx::SortItemsEx(PFNLVCOMPARE pfnCompare, DWORD_PTR dwData)const
 	::SendMessageW(m_hWnd, LVM_SORTITEMSEX, dwData, reinterpret_cast<LPARAM>(pfnCompare));
 }
 
-void CListEx::Update(int iItem)const
-{
+void CListEx::Update(int iItem)const {
 	assert(IsCreated());
 	if (!IsCreated()) { return; }
 
 	::SendMessageW(m_hWnd, LVM_UPDATE, iItem, 0L);
 }
 
-int CALLBACK CListEx::DefCompareFunc(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort)
-{
+int CALLBACK CListEx::DefCompareFunc(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort) {
 	const auto* const pListCtrl = reinterpret_cast<CListEx*>(lParamSort);
 	const auto iSortColumn = pListCtrl->GetSortColumn();
 	const auto eSortMode = pListCtrl->GetColumnSortMode(iSortColumn);
@@ -2395,8 +2267,7 @@ int CALLBACK CListEx::DefCompareFunc(LPARAM lParam1, LPARAM lParam2, LPARAM lPar
 
 //CListEx private methods:
 
-bool CListEx::EditInPlaceShow(bool fShow)
-{
+bool CListEx::EditInPlaceShow(bool fShow) {
 	if (!fShow) {
 		::DestroyWindow(m_hWndEditInPlace);
 		return false;
@@ -2445,14 +2316,12 @@ auto CListEx::FontScaledPixelsFromPoints(float flSizePoints)const->long {
 	return std::lround(GDIUT::FontPixelsFromPoints(flSizePoints) * GetDPIScale());
 }
 
-void CListEx::FontSizeIncDec(bool fInc)
-{
+void CListEx::FontSizeIncDec(bool fInc) {
 	const auto flFontSizePoints = FontPointsFromScaledPixels(GetFontSizeInPixels()) + (fInc ? 1 : -1);
 	SetFontSizeInPoints(flFontSizePoints);
 }
 
-auto CListEx::GetCustomColor(int iItem, int iSubItem)const->std::optional<LISTEXCOLOR>
-{
+auto CListEx::GetCustomColor(int iItem, int iSubItem)const->std::optional<LISTEXCOLOR> {
 	if (iItem < 0 || iSubItem < 0) {
 		return std::nullopt;
 	}
@@ -2470,13 +2339,11 @@ auto CListEx::GetCustomColor(int iItem, int iSubItem)const->std::optional<LISTEX
 	return std::nullopt;
 }
 
-auto CListEx::GetDPIScale()const->float
-{
+auto CListEx::GetDPIScale()const->float {
 	return m_flDPIScale;
 }
 
-int CListEx::GetIcon(int iItem, int iSubItem)const
-{
+int CListEx::GetIcon(int iItem, int iSubItem)const {
 	if (GetImageList(LVSIL_NORMAL) == nullptr) {
 		return -1; //-1 is the default, when no image for cell is set.
 	}
@@ -2499,8 +2366,7 @@ auto CListEx::GetItemTextImpl(int iItem, int iSubItem)const->std::wstring_view {
 	return m_uptrCache.get();
 }
 
-auto CListEx::GetTooltip(int iItem, int iSubItem)const->std::optional<LISTEXTTDATA>
-{
+auto CListEx::GetTooltip(int iItem, int iSubItem)const->std::optional<LISTEXTTDATA> {
 	if (iItem < 0 || iSubItem < 0) {
 		return std::nullopt;
 	}
@@ -2517,15 +2383,13 @@ auto CListEx::GetTooltip(int iItem, int iSubItem)const->std::optional<LISTEXTTDA
 	return std::nullopt;
 }
 
-bool CListEx::IsWindow()const
-{
+bool CListEx::IsWindow()const {
 	return ::IsWindow(m_hWnd);
 }
 
-void CListEx::OnEditInPlaceEnterPressed()
-{
+void CListEx::OnEditInPlaceEnterPressed() {
 	//Notifying parent window about cell's text changing.
-	std::unique_ptr<wchar_t[]> uptrCache { new wchar_t[m_u32CacheSize] }; //Cache for the text.
+	const std::unique_ptr<wchar_t[]> uptrCache { new wchar_t[m_u32CacheSize] }; //Cache for the text.
 	::GetWindowTextW(m_hWndEditInPlace, uptrCache.get(), m_u32CacheSize);
 	const auto uCtrlId = static_cast<UINT>(GetDlgCtrlID());
 	const LISTEXDATAINFO ldi { .hdr { .hwndFrom { m_hWnd }, .idFrom { uCtrlId }, .code { LISTEX_MSG_SETDATA } },
@@ -2540,14 +2404,12 @@ void CListEx::OnEditInPlaceEnterPressed()
 	OnEditInPlaceKillFocus();
 }
 
-void CListEx::OnEditInPlaceKillFocus()
-{
+void CListEx::OnEditInPlaceKillFocus() {
 	::DestroyWindow(m_hWndEditInPlace);
 	RedrawWindow();
 }
 
-void CListEx::OnNotifyEditInPlace(NMHDR* pNMHDR)
-{
+void CListEx::OnNotifyEditInPlace(NMHDR* pNMHDR) {
 	switch (pNMHDR->code) {
 	case VK_RETURN:
 		OnEditInPlaceEnterPressed();
@@ -2560,8 +2422,7 @@ void CListEx::OnNotifyEditInPlace(NMHDR* pNMHDR)
 	}
 }
 
-auto CListEx::ParseItemData(int iItem, int iSubitem)->std::vector<CListEx::ITEMDATA>
-{
+auto CListEx::ParseItemData(int iItem, int iSubitem)->std::vector<CListEx::ITEMDATA> {
 	constexpr auto iIndentRc { 4 };
 	const auto wsvText = GetItemTextImpl(iItem, iSubitem);
 	GDIUT::CRect rcTextOrig = GetSubItemRect(iItem, iSubitem, LVIR_LABEL); //Original rect of the subitem's text.
@@ -2726,14 +2587,12 @@ auto CListEx::ParseItemData(int iItem, int iSubitem)->std::vector<CListEx::ITEMD
 	return vecData;
 }
 
-void CListEx::RedrawWindow()const
-{
+void CListEx::RedrawWindow()const {
 	assert(IsWindow());
 	::RedrawWindow(m_hWnd, nullptr, nullptr, RDW_INVALIDATE | RDW_ERASE | RDW_UPDATENOW);
 }
 
-void CListEx::RecalcMeasure()const
-{
+void CListEx::RecalcMeasure()const {
 	//To get WM_MEASUREITEM after changing the font.
 	GDIUT::CRect rc;
 	::GetWindowRect(m_hWnd, rc);
@@ -2742,8 +2601,7 @@ void CListEx::RecalcMeasure()const
 	::SendMessageW(m_hWnd, WM_WINDOWPOSCHANGED, 0, reinterpret_cast<LPARAM>(&wp));
 }
 
-void CListEx::SetFontSizeInPoints(float flSizePoints)
-{
+void CListEx::SetFontSizeInPoints(float flSizePoints) {
 	assert(IsCreated());
 	if (!IsCreated()) {
 		return;
@@ -2760,8 +2618,7 @@ void CListEx::SetFontSizeInPoints(float flSizePoints)
 	SetFont(lf);
 }
 
-void CListEx::TTCellShow(bool fShow, bool fTimer)
-{
+void CListEx::TTCellShow(bool fShow, bool fTimer) {
 	const TTTOOLINFOW ti { .cbSize { sizeof(TTTOOLINFOW) }, .lpszText { m_wstrTTText.data() } };
 	if (fShow) {
 		GDIUT::CPoint ptCur;
@@ -2789,8 +2646,7 @@ void CListEx::TTCellShow(bool fShow, bool fTimer)
 	::SendMessageW(m_hWndTTCell, TTM_TRACKACTIVATE, fShow, reinterpret_cast<LPARAM>(&ti));
 }
 
-void CListEx::TTLinkShow(bool fShow, bool fTimer)
-{
+void CListEx::TTLinkShow(bool fShow, bool fTimer) {
 	const TTTOOLINFOW ti { .cbSize { sizeof(TTTOOLINFOW) }, .lpszText { m_wstrTTText.data() } };
 	if (fShow) {
 		GDIUT::CPoint ptCur;
@@ -2814,8 +2670,7 @@ void CListEx::TTLinkShow(bool fShow, bool fTimer)
 	::SendMessageW(m_hWndTTLink, TTM_TRACKACTIVATE, fShow, reinterpret_cast<LPARAM>(&ti));
 }
 
-void CListEx::TTHLShow(bool fShow, UINT uRow)
-{
+void CListEx::TTHLShow(bool fShow, UINT uRow) {
 	TTTOOLINFOW ti { .cbSize { sizeof(TTTOOLINFOW) } };
 	if (fShow) {
 		POINT ptCur;
@@ -2831,13 +2686,11 @@ void CListEx::TTHLShow(bool fShow, UINT uRow)
 	::SendMessageW(m_hWndTTRow, TTM_TRACKACTIVATE, fShow, reinterpret_cast<LPARAM>(&ti));
 }
 
-void CListEx::UpdateDPIScale()
-{
+void CListEx::UpdateDPIScale() {
 	m_flDPIScale = GDIUT::GetDPIScaleForHWND(m_hWnd);
 }
 
-auto CListEx::WMCommand(const MSG& msg)->LRESULT
-{
+auto CListEx::WMCommand(const MSG& msg)->LRESULT {
 	const auto uCtrlID = LOWORD(msg.wParam); //Control ID.
 	const auto uCode = HIWORD(msg.wParam);
 	if (uCtrlID == m_uIDEditInPlace && uCode == EN_KILLFOCUS) {
@@ -2848,8 +2701,7 @@ auto CListEx::WMCommand(const MSG& msg)->LRESULT
 	return 1;
 }
 
-auto CListEx::WMDestroy()->LRESULT
-{
+auto CListEx::WMDestroy()->LRESULT {
 	::DestroyWindow(m_hWndTTCell);
 	::DestroyWindow(m_hWndTTLink);
 	::DestroyWindow(m_hWndTTRow);
@@ -2863,8 +2715,7 @@ auto CListEx::WMDestroy()->LRESULT
 	return 0;
 }
 
-auto CListEx::WMDPIChangedAfterParent()->LRESULT
-{
+auto CListEx::WMDPIChangedAfterParent()->LRESULT {
 	//Take the current font size, in points, with the old DPI.
 	const auto flFontSizePoints = FontPointsFromScaledPixels(GetFontSizeInPixels());
 	UpdateDPIScale(); //Set new DPI scale.
@@ -2873,21 +2724,18 @@ auto CListEx::WMDPIChangedAfterParent()->LRESULT
 	return 0;
 }
 
-auto CListEx::WMEraseBkgnd()->LRESULT
-{
+auto CListEx::WMEraseBkgnd()->LRESULT {
 	return TRUE;
 }
 
-auto CListEx::WMHScroll(const MSG& msg)->LRESULT
-{
+auto CListEx::WMHScroll(const MSG& msg)->LRESULT {
 	GetHeaderCtrl().RedrawWindow();
 	GDIUT::DefSubclassProc(msg);
 
 	return 0;
 }
 
-auto CListEx::WMLButtonDblClk(const MSG& msg)->LRESULT
-{
+auto CListEx::WMLButtonDblClk(const MSG& msg)->LRESULT {
 	const POINT pt { .x { GDIUT::GetXLPARAM(msg.lParam) }, .y { GDIUT::GetYLPARAM(msg.lParam) } };
 	LVHITTESTINFO hti { .pt { pt } };
 	HitTest(&hti);
@@ -2902,8 +2750,7 @@ auto CListEx::WMLButtonDblClk(const MSG& msg)->LRESULT
 	return GDIUT::DefSubclassProc(msg);
 }
 
-auto CListEx::WMLButtonDown(const MSG& msg)->LRESULT
-{
+auto CListEx::WMLButtonDown(const MSG& msg)->LRESULT {
 	const POINT pt { .x { GDIUT::GetXLPARAM(msg.lParam) }, .y { GDIUT::GetYLPARAM(msg.lParam) } };
 	LVHITTESTINFO hti { .pt { pt } };
 	HitTest(&hti);
@@ -2932,8 +2779,7 @@ auto CListEx::WMLButtonDown(const MSG& msg)->LRESULT
 	return GDIUT::DefSubclassProc(msg);
 }
 
-auto CListEx::WMLButtonUp(const MSG& msg)->LRESULT
-{
+auto CListEx::WMLButtonUp(const MSG& msg)->LRESULT {
 	const POINT pt { .x { GDIUT::GetXLPARAM(msg.lParam) }, .y { GDIUT::GetYLPARAM(msg.lParam) } };
 	LVHITTESTINFO hti { .pt { pt } };
 	HitTest(&hti);
@@ -2960,8 +2806,7 @@ auto CListEx::WMLButtonUp(const MSG& msg)->LRESULT
 	return GDIUT::DefSubclassProc(msg);
 }
 
-auto CListEx::WMMouseWheel(const MSG& msg)->LRESULT
-{
+auto CListEx::WMMouseWheel(const MSG& msg)->LRESULT {
 	const auto wDelta = GET_WHEEL_DELTA_WPARAM(msg.wParam);
 	const auto wFlags = GET_KEYSTATE_WPARAM(msg.wParam);
 	if (wFlags == MK_CONTROL) {
@@ -2974,8 +2819,7 @@ auto CListEx::WMMouseWheel(const MSG& msg)->LRESULT
 	return GDIUT::DefSubclassProc(msg);
 }
 
-auto CListEx::WMMouseMove(const MSG& msg)->LRESULT
-{
+auto CListEx::WMMouseMove(const MSG& msg)->LRESULT {
 	const POINT pt { .x { GDIUT::GetXLPARAM(msg.lParam) }, .y { GDIUT::GetYLPARAM(msg.lParam) } };
 
 	LVHITTESTINFO hti { .pt { pt } };
@@ -3045,8 +2889,7 @@ auto CListEx::WMMouseMove(const MSG& msg)->LRESULT
 	return 0;
 }
 
-auto CListEx::WMNotify(const MSG& msg)->LRESULT
-{
+auto CListEx::WMNotify(const MSG& msg)->LRESULT {
 	if (!m_fCreated) {
 		return GDIUT::DefSubclassProc(msg);
 	}
@@ -3085,7 +2928,8 @@ auto CListEx::WMNotify(const MSG& msg)->LRESULT
 				if (!m_fVirtual) {
 					SortItemsEx(m_pfnCompare ? m_pfnCompare : DefCompareFunc, reinterpret_cast<DWORD_PTR>(this));
 				}
-			} break;
+			}
+			break;
 		default: break;
 		}
 		break;
@@ -3103,8 +2947,7 @@ auto CListEx::WMNotify(const MSG& msg)->LRESULT
 	return GDIUT::DefSubclassProc(msg);
 }
 
-auto CListEx::WMPaint()->LRESULT
-{
+auto CListEx::WMPaint()->LRESULT {
 	const GDIUT::CPaintDC dcPaint(m_hWnd);
 	GDIUT::CRect rcClient;
 	::GetClientRect(m_hWnd, rcClient);
@@ -3121,8 +2964,7 @@ auto CListEx::WMPaint()->LRESULT
 	return ::DefSubclassProc(m_hWnd, WM_PAINT, reinterpret_cast<WPARAM>(dcMem.GetHDC()), 0);
 }
 
-auto CListEx::WMSetCursor(const MSG& msg)->LRESULT
-{
+auto CListEx::WMSetCursor(const MSG& msg)->LRESULT {
 	if (m_fHandCursor) {
 		static const auto hCurHand = static_cast<HCURSOR>(::LoadImageW(nullptr, IDC_HAND, IMAGE_CURSOR, 0, 0,
 			LR_DEFAULTSIZE | LR_SHARED));
@@ -3133,8 +2975,7 @@ auto CListEx::WMSetCursor(const MSG& msg)->LRESULT
 	return GDIUT::DefSubclassProc(msg); //To set appropriate cursor.
 }
 
-auto CListEx::WMTimer(const MSG& msg)->LRESULT
-{
+auto CListEx::WMTimer(const MSG& msg)->LRESULT {
 	const auto uzIDEvent = static_cast<UINT_PTR>(msg.wParam);
 	if (uzIDEvent != m_uIDTTTCellActivate && uzIDEvent != m_uIDTTTLinkActivate
 		&& uzIDEvent != m_uIDTTTCellCheck && uzIDEvent != m_uIDTTTLinkCheck) {
@@ -3193,8 +3034,7 @@ auto CListEx::WMTimer(const MSG& msg)->LRESULT
 	return 0;
 }
 
-auto CListEx::WMVScroll(const MSG& msg)->LRESULT
-{
+auto CListEx::WMVScroll(const MSG& msg)->LRESULT {
 	if (m_fVirtual && m_fHighLatency) {
 		if (const auto wSBCode = LOWORD(msg.wParam); wSBCode != SB_THUMBTRACK) {
 			//If there was SB_THUMBTRACK message previously, calculate the scroll amount (up/down)

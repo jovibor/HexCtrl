@@ -8,6 +8,7 @@ module;
 #include <SDKDDKVer.h>
 #include "../HexCtrl.h"
 #include <Windows.h>
+#include <ShObjIdl.h>
 #include <commctrl.h>
 #include <intrin.h>
 #include <algorithm>
@@ -186,8 +187,9 @@ namespace HEXCTRL::INTERNAL::ut { //Utility methods and stuff.
 				it += iSize;
 				strHexTmp += *optNumber;
 			}
-			else
+			else {
 				return std::nullopt;
+			}
 		}
 
 		return { std::move(strHexTmp) };
@@ -316,7 +318,7 @@ namespace HEXCTRL::INTERNAL::ut { //Utility methods and stuff.
 		}
 		else if constexpr (std::is_same_v<T, std::wstring>) {
 			pBegin = reinterpret_cast<const std::byte*>(TData.data());
-			pEnd = pBegin + TData.size() * sizeof(wchar_t);
+			pEnd = pBegin + (TData.size() * sizeof(wchar_t));
 		}
 		else {
 			pBegin = reinterpret_cast<const std::byte*>(&TData);
@@ -476,6 +478,66 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 
 		return hBMPArrow;
 	}
+
+	/*********************************************************************************************
+	* @brief OpenFile(s) dialog, requires "#include <ShObjIdl.h>".
+	* @param spnFilter Array of COMDLG_FILTERSPEC structs, specifying text filters for the dialog.
+	* @param dwFlags Combination of the _FILEOPENDIALOGOPTIONS enum flags.
+	* @param hWndParent Parent window handle.
+	* @returns std::optional of std:vector<std::wstring>, or std::nullopt if Cancel was pressed.
+	*********************************************************************************************/
+	[[nodiscard]] auto OpenFileDlg(std::span<const COMDLG_FILTERSPEC>spnFilter,
+		DWORD dwFlags = FOS_FORCEFILESYSTEM | FOS_PATHMUSTEXIST | FOS_FILEMUSTEXIST | FOS_DONTADDTORECENT,
+		HWND hWndParent = nullptr) -> std::optional<std::vector<std::wstring>> {
+		IFileOpenDialog *pFOD;
+		if (::CoCreateInstance(CLSID_FileOpenDialog, nullptr, CLSCTX_INPROC_SERVER, IID_IFileOpenDialog,
+			reinterpret_cast<void**>(&pFOD)) != S_OK) {
+			return std::nullopt;
+		}
+
+		const std::unique_ptr < IFileOpenDialog, decltype([](IFileOpenDialog* pFOD) { pFOD->Release(); }) > upFOD(pFOD);
+		DWORD dwFlagsCurr;
+		upFOD->GetOptions(&dwFlagsCurr);
+		upFOD->SetOptions(dwFlagsCurr | dwFlags);
+		upFOD->SetFileTypes(static_cast<UINT>(spnFilter.size()), spnFilter.data());
+
+		if (upFOD->Show(hWndParent) != S_OK) { //Cancel was pressed.
+			return std::nullopt;
+		}
+
+		IShellItemArray* pShIA;
+		if (upFOD->GetResults(&pShIA) != S_OK) {
+			return std::nullopt;
+		}
+
+		const std::unique_ptr < IShellItemArray, decltype([](IShellItemArray* pShIA) { pShIA->Release(); }) > upShIA(pShIA);
+		DWORD dwCount { };
+		upShIA->GetCount(&dwCount);
+		if (dwCount == 0) {
+			return std::nullopt;
+		}
+
+		std::vector<std::wstring> vecRet;
+		vecRet.reserve(dwCount);
+		for (auto iFileIdx { 0U }; iFileIdx < dwCount; ++iFileIdx) {
+			IShellItem* pShI;
+			if (upShIA->GetItemAt(iFileIdx, &pShI) != S_OK) {
+				continue;
+			}
+
+			const std::unique_ptr < IShellItem, decltype([](IShellItem* pShI) { pShI->Release(); }) > upShI(pShI);
+			wchar_t* pwszPath { };
+			if (upShI->GetDisplayName(SIGDN_FILESYSPATH, &pwszPath) != S_OK) {
+				continue;
+			}
+
+			vecRet.emplace_back(pwszPath);
+			::CoTaskMemFree(pwszPath);
+		}
+
+		return { std::move(vecRet) };
+	}
+
 
 	class CPoint final : public POINT {
 	public:
@@ -1726,7 +1788,7 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 namespace HEXCTRL::INTERNAL::simd {
 #if defined(_M_IX86) || defined(_M_X64)
 	[[nodiscard]] bool HasAVX2() {
-	#if defined(HEXCTRL_FORCE_AVX1)
+	#ifdef HEXCTRL_FORCE_AVX1
 		return false;
 	#elif defined(HEXCTRL_FORCE_AVX2) // ^^^ HEXCTRL_FORCE_AVX1 / vvv HEXCTRL_FORCE_AVX2
 		return true;
@@ -1923,8 +1985,8 @@ namespace HEXCTRL::INTERNAL::simd {
 			const auto m256iWhat = _mm256_set1_epi16(u16What);
 			const auto m256iResult0 = _mm256_cmpeq_epi16(m256iWhere0, m256iWhat);
 			const auto m256iResult1 = _mm256_cmpeq_epi16(m256iWhere1, m256iWhat);
-			std::uint32_t u32Mask0 = static_cast<std::uint32_t>(_mm256_movemask_epi8(m256iResult0));
-			std::uint32_t u32Mask1 = static_cast<std::uint32_t>(_mm256_movemask_epi8(m256iResult1)) << 1;
+			std::uint32_t u32Mask0 = _mm256_movemask_epi8(m256iResult0);
+			std::uint32_t u32Mask1 = _mm256_movemask_epi8(m256iResult1) << 1;
 
 			//Inverting all 32 bits (32 * 8 = 256vec).
 			if constexpr (!fEqual) {

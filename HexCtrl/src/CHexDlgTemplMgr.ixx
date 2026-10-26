@@ -10,7 +10,7 @@ module;
 #include "dep/rapidjson-amalgam.h"
 #include "res/HexCtrlRes.h"
 #include <Windows.h>
-#include <ShObjIdl.h>
+#include <ShObjIdl.h> //_FILEOPENDIALOGOPTIONS enum.
 #include <commctrl.h>
 #include <algorithm>
 #include <bit>
@@ -344,7 +344,9 @@ void CHexTemplates::RandomizeTemplateColors(int iTemplateID)const {
 			if (pField->vecNested.empty()) {
 				pField->stClr.clrBk = RGB(distrib(gen), distrib(gen), distrib(gen));
 			}
-			else { lmbSelf(lmbSelf, pField->vecNested); }
+			else {
+				lmbSelf(lmbSelf, pField->vecNested);
+			}
 		}
 		};
 
@@ -753,12 +755,13 @@ auto CHexTemplates::JSONProcess_limit(const rapidjson::Value* pValue, std::uint6
 			const auto wstrSizeFieldName = ut::StrToWstr(*optSizeFieldName);
 			const auto wstr = std::format(L"The data of the `{}` field is smaller than the limit 'min'.\r\n"
 				L"Min limit is: {}, actual data is: {}\r\n"
-				L"Use this number anyway?", wstrSizeFieldName, u64LimitMin, u64ActualData);
+				L"Use the actual data anyway?", wstrSizeFieldName, u64LimitMin, u64ActualData);
 			if (::MessageBoxW(0, wstr.data(), wstrSizeFieldName.data(), MB_YESNO | MB_ICONEXCLAMATION) == IDYES) {
 				return u64ActualData;
 			}
+
+			return u64LimitMin;
 		}
-		break;
 		case USE_LIMIT:
 			return u64LimitMin;
 		default:
@@ -777,12 +780,13 @@ auto CHexTemplates::JSONProcess_limit(const rapidjson::Value* pValue, std::uint6
 
 			const auto wstr = std::format(L"The data of the `{}` field is bigger than the limit 'max'.\r\n"
 				L"Max limit is: {}, actual data is: {}\r\n"
-				L"Use this number anyway?", wstrSizeFieldName, u64LimitMax, u64ActualData);
+				L"Use the actual data anyway?", wstrSizeFieldName, u64LimitMax, u64ActualData);
 			if (::MessageBoxW(0, wstr.data(), wstrSizeFieldName.data(), MB_YESNO | MB_ICONEXCLAMATION) == IDYES) {
 				return u64ActualData;
 			}
+
+			return u64LimitMax;
 		}
-		break;
 		case USE_LIMIT:
 			return u64LimitMax;
 		default:
@@ -1476,54 +1480,22 @@ bool CHexDlgTemplMgr::IsSwapEndian()const {
 }
 
 void CHexDlgTemplMgr::OnBnAddTemplate() {
-	IFileOpenDialog *pFOD;
-	if (::CoCreateInstance(CLSID_FileOpenDialog, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pFOD)) != S_OK) {
-		ut::DBG_REPORT(L"CoCreateInstance failed.");
-		return;
-	}
-
-	DWORD dwFlags;
-	pFOD->GetOptions(&dwFlags);
-	pFOD->SetOptions(dwFlags | FOS_FORCEFILESYSTEM | FOS_ALLOWMULTISELECT | FOS_DONTADDTORECENT
-		| FOS_FILEMUSTEXIST | FOS_PATHMUSTEXIST);
 	COMDLG_FILTERSPEC arrFilter[] { { .pszName { L"Template files (*.json)" }, .pszSpec { L"*.json" } },
 		{ .pszName { L"All files (*.*)" }, .pszSpec { L"*.*" } } };
-	pFOD->SetFileTypes(2, arrFilter);
-
-	if (pFOD->Show(m_Wnd) != S_OK) { //Cancel was pressed.
-		pFOD->Release();
+	const auto optFiles = GDIUT::OpenFileDlg({ arrFilter, 2 }, FOS_FORCEFILESYSTEM | FOS_ALLOWMULTISELECT | FOS_DONTADDTORECENT
+		| FOS_PATHMUSTEXIST | FOS_FILEMUSTEXIST);
+	if (!optFiles) {
 		return;
 	}
 
-	IShellItemArray* pShellItemArray;
-	pFOD->GetResults(&pShellItemArray);
-	if (pShellItemArray == nullptr) {
-		pFOD->Release();
-		ut::DBG_REPORT(L"ShellItemArray == nullptr");
-		return;
-	}
-
-	DWORD dwCount { };
-	pShellItemArray->GetCount(&dwCount);
-	for (auto iFileIdx { 0U }; iFileIdx < dwCount; ++iFileIdx) {
-		IShellItem* pShellItem;
-		pShellItemArray->GetItemAt(iFileIdx, &pShellItem);
-		wchar_t* pwszPath;
-		pShellItem->GetDisplayName(SIGDN_FILESYSPATH, &pwszPath);
-		if (!AddTemplateFile(pwszPath)) {
-			std::wstring wstrErr = L"Error adding template:\n";
-			wstrErr += pwszPath;
-			std::wstring_view wsvFileName = pwszPath;
+	for (const auto& wstr : *optFiles) {
+		if (!AddTemplateFile(wstr.data())) {
+			std::wstring wstrErr = L"Error adding template:\n" + wstr;
+			std::wstring_view wsvFileName = wstr;
 			wsvFileName = wsvFileName.substr(wsvFileName.find_last_of('\\') + 1);
 			::MessageBoxW(m_Wnd, wstrErr.data(), wsvFileName.data(), MB_ICONERROR);
 		}
-
-		::CoTaskMemFree(pwszPath);
-		pShellItem->Release();
 	}
-
-	pShellItemArray->Release();
-	pFOD->Release();
 }
 
 void CHexDlgTemplMgr::OnBnRemoveTemplate() {
@@ -2159,7 +2131,9 @@ auto CHexDlgTemplMgr::WMCommand(const MSG& msg)->INT_PTR {
 	//IDOK and IDCANCEL don't have HWND in lParam, if send as result of
 	//IsDialogMessage and no button with such ID presents in the dialog.
 	if (hWndCtrl != nullptr || uCtrlID == IDOK || uCtrlID == IDCANCEL) { //Notifications from controls.
-		if (uCode != BN_CLICKED) { return FALSE; }
+		if (uCode != BN_CLICKED) {
+			return FALSE;
+		}
 		switch (uCtrlID) {
 		case IDOK: OnOK(); break;
 		case IDCANCEL: OnCancel(); break;
