@@ -97,6 +97,7 @@
   * [HEXMENUINFO](#hexmenuinfo)
   * [HEXMODIFY](#hexmodify)
   * [HEXSPAN](#hexspan)
+  * [HEXTEMPLATELIMIT](#hextemplatelimit)
   * [HEXVISION](#hexvision)
   </details>
 * [Interfaces](#interfaces) <details><summary>_Expand_</summary>
@@ -134,6 +135,7 @@
   * [HEXCTRL_MSG_SETFONT](#hexctrl_msg_setfont)
   * [HEXCTRL_MSG_SETGROUPSIZE](#hexctrl_msg_setgroupsize)
   * [HEXCTRL_MSG_SETSELECTION](#hexctrl_msg_setselection)
+  * [HEXCTRL_MSG_TEMPL_LIMIT](#hexctrl_msg_templ_limit)
    </details>
 * [Licensing](#licensing)
 
@@ -1072,6 +1074,23 @@ struct HEXSPAN {
 using VecSpan = std::vector<HEXSPAN>;
 ```
 
+### [](#)HEXTEMPLATELIMIT
+This struct is used in conjunction with the [`HEXCTRL_MSG_TEMPL_LIMIT`](#hexctrl_msg_templ_limit) message.  
+The `u64ActualData` field must be set in response to this message, initially it contains actual data from the **HexCtrl**. If the `fCancel` field is set to `true`, any further template processing will be canceled.  
+If this message is not processed, the actual data from the **HexCtrl** will be used.
+```cpp
+struct HEXTEMPLATELIMIT {
+    NMHDR          hdr { };               //Standard Windows header.
+    const wchar_t* pwszTemplateName { };  //Template name.
+    const wchar_t* pwszSizeFieldName { }; //The `sizefield` value from template.
+    std::uint64_t  u64LimitMin { };       //The 'limit' field 'min' value.
+    std::uint64_t  u64LimitMax { };       //The 'limit' field 'max' value.
+    std::uint64_t  u64ActualData { };     //Actual data from the HexCtrl.
+    bool           fCancel { };           //If set, cancel any further template processing.
+};
+using PHEXTEMPLATELIMIT = HEXTEMPLATELIMIT*;
+```
+
 ### [](#)HEXVISION
 This struct is returned from [`IsOffsetVisible`](#isoffsetvisible) method. Two members `i8Vert` and `i8Horz` represent vertical and horizontal visibility respectively. These members can be in three different states:
 * `-1` — offset is higher, or at the left, of the visible area.
@@ -1264,6 +1283,8 @@ Sent when the data grouping size has changed, `LPARAM` contains a pointer to the
 ### [](#)HEXCTRL_MSG_SETSELECTION
 Sent when a selection has been made, `LPARAM` contains a pointer to the `NMHDR` struct.
 
+### [](#)HEXCTRL_MSG_TEMPL_LIMIT
+This message is sent when applying a template which has a `limit` field with the `onbeyond` property set to `ask`, and the actual data in the **HexCtrl** is beyond the limit (larger or smaller). The `LPARAM` contains a pointer to the [`HEXTEMPLATELIMIT`](#hextemplatelimit) struct.
 
 ## [](#)Licensing
 This software is available under **"The HexCtrl License"**, it is free for any **NON-COMMERCIAL** use.  

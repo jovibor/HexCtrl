@@ -8,16 +8,22 @@ module;
 #include <Windows.h>
 #include <d2d1_3.h>
 #include <Shlwapi.h> //SHCreateMemStream.
+#include <ShObjIdl.h>
 #include <commctrl.h>
 #include <algorithm>
 #include <cassert>
 #include <format>
 #include <locale>
 #include <optional>
+#include <span>
 #include <string>
 #include <unordered_map>
 #include <vector>
 export module GDIUtility;
+
+export using ::COMDLG_FILTERSPEC;      //Used in the OpenFileDlg func.
+export using ::IFileOpenDialog;        //Used in the OpenFileDlg func.
+export using ::_FILEOPENDIALOGOPTIONS; //Used in the OpenFileDlg func.
 
 #pragma comment(lib, "MSImg32") //AlphaBlend.
 #pragma comment(lib, "Shlwapi") //SHCreateMemStream.
@@ -84,18 +90,88 @@ export namespace GDIUT { //Windows GDI related stuff.
 		return 0;
 	}
 
-	template<typename TCom> requires requires(TCom* pTCom) { pTCom->AddRef(); pTCom->Release(); }
+	struct OPENFILEDLG {
+		std::span<const COMDLG_FILTERSPEC> spnFilter; //Array of file extension filters.
+		DWORD dwFlags { FOS_FORCEFILESYSTEM | FOS_PATHMUSTEXIST | FOS_FILEMUSTEXIST | FOS_DONTADDTORECENT };
+		HWND hWndParent { }; //Parent window handle.
+		void(*pfnOnBeforeDlg)(IFileOpenDialog*, uintptr_t) { }; //Callback, before dialog is shown.
+		uintptr_t uzDataBeforeDlg { }; //User defined data to pass to the pfnOnBeforeDlg callback.
+		void(*pfnOnAfterDlg)(IFileOpenDialog*, uintptr_t) { };  //Callback, after "Open" button is clicked.
+		uintptr_t uzDataAfterDlg { }; //User defined data to pass to the pfnOnAfterDlg callback.
+	};
+
+	[[nodiscard]] auto OpenFileDlg(const OPENFILEDLG& ofd) -> std::optional<std::vector<std::wstring>> {
+		IFileOpenDialog *pFOD;
+		if (::CoCreateInstance(CLSID_FileOpenDialog, nullptr, CLSCTX_INPROC_SERVER, IID_IFileOpenDialog,
+			reinterpret_cast<void**>(&pFOD)) != S_OK) {
+			return std::nullopt;
+		}
+
+		const std::unique_ptr < IFileOpenDialog, decltype([](IFileOpenDialog* pFOD) { pFOD->Release(); }) > upFOD(pFOD);
+		DWORD dwFlagsCurr { };
+		upFOD->GetOptions(&dwFlagsCurr);
+		upFOD->SetOptions(dwFlagsCurr | ofd.dwFlags);
+		upFOD->SetFileTypes(static_cast<UINT>(ofd.spnFilter.size()), ofd.spnFilter.data());
+
+		if (ofd.pfnOnBeforeDlg != nullptr) {
+			ofd.pfnOnBeforeDlg(upFOD.get(), ofd.uzDataBeforeDlg);
+		}
+
+		if (upFOD->Show(ofd.hWndParent) != S_OK) { //Cancel was pressed.
+			return std::nullopt;
+		}
+
+		if (ofd.pfnOnAfterDlg != nullptr) {
+			ofd.pfnOnAfterDlg(upFOD.get(), ofd.uzDataAfterDlg);
+		}
+
+		IShellItemArray* pShIA;
+		if (upFOD->GetResults(&pShIA) != S_OK) {
+			return std::nullopt;
+		}
+
+		const std::unique_ptr < IShellItemArray, decltype([](IShellItemArray* pShIA) { pShIA->Release(); }) > upShIA(pShIA);
+		DWORD dwCount { };
+		upShIA->GetCount(&dwCount);
+		if (dwCount == 0) {
+			return std::nullopt;
+		}
+
+		std::vector<std::wstring> vecRet;
+		vecRet.reserve(dwCount);
+		for (auto iFileIdx { 0U }; iFileIdx < dwCount; ++iFileIdx) {
+			IShellItem* pShI;
+			if (upShIA->GetItemAt(iFileIdx, &pShI) != S_OK) {
+				continue;
+			}
+
+			const std::unique_ptr < IShellItem, decltype([](IShellItem* pShI) { pShI->Release(); }) > upShI(pShI);
+			wchar_t* pwszPath { };
+			if (upShI->GetDisplayName(SIGDN_FILESYSPATH, &pwszPath) != S_OK) {
+				continue;
+			}
+
+			vecRet.emplace_back(pwszPath);
+			::CoTaskMemFree(pwszPath);
+		}
+
+		return { std::move(vecRet) };
+	}
+
+	template<typename TCom> requires requires(TCom* pTCom, const IID& iid, void** ppv) {
+		pTCom->QueryInterface(iid, ppv); pTCom->AddRef(); pTCom->Release();
+	}
 	class comptr {
 	public:
 		comptr() = default;
 		comptr(TCom* pTCom) : m_pTCom(pTCom) { }
 		comptr(const comptr<TCom>& rhs) : m_pTCom(rhs.get()) { safe_addref(); }
 		~comptr() { safe_release(); }
-		operator TCom*()const { return get(); }
-		operator TCom**() { return get_addr(); }
-		operator IUnknown**() { return reinterpret_cast<IUnknown**>(get_addr()); }
-		operator void**() { return reinterpret_cast<void**>(get_addr()); }
-		auto operator->()const->TCom* { return get(); }
+		[[nodiscard]] operator TCom*()const { return get(); }
+		[[nodiscard]] operator TCom**() { return get_addr(); }
+		[[nodiscard]] operator IUnknown**() { return reinterpret_cast<IUnknown**>(get_addr()); }
+		[[nodiscard]] operator void**() { return reinterpret_cast<void**>(get_addr()); }
+		[[nodiscard]] auto operator->()const->TCom* { return get(); }
 		auto operator=(const comptr<TCom>& rhs)->comptr& {
 			if (this != &rhs) {
 				safe_release();	m_pTCom = rhs.get(); safe_addref();
@@ -114,7 +190,7 @@ export namespace GDIUT { //Windows GDI related stuff.
 		[[nodiscard]] explicit operator bool() { return get() != nullptr; }
 		[[nodiscard]] explicit operator bool()const { return get() != nullptr; }
 		[[nodiscard]] auto get()const -> TCom* { return m_pTCom; }
-		[[nodiscard]] auto get_addr() -> TCom** { return &m_pTCom; }
+		[[nodiscard]] auto get_addr() -> TCom** { assert(m_pTCom == nullptr); return &m_pTCom; }
 		void safe_release() { if (get() != nullptr) { get()->Release(); m_pTCom = nullptr; } }
 		void safe_addref() { if (get() != nullptr) { get()->AddRef(); } }
 	private:
@@ -1095,130 +1171,6 @@ export namespace GDIUT { //Windows GDI related stuff.
 
 	[[nodiscard]] auto GetDPIScaleForHWND(HWND hWnd) -> float {
 		return static_cast<float>(::GetDpiForWindow(hWnd)) / USER_DEFAULT_SCREEN_DPI; //High-DPI scale factor for window.
-	}
-
-	//Get GDI font size in points from the size in pixels.
-	[[nodiscard]] auto FontPointsFromPixels(long iSizePixels) -> float {
-		constexpr auto flPointsInPixel = 72.F / USER_DEFAULT_SCREEN_DPI;
-		return std::abs(iSizePixels) * flPointsInPixel;
-	}
-
-	//Get GDI font size in pixels from the size in points.
-	[[nodiscard]] auto FontPixelsFromPoints(float flSizePoints) -> long {
-		constexpr auto flPixelsInPoint = USER_DEFAULT_SCREEN_DPI / 72.F;
-		return std::lround(flSizePoints * flPixelsInPoint);
-	}
-
-	//iDirection: 1:UP, -1:DOWN, -2:LEFT, 2:RIGHT.
-	[[nodiscard]] auto CreateArrowBitmap(HDC hDC, DWORD dwWidth, DWORD dwHeight, int iDirection, COLORREF clrBk, COLORREF clrArrow) -> HBITMAP {
-		//Make the width and height even numbers, to make it easier drawing an isosceles triangle.
-		const int iWidth = dwWidth - (dwWidth % 2);
-		const int iHeight = dwHeight - (dwHeight % 2);
-
-		POINT ptArrow[3] { }; //Arrow coordinates within the bitmap.
-		switch (iDirection) {
-		case -2: //LEFT.
-			ptArrow[0] = { .x { iWidth / 4 }, .y { iHeight / 2 } };
-			ptArrow[1] = { .x { iWidth / 2 }, .y { iHeight / 4 } };
-			ptArrow[2] = { .x { iWidth / 2 }, .y { iHeight - (iHeight / 4) } };
-			break;
-		case 1: //UP.
-			ptArrow[0] = { .x { iWidth / 2 }, .y { iHeight / 4 } };
-			ptArrow[1] = { .x { iWidth / 4 }, .y { iHeight / 2 } };
-			ptArrow[2] = { .x { iWidth - (iWidth / 4) }, .y { iHeight / 2 } };
-			break;
-		case 2: //RIGHT.
-			ptArrow[0] = { .x { iWidth / 2 }, .y { iHeight / 4 } };
-			ptArrow[1] = { .x { iWidth / 2 }, .y { iHeight - (iHeight / 4) } };
-			ptArrow[2] = { .x { iWidth - (iWidth / 4) }, .y { iHeight / 2 } };
-			break;
-		case -1: //DOWN.
-			ptArrow[0] = { .x { iWidth / 4 }, .y { iHeight / 2 } };
-			ptArrow[1] = { .x { iWidth - (iWidth / 4) }, .y { iHeight / 2 } };
-			ptArrow[2] = { .x { iWidth / 2 }, .y { iHeight - (iHeight / 4) } };
-			break;
-		default:
-			break;
-		}
-
-		const auto hdcMem = ::CreateCompatibleDC(hDC);
-		const auto hBMPArrow = ::CreateCompatibleBitmap(hDC, dwWidth, dwHeight);
-		::SelectObject(hdcMem, hBMPArrow);
-		const RECT rcFill { .right { static_cast<int>(dwWidth) }, .bottom { static_cast<int>(dwHeight) } };
-		::SetBkColor(hdcMem, clrBk); //SetBkColor+ExtTextOutW=FillSolidRect behavior.
-		::ExtTextOutW(hdcMem, 0, 0, ETO_OPAQUE, &rcFill, nullptr, 0, nullptr);
-		const auto hBrushArrow = ::CreateSolidBrush(clrArrow);
-		::SelectObject(hdcMem, hBrushArrow);
-		const auto hPenArrow = ::CreatePen(PS_SOLID, 1, clrArrow);
-		::SelectObject(hdcMem, hPenArrow);
-		::Polygon(hdcMem, ptArrow, 3); //Draw an arrow.
-		::DeleteObject(hBrushArrow);
-		::DeleteObject(hPenArrow);
-		::DeleteDC(hdcMem);
-
-		return hBMPArrow;
-	}
-
-	//Converts HICON to a 32bit ARGB HBITMAP with premultiplied alpha.
-	[[nodiscard]] auto HBITMAPFromHICON(HICON hIcon) -> HBITMAP {
-		assert(hIcon != nullptr);
-
-		ICONINFO ii;
-		if (::GetIconInfo(hIcon, &ii) == FALSE) {
-			return { };
-		}
-
-		::DeleteObject(ii.hbmMask); //Deleting icon's BW mask bitmap.
-		BITMAP bmIconClr;
-		::GetObjectW(ii.hbmColor, sizeof(BITMAP), &bmIconClr);
-		const auto iBmpHeight = std::abs(bmIconClr.bmHeight);
-		const auto iBmpWidth = std::abs(bmIconClr.bmWidth);
-		BITMAPINFO bi { .bmiHeader { .biSize { sizeof(BITMAPINFOHEADER) }, .biWidth { iBmpWidth },
-			.biHeight { iBmpHeight }, .biPlanes { 1 }, .biBitCount { 32 }, .biCompression { BI_RGB } } };
-		RGBQUAD* pARGB { }; //DIBitmap's data pointer.
-		const auto hDCMem = ::CreateCompatibleDC(nullptr);
-		const auto hBmp32 = ::CreateDIBSection(hDCMem, &bi, DIB_RGB_COLORS, reinterpret_cast<void**>(&pARGB), nullptr, 0);
-		::GetDIBits(hDCMem, ii.hbmColor, 0, iBmpHeight, pARGB, &bi, DIB_RGB_COLORS);
-		::DeleteDC(hDCMem);
-		::DeleteObject(ii.hbmColor);
-
-		if (hBmp32 == nullptr || pARGB == nullptr)
-			return { };
-
-		const auto dwSizePx = static_cast<DWORD>(iBmpHeight * iBmpWidth);
-		if (bmIconClr.bmBitsPixel == 32) { //Premultiply alpha for all channels.
-			for (auto i = 0U; i < dwSizePx; ++i) {
-				pARGB[i].rgbBlue = static_cast<BYTE>(static_cast<DWORD>(pARGB[i].rgbBlue) * pARGB[i].rgbReserved / 255);
-				pARGB[i].rgbGreen = static_cast<BYTE>(static_cast<DWORD>(pARGB[i].rgbGreen) * pARGB[i].rgbReserved / 255);
-				pARGB[i].rgbRed = static_cast<BYTE>(static_cast<DWORD>(pARGB[i].rgbRed) * pARGB[i].rgbReserved / 255);
-			}
-		}
-		else { //If the icon is not 32bit, merely set bitmap alpha channel to fully opaque.
-			for (auto i = 0U; i < dwSizePx; ++i) {
-				pARGB[i].rgbReserved = 255;
-			}
-		}
-
-		return hBmp32;
-	}
-
-	//Converts HBITMAP to a HICON.
-	[[nodiscard]] auto HICONFromHBITMAP(HBITMAP hBmp) -> HICON {
-		assert(hBmp != nullptr);
-
-		BITMAP bmp;
-		if (::GetObjectW(hBmp, sizeof(BITMAP), &bmp) == 0) {
-			return { };
-		}
-
-		const auto hDCScreen = ::GetDC(nullptr);
-		const auto hbmMask = ::CreateCompatibleBitmap(hDCScreen, bmp.bmWidth, bmp.bmHeight);
-		ICONINFO ii { .fIcon { TRUE }, .hbmMask { hbmMask }, .hbmColor { hBmp } };
-		const auto hIcon = ::CreateIconIndirect(&ii);
-		::DeleteObject(hbmMask);
-		::ReleaseDC(nullptr, hDCScreen);
-
-		return hIcon;
 	}
 
 	[[nodiscard]] auto SVGToHBITMAP(IStream* pStream, int iWidth, int iHeight, ID2D1Factory* pD2DFactory = nullptr) -> HBITMAP {

@@ -284,8 +284,8 @@ namespace HEXCTRL::INTERNAL {
 		void OnCaretPosChange(ULONGLONG ullOffset); //On changing caret position.
 		void OnModifyData();                        //When data has been modified.
 		template<typename T> requires std::is_class_v<T>
-		void ParentNotify(const T& t)const;                    //Notify routine used to send messages to Parent window.
-		void ParentNotify(UINT uCode)const;                    //Same as above, but only for notification code.
+		void ParentNotify(const T& tData)const; //Notify parent with a struct/class object.
+		void ParentNotify(UINT uCode)const;     //Same as above, but only for notification codes.
 		void Print();                                          //Printing routine.
 		void RecalcAll(bool fPrinter = false, HDC hDCPrinter = nullptr, LPCRECT pRCPrinter = nullptr); //Recalculates all sizes for window/printer DC.
 		void RecalcClientArea(int iWidth, int iHeight);
@@ -3993,10 +3993,8 @@ void CHexCtrl::OnModifyData() {
 }
 
 template<typename T> requires std::is_class_v<T>
-void CHexCtrl::ParentNotify(const T& t)const {
-	if (const auto wndParent = m_Wnd.GetParent(); !wndParent.IsNull()) {
-		wndParent.SendMsg(WM_NOTIFY, m_Wnd.GetDlgCtrlID(), reinterpret_cast<LPARAM>(&t));
-	}
+void CHexCtrl::ParentNotify(const T& tData)const {
+	ut::ParentNotify(m_Wnd, tData);
 }
 
 void CHexCtrl::ParentNotify(UINT uCode)const {

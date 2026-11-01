@@ -213,6 +213,20 @@ namespace HEXCTRL {
 	};
 
 	/********************************************************************************************
+	* HEXTEMPLATELIMIT: Struct is used in conjunction with the HEXCTRL_MSG_TEMPL_LIMIT message. *
+	********************************************************************************************/
+	struct HEXTEMPLATELIMIT {
+		NMHDR          hdr { };               //Standard Windows header.
+		const wchar_t* pwszTemplateName { };  //Template name.
+		const wchar_t* pwszSizeFieldName { }; //The `sizefield` value from template.
+		std::uint64_t  u64LimitMin { };       //The 'limit' field 'min' value.
+		std::uint64_t  u64LimitMax { };       //The 'limit' field 'max' value.
+		std::uint64_t  u64ActualData { };     //Actual data from the HexCtrl.
+		bool           fCancel { };           //If set, cancel any further template processing.
+	};
+	using PHEXTEMPLATELIMIT = HEXTEMPLATELIMIT*;
+
+	/********************************************************************************************
 	* HEXTEMPLATEAPPLIED: Template file path and applied offset.                                *
 	********************************************************************************************/
 	struct HEXTEMPLATEAPPLIED {
@@ -490,6 +504,7 @@ namespace HEXCTRL {
 	constexpr auto HEXCTRL_MSG_SETGROUPSIZE { 0x0110U };  //Data grouping size has changed.
 	constexpr auto HEXCTRL_MSG_SETOFFSETMODE { 0x0111U }; //Offset display mode (Hex/Decimal) has changed.
 	constexpr auto HEXCTRL_MSG_SETSELECTION { 0x0112U };  //Selection has been made.
+	constexpr auto HEXCTRL_MSG_TEMPL_LIMIT { 0x0113U };   //Actual data is beyond limit, when applying a template.
 
 	/**************************************************************************
 	* Flags for the internal dialogs, used with the SetDlgProperties method.  *

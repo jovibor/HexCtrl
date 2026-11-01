@@ -31,12 +31,13 @@ private:
 	bool OnHexGetColor(HEXCOLORINFO& hci)override;
 	BOOL OnInitDialog()override;
 	BOOL OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)override;
+	afx_msg void OnNotifyHexContextMenu(NMHDR* pNMHDR, LRESULT* pResult);
+	afx_msg void OnNotifyHexTemplLimit(NMHDR* pNMHDR, LRESULT* pResult);
 	[[nodiscard]] bool IsFileOpen()const;
 	BOOL PreTranslateMessage(MSG* pMsg)override;
 	void SetIconsForHexCtrl(IHexCtrl& HexCtrl); //Creates and sets icons for the HexCtrl's menu.
 	[[nodiscard]] static auto GetLastErrorWstr() -> std::wstring;
 	static void LoadTemplates(IHexCtrl* pHexCtrl);
-	[[nodiscard]] static auto OpenFileDlg() -> std::optional<std::vector<std::wstring>>;
 	[[nodiscard]] static auto ResolveLNK(const wchar_t* pwszPath) -> std::wstring;
 	DECLARE_MESSAGE_MAP();
 private:

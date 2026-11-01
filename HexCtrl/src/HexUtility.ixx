@@ -30,6 +30,9 @@ export module HEXCTRL:HexUtility;
 
 export import HexCtrl_StrToNum;
 export import HexCtrl_ListEx;
+export using ::COMDLG_FILTERSPEC;      //Used in the OpenFileDlg func.
+export using ::IFileOpenDialog;        //Used in the OpenFileDlg func.
+export using ::_FILEOPENDIALOGOPTIONS; //Used in the OpenFileDlg func.
 
 namespace HEXCTRL::INTERNAL::ut { //Utility methods and stuff.
 	//Time calculation constants and structs.
@@ -108,6 +111,17 @@ namespace HEXCTRL::INTERNAL::ut { //Utility methods and stuff.
 
 		HexCtrl.ModifyData({ .eModifyMode { EHexModifyMode::MODIFY_ONCE },
 			.spnData { spnData }, .vecSpan { { ullOffset, spnData.size() } } });
+	}
+
+	//Sends WM_NOTIFY message to a parent window, with the tData as LPARAM.
+	template<typename T> requires std::is_class_v<T>
+	void ParentNotify(HWND hWnd, const T& tData) {
+		assert(hWnd != nullptr);
+		const auto hWndParent = ::GetParent(hWnd);
+		if (hWndParent != nullptr) {
+			const auto iCtrlID = ::GetDlgCtrlID(hWndParent);
+			::SendMessageW(hWndParent, WM_NOTIFY, iCtrlID, reinterpret_cast<LPARAM>(&tData));
+		}
 	}
 
 	template<typename T> concept TSize1248 = (sizeof(T) == 1 || sizeof(T) == 2 || sizeof(T) == 4 || sizeof(T) == 8);
@@ -480,15 +494,31 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 	}
 
 	/*********************************************************************************************
-	* @brief OpenFile(s) dialog, requires "#include <ShObjIdl.h>".
-	* @param spnFilter Array of COMDLG_FILTERSPEC structs, specifying text filters for the dialog.
+	* @brief OPENFILEDLG struct for the OpenFileDlg function.
+	* @param spnFilter Array of COMDLG_FILTERSPEC structs, specifying file extension filters.
 	* @param dwFlags Combination of the _FILEOPENDIALOGOPTIONS enum flags.
 	* @param hWndParent Parent window handle.
+	* @param pfnOnBeforeDlg Callback, that is called before the dialog is shown.
+	* @param uzDataBeforeDlg User defined data to pass to the pfnOnBeforeDlg callback.
+	* @param pfnOnAfterDlg Callback, that is called after the dialog is shown.
+	* @param uzDataAfterDlg User defined data to pass to the pfnOnAfterDlg callback.
 	* @returns std::optional of std:vector<std::wstring>, or std::nullopt if Cancel was pressed.
 	*********************************************************************************************/
-	[[nodiscard]] auto OpenFileDlg(std::span<const COMDLG_FILTERSPEC>spnFilter,
-		DWORD dwFlags = FOS_FORCEFILESYSTEM | FOS_PATHMUSTEXIST | FOS_FILEMUSTEXIST | FOS_DONTADDTORECENT,
-		HWND hWndParent = nullptr) -> std::optional<std::vector<std::wstring>> {
+	struct OPENFILEDLG {
+		std::span<const COMDLG_FILTERSPEC> spnFilter; //Array of file extension filters.
+		DWORD dwFlags { FOS_FORCEFILESYSTEM | FOS_PATHMUSTEXIST | FOS_FILEMUSTEXIST | FOS_DONTADDTORECENT };
+		HWND hWndParent { }; //Parent window handle.
+		void(*pfnOnBeforeDlg)(IFileOpenDialog*, uintptr_t) { }; //Callback, before dialog is shown.
+		uintptr_t uzDataBeforeDlg { }; //User defined data to pass to the pfnOnBeforeDlg callback.
+		void(*pfnOnAfterDlg)(IFileOpenDialog*, uintptr_t) { };  //Callback, after "Open" button is clicked.
+		uintptr_t uzDataAfterDlg { }; //User defined data to pass to the pfnOnAfterDlg callback.
+	};
+
+	/*********************************************************************************************
+	* @brief Open file(s) dialog.
+	* @returns std::optional of std:vector<std::wstring>, or std::nullopt if Cancel was pressed.
+	*********************************************************************************************/
+	[[nodiscard]] auto OpenFileDlg(const OPENFILEDLG& ofd) -> std::optional<std::vector<std::wstring>> {
 		IFileOpenDialog *pFOD;
 		if (::CoCreateInstance(CLSID_FileOpenDialog, nullptr, CLSCTX_INPROC_SERVER, IID_IFileOpenDialog,
 			reinterpret_cast<void**>(&pFOD)) != S_OK) {
@@ -496,13 +526,21 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 		}
 
 		const std::unique_ptr < IFileOpenDialog, decltype([](IFileOpenDialog* pFOD) { pFOD->Release(); }) > upFOD(pFOD);
-		DWORD dwFlagsCurr;
+		DWORD dwFlagsCurr { };
 		upFOD->GetOptions(&dwFlagsCurr);
-		upFOD->SetOptions(dwFlagsCurr | dwFlags);
-		upFOD->SetFileTypes(static_cast<UINT>(spnFilter.size()), spnFilter.data());
+		upFOD->SetOptions(dwFlagsCurr | ofd.dwFlags);
+		upFOD->SetFileTypes(static_cast<UINT>(ofd.spnFilter.size()), ofd.spnFilter.data());
 
-		if (upFOD->Show(hWndParent) != S_OK) { //Cancel was pressed.
+		if (ofd.pfnOnBeforeDlg != nullptr) {
+			ofd.pfnOnBeforeDlg(upFOD.get(), ofd.uzDataBeforeDlg);
+		}
+
+		if (upFOD->Show(ofd.hWndParent) != S_OK) { //Cancel was pressed.
 			return std::nullopt;
+		}
+
+		if (ofd.pfnOnAfterDlg != nullptr) {
+			ofd.pfnOnAfterDlg(upFOD.get(), ofd.uzDataAfterDlg);
 		}
 
 		IShellItemArray* pShIA;

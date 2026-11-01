@@ -10,7 +10,6 @@ module;
 #include "dep/rapidjson-amalgam.h"
 #include "res/HexCtrlRes.h"
 #include <Windows.h>
-#include <ShObjIdl.h> //_FILEOPENDIALOGOPTIONS enum.
 #include <commctrl.h>
 #include <algorithm>
 #include <bit>
@@ -136,8 +135,8 @@ namespace HEXCTRL::INTERNAL {
 		const VecHexTemplFields& vecFields) -> std::optional<std::optional<std::uint32_t>>;
 		[[nodiscard]] static auto JSONProcess_description(const rapidjson::Value* pValue) -> std::optional<const char*>;
 		[[nodiscard]] static auto JSONProcess_jump(const rapidjson::Value* pValue) -> std::optional<HEXTEMPLJUMP>;
-		[[nodiscard]] static auto JSONProcess_limit(const rapidjson::Value* pValue, std::uint64_t u64ActualData)
-			-> std::optional<std::optional<std::uint64_t>>;
+		[[nodiscard]] static auto JSONProcess_limit(const rapidjson::Value* pValue, std::uint64_t u64ActualData,
+			const PARSEFIELDS& pf) -> std::optional<std::optional<std::uint64_t>>;
 		[[nodiscard]] static auto JSONProcess_name(const rapidjson::Value* pValue) -> std::optional<const char*>;
 		[[nodiscard]] static auto JSONProcess_size(const rapidjson::Value* pValue) -> std::optional<std::uint32_t>;
 		[[nodiscard]] static auto JSONProcess_type(const rapidjson::Value* pValue, const PARSEFIELDS& pf,
@@ -633,7 +632,7 @@ auto CHexTemplates::JSONProcess_array(const rapidjson::Value* pValue, const PARS
 			return std::optional<std::uint32_t>{ std::nullopt };
 		}
 
-		if (const auto optLimitData = JSONProcess_limit(pArrayObj, *optData); optLimitData) {
+		if (const auto optLimitData = JSONProcess_limit(pArrayObj, *optData, pf); optLimitData) {
 			if (!*optLimitData) {
 				return std::optional<std::uint32_t>{ std::nullopt };
 			}
@@ -709,7 +708,7 @@ auto CHexTemplates::JSONProcess_jump(const rapidjson::Value* pValue)->std::optio
 	return { std::move(htj) };
 }
 
-auto CHexTemplates::JSONProcess_limit(const rapidjson::Value* pValue, std::uint64_t u64ActualData)
+auto CHexTemplates::JSONProcess_limit(const rapidjson::Value* pValue, std::uint64_t u64ActualData, const PARSEFIELDS& pf)
 ->std::optional<std::optional<std::uint64_t>> {
 	//Finds and parses "limit" object, comparing its min/max properties against u64ActualData.
 	const auto optLimit = JSONFindMemberAsObject(pValue, "limit");
@@ -744,51 +743,26 @@ auto CHexTemplates::JSONProcess_limit(const rapidjson::Value* pValue, std::uint6
 		}
 	}
 
-	if (u64ActualData < u64LimitMin) {
+	//If actual data is beyound limits.
+	if ((u64ActualData < u64LimitMin) || (u64ActualData > u64LimitMax)) {
 		switch (eBeyond) {
 		case DO_STOP:
+			ut::DBG_REPORT(std::format(L"Actual data is beyound the limit in '{}' field.",
+				ut::StrToWstr(*JSONFindMemberAsString(pValue, "sizefield"))).data());
 			return std::optional<std::uint64_t>{ std::nullopt };
 		case DO_ASK:
 		{
-			const auto optSizeFieldName = JSONFindMemberAsString(pValue, "sizefield");
-			//Field name to get the size from.
-			const auto wstrSizeFieldName = ut::StrToWstr(*optSizeFieldName);
-			const auto wstr = std::format(L"The data of the `{}` field is smaller than the limit 'min'.\r\n"
-				L"Min limit is: {}, actual data is: {}\r\n"
-				L"Use the actual data anyway?", wstrSizeFieldName, u64LimitMin, u64ActualData);
-			if (::MessageBoxW(0, wstr.data(), wstrSizeFieldName.data(), MB_YESNO | MB_ICONEXCLAMATION) == IDYES) {
-				return u64ActualData;
-			}
-
-			return u64LimitMin;
+			const GDIUT::CWnd wndHex = pf.pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN);
+			const auto wstrSizeFieldName = ut::StrToWstr(*JSONFindMemberAsString(pValue, "sizefield"));
+			const HEXTEMPLATELIMIT htl {
+				.hdr { .hwndFrom { wndHex }, .idFrom { static_cast<UINT>(wndHex.GetDlgCtrlID()) }, .code { HEXCTRL_MSG_TEMPL_LIMIT } },
+				.pwszTemplateName { pf.pTemplate->wstrName.data() }, .pwszSizeFieldName { wstrSizeFieldName.data() },
+				.u64LimitMin { u64LimitMin }, .u64LimitMax { u64LimitMax }, .u64ActualData { u64ActualData } };
+			ut::ParentNotify(wndHex, htl);
+			return htl.fCancel ? std::optional<std::uint64_t>{ std::nullopt } : htl.u64ActualData;
 		}
 		case USE_LIMIT:
-			return u64LimitMin;
-		default:
-			break;
-		}
-	}
-	else if (u64ActualData > u64LimitMax) {
-		switch (eBeyond) {
-		case DO_STOP:
-			return std::optional<std::uint64_t>{ std::nullopt };
-		case DO_ASK:
-		{
-			const auto optSizeFieldName = JSONFindMemberAsString(pValue, "sizefield");
-			//Field name to get the size from.
-			const auto wstrSizeFieldName = ut::StrToWstr(*optSizeFieldName);
-
-			const auto wstr = std::format(L"The data of the `{}` field is bigger than the limit 'max'.\r\n"
-				L"Max limit is: {}, actual data is: {}\r\n"
-				L"Use the actual data anyway?", wstrSizeFieldName, u64LimitMax, u64ActualData);
-			if (::MessageBoxW(0, wstr.data(), wstrSizeFieldName.data(), MB_YESNO | MB_ICONEXCLAMATION) == IDYES) {
-				return u64ActualData;
-			}
-
-			return u64LimitMax;
-		}
-		case USE_LIMIT:
-			return u64LimitMax;
+			return (u64ActualData < u64LimitMin) ? u64LimitMin : u64LimitMax;
 		default:
 			break;
 		}
@@ -1480,10 +1454,14 @@ bool CHexDlgTemplMgr::IsSwapEndian()const {
 }
 
 void CHexDlgTemplMgr::OnBnAddTemplate() {
-	COMDLG_FILTERSPEC arrFilter[] { { .pszName { L"Template files (*.json)" }, .pszSpec { L"*.json" } },
-		{ .pszName { L"All files (*.*)" }, .pszSpec { L"*.*" } } };
-	const auto optFiles = GDIUT::OpenFileDlg({ arrFilter, 2 }, FOS_FORCEFILESYSTEM | FOS_ALLOWMULTISELECT | FOS_DONTADDTORECENT
-		| FOS_PATHMUSTEXIST | FOS_FILEMUSTEXIST);
+	const COMDLG_FILTERSPEC arrFilter[] {
+		{ .pszName { L"Template files (*.json)" }, .pszSpec { L"*.json" } },
+		{ .pszName { L"All files (*.*)" }, .pszSpec { L"*.*" } }
+	};
+	const auto lmbOnBeforeShow = [](IFileOpenDialog* p, uintptr_t) { p->SetOkButtonLabel(L"Add template(s)"); };
+	const GDIUT::OPENFILEDLG ofd { .spnFilter { arrFilter, 2 }, .dwFlags { FOS_FORCEFILESYSTEM | FOS_ALLOWMULTISELECT
+		| FOS_DONTADDTORECENT | FOS_PATHMUSTEXIST | FOS_FILEMUSTEXIST }, .pfnOnBeforeDlg { lmbOnBeforeShow } };
+	const auto optFiles = GDIUT::OpenFileDlg(ofd);
 	if (!optFiles) {
 		return;
 	}

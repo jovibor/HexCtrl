@@ -24,6 +24,8 @@ BEGIN_MESSAGE_MAP(CMFCDialogDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_FILEOPEN, &CMFCDialogDlg::OnBnFileOpen)
 	ON_BN_CLICKED(IDC_HEXPOPUP, &CMFCDialogDlg::OnBnPopup)
 	ON_BN_CLICKED(IDC_CHK_RW, &CMFCDialogDlg::OnChkRW)
+	ON_NOTIFY(HEXCTRL::HEXCTRL_MSG_CONTEXTMENU, IDC_MY_HEX, &CMFCDialogDlg::OnNotifyHexContextMenu)
+	ON_NOTIFY(HEXCTRL::HEXCTRL_MSG_TEMPL_LIMIT, IDC_MY_HEX, &CMFCDialogDlg::OnNotifyHexTemplLimit)
 	ON_WM_DROPFILES()
 END_MESSAGE_MAP()
 
@@ -232,8 +234,44 @@ void CMFCDialogDlg::OnBnSetRndData() {
 }
 
 void CMFCDialogDlg::OnBnFileOpen() {
-	if (const auto opt = OpenFileDlg(); opt) {
-		FileOpen((*opt).front(), false);
+	struct TEMPOFD {
+		IFileDialogCustomize *pFDC { };
+		DWORD dwChkLnkID { 100UL };
+		bool fDontResolveLNK { };
+	} tofd;
+
+	const auto lmbBefore = [](IFileOpenDialog* pFOD, uintptr_t uzData) {
+		const auto pTOFD = reinterpret_cast<TEMPOFD*>(uzData);
+		if (pFOD->QueryInterface(IID_PPV_ARGS(&pTOFD->pFDC)) != S_OK) {
+			return;
+		}
+
+		//Adding a check-box.
+		pTOFD->pFDC->AddCheckButton(pTOFD->dwChkLnkID, L"Don't resolve .lnk", FALSE);
+		};
+	const auto lmbAfter = [](IFileOpenDialog*, uintptr_t uzData) {
+		const auto pTOFD = reinterpret_cast<TEMPOFD*>(uzData);
+		BOOL iChecked;
+		pTOFD->pFDC->GetCheckButtonState(pTOFD->dwChkLnkID, &iChecked);
+		pTOFD->fDontResolveLNK = iChecked == TRUE;  //"Don't Resolve .lnk" is checked.
+		};
+
+	const COMDLG_FILTERSPEC arrFilter[] { { .pszName { L"All files (*.*)" }, .pszSpec { L"*.*" } } };
+	const GDIUT::OPENFILEDLG ofd { .spnFilter { arrFilter, 1 },
+		.dwFlags { FOS_FORCEFILESYSTEM | FOS_NODEREFERENCELINKS | FOS_DONTADDTORECENT | FOS_FILEMUSTEXIST | FOS_PATHMUSTEXIST },
+		.hWndParent { m_hWnd }, .pfnOnBeforeDlg { lmbBefore }, .uzDataBeforeDlg { reinterpret_cast<std::size_t>(&tofd) },
+		.pfnOnAfterDlg { lmbAfter }, .uzDataAfterDlg { reinterpret_cast<std::size_t>(&tofd) } };
+	auto optFile = GDIUT::OpenFileDlg(ofd);
+	if (tofd.pFDC != nullptr) {
+		tofd.pFDC->Release();
+	}
+
+	if (optFile) {
+		if (!tofd.fDontResolveLNK) {
+			(*optFile).front() = ResolveLNK((*optFile).front().data());
+		}
+
+		FileOpen((*optFile).front(), false);
 	}
 }
 
@@ -381,12 +419,54 @@ BOOL CMFCDialogDlg::OnInitDialog() {
 }
 
 BOOL CMFCDialogDlg::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult) {
-	const auto pNMHDR = reinterpret_cast<PHEXMENUINFO>(lParam);
-	if (pNMHDR->hdr.idFrom == IDC_MY_HEX && pNMHDR->hdr.code == HEXCTRL_MSG_CONTEXTMENU) {
-		// pNMHDR->fShow = false; //Ability to disable HexCtrl context menu.
-	}
-
 	return CDialogEx::OnNotify(wParam, lParam, pResult);
+}
+
+void CMFCDialogDlg::OnNotifyHexContextMenu([[maybe_unused]] NMHDR* pNMHDR, LRESULT* /*pResult*/) {
+	//const auto pHMI = reinterpret_cast<PHEXMENUINFO>(pNMHDR);
+	//pHMI->fShow = false; //Ability to disable HexCtrl's context menu.
+}
+
+void CMFCDialogDlg::OnNotifyHexTemplLimit(NMHDR* pNMHDR, LRESULT* /*pResult*/) {
+	const auto pHTL = reinterpret_cast<PHEXTEMPLATELIMIT>(pNMHDR);
+	if (pHTL->u64ActualData < pHTL->u64LimitMin) {
+		const auto wstr = std::format(L"The actual data of the `{}` field is smaller than the limit's 'min' value.\r\n"
+			L"Min value is: {}, the actual data is: {}\r\n"
+			L"Use the actual data anyway (Yes), or use limit data (No)?\r\n"
+			L"Pressing 'Cancel' will stop any further processing.", pHTL->pwszSizeFieldName, pHTL->u64LimitMin, pHTL->u64ActualData);
+		switch (::MessageBoxW(m_hWnd, wstr.data(), pHTL->pwszTemplateName, MB_YESNOCANCEL | MB_ICONEXCLAMATION)) {
+		case IDYES:
+			//Do nothing. Using the pHTL->u64ActualData as is.
+			break;
+		case IDNO:
+			pHTL->u64ActualData = pHTL->u64LimitMin;
+			break;
+		case IDCANCEL:
+			pHTL->fCancel = true;
+			break;
+		default:
+			break;
+		}
+	}
+	else if (pHTL->u64ActualData > pHTL->u64LimitMax) {
+		const auto wstr = std::format(L"The actual data of the `{}` field is bigger than the limit's 'max' value.\r\n"
+			L"Max value is: {}, the actual data is: {}\r\n"
+			L"Use the actual data anyway (Yes), or use limit data (No)?\r\n"
+			L"Pressing 'Cancel' will stop any further processing.", pHTL->pwszSizeFieldName, pHTL->u64LimitMax, pHTL->u64ActualData);
+		switch (::MessageBoxW(m_hWnd, wstr.data(), pHTL->pwszTemplateName, MB_YESNOCANCEL | MB_ICONEXCLAMATION)) {
+		case IDYES:
+			//Do nothing. Using the pHTL->u64ActualData as is.
+			break;
+		case IDNO:
+			pHTL->u64ActualData = pHTL->u64LimitMax;
+			break;
+		case IDCANCEL:
+			pHTL->fCancel = true;
+			break;
+		default:
+			break;
+		}
+	}
 }
 
 BOOL CMFCDialogDlg::PreTranslateMessage(MSG* pMsg) {
@@ -440,62 +520,6 @@ void CMFCDialogDlg::LoadTemplates(IHexCtrl* pHexCtrl) {
 			pHexCtrl->GetTemplates()->AddTemplateFile(path.c_str());
 		}
 	}
-}
-
-auto CMFCDialogDlg::OpenFileDlg()->std::optional<std::vector<std::wstring>> {
-	IFileOpenDialog *pFOD;
-	if (::CoCreateInstance(CLSID_FileOpenDialog, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pFOD)) != S_OK) {
-		return std::nullopt;
-	}
-
-	DWORD dwFlags;
-	pFOD->GetOptions(&dwFlags);
-	pFOD->SetOptions(dwFlags | FOS_FORCEFILESYSTEM | FOS_NODEREFERENCELINKS | FOS_DONTADDTORECENT
-		| FOS_FILEMUSTEXIST | FOS_PATHMUSTEXIST);
-	COMDLG_FILTERSPEC arrFilter[] { { .pszName { L"All files (*.*)" }, .pszSpec { L"*.*" } } };
-	pFOD->SetFileTypes(1, arrFilter);
-
-	IFileDialogCustomize *pFDC;
-	if (pFOD->QueryInterface(IID_PPV_ARGS(&pFDC)) != S_OK) {
-		return std::nullopt;
-	}
-
-	//Adding a check-box.
-	constexpr auto dwChkLnkID = 100UL;
-	pFDC->AddCheckButton(dwChkLnkID, L"Don't resolve .lnk", FALSE);
-
-	if (pFOD->Show(nullptr) != S_OK) { //Cancel was pressed.
-		pFDC->Release();
-		pFOD->Release();
-		return std::nullopt;
-	}
-
-	BOOL iChecked;
-	pFDC->GetCheckButtonState(dwChkLnkID, &iChecked);
-	const auto fDontResolveLNK = iChecked == TRUE;  //"Don't Resolve .lnk" is checked.
-
-	IShellItemArray* pShellItemArray;
-	pFOD->GetResults(&pShellItemArray);
-	DWORD dwCount { };
-	pShellItemArray->GetCount(&dwCount);
-	std::vector<std::wstring> vecFiles;
-	vecFiles.reserve(dwCount);
-
-	for (auto iFileIdx { 0U }; iFileIdx < dwCount; ++iFileIdx) {
-		IShellItem* pShellItem;
-		pShellItemArray->GetItemAt(iFileIdx, &pShellItem);
-		wchar_t* pwszPath;
-		pShellItem->GetDisplayName(SIGDN_FILESYSPATH, &pwszPath);
-		vecFiles.emplace_back(fDontResolveLNK ? std::wstring { pwszPath } : ResolveLNK(pwszPath));
-		::CoTaskMemFree(pwszPath);
-		pShellItem->Release();
-	}
-
-	pShellItemArray->Release();
-	pFDC->Release();
-	pFOD->Release();
-
-	return { std::move(vecFiles) };
 }
 
 auto CMFCDialogDlg::ResolveLNK(const wchar_t* pwszPath) -> std::wstring {
