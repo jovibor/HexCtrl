@@ -22,6 +22,22 @@
           "anchor": "fieldFirst"
         }
       },
+	  {
+        "name": "DynamicArraySize",
+        "type": "bYTe"
+      },
+      {
+        "name": "DynamicArrayField",
+        "type": "DWORD",
+        "array": {
+          "sizefield": "DynamicArraySize",
+          "limit": {
+            "min": 5,
+            "max": 25,
+            "onbeyond": "ask"
+          }
+        }
+      },	  
       {
         "name": "MyCustomDataArray",
         "type": "MyCustomType",

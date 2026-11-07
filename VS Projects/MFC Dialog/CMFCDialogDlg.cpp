@@ -430,10 +430,11 @@ void CMFCDialogDlg::OnNotifyHexContextMenu([[maybe_unused]] NMHDR* pNMHDR, LRESU
 void CMFCDialogDlg::OnNotifyHexTemplLimit(NMHDR* pNMHDR, LRESULT* /*pResult*/) {
 	const auto pHTL = reinterpret_cast<PHEXTEMPLATELIMIT>(pNMHDR);
 	if (pHTL->u64ActualData < pHTL->u64LimitMin) {
-		const auto wstr = std::format(L"The actual data of the `{}` field is smaller than the limit's 'min' value.\r\n"
-			L"Min value is: {}, the actual data is: {}\r\n"
+		const auto wstr = std::format(L"The actual value of the `{}` field: {} is smaller\r\n"
+			L"than the `limit: min' value: {}.\r\n"
 			L"Use the actual data anyway (Yes), or use limit data (No)?\r\n"
-			L"Pressing 'Cancel' will stop any further processing.", pHTL->pwszSizeFieldName, pHTL->u64LimitMin, pHTL->u64ActualData);
+			L"Pressing 'Cancel' will stop further template processing.",
+			pHTL->pwszSizeFieldName, pHTL->u64ActualData, pHTL->u64LimitMin);
 		switch (::MessageBoxW(m_hWnd, wstr.data(), pHTL->pwszTemplateName, MB_YESNOCANCEL | MB_ICONEXCLAMATION)) {
 		case IDYES:
 			//Do nothing. Using the pHTL->u64ActualData as is.
@@ -449,10 +450,11 @@ void CMFCDialogDlg::OnNotifyHexTemplLimit(NMHDR* pNMHDR, LRESULT* /*pResult*/) {
 		}
 	}
 	else if (pHTL->u64ActualData > pHTL->u64LimitMax) {
-		const auto wstr = std::format(L"The actual data of the `{}` field is bigger than the limit's 'max' value.\r\n"
-			L"Max value is: {}, the actual data is: {}\r\n"
+		const auto wstr = std::format(L"The actual value of the `{}` field: {} is bigger\r\n"
+			L"than the `limit: max' value: {}.\r\n"
 			L"Use the actual data anyway (Yes), or use limit data (No)?\r\n"
-			L"Pressing 'Cancel' will stop any further processing.", pHTL->pwszSizeFieldName, pHTL->u64LimitMax, pHTL->u64ActualData);
+			L"Pressing 'Cancel' will stop further template processing.",
+			pHTL->pwszSizeFieldName, pHTL->u64ActualData, pHTL->u64LimitMax);
 		switch (::MessageBoxW(m_hWnd, wstr.data(), pHTL->pwszTemplateName, MB_YESNOCANCEL | MB_ICONEXCLAMATION)) {
 		case IDYES:
 			//Do nothing. Using the pHTL->u64ActualData as is.

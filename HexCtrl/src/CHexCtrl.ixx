@@ -841,6 +841,8 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd) {
 		ParentNotify(HEXCTRL_MSG_DLGTEMPLMGR);
 		m_DlgTemplMgr.ShowWindow(SW_SHOW);
 		break;
+	default:
+		break;
 	}
 }
 
@@ -2968,16 +2970,16 @@ void CHexCtrl::DrawHexText(HDC hDC, ULONGLONG ullStartLine, int iLines, std::wst
 	GDIUT::CDC dc(hDC);
 	dc.SelectObject(m_hFntMain);
 	std::size_t index { 0 }; //Index for the vecPolyText, which size is always equal to the vecPolyHex.
-	for (const auto& ptc : vecPolyHex) { //Loop is needed because of different colors.
-		dc.SetTextColor(ptc.stClr.clrText); //Text color for the Hex area.
-		dc.SetBkColor(ptc.stClr.clrBk);     //Bk color for the Hex area.
-		const auto& refH = ptc.stPoly;
-		::ExtTextOutW(dc, refH.x, refH.y, refH.uiFlags, &refH.rcl, refH.lpstr, refH.n, refH.pdx); //Hex printing.
-		const auto& refVecText = vecPolyText[index++];
-		dc.SetTextColor(refVecText.stClr.clrText); //Text color for the Text area.
-		dc.SetBkColor(refVecText.stClr.clrBk);     //Bk color for the Text area.
-		const auto& refT = refVecText.stPoly;
-		::ExtTextOutW(dc, refT.x, refT.y, refT.uiFlags, &refT.rcl, refT.lpstr, refT.n, refT.pdx); //Text printing.
+	for (const auto& ptcH : vecPolyHex) { //Loop is needed because of different colors.
+		dc.SetTextColor(ptcH.stClr.clrText); //Text color for the Hex area.
+		dc.SetBkColor(ptcH.stClr.clrBk);     //Bk color for the Hex area.
+		const auto& polyH = ptcH.stPoly;
+		::ExtTextOutW(dc, polyH.x, polyH.y, polyH.uiFlags, &polyH.rcl, polyH.lpstr, polyH.n, polyH.pdx); //Hex printing.
+		const auto& ptcT = vecPolyText[index++];
+		dc.SetTextColor(ptcT.stClr.clrText); //Text color for the Text area.
+		dc.SetBkColor(ptcT.stClr.clrBk);     //Bk color for the Text area.
+		const auto& polyT = ptcT.stPoly;
+		::ExtTextOutW(dc, polyT.x, polyT.y, polyT.uiFlags, &polyT.rcl, polyT.lpstr, polyT.n, polyT.pdx); //Text printing.
 	}
 }
 
@@ -2988,8 +2990,8 @@ void CHexCtrl::DrawTemplates(HDC hDC, ULONGLONG ullStartLine, int iLines, std::w
 	struct POLYFIELDSCLR { //Struct for fields.
 		POLYTEXTW stPoly { };
 		HEXCOLOR  stClr;
-		//Flag to avoid print vert line at the beginnig of the line if this line is just a continuation
-		//of the previous line above.
+		//Flag to avoid printing vert line at the beginnig of the hex/text row, 
+		//if this row is just a continuation of the above row.
 		bool      fPrintVertLine { true };
 	};
 	std::vector<POLYFIELDSCLR> vecFieldsHex;
@@ -2998,7 +3000,7 @@ void CHexCtrl::DrawTemplates(HDC hDC, ULONGLONG ullStartLine, int iLines, std::w
 	std::vector<std::unique_ptr<std::wstring>> vecWstrFieldsText;
 	const auto ullStartOffset = ullStartLine * GetCapacity();
 	std::size_t uzIndexToPrint { };
-	PCHEXTEMPLFIELD pFieldCurr { };
+	PCHEXTEMPLFIELD pFieldPrev { };
 
 	for (auto itLine = 0; itLine < iLines; ++itLine) {
 		std::wstring wstrHexFieldToPrint;
@@ -3006,7 +3008,7 @@ void CHexCtrl::DrawTemplates(HDC hDC, ULONGLONG ullStartLine, int iLines, std::w
 		int iFieldHexPosToPrintX { };
 		int iFieldTextPosToPrintX { };
 		bool fNeedChunkPoint { true };
-		bool fField { false };  //Flag to show current Field in current Hex presence.
+		bool fField { false };  //Flag to show current field in current Hex presence.
 		bool fPrintVertLine { true };
 		const auto iPosToPrintY = m_iStartWorkAreaYPx + (m_sizeFontMain.cy * itLine); //Hex and Text are the same.
 		const auto lmbPoly = [&]() {
@@ -3017,13 +3019,13 @@ void CHexCtrl::DrawTemplates(HDC hDC, ULONGLONG ullStartLine, int iLines, std::w
 			vecWstrFieldsHex.emplace_back(std::make_unique<std::wstring>(std::move(wstrHexFieldToPrint)));
 			vecFieldsHex.emplace_back(POLYTEXTW { .x { iFieldHexPosToPrintX }, .y { iPosToPrintY },
 				.n { static_cast<UINT>(vecWstrFieldsHex.back()->size()) }, .lpstr { vecWstrFieldsHex.back()->data() },
-				.pdx { GetCharsWidthArray() } }, pFieldCurr->stClr, fPrintVertLine);
+				.pdx { GetCharsWidthArray() } }, pFieldPrev->stClr, fPrintVertLine);
 
 			//Text Fields Poly.
 			vecWstrFieldsText.emplace_back(std::make_unique<std::wstring>(std::move(wstrTextFieldToPrint)));
 			vecFieldsText.emplace_back(POLYTEXTW { .x { iFieldTextPosToPrintX }, .y { iPosToPrintY },
 				.n { static_cast<UINT>(vecWstrFieldsText.back()->size()) }, .lpstr { vecWstrFieldsText.back()->data() },
-				.pdx { GetCharsWidthArray() } }, pFieldCurr->stClr, fPrintVertLine);
+				.pdx { GetCharsWidthArray() } }, pFieldPrev->stClr, fPrintVertLine);
 
 			fPrintVertLine = true;
 			};
@@ -3043,20 +3045,19 @@ void CHexCtrl::DrawTemplates(HDC hDC, ULONGLONG ullStartLine, int iLines, std::w
 
 		//Main loop for printing Hex chunks and Text chars.
 		for (auto itChunk { 0U }; itChunk < GetCapacity() && uzIndexToPrint < wsvText.size(); ++itChunk, ++uzIndexToPrint) {
-			//Fields.
-			if (auto pField = m_DlgTemplMgr.HitTest(ullStartOffset + uzIndexToPrint); pField != nullptr) {
-				if (itChunk == 0 && pField == pFieldCurr) {
+			if (auto pFieldCurr = m_DlgTemplMgr.HitTest(ullStartOffset + uzIndexToPrint); pFieldCurr != nullptr) {
+				if (itChunk == 0 && pFieldCurr == pFieldPrev) {
 					fPrintVertLine = false;
 				}
 
-				//If it's nested Field.
-				if (pFieldCurr != nullptr && pFieldCurr != pField) {
+				//If it's a nested field.
+				if (pFieldPrev != nullptr && pFieldPrev != pFieldCurr) {
 					lmbHexSpaces(itChunk);
 					lmbPoly();
 					fNeedChunkPoint = true;
 				}
 
-				pFieldCurr = pField;
+				pFieldPrev = pFieldCurr;
 
 				if (fNeedChunkPoint) {
 					int iCy;
@@ -3072,20 +3073,22 @@ void CHexCtrl::DrawTemplates(HDC hDC, ULONGLONG ullStartLine, int iLines, std::w
 				fField = true;
 			}
 			else if (fField) {
-				//There can be multiple Fields in one line. 
-				//So, if there already were Field bytes in the current line, we Poly them.
-				//Same Poly mechanism presents at the end of the current (itLine) loop,
-				//to Poly Fields that end at the line's end.
+				//There can be multiple fields in one row. 
+				//If there already were field's bytes in the current row (wstrHexFieldToPrint), we poly them.
+				//Same poly mechanism presents at the end of the current loop (itLine),
+				//to poly the fields that end at the row's end.
 
 				lmbPoly();
 				fNeedChunkPoint = true;
 				fField = false;
-				pFieldCurr = nullptr;
+				pFieldPrev = nullptr;
+			}
+			else {
+				pFieldPrev = nullptr;
 			}
 		}
 
-		lmbPoly(); //Fields Poly.
-		pFieldCurr = nullptr;
+		lmbPoly();
 	}
 
 	//Fieds printing.
@@ -3098,29 +3101,29 @@ void CHexCtrl::DrawTemplates(HDC hDC, ULONGLONG ullStartLine, int iLines, std::w
 			dc.SetTextColor(pfc.stClr.clrText);
 			dc.SetBkColor(pfc.stClr.clrBk);
 
-			const auto& refH = pfc.stPoly;
-			::ExtTextOutW(dc, refH.x, refH.y, refH.uiFlags, &refH.rcl, refH.lpstr, refH.n, refH.pdx); //Hex Field printing.
-			const auto& refT = vecFieldsText[index++].stPoly;
-			::ExtTextOutW(dc, refT.x, refT.y, refT.uiFlags, &refT.rcl, refT.lpstr, refT.n, refT.pdx); //Text Field printing.
+			const auto& polyH = pfc.stPoly;
+			::ExtTextOutW(dc, polyH.x, polyH.y, polyH.uiFlags, &polyH.rcl, polyH.lpstr, polyH.n, polyH.pdx); //Hex Field printing.
+			const auto& polyT = vecFieldsText[index++].stPoly;
+			::ExtTextOutW(dc, polyT.x, polyT.y, polyT.uiFlags, &polyT.rcl, polyT.lpstr, polyT.n, polyT.pdx); //Text Field printing.
 
 			if (pfc.fPrintVertLine) {
-				const auto iFieldLineHexX = refH.x - 2; //Little indent before vert line.
-				dc.MoveTo(iFieldLineHexX, refH.y);
-				dc.LineTo(iFieldLineHexX, refH.y + m_sizeFontMain.cy);
+				const auto iFieldLineHexX = polyH.x - 2; //Little indent before vert line.
+				dc.MoveTo(iFieldLineHexX, polyH.y);
+				dc.LineTo(iFieldLineHexX, polyH.y + m_sizeFontMain.cy);
 
-				const auto iFieldLineTextX = refT.x;
-				dc.MoveTo(iFieldLineTextX, refT.y);
-				dc.LineTo(iFieldLineTextX, refT.y + m_sizeFontMain.cy);
+				const auto iFieldLineTextX = polyT.x;
+				dc.MoveTo(iFieldLineTextX, polyT.y);
+				dc.LineTo(iFieldLineTextX, polyT.y + m_sizeFontMain.cy);
 			}
 
 			if (index == vecFieldsHex.size()) { //Last vertical Field line.
-				const auto iFieldLastLineHexX = refH.x + refH.n * GetCharWidthExtras() + 1; //Little indent after vert line.
-				dc.MoveTo(iFieldLastLineHexX, refH.y);
-				dc.LineTo(iFieldLastLineHexX, refH.y + m_sizeFontMain.cy);
+				const auto iFieldLastLineHexX = polyH.x + polyH.n * GetCharWidthExtras() + 1; //Little indent after vert line.
+				dc.MoveTo(iFieldLastLineHexX, polyH.y);
+				dc.LineTo(iFieldLastLineHexX, polyH.y + m_sizeFontMain.cy);
 
-				const auto iFieldLastLineTextX = refT.x + refT.n * GetCharWidthExtras();
-				dc.MoveTo(iFieldLastLineTextX, refT.y);
-				dc.LineTo(iFieldLastLineTextX, refT.y + m_sizeFontMain.cy);
+				const auto iFieldLastLineTextX = polyT.x + polyT.n * GetCharWidthExtras();
+				dc.MoveTo(iFieldLastLineTextX, polyT.y);
+				dc.LineTo(iFieldLastLineTextX, polyT.y + m_sizeFontMain.cy);
 			}
 		}
 		dc.SelectObject(penOld);
@@ -3150,7 +3153,7 @@ void CHexCtrl::DrawBookmarks(HDC hDC, ULONGLONG ullStartLine, int iLines, std::w
 		int iBkmTextPosToPrintX { };
 		bool fNeedChunkPoint { true };
 		bool fBookmark { false };  //Flag to show current Bookmark in current Hex presence.
-		PHEXBKM pBkmCurr { };
+		PHEXBKM pBkmPrev { };
 		const auto iPosToPrintY = m_iStartWorkAreaYPx + (m_sizeFontMain.cy * itLine); //Hex and Text are the same.
 		const auto lmbPoly = [&]() {
 			if (wstrHexBkmToPrint.empty())
@@ -3160,13 +3163,13 @@ void CHexCtrl::DrawBookmarks(HDC hDC, ULONGLONG ullStartLine, int iLines, std::w
 			vecWstrBkmHex.emplace_back(std::make_unique<std::wstring>(std::move(wstrHexBkmToPrint)));
 			vecBkmHex.emplace_back(POLYTEXTW { .x { iBkmHexPosToPrintX }, .y { iPosToPrintY },
 				.n { static_cast<UINT>(vecWstrBkmHex.back()->size()) }, .lpstr { vecWstrBkmHex.back()->data() },
-				.pdx { GetCharsWidthArray() } }, pBkmCurr->stClr);
+				.pdx { GetCharsWidthArray() } }, pBkmPrev->stClr);
 
 			//Text bookmarks Poly.
 			vecWstrBkmText.emplace_back(std::make_unique<std::wstring>(std::move(wstrTextBkmToPrint)));
 			vecBkmText.emplace_back(POLYTEXTW { .x { iBkmTextPosToPrintX }, .y { iPosToPrintY },
 				.n { static_cast<UINT>(vecWstrBkmText.back()->size()) }, .lpstr { vecWstrBkmText.back()->data() },
-				.pdx { GetCharsWidthArray() } }, pBkmCurr->stClr);
+				.pdx { GetCharsWidthArray() } }, pBkmPrev->stClr);
 			};
 		const auto lmbHexSpaces = [&](const unsigned itChunk) {
 			if (wstrHexBkmToPrint.empty()) //Only adding spaces if there are chars beforehead.
@@ -3185,15 +3188,15 @@ void CHexCtrl::DrawBookmarks(HDC hDC, ULONGLONG ullStartLine, int iLines, std::w
 		//Main loop for printing Hex chunks and Text chars.
 		for (auto itChunk { 0U }; itChunk < GetCapacity() && uzIndexToPrint < wsvText.size(); ++itChunk, ++uzIndexToPrint) {
 			//Bookmarks.
-			if (const auto pBkm = m_DlgBkmMgr.HitTest(ullStartOffset + uzIndexToPrint); pBkm != nullptr) {
-				//If it's nested bookmark.
-				if (pBkmCurr != nullptr && pBkmCurr != pBkm) {
+			if (const auto pBkmCurr = m_DlgBkmMgr.HitTest(ullStartOffset + uzIndexToPrint); pBkmCurr != nullptr) {
+				//If it's a nested bookmark.
+				if (pBkmPrev != nullptr && pBkmPrev != pBkmCurr) {
 					lmbHexSpaces(itChunk);
 					lmbPoly();
 					fNeedChunkPoint = true;
 				}
 
-				pBkmCurr = pBkm;
+				pBkmPrev = pBkmCurr;
 
 				if (fNeedChunkPoint) {
 					int iCy;
@@ -3217,12 +3220,11 @@ void CHexCtrl::DrawBookmarks(HDC hDC, ULONGLONG ullStartLine, int iLines, std::w
 				lmbPoly();
 				fNeedChunkPoint = true;
 				fBookmark = false;
-				pBkmCurr = nullptr;
+				pBkmPrev = nullptr;
 			}
 		}
 
 		lmbPoly(); //Bookmarks Poly.
-		pBkmCurr = nullptr;
 	}
 
 	//Bookmarks printing.
@@ -3233,10 +3235,10 @@ void CHexCtrl::DrawBookmarks(HDC hDC, ULONGLONG ullStartLine, int iLines, std::w
 		for (const auto& ptc : vecBkmHex) { //Loop is needed because bkms have different colors.
 			dc.SetTextColor(ptc.stClr.clrText);
 			dc.SetBkColor(ptc.stClr.clrBk);
-			const auto& refH = ptc.stPoly;
-			::ExtTextOutW(dc, refH.x, refH.y, refH.uiFlags, &refH.rcl, refH.lpstr, refH.n, refH.pdx); //Hex bookmarks printing.
-			const auto& refT = vecBkmText[index++].stPoly;
-			::ExtTextOutW(dc, refT.x, refT.y, refT.uiFlags, &refT.rcl, refT.lpstr, refT.n, refT.pdx); //Text bookmarks printing.
+			const auto& polyH = ptc.stPoly;
+			::ExtTextOutW(dc, polyH.x, polyH.y, polyH.uiFlags, &polyH.rcl, polyH.lpstr, polyH.n, polyH.pdx); //Hex bookmarks printing.
+			const auto& polyT = vecBkmText[index++].stPoly;
+			::ExtTextOutW(dc, polyT.x, polyT.y, polyT.uiFlags, &polyT.rcl, polyT.lpstr, polyT.n, polyT.pdx); //Text bookmarks printing.
 		}
 	}
 }

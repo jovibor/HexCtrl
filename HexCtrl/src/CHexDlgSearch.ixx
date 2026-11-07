@@ -2014,8 +2014,8 @@ void CHexDlgSearch::WMNotifyListGetDispInfo(NMHDR* pNMHDR) {
 }
 
 void CHexDlgSearch::WMNotifyListItemChanged(NMHDR* pNMHDR) {
-	const auto* const pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
-	if (pNMI->iItem < 0 || pNMI->iSubItem < 0 || !(pNMI->uNewState & LVIS_SELECTED))
+	const auto* const pLV = reinterpret_cast<LPNMLISTVIEW>(pNMHDR);
+	if (pLV->iItem < 0 || pLV->iSubItem < 0 || !(pLV->uNewState & LVIS_SELECTED))
 		return;
 
 	VecHexSpan vecSpan;
@@ -2025,13 +2025,13 @@ void CHexDlgSearch::WMNotifyListItemChanged(NMHDR* pNMHDR) {
 
 		//Do not yet add selected (clicked) item (in multiselect), will add it after the loop,
 		//so that it's always last in the vecSpan to highlight it in HexCtrlHighlight.
-		if (pNMI->iItem != iItem) {
+		if (pLV->iItem != iItem) {
 			vecSpan.emplace_back(m_vecSearchRes.at(static_cast<std::size_t>(iItem)),
 				m_fReplace ? GetReplaceDataSize() : GetSearchDataSize());
 		}
 	}
 
-	const auto ullOffset = m_vecSearchRes[static_cast<std::size_t>(pNMI->iItem)];
+	const auto ullOffset = m_vecSearchRes[static_cast<std::size_t>(pLV->iItem)];
 	vecSpan.emplace_back(ullOffset, m_fReplace ? GetReplaceDataSize() : GetSearchDataSize());
 	HexCtrlHighlight(vecSpan);
 	SetEditStartFrom(GetHexCtrl()->GetOffset(ullOffset, true)); //Show virtual offset.

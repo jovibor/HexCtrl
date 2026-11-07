@@ -89,6 +89,7 @@ namespace HEXCTRL::INTERNAL {
 		IHexVirtBookmarks* m_pVirtBkm { };
 		std::uint64_t m_u64IndexCurr { }; //Current bookmark's position index, to move next/prev.
 		std::uint64_t m_u64Flags { }; //Data from SetDlgProperties.
+		bool m_fListProtectFlag { }; //True when a list item is selected by the SetItemState.
 	};
 }
 
@@ -147,7 +148,7 @@ auto CHexDlgBkmMgr::GetByID(ULONGLONG ullID)->PHEXBKM {
 	}
 
 	if (const auto it = std::find_if(m_vecBookmarks.begin(), m_vecBookmarks.end(),
-		[ullID](const HEXBKM& ref) { return ullID == ref.ullID; }); it != m_vecBookmarks.end()) {
+		[ullID](const HEXBKM& bkm) { return ullID == bkm.ullID; }); it != m_vecBookmarks.end()) {
 		return  &*it;
 	}
 
@@ -259,9 +260,9 @@ auto CHexDlgBkmMgr::HitTest(ULONGLONG ullOffset)->PHEXBKM {
 	}
 
 	if (const auto rit = std::find_if(m_vecBookmarks.rbegin(), m_vecBookmarks.rend(),
-		[ullOffset](const HEXBKM& ref) { return std::any_of(ref.vecSpan.begin(), ref.vecSpan.end(),
-			[ullOffset](const HEXSPAN& refV) {
-				return ullOffset >= refV.ullOffset && ullOffset < (refV.ullOffset + refV.ullSize); }); });
+		[ullOffset](const HEXBKM& bkm) { return std::any_of(bkm.vecSpan.begin(), bkm.vecSpan.end(),
+			[ullOffset](const HEXSPAN& hs) {
+				return ullOffset >= hs.ullOffset && ullOffset < (hs.ullOffset + hs.ullSize); }); });
 					rit != m_vecBookmarks.rend()) {
 		return &*rit;
 	}
@@ -323,9 +324,9 @@ void CHexDlgBkmMgr::RemoveByOffset(ULONGLONG ullOffset) {
 
 		//Searching from the end, to remove last added bookmark if there are few at the given offset.
 		if (const auto it = std::find_if(m_vecBookmarks.rbegin(), m_vecBookmarks.rend(),
-			[ullOffset](const HEXBKM& ref) { return std::any_of(ref.vecSpan.begin(), ref.vecSpan.end(),
-				[ullOffset](const HEXSPAN& refV) {
-					return ullOffset >= refV.ullOffset && ullOffset < (refV.ullOffset + refV.ullSize); }); });
+			[ullOffset](const HEXBKM& bkm) { return std::any_of(bkm.vecSpan.begin(), bkm.vecSpan.end(),
+				[ullOffset](const HEXSPAN& hs) {
+					return ullOffset >= hs.ullOffset && ullOffset < (hs.ullOffset + hs.ullSize); }); });
 			it != m_vecBookmarks.rend()) {
 			RemoveBkmByID(it->ullID);
 		}
@@ -369,7 +370,7 @@ void CHexDlgBkmMgr::Update(ULONGLONG ullID, const HEXBKM& bkm) {
 		return;
 
 	if (const auto it = std::find_if(m_vecBookmarks.begin(), m_vecBookmarks.end(),
-		[ullID](const HEXBKM& ref) { return ullID == ref.ullID; }); it != m_vecBookmarks.end()) {
+		[ullID](const HEXBKM& bkm) { return ullID == bkm.ullID; }); it != m_vecBookmarks.end()) {
 		*it = bkm;
 	}
 
@@ -401,6 +402,7 @@ void CHexDlgBkmMgr::OnCancel() {
 void CHexDlgBkmMgr::OnCheckHex() {
 	m_ListEx.RedrawWindow();
 }
+
 void CHexDlgBkmMgr::RedrawHexCtrl() {
 	if (m_pHexCtrl != nullptr && m_pHexCtrl->IsDataSet()) {
 		m_pHexCtrl->Redraw();
@@ -425,8 +427,10 @@ void CHexDlgBkmMgr::UpdateListCount(bool fPreserveSelected) {
 	if (fPreserveSelected) {
 		if (GetCount() > 0) {
 			const auto iCurrent = static_cast<int>(GetCurrent());
+			m_fListProtectFlag = true;
 			m_ListEx.SetItemState(iCurrent, LVIS_SELECTED, LVIS_SELECTED);
 			m_ListEx.EnsureVisible(iCurrent, FALSE);
+			m_fListProtectFlag = false;
 		}
 	}
 }
@@ -606,9 +610,9 @@ void CHexDlgBkmMgr::WMNotifyListColumnClick() {
 			case 2: //Size.
 				if (!st1.vecSpan.empty() && !st2.vecSpan.empty()) {
 					auto ullSize1 = std::reduce(st1.vecSpan.begin(), st1.vecSpan.end(), 0ULL,
-						[](auto ullTotal, const HEXSPAN& ref) { return ullTotal + ref.ullSize; });
+						[](auto ullTotal, const HEXSPAN& hs) { return ullTotal + hs.ullSize; });
 					auto ullSize2 = std::reduce(st2.vecSpan.begin(), st2.vecSpan.end(), 0ULL,
-						[](auto ullTotal, const HEXSPAN& ref) { return ullTotal + ref.ullSize; });
+						[](auto ullTotal, const HEXSPAN& hs) { return ullTotal + hs.ullSize; });
 					iCompare = ullSize1 != ullSize2 ? (ullSize1 < ullSize2 ? -1 : 1) : 0;
 				}
 				break;
@@ -708,7 +712,7 @@ void CHexDlgBkmMgr::WMNotifyListGetDispInfo(NMHDR* pNMHDR) {
 	case 2: //Size.
 		if (!pBkm->vecSpan.empty()) {
 			ullSize = std::reduce(pBkm->vecSpan.begin(), pBkm->vecSpan.end(), 0ULL,
-				[](auto ullTotal, const HEXSPAN& ref) { return ullTotal + ref.ullSize; });
+				[](auto ullTotal, const HEXSPAN& hs) { return ullTotal + hs.ullSize; });
 		}
 		*std::vformat_to(pItem->pszText, IsShowAsHex() ? L"0x{:X}" : L"{}", std::make_wformat_args(ullSize)) = L'\0';
 		break;
@@ -725,11 +729,11 @@ void CHexDlgBkmMgr::WMNotifyListGetDispInfo(NMHDR* pNMHDR) {
 }
 
 void CHexDlgBkmMgr::WMNotifyListItemChanged(NMHDR* pNMHDR) {
-	//Go selected bookmark only with keyboard arrows and LMouse clicks.
-	//Does not trigger (LVN_ITEMCHANGED event) when updating bookmark: !(pLCI->uNewState & LVIS_SELECTED)
-	if (const auto* const pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
-		pNMI->iItem >= 0 && pNMI->iSubItem >= 0 && (pNMI->uNewState & LVIS_SELECTED)) {
-		GoBookmark(static_cast<ULONGLONG>(pNMI->iItem));
+	//Go selected bookmark only with keyboard and mouse clicks.
+	//Do nothing, if list item is changed by the SetItemState method (!m_fListProtectFlag).
+	if (const auto pLV = reinterpret_cast<LPNMLISTVIEW>(pNMHDR);
+		pLV->iItem >= 0 && pLV->iSubItem >= 0 && (pLV->uNewState & LVIS_SELECTED) && !m_fListProtectFlag) {
+		GoBookmark(static_cast<ULONGLONG>(pLV->iItem));
 	}
 }
 
@@ -769,7 +773,7 @@ void CHexDlgBkmMgr::WMNotifyListSetData(NMHDR* pNMHDR) {
 		const auto ullOffsetCurr = pBkm->vecSpan.front().ullOffset;
 		if (ullOffsetCurr != ullOffset) {
 			const auto ullSizeCurr = std::reduce(pBkm->vecSpan.begin(), pBkm->vecSpan.end(), 0ULL,
-				[](auto ullTotal, const HEXSPAN& ref) { return ullTotal + ref.ullSize; });
+				[](auto ullTotal, const HEXSPAN& hs) { return ullTotal + hs.ullSize; });
 			pBkm->vecSpan.clear();
 			pBkm->vecSpan.emplace_back(ullOffset, ullSizeCurr);
 		}
@@ -789,7 +793,7 @@ void CHexDlgBkmMgr::WMNotifyListSetData(NMHDR* pNMHDR) {
 		}
 
 		const auto ullSizeCurr = std::reduce(pBkm->vecSpan.begin(), pBkm->vecSpan.end(), 0ULL,
-			[](auto ullTotal, const HEXSPAN& ref) { return ullTotal + ref.ullSize; });
+			[](auto ullTotal, const HEXSPAN& hs) { return ullTotal + hs.ullSize; });
 		if (ullSizeCurr != *optSize) {
 			const auto ullOffsetCurr = pBkm->vecSpan.front().ullOffset;
 			pBkm->vecSpan.clear();

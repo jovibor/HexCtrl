@@ -1608,9 +1608,9 @@ void CHexDlgDataInterp::WMNotifyListGetDispInfo(NMHDR* pNMHDR) {
 }
 
 void CHexDlgDataInterp::WMNotifyListItemChanged(NMHDR* pNMHDR) {
-	const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
-	const auto iItem = pNMI->iItem;
-	const auto iSubitem = pNMI->iSubItem;
+	const auto pLV = reinterpret_cast<LPNMLISTVIEW>(pNMHDR);
+	const auto iItem = pLV->iItem;
+	const auto iSubitem = pLV->iSubItem;
 	if (iItem < 0 || iSubitem < 0 || !m_pHexCtrl->IsDataSet() || iItem >= static_cast<int>(m_vecData.size())) {
 		return;
 	}

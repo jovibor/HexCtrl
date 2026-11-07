@@ -62,10 +62,10 @@ auto CHexSelection::GetOffsetByIndex(ULONGLONG ullIndex)const->ULONGLONG {
 	if (ullIndex >= GetSelSize())
 		return ullOffset;
 
-	for (ULONGLONG ullTotal { }; const auto & ref : m_vecSelection) {
-		ullTotal += ref.ullSize;
+	for (ULONGLONG ullTotal { }; const auto& vec : m_vecSelection) {
+		ullTotal += vec.ullSize;
 		if (ullIndex < ullTotal) {
-			ullOffset = ref.ullOffset + (ullIndex - (ullTotal - ref.ullSize));
+			ullOffset = vec.ullOffset + (ullIndex - (ullTotal - vec.ullSize));
 			break;
 		}
 	}
@@ -112,23 +112,23 @@ bool CHexSelection::HasContiguousSel()const {
 
 bool CHexSelection::HitTest(ULONGLONG ullOffset)const {
 	return std::any_of(m_vecSelection.begin(), m_vecSelection.end(),
-		[ullOffset](const HEXSPAN& ref) {
-			return ullOffset >= ref.ullOffset && ullOffset < (ref.ullOffset + ref.ullSize); });
+		[ullOffset](const HEXSPAN& hs) {
+			return ullOffset >= hs.ullOffset && ullOffset < (hs.ullOffset + hs.ullSize); });
 }
 
 bool CHexSelection::HitTestHighlight(ULONGLONG ullOffset)const {
 	return std::any_of(m_vecSelHighlight.begin(), m_vecSelHighlight.end(),
-		[ullOffset](const HEXSPAN& ref) {
-			return ullOffset >= ref.ullOffset && ullOffset < (ref.ullOffset + ref.ullSize); });
+		[ullOffset](const HEXSPAN& hs) {
+			return ullOffset >= hs.ullOffset && ullOffset < (hs.ullOffset + hs.ullSize); });
 }
 
 bool CHexSelection::HitTestRange(const HEXSPAN& hss)const {
 	return std::any_of(m_vecSelection.begin(), m_vecSelection.end(),
-		[&](const HEXSPAN& ref) {
-			return (hss.ullOffset >= ref.ullOffset && hss.ullOffset < (ref.ullOffset + ref.ullSize))
-				|| (ref.ullOffset >= hss.ullOffset && ref.ullOffset < (hss.ullOffset + hss.ullSize))
-				|| (hss.ullOffset + hss.ullSize > ref.ullOffset && hss.ullOffset
-					+ hss.ullSize <= (ref.ullOffset + ref.ullSize));
+		[&](const HEXSPAN& hs) {
+			return (hss.ullOffset >= hs.ullOffset && hss.ullOffset < (hs.ullOffset + hs.ullSize))
+				|| (hs.ullOffset >= hss.ullOffset && hs.ullOffset < (hss.ullOffset + hss.ullSize))
+				|| (hss.ullOffset + hss.ullSize > hs.ullOffset && hss.ullOffset
+					+ hss.ullSize <= (hs.ullOffset + hs.ullSize));
 		});
 }
 

@@ -2644,8 +2644,8 @@ void CHexDlgTemplMgr::WMNotifyListHdrRClick([[maybe_unused]] NMHDR* pNMHDR) {
 }
 
 void CHexDlgTemplMgr::WMNotifyListItemChanged(NMHDR* pNMHDR) {
-	const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
-	const auto iItem = pNMI->iItem;
+	const auto pLV = reinterpret_cast<LPNMLISTVIEW>(pNMHDR);
+	const auto iItem = pLV->iItem;
 	if (iItem < 0 || m_fListGuardEvent)
 		return;
 

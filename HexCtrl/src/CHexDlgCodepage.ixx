@@ -306,9 +306,9 @@ void CHexDlgCodepage::WMNotifyListGetDispInfo(NMHDR* pNMHDR) {
 }
 
 void CHexDlgCodepage::WMNotifyListItemChanged(NMHDR* pNMHDR) {
-	if (const auto* const pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
-		pNMI->iItem != -1 && pNMI->iSubItem != -1 && (pNMI->uNewState & LVIS_SELECTED)) {
-		GetHexCtrl()->SetCodepage(m_vecCodePage[static_cast<std::size_t>(pNMI->iItem)].iCPID);
+	if (const auto pLV = reinterpret_cast<LPNMLISTVIEW>(pNMHDR);
+		pLV->iItem != -1 && pLV->iSubItem != -1 && (pLV->uNewState & LVIS_SELECTED)) {
+		GetHexCtrl()->SetCodepage(m_vecCodePage[static_cast<std::size_t>(pLV->iItem)].iCPID);
 	}
 }
 
