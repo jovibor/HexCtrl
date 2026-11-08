@@ -3100,30 +3100,45 @@ void CHexCtrl::DrawTemplates(HDC hDC, ULONGLONG ullStartLine, int iLines, std::w
 		for (const auto& pfc : vecFieldsHex) { //Loop is needed because different Fields can have different colors.
 			dc.SetTextColor(pfc.stClr.clrText);
 			dc.SetBkColor(pfc.stClr.clrBk);
-
 			const auto& polyH = pfc.stPoly;
 			::ExtTextOutW(dc, polyH.x, polyH.y, polyH.uiFlags, &polyH.rcl, polyH.lpstr, polyH.n, polyH.pdx); //Hex Field printing.
 			const auto& polyT = vecFieldsText[index++].stPoly;
 			::ExtTextOutW(dc, polyT.x, polyT.y, polyT.uiFlags, &polyT.rcl, polyT.lpstr, polyT.n, polyT.pdx); //Text Field printing.
 
-			if (pfc.fPrintVertLine) {
-				const auto iFieldLineHexX = polyH.x - 2; //Little indent before vert line.
-				dc.MoveTo(iFieldLineHexX, polyH.y);
-				dc.LineTo(iFieldLineHexX, polyH.y + m_sizeFontMain.cy);
+			//Hex area lines.
+			constexpr auto iIndentBefore = 2; //Little indent before hex line start.
+			constexpr auto iIndentAfter = 1;  //Little indent after hex line end.
+			const auto iLeftCoordHexLine = polyH.x - iIndentBefore;
+			const auto iTopCoordHexLine = polyH.y;
+			const auto iRightCoordHexLine = polyH.x + (polyH.n * GetCharWidthExtras()) + iIndentAfter;
+			const auto iBottomCoordHexLine = polyH.y + m_sizeFontMain.cy;
+			dc.MoveTo(iLeftCoordHexLine, iTopCoordHexLine);
+			dc.LineTo(iRightCoordHexLine, iTopCoordHexLine);    //Top horizontal hex line.
+			dc.MoveTo(iLeftCoordHexLine, iBottomCoordHexLine);
+			dc.LineTo(iRightCoordHexLine, iBottomCoordHexLine); //Bottom horizontal hex line.
 
-				const auto iFieldLineTextX = polyT.x;
-				dc.MoveTo(iFieldLineTextX, polyT.y);
-				dc.LineTo(iFieldLineTextX, polyT.y + m_sizeFontMain.cy);
+			//Text area lines.
+			const auto iLeftCoordTextLine = polyT.x;
+			const auto iTopCoordTextLine = polyT.y;
+			const auto iRightCoordTextLine = polyT.x + (polyT.n * GetCharWidthExtras());
+			const auto iBottomCoordTextLine = polyT.y + m_sizeFontMain.cy;
+			dc.MoveTo(iLeftCoordTextLine, iTopCoordTextLine);
+			dc.LineTo(iRightCoordTextLine, iTopCoordTextLine);    //Top horizontal text line.
+			dc.MoveTo(iLeftCoordTextLine, iBottomCoordTextLine);
+			dc.LineTo(iRightCoordTextLine, iBottomCoordTextLine); //Bottom horizontal text line.
+
+			if (pfc.fPrintVertLine) {
+				dc.MoveTo(iLeftCoordHexLine, iTopCoordHexLine);
+				dc.LineTo(iLeftCoordHexLine, iBottomCoordHexLine);
+				dc.MoveTo(iLeftCoordTextLine, iTopCoordTextLine);
+				dc.LineTo(iLeftCoordTextLine, iBottomCoordHexLine);
 			}
 
-			if (index == vecFieldsHex.size()) { //Last vertical Field line.
-				const auto iFieldLastLineHexX = polyH.x + polyH.n * GetCharWidthExtras() + 1; //Little indent after vert line.
-				dc.MoveTo(iFieldLastLineHexX, polyH.y);
-				dc.LineTo(iFieldLastLineHexX, polyH.y + m_sizeFontMain.cy);
-
-				const auto iFieldLastLineTextX = polyT.x + polyT.n * GetCharWidthExtras();
-				dc.MoveTo(iFieldLastLineTextX, polyT.y);
-				dc.LineTo(iFieldLastLineTextX, polyT.y + m_sizeFontMain.cy);
+			if (index == vecFieldsHex.size()) { //Last vertical field's line.
+				dc.MoveTo(iRightCoordHexLine, iTopCoordHexLine);
+				dc.LineTo(iRightCoordHexLine, iBottomCoordHexLine);
+				dc.MoveTo(iRightCoordTextLine, iTopCoordTextLine);
+				dc.LineTo(iRightCoordTextLine, iBottomCoordTextLine);
 			}
 		}
 		dc.SelectObject(penOld);
