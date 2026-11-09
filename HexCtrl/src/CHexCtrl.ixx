@@ -205,6 +205,7 @@ namespace HEXCTRL::INTERNAL {
 		void ShowInfoBar(bool fShow, HEXINFOBAR hib = { })override;
 	private:
 		struct KEYBIND; struct UNDO; struct MENUITEM; enum class EClipboard : std::uint8_t;
+		void AddHexSpaces(std::wstring& wstr, std::uint32_t u32Chunk)const;
 		[[nodiscard]] auto BuildDataToDraw(ULONGLONG ullStartLine, int iLines)const -> std::tuple<std::wstring, std::wstring>;
 		void CaretMoveDown();  //Set caret one line down.
 		void CaretMoveLeft();  //Set caret one chunk left.
@@ -1864,6 +1865,20 @@ void CHexCtrl::ShowInfoBar(bool fShow, HEXINFOBAR hib) {
 
 //CHexCtrl Private methods.
 
+void CHexCtrl::AddHexSpaces(std::wstring& wstr, std::uint32_t u32Chunk)const {
+	if (wstr.empty()) //Only adding spaces if there are chars beforehead.
+		return;
+
+	if ((u32Chunk % GetGroupSize()) == 0) {
+		wstr += L' ';
+	}
+
+	//Additional space between capacity halves, only in 1 byte grouping size.
+	if (GetGroupSize() == 1 && u32Chunk == m_dwCapacityBlockSize) {
+		wstr += L"  ";
+	}
+}
+
 auto CHexCtrl::BuildDataToDraw(ULONGLONG ullStartLine, int iLines)const->std::tuple<std::wstring, std::wstring> {
 	if (!IsDataSetImpl())
 		return { };
@@ -2760,22 +2775,23 @@ void CHexCtrl::DrawInfoBar(HDC hDC)const {
 		wstrInfoBar += IsMutableImpl() ? L"^RW^|" : L"^RO^|"; //RW/RO mode.
 	}
 
+	std::wstring wstrInfoBarDS; //Dedicated string for the data size.
 	if (m_hib.fDataSize) {
 		constexpr auto uBInKB { 1024U };          //Bytes in KB.
 		constexpr auto uBInMB { uBInKB * 1024U }; //Bytes in MB.
 		constexpr auto uBInGB { uBInMB * 1024U }; //Bytes in GB.
 		const auto ullDataSize = GetDataSizeImpl();
 		if (ullDataSize < uBInKB) {
-			wstrInfoBar += std::format(L"^{}B^|", ullDataSize);
+			wstrInfoBarDS = std::format(L"{}B", ullDataSize);
 		}
 		else if (ullDataSize < uBInMB) {
-			wstrInfoBar += std::format(L"^{}KB^|", ullDataSize / uBInKB);
+			wstrInfoBarDS = std::format(L"{}KB", ullDataSize / uBInKB);
 		}
 		else if (ullDataSize < uBInGB) {
-			wstrInfoBar += std::format(L"^{:.1f}MB^|", ullDataSize / static_cast<float>(uBInMB));
+			wstrInfoBarDS = std::format(L"{:.1f}MB", ullDataSize / static_cast<float>(uBInMB));
 		}
 		else { //More than or equal to 1 GB/s.
-			wstrInfoBar += std::format(L"^{:.1f}GB^|", ullDataSize / static_cast<float>(uBInGB));
+			wstrInfoBarDS = std::format(L"{:.1f}GB", ullDataSize / static_cast<float>(uBInGB));
 		}
 	}
 
@@ -2789,10 +2805,11 @@ void CHexCtrl::DrawInfoBar(HDC hDC)const {
 
 	const auto iScrollH = static_cast<int>(m_ScrollH.GetScrollPos());
 	GDIUT::CRect rcInfoBar(m_iFirstVertLinePx + 1 - iScrollH, m_iThirdHorzLinePx + 1,
-		m_iFourthVertLinePx, m_iFourthHorzLinePx); //Info bar rc until m_iFourthHorizLine.
-	GDIUT::CRect rcInfoBarText = rcInfoBar;
-	rcInfoBarText.left = m_iFirstVertLinePx + 5; //Draw the text beginning with little indent.
-	rcInfoBarText.right = m_iFirstVertLinePx + m_iWidthClientAreaPx; //Draw text to the end of the client area, even if it passes iFourthHorizLine.
+		m_iFourthVertLinePx - iScrollH, m_iFourthHorzLinePx); //Info bar rc until m_iFourthHorzLinePx.
+	auto rcInfoBarText = rcInfoBar;
+	rcInfoBarText.left = m_iFirstVertLinePx + 5; //Draw the text beginning with a little indent.
+	//Draw text to the end of the client area, even if it passes over the m_iFourthVertLinePx.
+	rcInfoBarText.right = m_iFirstVertLinePx + m_iWidthClientAreaPx;
 
 	for (const auto subrWstr : std::views::split(wstrInfoBar, L'|')) {
 		if (subrWstr.empty()) {
@@ -2842,6 +2859,15 @@ void CHexCtrl::DrawInfoBar(HDC hDC)const {
 			dc.MoveTo(pid.iVertLineX, poly.rcl.top);
 			dc.LineTo(pid.iVertLineX, poly.rcl.bottom);
 		}
+	}
+
+	if (!wstrInfoBarDS.empty()) {
+		const auto iWidthTextDS = static_cast<int>(wstrInfoBarDS.size() * m_sizeFontInfo.cx);
+		const auto iStartX = rcInfoBar.right - iWidthTextDS - (m_sizeFontInfo.cx / 2);
+		dc.MoveTo(iStartX, rcInfoBar.top);
+		dc.LineTo(iStartX, rcInfoBar.bottom);
+		RECT rc = rcInfoBar;
+		dc.DrawTextW(wstrInfoBarDS, &rc, DT_RIGHT | DT_VCENTER | DT_SINGLELINE); //Right side aligned.
 	}
 }
 
@@ -2915,19 +2941,6 @@ void CHexCtrl::DrawHexText(HDC hDC, ULONGLONG ullStartLine, int iLines, std::wst
 				.n { static_cast<UINT>(vecWstrText.back()->size()) }, .lpstr { vecWstrText.back()->data() },
 				.pdx { GetCharsWidthArray() } }, stClrTextArea);
 			};
-		const auto lmbHexSpaces = [&](const unsigned itChunk) {
-			if (wstrHexToPrint.empty()) //Only adding spaces if there are chars beforehead.
-				return;
-
-			if ((itChunk % GetGroupSize()) == 0) {
-				wstrHexToPrint += L' ';
-			}
-
-			//Additional space between capacity halves, only in 1 byte grouping size.
-			if (GetGroupSize() == 1 && itChunk == m_dwCapacityBlockSize) {
-				wstrHexToPrint += L"  ";
-			}
-			};
 
 		//Main loop for printing Hex chunks and Text chars.
 		for (auto itChunk { 0U }; itChunk < GetCapacity() && uzIndexToPrint < wsvText.size(); ++itChunk, ++uzIndexToPrint) {
@@ -2945,7 +2958,7 @@ void CHexCtrl::DrawHexText(HDC hDC, ULONGLONG ullStartLine, int iLines, std::wst
 			}
 
 			if (stClrHexArea != hci.stClr) { //If it's a different color.
-				lmbHexSpaces(itChunk);
+				AddHexSpaces(wstrHexToPrint, itChunk);
 				lmbPoly();
 				fNeedChunkPoint = true;
 				stClrHexArea = hci.stClr;
@@ -2958,7 +2971,7 @@ void CHexCtrl::DrawHexText(HDC hDC, ULONGLONG ullStartLine, int iLines, std::wst
 				fNeedChunkPoint = false;
 			}
 
-			lmbHexSpaces(itChunk);
+			AddHexSpaces(wstrHexToPrint, itChunk);
 			wstrHexToPrint += wsvHex[uzIndexToPrint * 2];
 			wstrHexToPrint += wsvHex[(uzIndexToPrint * 2) + 1];
 			wstrTextToPrint += wsvText[uzIndexToPrint];
@@ -3029,19 +3042,6 @@ void CHexCtrl::DrawTemplates(HDC hDC, ULONGLONG ullStartLine, int iLines, std::w
 
 			fPrintVertLine = true;
 			};
-		const auto lmbHexSpaces = [&](const unsigned itChunk) {
-			if (wstrHexFieldToPrint.empty()) //Only adding spaces if there are chars beforehead.
-				return;
-
-			if ((itChunk % GetGroupSize()) == 0) {
-				wstrHexFieldToPrint += L' ';
-			}
-
-			//Additional space between capacity halves, only in 1 byte grouping size.
-			if (GetGroupSize() == 1 && itChunk == m_dwCapacityBlockSize) {
-				wstrHexFieldToPrint += L"  ";
-			}
-			};
 
 		//Main loop for printing Hex chunks and Text chars.
 		for (auto itChunk { 0U }; itChunk < GetCapacity() && uzIndexToPrint < wsvText.size(); ++itChunk, ++uzIndexToPrint) {
@@ -3052,7 +3052,7 @@ void CHexCtrl::DrawTemplates(HDC hDC, ULONGLONG ullStartLine, int iLines, std::w
 
 				//If it's a nested field.
 				if (pFieldPrev != nullptr && pFieldPrev != pFieldCurr) {
-					lmbHexSpaces(itChunk);
+					AddHexSpaces(wstrHexFieldToPrint, itChunk);
 					lmbPoly();
 					fNeedChunkPoint = true;
 				}
@@ -3066,7 +3066,7 @@ void CHexCtrl::DrawTemplates(HDC hDC, ULONGLONG ullStartLine, int iLines, std::w
 					fNeedChunkPoint = false;
 				}
 
-				lmbHexSpaces(itChunk);
+				AddHexSpaces(wstrHexFieldToPrint, itChunk);
 				wstrHexFieldToPrint += wsvHex[uzIndexToPrint * 2];
 				wstrHexFieldToPrint += wsvHex[(uzIndexToPrint * 2) + 1];
 				wstrTextFieldToPrint += wsvText[uzIndexToPrint];
@@ -3186,19 +3186,6 @@ void CHexCtrl::DrawBookmarks(HDC hDC, ULONGLONG ullStartLine, int iLines, std::w
 				.n { static_cast<UINT>(vecWstrBkmText.back()->size()) }, .lpstr { vecWstrBkmText.back()->data() },
 				.pdx { GetCharsWidthArray() } }, pBkmPrev->stClr);
 			};
-		const auto lmbHexSpaces = [&](const unsigned itChunk) {
-			if (wstrHexBkmToPrint.empty()) //Only adding spaces if there are chars beforehead.
-				return;
-
-			if ((itChunk % GetGroupSize()) == 0) {
-				wstrHexBkmToPrint += L' ';
-			}
-
-			//Additional space between capacity halves, only in 1 byte grouping size.
-			if (GetGroupSize() == 1 && itChunk == m_dwCapacityBlockSize) {
-				wstrHexBkmToPrint += L"  ";
-			}
-			};
 
 		//Main loop for printing Hex chunks and Text chars.
 		for (auto itChunk { 0U }; itChunk < GetCapacity() && uzIndexToPrint < wsvText.size(); ++itChunk, ++uzIndexToPrint) {
@@ -3206,7 +3193,7 @@ void CHexCtrl::DrawBookmarks(HDC hDC, ULONGLONG ullStartLine, int iLines, std::w
 			if (const auto pBkmCurr = m_DlgBkmMgr.HitTest(ullStartOffset + uzIndexToPrint); pBkmCurr != nullptr) {
 				//If it's a nested bookmark.
 				if (pBkmPrev != nullptr && pBkmPrev != pBkmCurr) {
-					lmbHexSpaces(itChunk);
+					AddHexSpaces(wstrHexBkmToPrint, itChunk);
 					lmbPoly();
 					fNeedChunkPoint = true;
 				}
@@ -3220,7 +3207,7 @@ void CHexCtrl::DrawBookmarks(HDC hDC, ULONGLONG ullStartLine, int iLines, std::w
 					fNeedChunkPoint = false;
 				}
 
-				lmbHexSpaces(itChunk);
+				AddHexSpaces(wstrHexBkmToPrint, itChunk);
 				wstrHexBkmToPrint += wsvHex[uzIndexToPrint * 2];
 				wstrHexBkmToPrint += wsvHex[(uzIndexToPrint * 2) + 1];
 				wstrTextBkmToPrint += wsvText[uzIndexToPrint];
