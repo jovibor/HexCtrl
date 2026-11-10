@@ -18,10 +18,12 @@ module;
 #include <cwctype>
 #include <format>
 #include <fstream>
+#include <limits>
 #include <numeric>
 #include <optional>
 #include <random>
 #include <ranges>
+#include <ratio>
 #include <string>
 #include <thread>
 #include <unordered_map>
@@ -207,10 +209,9 @@ namespace HEXCTRL::INTERNAL {
 		struct KEYBIND; struct UNDO; struct MENUITEM; enum class EClipboard : std::uint8_t;
 		void AddHexSpaces(std::wstring& wstr, std::uint32_t u32Chunk)const;
 		[[nodiscard]] auto BuildDataToDraw(ULONGLONG ullStartLine, int iLines)const -> std::tuple<std::wstring, std::wstring>;
-		auto CalcHexAreaPosX(std::uint64_t u64Offset)const -> int;  //X position for a byte offset in the hex-area.
-		auto CalcHexAreaPosY(std::uint64_t u64Offset)const -> int;  //Y position for a byte offset in the hex-area.
-		auto CalcTextAreaPosX(std::uint64_t u64Offset)const -> int; //X position for a byte offset in the text-area.
-		auto CalcTextAreaPosY(std::uint64_t u64Offset)const -> int; //Y position for a byte offset in the text-area.
+		auto CalcClientAreaPosY(std::uint64_t u64Offset)const -> std::int64_t; //Y position for the offset in the hex/text area.
+		auto CalcHexAreaPosX(std::uint64_t u64Offset)const -> int;  //X position for the offset in the hex-area.
+		auto CalcTextAreaPosX(std::uint64_t u64Offset)const -> int; //X position for the offset in the text-area.
 		void CaretMoveDown();  //Set caret one line down.
 		void CaretMoveLeft();  //Set caret one chunk left.
 		void CaretMoveRight(); //Set caret one chunk right.
@@ -1929,7 +1930,14 @@ auto CHexCtrl::BuildDataToDraw(ULONGLONG ullStartLine, int iLines)const->std::tu
 	return { std::move(wstrHex), std::move(wstrText) };
 }
 
-auto CHexCtrl::CalcHexAreaPosX(std::uint64_t u64Offset)const ->int {
+auto CHexCtrl::CalcClientAreaPosY(std::uint64_t u64Offset)const->std::int64_t {
+	//Computes y position in client coordinates for the given offset in the client area, hex and text are the same.
+	const auto ullScrollV = m_ScrollV.GetScrollPos();
+	return static_cast<std::int64_t>((m_iStartWorkAreaYPx + (u64Offset / GetCapacity()) * m_sizeFontMain.cy) -
+		(ullScrollV - (ullScrollV % m_sizeFontMain.cy)));
+}
+
+auto CHexCtrl::CalcHexAreaPosX(std::uint64_t u64Offset)const->int {
 	//Computes x position in client coordinates for the given offset in the hex-area.
 	const DWORD dwMod = u64Offset % GetCapacity();
 	const auto iBetweenBlocks { dwMod >= m_dwCapacityBlockSize ? m_iSpaceBetweenBlocksPx : 0 };
@@ -1937,25 +1945,10 @@ auto CHexCtrl::CalcHexAreaPosX(std::uint64_t u64Offset)const ->int {
 		+ (dwMod / GetGroupSize()) * GetCharWidthExtras()) - m_ScrollH.GetScrollPos());
 }
 
-auto CHexCtrl::CalcHexAreaPosY(std::uint64_t u64Offset)const->int {
-	//Computes y position in client coordinates for the given offset in the hex-area.
-	const auto ullScrollV = m_ScrollV.GetScrollPos();
-	return static_cast<int>((m_iStartWorkAreaYPx + (u64Offset / GetCapacity()) * m_sizeFontMain.cy) -
-		(ullScrollV - (ullScrollV % m_sizeFontMain.cy)));
-}
-
-auto CHexCtrl::CalcTextAreaPosX(std::uint64_t u64Offset)const ->int {
-	//Computes x and y position in client coordinates for the given offset in the text-area.
-	const auto dwCapacity = GetCapacity() > 0 ? GetCapacity() : 0xFFFFFFFFUL; //To suppress warning C4724.
-	const DWORD dwMod = u64Offset % dwCapacity;
+auto CHexCtrl::CalcTextAreaPosX(std::uint64_t u64Offset)const->int {
+	//Computes x position in client coordinates for the given offset in the text-area.
+	const DWORD dwMod = u64Offset % GetCapacity();
 	return static_cast<int>((m_iIndentTextXPx + dwMod * GetCharWidthExtras()) - m_ScrollH.GetScrollPos());
-}
-
-auto CHexCtrl::CalcTextAreaPosY(std::uint64_t u64Offset)const ->int {
-	//Computes y position in client coordinates for the given offset in the text-area.
-	const auto ullScrollV = m_ScrollV.GetScrollPos();
-	return static_cast<int>((m_iStartWorkAreaYPx + (u64Offset / GetCapacity()) * m_sizeFontMain.cy) -
-		(ullScrollV - (ullScrollV % m_sizeFontMain.cy)));
 }
 
 void CHexCtrl::CaretMoveDown() {
@@ -3450,41 +3443,31 @@ void CHexCtrl::DrawCaret(HDC hDC, ULONGLONG ullStartLine, int iLines, std::wstri
 	if (ullCaretPos < ullFirstOffset || ullCaretPos >= ullEndOffset)
 		return;
 
-	auto iCaretHexPosToPrintX = CalcHexAreaPosX(ullCaretPos);
-	const auto iCaretHexPosToPrintY = CalcHexAreaPosY(ullCaretPos);
 	const auto uzIndexToPrint = static_cast<std::size_t>(ullCaretPos - ullFirstOffset);
-	std::wstring wstrHexCaretToPrint;
-	std::wstring wstrTextCaretToPrint;
+	auto iCaretHexPosX = CalcHexAreaPosX(ullCaretPos);
+	const auto iCaretClientPosY = static_cast<int>(CalcClientAreaPosY(ullCaretPos));
+	std::wstring wstrCaretHex;
 	if (m_fCaretHigh) {
-		wstrHexCaretToPrint = wsvHex[uzIndexToPrint * 2];
+		wstrCaretHex = wsvHex[uzIndexToPrint * 2];
 	}
 	else {
-		wstrHexCaretToPrint = wsvHex[(uzIndexToPrint * 2) + 1];
-		iCaretHexPosToPrintX += GetCharWidthExtras();
+		wstrCaretHex = wsvHex[(uzIndexToPrint * 2) + 1];
+		iCaretHexPosX += GetCharWidthExtras();
 	}
-	wstrTextCaretToPrint = wsvText[uzIndexToPrint];
 
-	POLYTEXTW arrPolyCaret[2]; //Caret Poly array.
+	const auto wstrCaretText = std::wstring { wsvText[uzIndexToPrint] };
+	const POLYTEXTW arrCaretPoly[] { { .x { iCaretHexPosX }, .y { iCaretClientPosY },
+		.n { static_cast<UINT>(wstrCaretHex.size()) }, .lpstr { wstrCaretHex.data() }, .pdx { GetCharsWidthArray() } },
+		{ .x { CalcTextAreaPosX(ullCaretPos) }, .y { iCaretClientPosY },
+		.n { static_cast<UINT>(wstrCaretText.size()) }, .lpstr { wstrCaretText.data() }, .pdx { GetCharsWidthArray() } }
+	};
 
-	//Hex Caret Poly.
-	arrPolyCaret[0] = { .x { iCaretHexPosToPrintX }, .y { iCaretHexPosToPrintY },
-		.n { static_cast<UINT>(wstrHexCaretToPrint.size()) }, .lpstr { wstrHexCaretToPrint.data() },
-		.pdx { GetCharsWidthArray() } };
-
-	//Text Caret Poly.
-	arrPolyCaret[1] = { .x { CalcTextAreaPosX(ullCaretPos) }, .y { CalcTextAreaPosY(ullCaretPos) },
-		.n { static_cast<UINT>(wstrTextCaretToPrint.size()) }, .lpstr { wstrTextCaretToPrint.data() },
-		.pdx { GetCharsWidthArray() } };
-
-	//Caret color.
 	const auto clrBkCaret = m_Selection.HitTest(ullCaretPos) ? m_stColors.clrBkCaretSel : m_stColors.clrBkCaret;
-
-	//Caret printing.
 	GDIUT::CDC dc(hDC);
 	dc.SelectObject(m_hFntMain);
 	dc.SetTextColor(m_stColors.clrFontCaret);
 	dc.SetBkColor(clrBkCaret);
-	for (const auto& pol : arrPolyCaret) {
+	for (const auto& pol : arrCaretPoly) {
 		::ExtTextOutW(dc, pol.x, pol.y, pol.uiFlags, &pol.rcl, pol.lpstr, pol.n, pol.pdx); //Hex/Text caret printing.
 	}
 }
@@ -3740,10 +3723,8 @@ auto CHexCtrl::GetSelectedLines()const->ULONGLONG {
 	const auto ullSelSize = m_Selection.GetSelSize();
 	const auto ullModStart = ullSelStart % dwCapacity;
 	const auto ullModEnd = ullSelEnd % dwCapacity;
-	const auto ullLines = ullSelSize / dwCapacity + ((ullModStart > (ullModEnd + 1)) ? 2
+	return ullSelSize / dwCapacity + ((ullModStart > (ullModEnd + 1)) ? 2
 		: ((ullSelSize % dwCapacity) ? 1 : (ullModStart > 0) ? 1 : 0));
-
-	return ullLines;
 }
 
 auto CHexCtrl::GetScrollPageSize()const->ULONGLONG {
