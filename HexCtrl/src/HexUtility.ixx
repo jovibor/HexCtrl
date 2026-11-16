@@ -164,13 +164,17 @@ namespace HEXCTRL::INTERNAL::ut { //Utility methods and stuff.
 		}
 	}
 
-	template<TSize1248 T> [[nodiscard]] constexpr T BitReverse(T tData)noexcept {
-		T tReversed { };
-		constexpr auto iBitsCount = sizeof(T) * 8;
-		for (auto i = 0U; i < iBitsCount; ++i, tData >>= 1) {
-			tReversed = (tReversed << 1) | (tData & 1);
+	template<TSize1248 T>
+	[[nodiscard]] constexpr T BitReverse(T tData)noexcept {
+		using U = std::make_unsigned_t<T>;
+		auto uData = static_cast<U>(tData);
+		U uReversed { };
+		constexpr auto iBitsCount = std::numeric_limits<U>::digits;
+		for (auto i = 0; i < iBitsCount; ++i, uData >>= 1) {
+			uReversed = static_cast<U>((uReversed << 1) | (uData & 1));
 		}
-		return tReversed;
+
+		return static_cast<T>(uReversed);
 	}
 
 	//Converts every two wchars to one respective hex byte: L"56"->0x56, L"7A"->0x7A, etc...

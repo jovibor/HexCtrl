@@ -114,8 +114,7 @@ namespace TestHexCtrl {
 	template<typename T> concept TSize1248 = (sizeof(T) == 1 || sizeof(T) == 2 || sizeof(T) == 4 || sizeof(T) == 8);
 
 	template<TSize1248 T>
-	[[nodiscard]] constexpr T ByteSwap(T tData)noexcept
-	{
+	[[nodiscard]] constexpr T ByteSwap(T tData)noexcept {
 		//Since a swapping-data type can be any type of 2, 4, or 8 bytes size,
 		//we first bit_cast swapping-data to an integral type of the same size,
 		//then byte-swapping and then bit_cast to the original type back.
@@ -152,13 +151,17 @@ namespace TestHexCtrl {
 		}
 	}
 
-	template<TSize1248 T> [[nodiscard]] constexpr T BitReverse(T tData) {
-		T tReversed { };
-		constexpr auto iBitsCount = sizeof(T) * 8;
-		for (auto i = 0; i < iBitsCount; ++i, tData >>= 1) {
-			tReversed = (tReversed << 1) | (tData & 1);
+	template<TSize1248 T>
+	[[nodiscard]] constexpr T BitReverse(T tData)noexcept {
+		using U = std::make_unsigned_t<T>;
+		auto uData = static_cast<U>(tData);
+		U uReversed { };
+		constexpr auto iBitsCount = std::numeric_limits<U>::digits;
+		for (auto i = 0; i < iBitsCount; ++i, uData >>= 1) {
+			uReversed = static_cast<U>((uReversed << 1) | (uData & 1));
 		}
-		return tReversed;
+
+		return static_cast<T>(uReversed);
 	}
 
 	template<typename T>

@@ -2276,7 +2276,7 @@ auto CHexCtrl::CopyBase64()const->std::wstring {
 	static constexpr auto pwszBase64Map { L"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/" };
 	const auto ullSelSize = m_Selection.GetSelSize();
 	std::wstring wstrData;
-	wstrData.reserve(static_cast<std::size_t>(ullSelSize) * 2);
+	wstrData.reserve(static_cast<std::size_t>(((ullSelSize + 2) / 3) * 4)); //Exact Base64 capacity formula.
 	auto uValA = 0U;
 	auto iValB = -6;
 	for (auto i { 0U }; i < ullSelSize; ++i) {
