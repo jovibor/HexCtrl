@@ -587,7 +587,7 @@ auto CHexTemplates::JSONParseFields(const PARSEFIELDS& pf)->std::optional<VecHex
 		return std::nullopt;
 	}
 
-	return { std::move(vecFieldsTopLevel) };
+	return vecFieldsTopLevel;
 }
 
 auto CHexTemplates::JSONProcess_array(const rapidjson::Value* pValue, const PARSEFIELDS& pf, const VecHexTemplFields& vecFields)
@@ -705,7 +705,7 @@ auto CHexTemplates::JSONProcess_jump(const rapidjson::Value* pValue)->std::optio
 		}
 	}
 
-	return { std::move(htj) };
+	return htj;
 }
 
 auto CHexTemplates::JSONProcess_limit(const rapidjson::Value* pValue, std::uint64_t u64ActualData, const PARSEFIELDS& pf)

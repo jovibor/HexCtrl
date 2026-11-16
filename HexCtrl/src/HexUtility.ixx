@@ -173,40 +173,58 @@ namespace HEXCTRL::INTERNAL::ut { //Utility methods and stuff.
 		return tReversed;
 	}
 
-	//Converts every two numeric wchars to one respective hex character: "56"->V(0x56), "7A"->z(0x7A), etc...
-	//chWc - a wildcard if any.
-	[[nodiscard]] auto NumStrToHex(std::wstring_view wsv, char chWc = 0) -> std::optional<std::string> {
-		const auto fWc = chWc != 0; //Is wildcard used?
-		std::wstring wstrFilter = L"0123456789AaBbCcDdEeFf"; //Allowed characters.
-
-		if (fWc) {
-			wstrFilter += chWc;
+	//Converts every two wchars to one respective hex byte: L"56"->0x56, L"7A"->0x7A, etc...
+	//wchWC - a wildcard, if any.
+	[[nodiscard]] auto WstrToHexBytes(std::wstring_view wsv, wchar_t wchWC = 0) -> std::optional<std::vector<std::byte>> {
+		if (wsv.empty() || (wsv.size() % 2) != 0) { //Input string must have even amount of wchars.
+			return std::nullopt;
 		}
 
-		if (wsv.find_first_not_of(wstrFilter) != std::wstring_view::npos)
-			return std::nullopt;
+		static constexpr auto pwszFilter = L"0123456789AaBbCcDdEeFf"; //Allowed wchars for conversion to hex bytes.
+		const auto fWC = (wchWC != 0); //Is wildcard used?
+		std::vector<std::byte> vecRet;
+		vecRet.reserve(wsv.size() / 2);
 
-		std::string strHexTmp;
-		for (auto it = wsv.begin(); it != wsv.end();) {
-			if (fWc && static_cast<char>(*it) == chWc) { //Skip wildcard.
-				++it;
-				strHexTmp += chWc;
-				continue;
-			}
+		if (fWC) {
+			for (std::size_t idx { 0 }; idx < wsv.size(); idx += 2) {
+				if (wsv[idx] == wchWC) {
+					if (wsv[idx + 1] != wchWC) { //Wildcards must come in pairs (e.g. ..??..).
+						return std::nullopt;
+					}
 
-			//Extract two current wchars and pass it to StringToNum as wstring.
-			const std::size_t uzOffsetCurr = it - wsv.begin();
-			const auto iSize = uzOffsetCurr + 2 <= wsv.size() ? 2 : 1;
-			if (const auto optNumber = stn::StrToUInt8(wsv.substr(uzOffsetCurr, iSize), 16); optNumber) {
-				it += iSize;
-				strHexTmp += *optNumber;
+					vecRet.emplace_back(static_cast<std::byte>(wchWC));
+					continue;
+				}
+
+				const auto wsvSUB = wsv.substr(idx, 2);
+				if (wsvSUB.find_first_not_of(pwszFilter) != std::wstring_view::npos) {
+					return std::nullopt;
+				}
+
+				const auto optNumber = stn::StrToUInt8(wsvSUB, 16);
+				if (!optNumber) {
+					return std::nullopt;
+				}
+
+				vecRet.emplace_back(static_cast<std::byte>(*optNumber));
 			}
-			else {
+		}
+		else {
+			if (wsv.find_first_not_of(pwszFilter) != std::wstring_view::npos) {
 				return std::nullopt;
 			}
+
+			for (std::size_t idx { 0 }; idx < wsv.size(); idx += 2) {
+				const auto optNumber = stn::StrToUInt8(wsv.substr(idx, 2), 16);
+				if (!optNumber) {
+					return std::nullopt;
+				}
+
+				vecRet.emplace_back(static_cast<std::byte>(*optNumber));
+			}
 		}
 
-		return { std::move(strHexTmp) };
+		return vecRet;
 	}
 
 	[[nodiscard]] auto StringToSystemTime(std::wstring_view wsv, DWORD dwFormat) -> std::optional<SYSTEMTIME> {
@@ -573,7 +591,7 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 			::CoTaskMemFree(pwszPath);
 		}
 
-		return { std::move(vecRet) };
+		return vecRet;
 	}
 
 

@@ -1377,25 +1377,25 @@ void CHexDlgSearch::Prepare() {
 }
 
 bool CHexDlgSearch::PrepareHexBytes() {
-	static constexpr auto pwszWrongInput { L"Unacceptable input character.\r\nAllowed characters are: 0123456789AaBbCcDdEeFf" };
-	auto optData = ut::NumStrToHex(m_wstrSearch, IsWildcard() ? static_cast<char>(GetWildcard()) : 0);
+	static constexpr auto pwszWrongInput { L"Wrong input.\r\nAllowed characters are: 0123456789AaBbCcDdEeFf" };
+	auto optData = ut::WstrToHexBytes(m_wstrSearch, IsWildcard() ? static_cast<wchar_t>(GetWildcard()) : 0);
 	if (!optData) {
 		m_iWrap = 1;
 		::MessageBoxW(m_Wnd, pwszWrongInput, L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
 		return false;
 	}
 
-	m_vecSearchDataFrom = ut::RangeToVecBytes(*optData);
+	m_vecSearchDataFrom = std::move(*optData);
 
 	if (m_fReplace) {
-		auto optDataRepl = ut::NumStrToHex(m_wstrReplace);
+		auto optDataRepl = ut::WstrToHexBytes(m_wstrReplace);
 		if (!optDataRepl) {
 			::MessageBoxW(m_Wnd, pwszWrongInput, L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
 			m_WndCmbReplace.SetFocus();
 			return false;
 		}
 
-		m_vecReplaceData = ut::RangeToVecBytes(*optDataRepl);
+		m_vecReplaceData = std::move(*optDataRepl);
 	}
 
 	return true;
@@ -2055,9 +2055,10 @@ void CHexDlgSearch::WMNotifyTT(NMHDR* pNMHDR) {
 	if (pNMHDR->idFrom == reinterpret_cast<UINT_PTR>(m_WndBtnWC.GetHWND())) { //Wildcard tooltip.
 		static std::wstring wstrTT;
 		const auto wchWildcard = static_cast<wchar_t>(GetWildcard());
-		wstrTT = std::vformat(L"Use a wildcard character '{0}' to match any letter, or any byte if searching for Hex Bytes.\r\n"
+		wstrTT = std::vformat(L"Use a wildcard character '{0}' to match any letter in text search,\r\n"
+				L"or double wildcard '{0}{0}' to match any byte in Hex Bytes search.\r\n"
 				L"Example:\r\n"
-				L"  Hex Bytes: 11{0}11 will match 112211, 113311, 114411, 115611, etc...\r\n"
+				L"  Hex Bytes: 11{0}{0}11 will match 112211, 113311, 114511, etc...\r\n"
 				L"  Text: sa{0}{0}le will match sample, saMPle, saMple, saddle, etc...", std::make_wformat_args(wchWildcard));
 		pTTDI->lpszText = wstrTT.data();
 	}

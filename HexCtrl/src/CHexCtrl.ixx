@@ -2208,14 +2208,14 @@ void CHexCtrl::ClipboardPaste(EClipboard eType) {
 	const auto ullDataSize = GetDataSizeImpl();
 	const auto ullCaretPos = GetCaretPosImpl();
 	HEXMODIFY hmd;
-	ULONGLONG ullSizeModify;
-	std::string strDataModify; //Actual data to paste, must outlive hmd.
+	std::uint64_t u64SizeToPaste;
+	std::vector<std::byte> vecDataToPaste; //Actual data to paste, must outlive the hmd.
 	const auto lmbPasteUTF16 = [&]() {
-		ullSizeModify = uzSizeClpbrd;
+		u64SizeToPaste = uzSizeClpbrd;
 		if (ullCaretPos + uzSizeClpbrd > ullDataSize) {
-			ullSizeModify = ullDataSize - ullCaretPos;
+			u64SizeToPaste = ullDataSize - ullCaretPos;
 		}
-		hmd.spnData = { reinterpret_cast<std::byte*>(pDataClpbrd), static_cast<std::size_t>(ullSizeModify) };
+		hmd.spnData = { reinterpret_cast<std::byte*>(pDataClpbrd), static_cast<std::size_t>(u64SizeToPaste) };
 		};
 
 	switch (eType) {
@@ -2233,37 +2233,40 @@ void CHexCtrl::ClipboardPaste(EClipboard eType) {
 		if (iCodepage == -1) { //ASCII.
 			iCodepage = 1252;  //ANSI-Latin codepage for default ASCII.
 		}
-		strDataModify = ut::WstrToStr(pDataClpbrd, iCodepage);
-		ullSizeModify = strDataModify.size();
-		if (ullCaretPos + ullSizeModify > ullDataSize) {
-			ullSizeModify = ullDataSize - ullCaretPos;
+
+		vecDataToPaste = ut::RangeToVecBytes(ut::WstrToStr(pDataClpbrd, iCodepage));
+		u64SizeToPaste = vecDataToPaste.size();
+		if (ullCaretPos + u64SizeToPaste > ullDataSize) {
+			u64SizeToPaste = ullDataSize - ullCaretPos;
 		}
-		hmd.spnData = { reinterpret_cast<const std::byte*>(strDataModify.data()), static_cast<std::size_t>(ullSizeModify) };
+
+		hmd.spnData = { vecDataToPaste.data(), static_cast<std::size_t>(u64SizeToPaste) };
 	}
 	break;
 	case EClipboard::PASTE_HEX:
 	{
-		auto optData = ut::NumStrToHex(pDataClpbrd);
+		auto optData = ut::WstrToHexBytes(pDataClpbrd);
 		if (!optData) {
 			::GlobalUnlock(hClpbrd);
 			::CloseClipboard();
 			return;
 		}
-		strDataModify = std::move(*optData);
-		ullSizeModify = strDataModify.size();
-		if (ullCaretPos + ullSizeModify > ullDataSize) {
-			ullSizeModify = ullDataSize - ullCaretPos;
+
+		vecDataToPaste = std::move(*optData);
+		u64SizeToPaste = vecDataToPaste.size();
+		if (ullCaretPos + u64SizeToPaste > ullDataSize) {
+			u64SizeToPaste = ullDataSize - ullCaretPos;
 		}
-		hmd.spnData = { reinterpret_cast<const std::byte*>(strDataModify.data()), static_cast<std::size_t>(ullSizeModify) };
+
+		hmd.spnData = { vecDataToPaste.data(), static_cast<std::size_t>(u64SizeToPaste) };
 	}
 	break;
 	default:
 		break;
 	}
 
-	hmd.vecSpan.emplace_back(ullCaretPos, ullSizeModify);
+	hmd.vecSpan.emplace_back(ullCaretPos, u64SizeToPaste);
 	ModifyData(hmd);
-
 	::GlobalUnlock(hClpbrd);
 	::CloseClipboard();
 	RedrawImpl();
@@ -2288,6 +2291,7 @@ auto CHexCtrl::CopyBase64()const->std::wstring {
 	if (iValB > -6) {
 		wstrData += pwszBase64Map[((uValA << 8) >> (iValB + 8)) & 0x3F];
 	}
+
 	while (wstrData.size() % 4) {
 		wstrData += '=';
 	}

@@ -155,7 +155,7 @@ export namespace GDIUT { //Windows GDI related stuff.
 			::CoTaskMemFree(pwszPath);
 		}
 
-		return { std::move(vecRet) };
+		return vecRet;
 	}
 
 	template<typename TCom> requires requires(TCom* pTCom, const IID& iid, void** ppv) {

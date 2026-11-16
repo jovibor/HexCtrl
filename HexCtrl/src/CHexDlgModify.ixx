@@ -726,13 +726,13 @@ void CHexDlgFillData::OnOK() {
 	switch (eType) {
 	case FILL_HEX:
 	{
-		auto optData = ut::NumStrToHex(wstrText);
+		auto optData = ut::WstrToHexBytes(wstrText);
 		if (!optData) {
 			::MessageBoxW(m_Wnd, L"Wrong Hex format.", L"Format error", MB_ICONERROR);
 			return;
 		}
 
-		m_vecFillData = ut::RangeToVecBytes(*optData);
+		m_vecFillData = std::move(*optData);
 		eModifyMode = MODIFY_REPEAT;
 	}
 	break;
