@@ -1859,7 +1859,7 @@ namespace HEXCTRL::INTERNAL::simd {
 			if (arrInfo[0] < 7)
 				return false;
 
-			::__cpuid(arrInfo, 7);
+			::__cpuidex(arrInfo, 7, 0);
 			return (arrInfo[1] & 0b00100000) != 0;
 			}();
 		return fHasAVX2;
@@ -1975,38 +1975,39 @@ namespace HEXCTRL::INTERNAL::simd {
 #if defined(_M_IX86) || defined(_M_X64)
 	template<EVecType eVecType, bool fEqual = true>
 	[[nodiscard]] __forceinline auto MemCmpEQ1(const std::byte* pWhere, std::uint8_t u8What)noexcept -> std::uint64_t {
+		std::uint32_t u32Mask;
 		if constexpr (eVecType == EVecType::VECTOR_128) {
 			const auto m128iWhere = _mm_loadu_si128(reinterpret_cast<const __m128i*>(pWhere));
 			const auto m128iWhat = _mm_set1_epi8(static_cast<char>(u8What));
 			const auto m128iResult = _mm_cmpeq_epi8(m128iWhere, m128iWhat);
-			std::uint32_t u32Mask = _mm_movemask_epi8(m128iResult);
+			u32Mask = _mm_movemask_epi8(m128iResult);
 
 			if constexpr (!fEqual) {
 				u32Mask ^= 0xFFFF;
 			}
-			if (u32Mask == 0) {
-				return 0xFFFFFFFFU;
-			}
-
-			return std::countr_zero(u32Mask);
 		}
 		else if constexpr (eVecType == EVecType::VECTOR_256) {
 			const auto m256iWhere = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(pWhere));
 			const auto m256iWhat = _mm256_set1_epi8(static_cast<char>(u8What));
 			const auto m256iResult = _mm256_cmpeq_epi8(m256iWhere, m256iWhat);
-			std::uint32_t u32Mask = _mm256_movemask_epi8(m256iResult);
+			u32Mask = _mm256_movemask_epi8(m256iResult);
 
-			if constexpr (!fEqual) { u32Mask ^= 0xFFFFFFFFU; }
-			if (u32Mask == 0) {
-				return 0xFFFFFFFFU;
+			if constexpr (!fEqual) {
+				u32Mask ^= 0xFFFFFFFFU;
 			}
-
-			return std::countr_zero(u32Mask);
 		}
+
+		if (u32Mask == 0) {
+			return 0xFFFFFFFFU;
+		}
+
+		return std::countr_zero(u32Mask);
 	}
 
 	template<EVecType eVecType, bool fEqual = true>
 	[[nodiscard]] __forceinline auto MemCmpEQ2(const std::byte* pWhere, std::uint16_t u16What)noexcept -> std::uint64_t {
+		std::uint32_t u32Mask0;
+		std::uint32_t u32Mask1;
 		if constexpr (eVecType == EVecType::VECTOR_128) {
 			//Bytes:  0x01020304050607080910111213141516
 			const auto m128iWhere0 = _mm_loadu_si128(reinterpret_cast<const __m128i*>(pWhere));
@@ -2015,9 +2016,9 @@ namespace HEXCTRL::INTERNAL::simd {
 			const auto m128iWhat = _mm_set1_epi16(u16What);
 			const auto m128iResult0 = _mm_cmpeq_epi16(m128iWhere0, m128iWhat);
 			const auto m128iResult1 = _mm_cmpeq_epi16(m128iWhere1, m128iWhat); //Comparing both loads simultaneously.
-			std::uint32_t u32Mask0 = _mm_movemask_epi8(m128iResult0);
+			u32Mask0 = _mm_movemask_epi8(m128iResult0);
 			//Shifting-left the mask by 1 to compensate previous 1 byte right-shift by _mm_srli_si128.
-			std::uint32_t u32Mask1 = _mm_movemask_epi8(m128iResult1) << 1;
+			u32Mask1 = _mm_movemask_epi8(m128iResult1) << 1;
 
 			//Inverting only the first 16 bits, the mask size (16 * 8 = 128vec).
 			if constexpr (!fEqual) {
@@ -2030,23 +2031,16 @@ namespace HEXCTRL::INTERNAL::simd {
 			//We've already left-shifted the mask, so zeroing remaining bit.
 
 			u32Mask1 &= 0b01111111'11111110;
-
-			if (u32Mask0 == 0 && u32Mask1 == 0) {
-				return 0xFFFFFFFFU;
-			}
-
-			const auto iRes0 = std::countr_zero(u32Mask0);
-			const auto iRes1 = std::countr_zero(u32Mask1);
-			return (std::min)(iRes0, iRes1); //>15 here means not found, all in mask are zeros.
 		}
 		else if constexpr (eVecType == EVecType::VECTOR_256) {
 			const auto m256iWhere0 = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(pWhere));
-			const auto m256iWhere1 = _mm256_srli_si256(m256iWhere0, 1);
+			const auto m256iHighLane = _mm256_permute2x128_si256(m256iWhere0, _mm256_setzero_si256(), 0x21);
+			const auto m256iWhere1 = _mm256_alignr_epi8(m256iHighLane, m256iWhere0, 1);
 			const auto m256iWhat = _mm256_set1_epi16(u16What);
 			const auto m256iResult0 = _mm256_cmpeq_epi16(m256iWhere0, m256iWhat);
 			const auto m256iResult1 = _mm256_cmpeq_epi16(m256iWhere1, m256iWhat);
-			std::uint32_t u32Mask0 = _mm256_movemask_epi8(m256iResult0);
-			std::uint32_t u32Mask1 = _mm256_movemask_epi8(m256iResult1) << 1;
+			u32Mask0 = _mm256_movemask_epi8(m256iResult0);
+			u32Mask1 = _mm256_movemask_epi8(m256iResult1) << 1;
 
 			//Inverting all 32 bits (32 * 8 = 256vec).
 			if constexpr (!fEqual) {
@@ -2055,19 +2049,22 @@ namespace HEXCTRL::INTERNAL::simd {
 			}
 
 			u32Mask1 &= 0b01111111'11111111'11111111'11111110;
-
-			if (u32Mask0 == 0 && u32Mask1 == 0) {
-				return 0xFFFFFFFFU;
-			}
-
-			const auto iRes0 = std::countr_zero(u32Mask0);
-			const auto iRes1 = std::countr_zero(u32Mask1);
-			return (std::min)(iRes0, iRes1); //>31 here means not found, all in mask are zeros.
 		}
+
+		const auto u32Mask = u32Mask0 | u32Mask1;
+		if (u32Mask == 0) {
+			return 0xFFFFFFFFU;
+		}
+
+		return std::countr_zero(u32Mask); //Larger than "vector_size_in_bytes - 1" means not found, all in mask are zeros.
 	}
 
 	template<EVecType eVecType, bool fEqual = true>
 	[[nodiscard]] __forceinline auto MemCmpEQ4(const std::byte* pWhere, std::uint32_t u32What)noexcept -> std::uint64_t {
+		std::uint32_t u32Mask0;
+		std::uint32_t u32Mask1;
+		std::uint32_t u32Mask2;
+		std::uint32_t u32Mask3;
 		if constexpr (eVecType == EVecType::VECTOR_128) {
 			const auto m128iWhere0 = _mm_loadu_si128(reinterpret_cast<const __m128i*>(pWhere));
 			const auto m128iWhere1 = _mm_srli_si128(m128iWhere0, 1);
@@ -2078,10 +2075,10 @@ namespace HEXCTRL::INTERNAL::simd {
 			const auto m128iResult1 = _mm_cmpeq_epi32(m128iWhere1, m128iWhat);
 			const auto m128iResult2 = _mm_cmpeq_epi32(m128iWhere2, m128iWhat);
 			const auto m128iResult3 = _mm_cmpeq_epi32(m128iWhere3, m128iWhat);
-			std::uint32_t u32Mask0 = _mm_movemask_epi8(m128iResult0);
-			std::uint32_t u32Mask1 = _mm_movemask_epi8(m128iResult1) << 1;
-			std::uint32_t u32Mask2 = _mm_movemask_epi8(m128iResult2) << 2;
-			std::uint32_t u32Mask3 = _mm_movemask_epi8(m128iResult3) << 3;
+			u32Mask0 = _mm_movemask_epi8(m128iResult0);
+			u32Mask1 = _mm_movemask_epi8(m128iResult1) << 1;
+			u32Mask2 = _mm_movemask_epi8(m128iResult2) << 2;
+			u32Mask3 = _mm_movemask_epi8(m128iResult3) << 3;
 
 			if constexpr (!fEqual) {
 				u32Mask0 ^= 0xFFFFU;
@@ -2097,31 +2094,22 @@ namespace HEXCTRL::INTERNAL::simd {
 			u32Mask1 &= 0b00011111'11111110;
 			u32Mask2 &= 0b00111111'11111100;
 			u32Mask3 &= 0b01111111'11111000;
-
-			if (u32Mask0 == 0 && u32Mask1 == 0 && u32Mask2 == 0 && u32Mask3 == 0) {
-				return 0xFFFFFFFFU;
-			}
-
-			const auto iRes0 = std::countr_zero(u32Mask0);
-			const auto iRes1 = std::countr_zero(u32Mask1);
-			const auto iRes2 = std::countr_zero(u32Mask2);
-			const auto iRes3 = std::countr_zero(u32Mask3);
-			return (std::min)(iRes0, (std::min)(iRes1, (std::min)(iRes2, iRes3)));
 		}
 		else if constexpr (eVecType == EVecType::VECTOR_256) {
 			const auto m256iWhere0 = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(pWhere));
-			const auto m256iWhere1 = _mm256_srli_si256(m256iWhere0, 1);
-			const auto m256iWhere2 = _mm256_srli_si256(m256iWhere0, 2);
-			const auto m256iWhere3 = _mm256_srli_si256(m256iWhere0, 3);
+			const auto m256iHighLane = _mm256_permute2x128_si256(m256iWhere0, _mm256_setzero_si256(), 0x21);
+			const auto m256iWhere1 = _mm256_alignr_epi8(m256iHighLane, m256iWhere0, 1);
+			const auto m256iWhere2 = _mm256_alignr_epi8(m256iHighLane, m256iWhere0, 2);
+			const auto m256iWhere3 = _mm256_alignr_epi8(m256iHighLane, m256iWhere0, 3);
 			const auto m256iWhat = _mm256_set1_epi32(u32What);
 			const auto m256iResult0 = _mm256_cmpeq_epi32(m256iWhere0, m256iWhat);
 			const auto m256iResult1 = _mm256_cmpeq_epi32(m256iWhere1, m256iWhat);
 			const auto m256iResult2 = _mm256_cmpeq_epi32(m256iWhere2, m256iWhat);
 			const auto m256iResult3 = _mm256_cmpeq_epi32(m256iWhere3, m256iWhat);
-			std::uint32_t u32Mask0 = _mm256_movemask_epi8(m256iResult0);
-			std::uint32_t u32Mask1 = _mm256_movemask_epi8(m256iResult1) << 1;
-			std::uint32_t u32Mask2 = _mm256_movemask_epi8(m256iResult2) << 2;
-			std::uint32_t u32Mask3 = _mm256_movemask_epi8(m256iResult3) << 3;
+			u32Mask0 = _mm256_movemask_epi8(m256iResult0);
+			u32Mask1 = _mm256_movemask_epi8(m256iResult1) << 1;
+			u32Mask2 = _mm256_movemask_epi8(m256iResult2) << 2;
+			u32Mask3 = _mm256_movemask_epi8(m256iResult3) << 3;
 
 			if constexpr (!fEqual) {
 				u32Mask0 ^= 0xFFFFFFFFU;
@@ -2133,17 +2121,14 @@ namespace HEXCTRL::INTERNAL::simd {
 			u32Mask1 &= 0b00011111'11111111'11111111'11111110;
 			u32Mask2 &= 0b00111111'11111111'11111111'11111100;
 			u32Mask3 &= 0b01111111'11111111'11111111'11111000;
-
-			if (u32Mask0 == 0 && u32Mask1 == 0 && u32Mask2 == 0 && u32Mask3 == 0) {
-				return 0xFFFFFFFFU;
-			}
-
-			const auto iRes0 = std::countr_zero(u32Mask0);
-			const auto iRes1 = std::countr_zero(u32Mask1);
-			const auto iRes2 = std::countr_zero(u32Mask2);
-			const auto iRes3 = std::countr_zero(u32Mask3);
-			return (std::min)(iRes0, (std::min)(iRes1, (std::min)(iRes2, iRes3)));
 		}
+
+		const auto u32Mask = u32Mask0 | u32Mask1 | u32Mask2 | u32Mask3;
+		if (u32Mask == 0) {
+			return 0xFFFFFFFFU;
+		}
+
+		return std::countr_zero(u32Mask);
 	}
 #elif defined(_M_ARM64) //^^^ _M_IX86 || _M_X64 / vvv _M_ARM64
 	//Convert __n128 mask of 16 8-bit values into 16 4-bit values.
