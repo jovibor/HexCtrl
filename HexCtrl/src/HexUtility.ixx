@@ -1870,7 +1870,7 @@ namespace HEXCTRL::INTERNAL::simd {
 	template<typename T> concept TVec256 = (std::is_same_v<T, __m256> || std::is_same_v<T, __m256i> || std::is_same_v<T, __m256d>);
 
 	template<ut::TSize1248 TIntegral, TVec128 TVec>	//Bytes swap inside vector types: __m128, __m128i, __m128d.
-	[[nodiscard]] auto __vectorcall ByteSwapVec(const TVec m128T) -> TVec {
+	[[nodiscard]] auto __vectorcall ByteSwapVec(const TVec m128T)noexcept -> TVec {
 		if constexpr (std::is_same_v<TVec, __m128i>) { //Integrals.
 			if constexpr (sizeof(TIntegral) == sizeof(std::uint8_t)) { //1 bytes.
 				return m128T;
@@ -1889,60 +1889,46 @@ namespace HEXCTRL::INTERNAL::simd {
 			}
 		}
 		else if constexpr (std::is_same_v<TVec, __m128>) { //Floats.
-			alignas(16) float flData[4];
-			_mm_store_ps(flData, m128T); //Loading m128T into local float array.
-			for (int i = 0; i < std::size(flData); ++i) {
-				flData[i] = ut::ByteSwap(flData[i]);
-			}
-			return _mm_load_ps(flData); //Returning local array as __m128.
+			const auto m128iMask = _mm_setr_epi8(3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8, 15, 14, 13, 12);
+			return _mm_castsi128_ps(_mm_shuffle_epi8(_mm_castps_si128(m128T), m128iMask));
 		}
 		else if constexpr (std::is_same_v<TVec, __m128d>) { //Doubles.
-			alignas(16) double dblData[2];
-			_mm_store_pd(dblData, m128T); //Loading m128T into local double array.
-			for (int i = 0; i < std::size(dblData); ++i) {
-				dblData[i] = ut::ByteSwap(dblData[i]);
-			}
-			return _mm_load_pd(dblData); //Returning local array as __m128d.
+			const auto m128iMask = _mm_setr_epi8(7, 6, 5, 4, 3, 2, 1, 0, 15, 14, 13, 12, 11, 10, 9, 8);
+			return _mm_castsi128_pd(_mm_shuffle_epi8(_mm_castpd_si128(m128T), m128iMask));
 		}
 	}
 
 	template<ut::TSize1248 TIntegral, TVec256 TVec>	//Bytes swap inside vector types: __m256, __m256i, __m256d.
-	[[nodiscard]] auto __vectorcall ByteSwapVec(const TVec m256T) -> TVec {
+	[[nodiscard]] auto __vectorcall ByteSwapVec(const TVec m256T)noexcept -> TVec {
 		if constexpr (std::is_same_v<TVec, __m256i>) { //Integrals.
 			if constexpr (sizeof(TIntegral) == sizeof(std::uint8_t)) { //1 bytes.
 				return m256T;
 			}
 			else if constexpr (sizeof(TIntegral) == sizeof(std::uint16_t)) { //2 bytes.
-				const auto m256iMask = _mm256_setr_epi8(1, 0, 3, 2, 5, 4, 7, 6, 9, 8, 11, 10, 13, 12, 15, 14, 17, 16,
-					19, 18, 21, 20, 23, 22, 25, 24, 27, 26, 29, 28, 31, 30);
+				const auto m256iMask = _mm256_setr_epi8(1, 0, 3, 2, 5, 4, 7, 6, 9, 8, 11, 10, 13, 12, 15, 14,
+					1, 0, 3, 2, 5, 4, 7, 6, 9, 8, 11, 10, 13, 12, 15, 14);
 				return _mm256_shuffle_epi8(m256T, m256iMask);
 			}
 			else if constexpr (sizeof(TIntegral) == sizeof(std::uint32_t)) { //4 bytes.
 				const auto m256iMask = _mm256_setr_epi8(3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8, 15, 14, 13, 12,
-					19, 18, 17, 16, 23, 22, 21, 20, 27, 26, 25, 24, 31, 30, 29, 28);
+					3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8, 15, 14, 13, 12);
 				return _mm256_shuffle_epi8(m256T, m256iMask);
 			}
 			else if constexpr (sizeof(TIntegral) == sizeof(std::uint64_t)) { //8 bytes.
 				const auto m256iMask = _mm256_setr_epi8(7, 6, 5, 4, 3, 2, 1, 0, 15, 14, 13, 12, 11, 10, 9, 8,
-					23, 22, 21, 20, 19, 18, 17, 16, 31, 30, 29, 28, 27, 26, 25, 24);
+					7, 6, 5, 4, 3, 2, 1, 0, 15, 14, 13, 12, 11, 10, 9, 8);
 				return _mm256_shuffle_epi8(m256T, m256iMask);
 			}
 		}
 		else if constexpr (std::is_same_v<TVec, __m256>) { //Floats.
-			alignas(32) float flData[8];
-			_mm256_store_ps(flData, m256T); //Loading m256T into local float array.
-			for (int i = 0; i < std::size(flData); ++i) {
-				flData[i] = ut::ByteSwap(flData[i]);
-			}
-			return _mm256_load_ps(flData); //Returning local array as __m256.
+			const auto m256iMask = _mm256_setr_epi8(3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8, 15, 14, 13, 12,
+					3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8, 15, 14, 13, 12);
+			return _mm256_castsi256_ps(_mm256_shuffle_epi8(_mm256_castps_si256(m256T), m256iMask));
 		}
 		else if constexpr (std::is_same_v<TVec, __m256d>) { //Doubles.
-			alignas(32) double dblData[4];
-			_mm256_store_pd(dblData, m256T); //Loading m256T into local double array.
-			for (int i = 0; i < std::size(dblData); ++i) {
-				dblData[i] = ut::ByteSwap(dblData[i]);
-			}
-			return _mm256_load_pd(dblData); //Returning local array as __m256d.
+			const auto m256iMask = _mm256_setr_epi8(7, 6, 5, 4, 3, 2, 1, 0, 15, 14, 13, 12, 11, 10, 9, 8,
+					7, 6, 5, 4, 3, 2, 1, 0, 15, 14, 13, 12, 11, 10, 9, 8);
+			return _mm256_castsi256_pd(_mm256_shuffle_epi8(_mm256_castpd_si256(m256T), m256iMask));
 		}
 	}
 #endif // ^^^ _M_IX86 || _M_X64
@@ -2945,18 +2931,27 @@ namespace HEXCTRL::INTERNAL::simd {
 	}
 
 	void OperVec128_f(std::byte* pData, const HEXMODIFY& hms) {
-		auto m128Data = _mm_loadu_ps(reinterpret_cast<const float*>(pData));
-		if (hms.fBigEndian) {
-			m128Data = ByteSwapVec<float>(_mm_loadu_ps(reinterpret_cast<const float*>(pData)));
-		}
+		assert(pData != nullptr);
+		assert(hms.spnData.size() >= sizeof(float));
 
-		assert(std::isfinite(*reinterpret_cast<const float*>(hms.spnData.data())));
-		const auto m128Oper = _mm_set_ps1(*reinterpret_cast<const float*>(hms.spnData.data()));
+		//Loading with integers to avoid strict aliasing and alignment UB for floats.
+		//Then casting to floats with the _mm_castsi128_ps, which is a no-op.
+		auto m128iData = _mm_loadu_si128(reinterpret_cast<const __m128i*>(pData));
+		if (hms.fBigEndian) {
+			m128iData = ByteSwapVec<std::uint32_t>(m128iData);
+		}
+		auto m128Data = _mm_castsi128_ps(m128iData);
+
+		float flOper;
+		std::memcpy(&flOper, hms.spnData.data(), sizeof(flOper));
+		if (!std::isfinite(flOper)) { return; }
+
+		const auto m128Oper = _mm_set_ps1(flOper);
 
 		using enum EHexOperMode;
 		switch (hms.eOperMode) {
 		case OPER_ASSIGN: //Implemented as MODIFY_REPEAT.
-			break;
+			return;
 		case OPER_ADD:
 			m128Data = _mm_add_ps(m128Data, m128Oper);
 			break;
@@ -2967,7 +2962,7 @@ namespace HEXCTRL::INTERNAL::simd {
 			m128Data = _mm_mul_ps(m128Data, m128Oper);
 			break;
 		case OPER_DIV:
-			assert(*reinterpret_cast<const float*>(hms.spnData.data()) > 0.F);
+			if (flOper == 0.F) { return; }
 			m128Data = _mm_div_ps(m128Data, m128Oper);
 			break;
 		case OPER_MIN:
@@ -2984,26 +2979,36 @@ namespace HEXCTRL::INTERNAL::simd {
 			return;
 		}
 
+		m128iData = _mm_castps_si128(m128Data); //No-op.
 		if (hms.fBigEndian) { //Swap bytes back.
-			m128Data = ByteSwapVec<float>(m128Data);
+			m128iData = ByteSwapVec<std::uint32_t>(m128iData);
 		}
 
-		_mm_storeu_ps(reinterpret_cast<float*>(pData), m128Data);
+		_mm_storeu_si128(reinterpret_cast<__m128i*>(pData), m128iData);
 	}
 
 	void OperVec128_d(std::byte* pData, const HEXMODIFY& hms) {
-		auto m128dData = _mm_loadu_pd(reinterpret_cast<const double*>(pData));
-		if (hms.fBigEndian) {
-			m128dData = ByteSwapVec<double>(_mm_loadu_pd(reinterpret_cast<const double*>(pData)));
-		}
+		assert(pData != nullptr);
+		assert(hms.spnData.size() >= sizeof(double));
 
-		assert(std::isfinite(*reinterpret_cast<const double*>(hms.spnData.data())));
-		const auto m128dOper = _mm_set1_pd(*reinterpret_cast<const double*>(hms.spnData.data()));
+		//Loading with integers to avoid strict aliasing and alignment UB for doubles.
+		//Then casting to doubles with the _mm_castsi128_pd, which is a no-op.
+		auto m128iData = _mm_loadu_si128(reinterpret_cast<const __m128i*>(pData));
+		if (hms.fBigEndian) {
+			m128iData = ByteSwapVec<std::uint64_t>(m128iData);
+		}
+		auto m128dData = _mm_castsi128_pd(m128iData);
+
+		double dblOper;
+		std::memcpy(&dblOper, hms.spnData.data(), sizeof(double));
+		if (!std::isfinite(dblOper)) { return; }
+
+		const auto m128dOper = _mm_set1_pd(dblOper);
 
 		using enum EHexOperMode;
 		switch (hms.eOperMode) {
 		case OPER_ASSIGN: //Implemented as MODIFY_REPEAT.
-			break;
+			return;
 		case OPER_ADD:
 			m128dData = _mm_add_pd(m128dData, m128dOper);
 			break;
@@ -3014,7 +3019,7 @@ namespace HEXCTRL::INTERNAL::simd {
 			m128dData = _mm_mul_pd(m128dData, m128dOper);
 			break;
 		case OPER_DIV:
-			assert(*reinterpret_cast<const double*>(hms.spnData.data()) > 0.);
+			if (dblOper == 0.) { return; }
 			m128dData = _mm_div_pd(m128dData, m128dOper);
 			break;
 		case OPER_MIN:
@@ -3031,11 +3036,12 @@ namespace HEXCTRL::INTERNAL::simd {
 			return;
 		}
 
+		m128iData = _mm_castpd_si128(m128dData); //No-op.
 		if (hms.fBigEndian) { //Swap bytes back.
-			m128dData = ByteSwapVec<double>(m128dData);
+			m128iData = ByteSwapVec<std::uint64_t>(m128iData);
 		}
 
-		_mm_storeu_pd(reinterpret_cast<double*>(pData), m128dData);
+		_mm_storeu_si128(reinterpret_cast<__m128i*>(pData), m128iData);
 	}
 
 	void OperVec256_i8(std::byte* pData, const HEXMODIFY& hms) {
@@ -3912,18 +3918,27 @@ namespace HEXCTRL::INTERNAL::simd {
 	}
 
 	void OperVec256_f(std::byte* pData, const HEXMODIFY& hms) {
-		auto m256Data = _mm256_loadu_ps(reinterpret_cast<const float*>(pData));
-		if (hms.fBigEndian) {
-			m256Data = ByteSwapVec<float>(_mm256_loadu_ps(reinterpret_cast<const float*>(pData)));
-		}
+		assert(pData != nullptr);
+		assert(hms.spnData.size() >= sizeof(float));
 
-		assert(std::isfinite(*reinterpret_cast<const float*>(hms.spnData.data())));
-		const auto m256Oper = _mm256_set1_ps(*reinterpret_cast<const float*>(hms.spnData.data()));
+		//Loading with integers to avoid strict aliasing and alignment UB for floats.
+		//Then casting to floats with _mm256_castsi256_ps, which is a no-op.
+		auto m256iData = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(pData));
+		if (hms.fBigEndian) {
+			m256iData = ByteSwapVec<std::uint32_t>(m256iData);
+		}
+		auto m256Data = _mm256_castsi256_ps(m256iData);
+
+		float flOper;
+		std::memcpy(&flOper, hms.spnData.data(), sizeof(float));
+		if (!std::isfinite(flOper)) { return; }
+
+		const auto m256Oper = _mm256_set1_ps(flOper);
 
 		using enum EHexOperMode;
 		switch (hms.eOperMode) {
 		case OPER_ASSIGN: //Implemented as MODIFY_REPEAT.
-			break;
+			return;
 		case OPER_ADD:
 			m256Data = _mm256_add_ps(m256Data, m256Oper);
 			break;
@@ -3934,7 +3949,7 @@ namespace HEXCTRL::INTERNAL::simd {
 			m256Data = _mm256_mul_ps(m256Data, m256Oper);
 			break;
 		case OPER_DIV:
-			assert(*reinterpret_cast<const float*>(hms.spnData.data()) > 0.F);
+			if (flOper == 0.F) { return; }
 			m256Data = _mm256_div_ps(m256Data, m256Oper);
 			break;
 		case OPER_MIN:
@@ -3951,26 +3966,36 @@ namespace HEXCTRL::INTERNAL::simd {
 			return;
 		}
 
+		m256iData = _mm256_castps_si256(m256Data); //No-op.
 		if (hms.fBigEndian) { //Swap bytes back.
-			m256Data = ByteSwapVec<float>(m256Data);
+			m256iData = ByteSwapVec<std::uint32_t>(m256iData);
 		}
 
-		_mm256_storeu_ps(reinterpret_cast<float*>(pData), m256Data);
+		_mm256_storeu_si256(reinterpret_cast<__m256i*>(pData), m256iData);
 	}
 
 	void OperVec256_d(std::byte* pData, const HEXMODIFY& hms) {
-		auto m256dData = _mm256_loadu_pd(reinterpret_cast<const double*>(pData));
-		if (hms.fBigEndian) {
-			m256dData = ByteSwapVec<double>(_mm256_loadu_pd(reinterpret_cast<const double*>(pData)));
-		}
+		assert(pData != nullptr);
+		assert(hms.spnData.size() >= sizeof(double));
 
-		assert(std::isfinite(*reinterpret_cast<const double*>(hms.spnData.data())));
-		const auto m256dOper = _mm256_set1_pd(*reinterpret_cast<const double*>(hms.spnData.data()));
+		//Loading with integers to avoid strict aliasing and alignment UB for doubles.
+		//Then casting to doubles with _mm256_castsi256_pd, which is a no-op.
+		auto m256iData = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(pData));
+		if (hms.fBigEndian) {
+			m256iData = ByteSwapVec<std::uint64_t>(m256iData);
+		}
+		auto m256dData = _mm256_castsi256_pd(m256iData);
+
+		double dblOper;
+		std::memcpy(&dblOper, hms.spnData.data(), sizeof(double));
+		if (!std::isfinite(dblOper)) { return; }
+
+		const auto m256dOper = _mm256_set1_pd(dblOper);
 
 		using enum EHexOperMode;
 		switch (hms.eOperMode) {
 		case OPER_ASSIGN: //Implemented as MODIFY_REPEAT.
-			break;
+			return;
 		case OPER_ADD:
 			m256dData = _mm256_add_pd(m256dData, m256dOper);
 			break;
@@ -3981,7 +4006,7 @@ namespace HEXCTRL::INTERNAL::simd {
 			m256dData = _mm256_mul_pd(m256dData, m256dOper);
 			break;
 		case OPER_DIV:
-			assert(*reinterpret_cast<const double*>(hms.spnData.data()) > 0.);
+			if (dblOper == 0.) { return; }
 			m256dData = _mm256_div_pd(m256dData, m256dOper);
 			break;
 		case OPER_MIN:
@@ -3998,11 +4023,12 @@ namespace HEXCTRL::INTERNAL::simd {
 			return;
 		}
 
+		m256iData = _mm256_castpd_si256(m256dData); //No-op.
 		if (hms.fBigEndian) { //Swap bytes back.
-			m256dData = ByteSwapVec<double>(m256dData);
+			m256iData = ByteSwapVec<std::uint64_t>(m256iData);
 		}
 
-		_mm256_storeu_pd(reinterpret_cast<double*>(pData), m256dData);
+		_mm256_storeu_si256(reinterpret_cast<__m256i*>(pData), m256iData);
 	}
 
 	template<EVecType eVecType>
