@@ -193,9 +193,11 @@ namespace TestHexCtrl {
 					tData = ~tData;
 					break;
 				case OPER_SHL:
+					if (tOperData < 0) { return; }
 					tData <<= tOperData;
 					break;
 				case OPER_SHR:
+					if (tOperData < 0) { return; }
 					tData >>= tOperData;
 					break;
 				case OPER_ROTL:
@@ -226,7 +228,7 @@ namespace TestHexCtrl {
 				tData *= tOperData;
 				break;
 			case OPER_DIV:
-				assert(tOperData > 0);
+				if (tOperData == 0) { return; }
 				tData /= tOperData;
 				break;
 			case OPER_MIN:
