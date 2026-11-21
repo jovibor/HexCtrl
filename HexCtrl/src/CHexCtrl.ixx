@@ -5806,35 +5806,37 @@ void CHexCtrl::ModifyOperScalar(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 	using enum EHexOperMode;
 
 	constexpr auto lmbOperScalarT = []<typename T>(T * pData, const HEXMODIFY & hms) {
-		T tData = hms.fBigEndian ? ut::ByteSwap(*pData) : *pData;
 		assert(!hms.spnData.empty());
-		const T tOper = *reinterpret_cast<const T*>(hms.spnData.data());
+		T tData = hms.fBigEndian ? ut::ByteSwap(*pData) : *pData;
+		const T tOperData = *reinterpret_cast<const T*>(hms.spnData.data());
 
 		if constexpr (std::is_integral_v<T>) { //Operations only for integral types.
 			switch (hms.eOperMode) {
 			case OPER_OR:
-				tData |= tOper;
+				tData |= tOperData;
 				break;
 			case OPER_XOR:
-				tData ^= tOper;
+				tData ^= tOperData;
 				break;
 			case OPER_AND:
-				tData &= tOper;
+				tData &= tOperData;
 				break;
 			case OPER_NOT:
 				tData = ~tData;
 				break;
 			case OPER_SHL:
-				tData <<= tOper;
+				if (tOperData < 1) { return; }
+				tData <<= tOperData;
 				break;
 			case OPER_SHR:
-				tData >>= tOper;
+				if (tOperData < 1) { return; }
+				tData >>= tOperData;
 				break;
 			case OPER_ROTL:
-				tData = std::rotl(static_cast<std::make_unsigned_t<T>>(tData), static_cast<const int>(tOper));
+				tData = std::rotl(static_cast<std::make_unsigned_t<T>>(tData), static_cast<const int>(tOperData));
 				break;
 			case OPER_ROTR:
-				tData = std::rotr(static_cast<std::make_unsigned_t<T>>(tData), static_cast<const int>(tOper));
+				tData = std::rotr(static_cast<std::make_unsigned_t<T>>(tData), static_cast<const int>(tOperData));
 				break;
 			case OPER_BITREV:
 				tData = ut::BitReverse(tData);
@@ -5846,34 +5848,34 @@ void CHexCtrl::ModifyOperScalar(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 
 		switch (hms.eOperMode) { //Operations for integral and floating types.
 		case OPER_ASSIGN: //Implemented as MODIFY_REPEAT.
-			break;
+			return;
 		case OPER_ADD:
-			tData += tOper;
+			tData += tOperData;
 			break;
 		case OPER_SUB:
-			tData -= tOper;
+			tData -= tOperData;
 			break;
 		case OPER_MUL:
-			tData *= tOper;
+			tData *= tOperData;
 			break;
 		case OPER_DIV:
-			assert(tOper > 0);
-			tData /= tOper;
+			if (tOperData == 0) { return; }
+			tData /= tOperData;
 			break;
 		case OPER_MIN:
 			if constexpr (std::is_floating_point_v<T>) {
-				tData = std::fmax(tData, tOper);
+				tData = std::fmax(tData, tOperData);
 			}
 			else {
-				tData = (std::max)(tData, tOper);
+				tData = (std::max)(tData, tOperData);
 			}
 			break;
 		case OPER_MAX:
 			if constexpr (std::is_floating_point_v<T>) {
-				tData = std::fmin(tData, tOper);
+				tData = std::fmin(tData, tOperData);
 			}
 			else {
-				tData = (std::min)(tData, tOper);
+				tData = (std::min)(tData, tOperData);
 			}
 			break;
 		case OPER_SWAP:

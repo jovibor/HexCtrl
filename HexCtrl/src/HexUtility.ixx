@@ -124,7 +124,8 @@ namespace HEXCTRL::INTERNAL::ut { //Utility methods and stuff.
 		}
 	}
 
-	template<typename T> concept TSize1248 = (sizeof(T) == 1 || sizeof(T) == 2 || sizeof(T) == 4 || sizeof(T) == 8);
+	template<typename T>
+	concept TSize1248 = (sizeof(T) == 1 || sizeof(T) == 2 || sizeof(T) == 4 || sizeof(T) == 8);
 
 	template<TSize1248 T>
 	[[nodiscard]] constexpr T ByteSwap(T tData)noexcept {
@@ -601,66 +602,63 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 
 	class CPoint final : public POINT {
 	public:
-		constexpr CPoint() : POINT { } { }
-		constexpr CPoint(POINT pt) : POINT { pt } { }
-		constexpr CPoint(int x, int y) : POINT { .x { x }, .y { y } } { }
+		constexpr CPoint()noexcept : POINT { } { }
+		constexpr CPoint(POINT pt)noexcept : POINT { pt } { }
+		constexpr CPoint(int x, int y)noexcept : POINT { .x { x }, .y { y } } { }
 		constexpr ~CPoint() = default;
-		constexpr operator LPPOINT() { return this; }
-		constexpr operator const POINT*()const { return this; }
-		[[nodiscard]] constexpr bool operator==(const CPoint& rhs)const { return x == rhs.x && y == rhs.y; };
-		[[nodiscard]] constexpr bool operator==(const POINT& rhs)const { return x == rhs.x && y == rhs.y; }
-		[[nodiscard]] constexpr friend bool operator==(const POINT& lhs, const CPoint& rhs) { return rhs == lhs; }
-		[[nodiscard]] constexpr CPoint operator+(POINT pt)const { return { x + pt.x, y + pt.y }; }
-		[[nodiscard]] constexpr CPoint operator-(POINT pt)const { return { x - pt.x, y - pt.y }; }
-		constexpr void Offset(int iX, int iY) { x += iX; y += iY; }
-		constexpr void Offset(POINT pt) { Offset(pt.x, pt.y); }
+		constexpr operator LPPOINT()noexcept { return this; }
+		constexpr operator const POINT*()const noexcept { return this; }
+		[[nodiscard]] constexpr bool operator==(const CPoint& rhs)const noexcept { return x == rhs.x && y == rhs.y; }
+		[[nodiscard]] constexpr CPoint operator+(POINT pt)const noexcept { return { x + pt.x, y + pt.y }; }
+		[[nodiscard]] constexpr CPoint operator-(POINT pt)const noexcept { return { x - pt.x, y - pt.y }; }
+		constexpr void Offset(int iX, int iY)noexcept { x += iX; y += iY; }
+		constexpr void Offset(POINT pt)noexcept { Offset(pt.x, pt.y); }
 	};
 
 	class CRect final : public RECT {
 	public:
-		constexpr CRect() : RECT { } { }
-		constexpr CRect(int iLeft, int iTop, int iRight, int iBottom) : RECT { .left { iLeft }, .top { iTop },
+		constexpr CRect()noexcept : RECT { } { }
+		constexpr CRect(int iLeft, int iTop, int iRight, int iBottom)noexcept : RECT { .left { iLeft }, .top { iTop },
 			.right { iRight }, .bottom { iBottom } } { }
-		constexpr CRect(const RECT& rc) { *this = rc; }
-		constexpr CRect(LPCRECT pRC) { if (pRC == nullptr) { return; } *this = *pRC; }
-		constexpr CRect(POINT pt, SIZE size) : RECT { .left { pt.x }, .top { pt.y }, .right { pt.x + size.cx },
+		constexpr CRect(const RECT& rc)noexcept : RECT(rc) { }
+		constexpr CRect(LPCRECT pRC)noexcept : CRect() { if (pRC != nullptr) { *this = *pRC; } }
+		constexpr CRect(POINT pt, SIZE size)noexcept : RECT { .left { pt.x }, .top { pt.y }, .right { pt.x + size.cx },
 			.bottom { pt.y + size.cy } } { }
-		constexpr CRect(POINT topLeft, POINT botRight) : RECT { .left { topLeft.x }, .top { topLeft.y },
+		constexpr CRect(POINT topLeft, POINT botRight)noexcept : RECT { .left { topLeft.x }, .top { topLeft.y },
 			.right { botRight.x }, .bottom { botRight.y } } { }
 		constexpr ~CRect() = default;
-		constexpr operator LPRECT() { return this; }
-		constexpr operator LPCRECT()const { return this; }
-		[[nodiscard]] constexpr bool operator==(const CRect& rhs)const {
+		constexpr operator LPRECT()noexcept { return this; }
+		constexpr operator LPCRECT()const noexcept { return this; }
+		[[nodiscard]] constexpr bool operator==(const CRect& rhs)const noexcept {
 			return left == rhs.left && top == rhs.top && right == rhs.right && bottom == rhs.bottom;
-		};
-		[[nodiscard]] constexpr bool operator==(const RECT& rhs)const {
-			return *this == CRect(rhs);
 		}
-		[[nodiscard]] constexpr friend bool operator==(const RECT& lhs, const CRect& rhs) { return rhs == lhs; }
-		constexpr CRect& operator=(const RECT& rhs) {
+		constexpr CRect& operator=(const RECT& rhs)noexcept {
 			left = rhs.left; top = rhs.top; right = rhs.right; bottom = rhs.bottom;
 			return *this;
 		}
-		[[nodiscard]] constexpr auto BottomRight()const -> CPoint { return { { .x { right }, .y { bottom } } }; };
-		constexpr void DeflateRect(int x, int y) { InflateRect(-x, -y); }
-		constexpr void DeflateRect(SIZE size) { InflateRect(-size.cx, -size.cy); }
-		constexpr void DeflateRect(LPCRECT pRC) { left += pRC->left; top += pRC->top; right -= pRC->right; bottom -= pRC->bottom; }
-		constexpr void DeflateRect(int l, int t, int r, int b) { left += l; top += t; right -= r; bottom -= b; }
-		[[nodiscard]] constexpr int Height()const { return bottom - top; }
-		constexpr void InflateRect(int x, int y) { left -= x; top -= y; right += x; bottom += y; };
-		[[nodiscard]] constexpr bool IsRectEmpty()const { return right <= left || bottom <= top; }
-		[[nodiscard]] constexpr bool IsRectNull()const { return left == 0 && right == 0 && top == 0 && bottom == 0; }
-		constexpr void OffsetRect(int x, int y) { left += x; right += x; top += y; bottom += y; }
-		constexpr void OffsetRect(POINT pt) { OffsetRect(pt.x, pt.y); }
-		[[nodiscard]] constexpr bool PtInRect(POINT pt)const {
+		[[nodiscard]] constexpr auto BottomRight()const noexcept -> CPoint { return { right, bottom }; }
+		constexpr void DeflateRect(int x, int y)noexcept { InflateRect(-x, -y); }
+		constexpr void DeflateRect(SIZE size)noexcept { InflateRect(-size.cx, -size.cy); }
+		constexpr void DeflateRect(LPCRECT pRC)noexcept {
+			if (pRC == nullptr) { return; }
+			left += pRC->left; top += pRC->top; right -= pRC->right; bottom -= pRC->bottom;
+		}
+		constexpr void DeflateRect(int l, int t, int r, int b)noexcept { left += l; top += t; right -= r; bottom -= b; }
+		[[nodiscard]] constexpr int Height()const noexcept { return bottom - top; }
+		constexpr void InflateRect(int x, int y)noexcept { left -= x; top -= y; right += x; bottom += y; }
+		[[nodiscard]] constexpr bool IsRectEmpty()const noexcept { return right <= left || bottom <= top; }
+		[[nodiscard]] constexpr bool IsRectNull()const noexcept { return left == 0 && right == 0 && top == 0 && bottom == 0; }
+		constexpr void OffsetRect(int x, int y)noexcept { left += x; right += x; top += y; bottom += y; }
+		constexpr void OffsetRect(POINT pt)noexcept { OffsetRect(pt.x, pt.y); }
+		[[nodiscard]] constexpr bool PtInRect(POINT pt)const noexcept {
 			return pt.x >= left && pt.y >= top && pt.x < right && pt.y < bottom;
 		}
-		constexpr void SetRect(int iLeft, int iTop, int iRight, int iBottom) {
+		constexpr void SetRect(int iLeft, int iTop, int iRight, int iBottom)noexcept {
 			left = iLeft; top = iTop; right = iRight; bottom = iBottom;
 		}
-		constexpr void SetRectEmpty() { left = top = right = bottom = 0; }
-		[[nodiscard]] constexpr auto TopLeft()const -> CPoint { return { { .x { left }, .y { top } } }; };
-		[[nodiscard]] constexpr int Width()const { return right - left; }
+		constexpr void SetRectEmpty()noexcept { left = top = right = bottom = 0; }
+		[[nodiscard]] constexpr auto TopLeft()const noexcept -> CPoint { return { left, top }; }
+		[[nodiscard]] constexpr int Width()const noexcept { return right - left; }
 	};
 
 
@@ -1866,70 +1864,70 @@ namespace HEXCTRL::INTERNAL::simd {
 	#endif
 	}
 
-	template<typename T> concept TVec128 = (std::is_same_v<T, __m128> || std::is_same_v<T, __m128i> || std::is_same_v<T, __m128d>);
-	template<typename T> concept TVec256 = (std::is_same_v<T, __m256> || std::is_same_v<T, __m256i> || std::is_same_v<T, __m256d>);
+	template<typename T> //Vector of integral types: __m128i, __m256i.
+	concept TVecIntegral = std::same_as<T, __m128i> || std::same_as<T, __m256i>;
 
-	template<ut::TSize1248 TIntegral, TVec128 TVec>	//Bytes swap inside vector types: __m128, __m128i, __m128d.
-	[[nodiscard]] auto __vectorcall ByteSwapVec(const TVec m128T)noexcept -> TVec {
-		if constexpr (std::is_same_v<TVec, __m128i>) { //Integrals.
+	template<typename T> //Vector of floating types: __m128, __m128d, __m256, __m256d.
+	concept TVecFloat = std::same_as<T, __m128> || std::same_as<T, __m128d>
+		|| std::same_as<T, __m256> || std::same_as<T, __m256d>;
+
+	template<ut::TSize1248 TIntegral, TVecIntegral TVec>	//Bytes swap inside vector of integral types.
+	[[nodiscard]] auto __vectorcall ByteSwapVec(const TVec mVecT)noexcept->TVec {
+		if constexpr (std::same_as<TVec, __m128i>) { //128 Integrals.
 			if constexpr (sizeof(TIntegral) == sizeof(std::uint8_t)) { //1 bytes.
-				return m128T;
+				return mVecT;
 			}
 			else if constexpr (sizeof(TIntegral) == sizeof(std::uint16_t)) { //2 bytes.
 				const auto m128iMask = _mm_setr_epi8(1, 0, 3, 2, 5, 4, 7, 6, 9, 8, 11, 10, 13, 12, 15, 14);
-				return _mm_shuffle_epi8(m128T, m128iMask);
+				return _mm_shuffle_epi8(mVecT, m128iMask);
 			}
 			else if constexpr (sizeof(TIntegral) == sizeof(std::uint32_t)) { //4 bytes.
 				const auto m128iMask = _mm_setr_epi8(3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8, 15, 14, 13, 12);
-				return _mm_shuffle_epi8(m128T, m128iMask);
+				return _mm_shuffle_epi8(mVecT, m128iMask);
 			}
 			else if constexpr (sizeof(TIntegral) == sizeof(std::uint64_t)) { //8 bytes.
 				const auto m128iMask = _mm_setr_epi8(7, 6, 5, 4, 3, 2, 1, 0, 15, 14, 13, 12, 11, 10, 9, 8);
-				return _mm_shuffle_epi8(m128T, m128iMask);
+				return _mm_shuffle_epi8(mVecT, m128iMask);
 			}
 		}
-		else if constexpr (std::is_same_v<TVec, __m128>) { //Floats.
-			const auto m128iMask = _mm_setr_epi8(3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8, 15, 14, 13, 12);
-			return _mm_castsi128_ps(_mm_shuffle_epi8(_mm_castps_si128(m128T), m128iMask));
-		}
-		else if constexpr (std::is_same_v<TVec, __m128d>) { //Doubles.
-			const auto m128iMask = _mm_setr_epi8(7, 6, 5, 4, 3, 2, 1, 0, 15, 14, 13, 12, 11, 10, 9, 8);
-			return _mm_castsi128_pd(_mm_shuffle_epi8(_mm_castpd_si128(m128T), m128iMask));
-		}
-	}
-
-	template<ut::TSize1248 TIntegral, TVec256 TVec>	//Bytes swap inside vector types: __m256, __m256i, __m256d.
-	[[nodiscard]] auto __vectorcall ByteSwapVec(const TVec m256T)noexcept -> TVec {
-		if constexpr (std::is_same_v<TVec, __m256i>) { //Integrals.
+		else if constexpr (std::same_as<TVec, __m256i>) { //256 Integrals.
 			if constexpr (sizeof(TIntegral) == sizeof(std::uint8_t)) { //1 bytes.
-				return m256T;
+				return mVecT;
 			}
 			else if constexpr (sizeof(TIntegral) == sizeof(std::uint16_t)) { //2 bytes.
 				const auto m256iMask = _mm256_setr_epi8(1, 0, 3, 2, 5, 4, 7, 6, 9, 8, 11, 10, 13, 12, 15, 14,
 					1, 0, 3, 2, 5, 4, 7, 6, 9, 8, 11, 10, 13, 12, 15, 14);
-				return _mm256_shuffle_epi8(m256T, m256iMask);
+				return _mm256_shuffle_epi8(mVecT, m256iMask);
 			}
 			else if constexpr (sizeof(TIntegral) == sizeof(std::uint32_t)) { //4 bytes.
 				const auto m256iMask = _mm256_setr_epi8(3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8, 15, 14, 13, 12,
 					3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8, 15, 14, 13, 12);
-				return _mm256_shuffle_epi8(m256T, m256iMask);
+				return _mm256_shuffle_epi8(mVecT, m256iMask);
 			}
 			else if constexpr (sizeof(TIntegral) == sizeof(std::uint64_t)) { //8 bytes.
 				const auto m256iMask = _mm256_setr_epi8(7, 6, 5, 4, 3, 2, 1, 0, 15, 14, 13, 12, 11, 10, 9, 8,
 					7, 6, 5, 4, 3, 2, 1, 0, 15, 14, 13, 12, 11, 10, 9, 8);
-				return _mm256_shuffle_epi8(m256T, m256iMask);
+				return _mm256_shuffle_epi8(mVecT, m256iMask);
 			}
 		}
-		else if constexpr (std::is_same_v<TVec, __m256>) { //Floats.
-			const auto m256iMask = _mm256_setr_epi8(3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8, 15, 14, 13, 12,
-					3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8, 15, 14, 13, 12);
-			return _mm256_castsi256_ps(_mm256_shuffle_epi8(_mm256_castps_si256(m256T), m256iMask));
+		else { return mVecT; }
+	}
+
+	template<TVecFloat TVec>
+	[[nodiscard]] auto __vectorcall ByteSwapVec(const TVec mVecT)noexcept->TVec {
+		if constexpr (std::same_as<TVec, __m128>) { //128-bit floats.
+			return _mm_castsi128_ps(ByteSwapVec<std::uint32_t>(_mm_castps_si128(mVecT)));
 		}
-		else if constexpr (std::is_same_v<TVec, __m256d>) { //Doubles.
-			const auto m256iMask = _mm256_setr_epi8(7, 6, 5, 4, 3, 2, 1, 0, 15, 14, 13, 12, 11, 10, 9, 8,
-					7, 6, 5, 4, 3, 2, 1, 0, 15, 14, 13, 12, 11, 10, 9, 8);
-			return _mm256_castsi256_pd(_mm256_shuffle_epi8(_mm256_castpd_si256(m256T), m256iMask));
+		else if constexpr (std::same_as<TVec, __m128d>) { //128-bit doubles.
+			return _mm_castsi128_pd(ByteSwapVec<std::uint64_t>(_mm_castpd_si128(mVecT)));
 		}
+		else if constexpr (std::same_as<TVec, __m256>) { //256-bit floats.
+			return _mm256_castsi256_ps(ByteSwapVec<std::uint32_t>(_mm256_castps_si256(mVecT)));
+		}
+		else if constexpr (std::same_as<TVec, __m256d>) { //256-bit doubles.
+			return _mm256_castsi256_pd(ByteSwapVec<std::uint64_t>(_mm256_castpd_si256(mVecT)));
+		}
+		else { return mVecT; }
 	}
 #endif // ^^^ _M_IX86 || _M_X64
 
@@ -3060,7 +3058,6 @@ namespace HEXCTRL::INTERNAL::simd {
 	}
 
 	void OperVec128_f(std::byte* pData, const HEXMODIFY& hms) {
-		assert(pData != nullptr);
 		assert(hms.spnData.size() >= sizeof(float));
 
 		//Loading with integrals to avoid strict aliasing and alignment UB for floats.
@@ -3101,7 +3098,7 @@ namespace HEXCTRL::INTERNAL::simd {
 			m128Data = _mm_min_ps(m128Data, m128Oper);
 			break;
 		case OPER_SWAP:
-			m128Data = ByteSwapVec<float>(m128Data);
+			m128Data = ByteSwapVec(m128Data);
 			break;
 		default:
 			ut::DBG_REPORT(L"Unsupported float operation.");
@@ -3117,7 +3114,6 @@ namespace HEXCTRL::INTERNAL::simd {
 	}
 
 	void OperVec128_d(std::byte* pData, const HEXMODIFY& hms) {
-		assert(pData != nullptr);
 		assert(hms.spnData.size() >= sizeof(double));
 
 		//Loading with integrals to avoid strict aliasing and alignment UB for doubles.
@@ -3158,7 +3154,7 @@ namespace HEXCTRL::INTERNAL::simd {
 			m128dData = _mm_min_pd(m128dData, m128dOper);
 			break;
 		case OPER_SWAP:
-			m128dData = ByteSwapVec<double>(m128dData);
+			m128dData = ByteSwapVec(m128dData);
 			break;
 		default:
 			ut::DBG_REPORT(L"Unsupported double operation.");
@@ -4059,7 +4055,6 @@ namespace HEXCTRL::INTERNAL::simd {
 	}
 
 	void OperVec256_f(std::byte* pData, const HEXMODIFY& hms) {
-		assert(pData != nullptr);
 		assert(hms.spnData.size() >= sizeof(float));
 
 		//Loading with integrals to avoid strict aliasing and alignment UB for floats.
@@ -4100,7 +4095,7 @@ namespace HEXCTRL::INTERNAL::simd {
 			m256Data = _mm256_min_ps(m256Data, m256Oper);
 			break;
 		case OPER_SWAP:
-			m256Data = ByteSwapVec<float>(m256Data);
+			m256Data = ByteSwapVec(m256Data);
 			break;
 		default:
 			ut::DBG_REPORT(L"Unsupported float operation.");
@@ -4116,7 +4111,6 @@ namespace HEXCTRL::INTERNAL::simd {
 	}
 
 	void OperVec256_d(std::byte* pData, const HEXMODIFY& hms) {
-		assert(pData != nullptr);
 		assert(hms.spnData.size() >= sizeof(double));
 
 		//Loading with integrals to avoid strict aliasing and alignment UB for doubles.
@@ -4157,7 +4151,7 @@ namespace HEXCTRL::INTERNAL::simd {
 			m256dData = _mm256_min_pd(m256dData, m256dOper);
 			break;
 		case OPER_SWAP:
-			m256dData = ByteSwapVec<double>(m256dData);
+			m256dData = ByteSwapVec(m256dData);
 			break;
 		default:
 			ut::DBG_REPORT(L"Unsupported double operation.");
