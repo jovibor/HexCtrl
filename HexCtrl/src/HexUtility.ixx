@@ -664,24 +664,34 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 
 	class CSplitter final {
 	public:
+		static constexpr auto SPLITTER_MSG_RESIZEEND = 0x1U;
 		enum class EAnchorSide : std::uint8_t { SIDE_LEFT, SIDE_TOP, SIDE_RIGHT, SIDE_BOTTOM };
 		CSplitter() = default;
+		CSplitter(const CSplitter&) = delete;
+		CSplitter(CSplitter&&) = delete;
 		~CSplitter();
+		CSplitter& operator=(const CSplitter&) = delete;
+		CSplitter& operator=(CSplitter&&) = delete;
 		void AddItem(HWND hWndItem, bool fIsResize);
 		void AddItem(int iItemID, bool fIsResize);
-		void Initialize(HWND hWndHost, HWND hWndAnchor, EAnchorSide eAnchorSide, std::uint32_t u32SplitterWidth = 30);
-		void Initialize(HWND hWndHost, int iAnchorID, EAnchorSide eAnchorSide, std::uint32_t u32SplitterWidth = 30);
-		[[nodiscard]] bool IsSplitting()const; //Is splitting is going on atm.
+		void Initialize(HWND hWndHost, HWND hWndAnchor, EAnchorSide eSide, std::uint32_t u32Width = 10, std::uint32_t u32CtrlID = 0);
+		void Initialize(HWND hWndHost, int iAnchorID, EAnchorSide eSide, std::uint32_t u32Width = 10, std::uint32_t u32CtrlID = 0);
 		void SetEdges(int iMinEdge, int iMaxEdge);
 		void Uninitialize();
 	private:
+		[[nodiscard]] bool IsCursorWE()const;
+		[[nodiscard]] bool IsCurInSplitter()const;
 		[[nodiscard]] bool IsLock()const;
+		[[nodiscard]] bool IsSplitting()const; //Is splitting going on atm?
 		void Lock();
 		void Unlock();
 		void WMMouseMove(int iX, int iY);
-		void WMLButtonDown(int iX, int iY);
+		bool WMLButtonDown();
 		void WMLButtonUp();
-		static auto CALLBACK SubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
+		bool WMSetCursor(WPARAM wParam, LPARAM lParam);
+		static auto CALLBACK SubclassProcHost(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
+			UINT_PTR uIDSubclass, DWORD_PTR dwRefData)->LRESULT;
+		static auto CALLBACK SubclassProcChild(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
 			UINT_PTR uIDSubclass, DWORD_PTR dwRefData)->LRESULT;
 	private:
 		inline static CSplitter* m_pSplitterCurrentlyInUse { }; //The currently active splitter.
@@ -693,11 +703,11 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 		HWND m_hWndHost { };   //Host window.
 		HWND m_hWndAnchor { }; //Anchor window, to work as a splitter basepoint.
 		std::uint32_t m_u32WidthHalf { }; //Distance from the anchor-window's edge, where a cursor turns into a splitter (<->).
-		POINT m_ptCurr;     //Current cursor coordinates under the splitter area.
+		POINT m_ptCurr { }; //Current cursor coordinates under the splitter area.
+		std::uint32_t m_u32CtrlID { }; //Control ID of this splitter, to send notify messages from.
 		int m_iMinEdge { }; //Minimum distance from the left (or top) side to stop splitting.
 		int m_iMaxEdge { 0x7FFFFFFF }; //Maximum distance from the left (or top) side to stop splitting.
-		EAnchorSide m_eAnchorSide;
-		bool m_fCurInSplitter { }; //Is cursor under the splitter area.
+		EAnchorSide m_eAnchorSide { };
 		bool m_fSplitting { };     //Left mouse is down for resize atm.
 	};
 
@@ -706,10 +716,15 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 	}
 
 	void CSplitter::AddItem(HWND hWndItem, bool fIsResize) {
-		assert(hWndItem != nullptr);
-		if (hWndItem == nullptr)
+		assert(::IsWindow(hWndItem));
+		if (!::IsWindow(hWndItem) || hWndItem == m_hWndAnchor)
 			return;
 
+		if (std::ranges::any_of(m_vecItems, [hWndItem](HWND hWnd) { return hWnd == hWndItem; }, &ItemData::hWnd)) {
+			return;
+		}
+
+		::SetWindowSubclass(hWndItem, SubclassProcChild, reinterpret_cast<UINT_PTR>(this), reinterpret_cast<UINT_PTR>(this));
 		m_vecItems.emplace_back(hWndItem, fIsResize);
 	}
 
@@ -717,22 +732,21 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 		AddItem(::GetDlgItem(m_hWndHost, iItemID), fIsResize);
 	}
 
-	void CSplitter::Initialize(HWND hWndHost, HWND hWndAnchor, EAnchorSide eAnchorSide, std::uint32_t u32SplitterWidth) {
-		assert(hWndHost != nullptr);
-		assert(hWndAnchor != nullptr);
+	void CSplitter::Initialize(HWND hWndHost, HWND hWndAnchor, EAnchorSide eSide, std::uint32_t u32Width, std::uint32_t u32CtrlID) {
+		Uninitialize();
+		assert(::IsWindow(hWndHost));
+		assert(::IsWindow(hWndAnchor));
 		m_hWndHost = hWndHost;
 		m_hWndAnchor = hWndAnchor;
-		m_eAnchorSide = eAnchorSide;
-		m_u32WidthHalf = u32SplitterWidth / 2;
-		::SetWindowSubclass(m_hWndHost, SubclassProc, reinterpret_cast<UINT_PTR>(this), 0);
+		m_eAnchorSide = eSide;
+		m_u32WidthHalf = u32Width / 2;
+		m_u32CtrlID = u32CtrlID;
+		::SetWindowSubclass(m_hWndHost, SubclassProcHost, reinterpret_cast<UINT_PTR>(this), reinterpret_cast<UINT_PTR>(this));
+		::SetWindowSubclass(m_hWndAnchor, SubclassProcChild, reinterpret_cast<UINT_PTR>(this), reinterpret_cast<UINT_PTR>(this));
 	}
 
-	void CSplitter::Initialize(HWND hWndHost, int iAnchorID, EAnchorSide eAnchorSide, std::uint32_t u32SplitterWidth) {
-		Initialize(hWndHost, ::GetDlgItem(hWndHost, iAnchorID), eAnchorSide, u32SplitterWidth);
-	}
-
-	bool CSplitter::IsSplitting()const {
-		return m_fSplitting;
+	void CSplitter::Initialize(HWND hWndHost, int iAnchorID, EAnchorSide eSide, std::uint32_t u32Width, std::uint32_t u32CtrlID) {
+		Initialize(hWndHost, ::GetDlgItem(hWndHost, iAnchorID), eSide, u32Width, u32CtrlID);
 	}
 
 	void CSplitter::SetEdges(int iMinEdge, int iMaxEdge) {
@@ -744,17 +758,79 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 		if (m_hWndHost == nullptr)
 			return;
 
-		::RemoveWindowSubclass(m_hWndHost, SubclassProc, reinterpret_cast<UINT_PTR>(this));
+		if (IsSplitting()) {
+			m_fSplitting = false;
+			if (::GetCapture() == m_hWndHost) {
+				::ReleaseCapture();
+			}
+		}
+
+		if (m_pSplitterCurrentlyInUse == this) {
+			Unlock();
+		}
+
+		::RemoveWindowSubclass(m_hWndHost, SubclassProcHost, 1);
+		::RemoveWindowSubclass(m_hWndAnchor, SubclassProcChild, 1);
+
+		for (const auto& item : m_vecItems) {
+			::RemoveWindowSubclass(item.hWnd, SubclassProcChild, 1);
+		}
+
 		m_vecItems.clear();
 		m_hWndHost = nullptr;
+		m_hWndAnchor = nullptr;
 	}
 
 	//Private methods.
+
+	bool CSplitter::IsCursorWE()const {
+		using enum EAnchorSide;
+		return m_eAnchorSide == SIDE_LEFT || m_eAnchorSide == SIDE_RIGHT;
+	}
+
+	bool CSplitter::IsCurInSplitter()const {
+		CRect rcAnchorWnd;
+		::GetWindowRect(m_hWndAnchor, &rcAnchorWnd);
+		::MapWindowPoints(nullptr, m_hWndHost, reinterpret_cast<LPPOINT>(&rcAnchorWnd), 2);
+
+		CRect rcSplitter;
+		using enum EAnchorSide;
+		switch (m_eAnchorSide) {
+		case SIDE_LEFT:
+			rcSplitter.SetRect(rcAnchorWnd.left - m_u32WidthHalf, rcAnchorWnd.top,
+			rcAnchorWnd.left + m_u32WidthHalf, rcAnchorWnd.bottom);
+			break;
+		case SIDE_TOP:
+			rcSplitter.SetRect(rcAnchorWnd.left, rcAnchorWnd.top - m_u32WidthHalf,
+				rcAnchorWnd.right, rcAnchorWnd.top + m_u32WidthHalf);
+			break;
+		case SIDE_RIGHT:
+			rcSplitter.SetRect(rcAnchorWnd.right - m_u32WidthHalf, rcAnchorWnd.top,
+				rcAnchorWnd.right + m_u32WidthHalf, rcAnchorWnd.bottom);
+			break;
+		case SIDE_BOTTOM:
+			rcSplitter.SetRect(rcAnchorWnd.left, rcAnchorWnd.bottom - m_u32WidthHalf,
+				rcAnchorWnd.right, rcAnchorWnd.bottom + m_u32WidthHalf);
+			break;
+		default:
+			break;
+		}
+
+		POINT pt;
+		::GetCursorPos(&pt);
+		::ScreenToClient(m_hWndHost, &pt);
+
+		return rcSplitter.PtInRect(pt);
+	}
 
 	bool CSplitter::IsLock()const {
 		//Locking mechanism is needed to avoid Set/ReleaseCapture interference 
 		//between two or more splitters in the same window.
 		return m_pSplitterCurrentlyInUse != nullptr && m_pSplitterCurrentlyInUse != this;
+	}
+
+	bool CSplitter::IsSplitting()const {
+		return m_fSplitting;
 	}
 
 	void CSplitter::Lock() {
@@ -765,188 +841,205 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 		m_pSplitterCurrentlyInUse = nullptr;
 	}
 
-	void CSplitter::WMLButtonDown(int iX, int iY) {
-		if (IsLock()) {
-			return;
+	bool CSplitter::WMLButtonDown() {
+		if (IsLock() || !IsCurInSplitter()) {
+			return false;
 		}
 
-		if (m_fCurInSplitter) {
-			m_ptCurr = POINT(iX, iY);
-			m_fSplitting = true;
-			Lock();
-			::SetCapture(m_hWndHost);
-		}
+		POINT pt;
+		::GetCursorPos(&pt);
+		::ScreenToClient(m_hWndHost, &pt);
+		m_ptCurr = pt;
+		m_fSplitting = true;
+		Lock();
+		::SetCapture(m_hWndHost);
+		return true;
 	}
 
 	void CSplitter::WMLButtonUp() {
-		if (IsLock()) {
+		if (IsLock() || !IsSplitting()) {
 			return;
 		}
 
-		if (m_fSplitting) {
-			m_fSplitting = false;
+		m_fSplitting = false;
+		Unlock();
+		if (::GetCapture() == m_hWndHost) {
 			::ReleaseCapture();
-			Unlock();
+		}
+
+		if (m_u32CtrlID != 0) {
+			const NMHDR hdr = { .idFrom { m_u32CtrlID }, .code { SPLITTER_MSG_RESIZEEND } };
+			::SendMessageW(m_hWndHost, WM_NOTIFY, m_u32CtrlID, reinterpret_cast<WPARAM>(&hdr));
 		}
 	}
 
 	void CSplitter::WMMouseMove(int iX, int iY) {
-		if (IsLock()) {
+		if (IsLock() || !IsSplitting()) {
 			return;
 		}
 
-		const POINT pt { .x { iX }, .y { iY } };
-		CRect rcAnchorClient;
-		::GetWindowRect(m_hWndAnchor, &rcAnchorClient);
-		::ScreenToClient(m_hWndHost, reinterpret_cast<LPPOINT>(&rcAnchorClient));
-		::ScreenToClient(m_hWndHost, reinterpret_cast<LPPOINT>(&rcAnchorClient) + 1);
+		auto iOffsetX = iX - m_ptCurr.x;
+		auto iOffsetY = iY - m_ptCurr.y;
+		if (iOffsetX == 0 && iOffsetY == 0) {
+			return;
+		}
+
+		CRect rcAnchorWnd;
+		::GetWindowRect(m_hWndAnchor, &rcAnchorWnd);
+		::MapWindowPoints(nullptr, m_hWndHost, reinterpret_cast<LPPOINT>(&rcAnchorWnd), 2);
+
 		using enum EAnchorSide;
+		switch (m_eAnchorSide) {
+		case SIDE_LEFT: {
+			const auto iNewLeft = std::clamp<int>(rcAnchorWnd.left + iOffsetX, m_iMinEdge, m_iMaxEdge);
+			iOffsetX = iNewLeft - rcAnchorWnd.left;
+			iOffsetY = 0;
+			rcAnchorWnd.left = iNewLeft;
+			break;
+		}
+		case SIDE_TOP: {
+			const auto iNewTop = std::clamp<int>(rcAnchorWnd.top + iOffsetY, m_iMinEdge, m_iMaxEdge);
+			iOffsetX = 0;
+			iOffsetY = iNewTop - rcAnchorWnd.top;
+			rcAnchorWnd.top = iNewTop;
+			break;
+		}
+		case SIDE_RIGHT: {
+			const auto iNewRight = std::clamp<int>(rcAnchorWnd.right + iOffsetX, m_iMinEdge, m_iMaxEdge);
+			iOffsetX = iNewRight - rcAnchorWnd.right;
+			iOffsetY = 0;
+			rcAnchorWnd.right = iNewRight;
+			break;
+		}
+		case SIDE_BOTTOM: {
+			const auto iNewBottom = std::clamp<int>(rcAnchorWnd.bottom + iOffsetY, m_iMinEdge, m_iMaxEdge);
+			iOffsetX = 0;
+			iOffsetY = iNewBottom - rcAnchorWnd.bottom;
+			rcAnchorWnd.bottom = iNewBottom;
+			break;
+		}
+		default:
+			return;
+		}
 
-		if (m_fSplitting) {
-			const auto iOffsetX = iX - m_ptCurr.x;
-			const auto iOffsetY = iY - m_ptCurr.y;
-			bool fAllowSplit { };
+		if (iOffsetX == 0 && iOffsetY == 0) {
+			return;
+		}
+
+		auto hdwp = ::BeginDeferWindowPos(static_cast<int>(m_vecItems.size() + 1)); //+1 is the m_hWndAnchor itself.
+		hdwp = ::DeferWindowPos(hdwp, m_hWndAnchor, nullptr, rcAnchorWnd.left, rcAnchorWnd.top,
+			rcAnchorWnd.Width(), rcAnchorWnd.Height(), SWP_NOACTIVATE | SWP_NOZORDER);
+
+		for (const auto& [hWnd, fIsResize] : m_vecItems) {
+			CRect rcWnd;
+			::GetWindowRect(hWnd, &rcWnd);
+			::MapWindowPoints(nullptr, m_hWndHost, reinterpret_cast<LPPOINT>(&rcWnd), 2);
 
 			switch (m_eAnchorSide) {
 			case SIDE_LEFT:
-				rcAnchorClient.left += iOffsetX;
-				fAllowSplit = (rcAnchorClient.left >= m_iMinEdge) && (rcAnchorClient.left <= m_iMaxEdge);
+				if (fIsResize) {
+					rcWnd.right += iOffsetX;
+				}
+				else {
+					rcWnd.OffsetRect(iOffsetX, 0);
+				}
 				break;
 			case SIDE_TOP:
-				rcAnchorClient.top += iOffsetY;
-				fAllowSplit = (rcAnchorClient.top >= m_iMinEdge) && (rcAnchorClient.top <= m_iMaxEdge);
+				if (fIsResize) {
+					rcWnd.bottom += iOffsetY;
+				}
+				else {
+					rcWnd.OffsetRect(0, iOffsetY);
+				}
 				break;
 			case SIDE_RIGHT:
-				rcAnchorClient.right += iOffsetX;
-				fAllowSplit = (rcAnchorClient.right >= m_iMinEdge) && (rcAnchorClient.right <= m_iMaxEdge);
+				if (fIsResize) {
+					rcWnd.left += iOffsetX;
+				}
+				else {
+					rcWnd.OffsetRect(iOffsetX, 0);
+				}
 				break;
 			case SIDE_BOTTOM:
-				rcAnchorClient.bottom += iOffsetY;
-				fAllowSplit = (rcAnchorClient.bottom >= m_iMinEdge) && (rcAnchorClient.bottom <= m_iMaxEdge);
+				if (fIsResize) {
+					rcWnd.top += iOffsetY;
+				}
+				else {
+					rcWnd.OffsetRect(0, iOffsetY);
+				}
 				break;
 			default:
 				break;
 			}
 
-			if (fAllowSplit) {
-				auto hdwp = ::BeginDeferWindowPos(static_cast<int>(m_vecItems.size() + 1)); //+1 is the m_hWndAnchor itself.
-				hdwp = ::DeferWindowPos(hdwp, m_hWndAnchor, nullptr, rcAnchorClient.left, rcAnchorClient.top,
-					rcAnchorClient.Width(), rcAnchorClient.Height(), SWP_NOACTIVATE | SWP_NOZORDER);
-
-				for (const auto& [hWnd, fIsResize] : m_vecItems) {
-					CRect rcWnd;
-					::GetWindowRect(hWnd, &rcWnd);
-					::ScreenToClient(m_hWndHost, reinterpret_cast<LPPOINT>(&rcWnd));
-					::ScreenToClient(m_hWndHost, reinterpret_cast<LPPOINT>(&rcWnd) + 1);
-
-					switch (m_eAnchorSide) {
-					case SIDE_LEFT:
-						if (fIsResize) {
-							rcWnd.right += iOffsetX;
-						}
-						else {
-							rcWnd.OffsetRect(iOffsetX, 0);
-						}
-						break;
-					case SIDE_TOP:
-						if (fIsResize) {
-							rcWnd.bottom += iOffsetY;
-						}
-						else {
-							rcWnd.OffsetRect(0, iOffsetY);
-						}
-						break;
-					case SIDE_RIGHT:
-						if (fIsResize) {
-							rcWnd.left += iOffsetX;
-						}
-						else {
-							rcWnd.OffsetRect(iOffsetX, 0);
-						}
-						break;
-					case SIDE_BOTTOM:
-						if (fIsResize) {
-							rcWnd.top += iOffsetY;
-						}
-						else {
-							rcWnd.OffsetRect(0, iOffsetY);
-						}
-						break;
-					default:
-						break;
-					}
-
-					hdwp = ::DeferWindowPos(hdwp, hWnd, nullptr, rcWnd.left, rcWnd.top,
-								rcWnd.Width(), rcWnd.Height(), SWP_NOACTIVATE | SWP_NOZORDER);
-				}
-
-				m_ptCurr = POINT(iX, iY);
-				::EndDeferWindowPos(hdwp);
-			}
+			hdwp = ::DeferWindowPos(hdwp, hWnd, nullptr, rcWnd.left, rcWnd.top,
+						rcWnd.Width(), rcWnd.Height(), SWP_NOACTIVATE | SWP_NOZORDER);
 		}
-		else {
-			CRect rcSplitter;
-			bool fCursorWE { };
-			switch (m_eAnchorSide) {
-			case SIDE_LEFT:
-				rcSplitter.SetRect(rcAnchorClient.left - m_u32WidthHalf, rcAnchorClient.top,
-				rcAnchorClient.left + m_u32WidthHalf, rcAnchorClient.bottom);
-				fCursorWE = true;
-				break;
-			case SIDE_TOP:
-				rcSplitter.SetRect(rcAnchorClient.left, rcAnchorClient.top - m_u32WidthHalf,
-					rcAnchorClient.right, rcAnchorClient.top + m_u32WidthHalf);
-				fCursorWE = false;
-				break;
-			case SIDE_RIGHT:
-				rcSplitter.SetRect(rcAnchorClient.right - m_u32WidthHalf, rcAnchorClient.top,
-					rcAnchorClient.right + m_u32WidthHalf, rcAnchorClient.bottom);
-				fCursorWE = true;
-				break;
-			case SIDE_BOTTOM:
-				rcSplitter.SetRect(rcAnchorClient.left, rcAnchorClient.bottom - m_u32WidthHalf,
-					rcAnchorClient.right, rcAnchorClient.bottom + m_u32WidthHalf);
-				fCursorWE = false;
-				break;
-			default:
-				break;
-			}
 
-			if (rcSplitter.PtInRect(pt)) {
-				static const auto hCurResizeWE =
-					static_cast<HCURSOR>(::LoadImageW(nullptr, IDC_SIZEWE, IMAGE_CURSOR, 0, 0, LR_SHARED));
-				static const auto hCurResizeNS =
-					static_cast<HCURSOR>(::LoadImageW(nullptr, IDC_SIZENS, IMAGE_CURSOR, 0, 0, LR_SHARED));
-				m_fCurInSplitter = true;
-
-				//The cursor must be set here and not in the WM_SETCURSOR handler,
-				//because the WM_SETCURSOR message doesn't fire when in SetCapture mode.
-				::SetCursor(fCursorWE ? hCurResizeWE : hCurResizeNS);
-				::SetCapture(m_hWndHost);
-			}
-			else {
-				if (m_fCurInSplitter) {
-					m_fCurInSplitter = false;
-					::ReleaseCapture();
-				}
-			}
-		}
+		m_ptCurr.x += iOffsetX;
+		m_ptCurr.y += iOffsetY;
+		::EndDeferWindowPos(hdwp);
 	}
 
-	auto CSplitter::SubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR uIDSubclass,
-	 [[maybe_unused]] DWORD_PTR dwRefData)->LRESULT {
+	bool CSplitter::WMSetCursor([[maybe_unused]] WPARAM wParam, [[maybe_unused]] LPARAM lParam) {
+		if (IsLock() || IsSplitting()) {
+			return false;
+		}
+
+		if (IsCurInSplitter()) {
+			static const auto hCurResizeWE =
+				static_cast<HCURSOR>(::LoadImageW(nullptr, IDC_SIZEWE, IMAGE_CURSOR, 0, 0, LR_SHARED));
+			static const auto hCurResizeNS =
+				static_cast<HCURSOR>(::LoadImageW(nullptr, IDC_SIZENS, IMAGE_CURSOR, 0, 0, LR_SHARED));
+			::SetCursor(IsCursorWE() ? hCurResizeWE : hCurResizeNS);
+			return true;
+		}
+
+		return false;
+	}
+
+	auto CSplitter::SubclassProcHost(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
+		[[maybe_unused]] UINT_PTR uIDSubclass, DWORD_PTR dwRefData)->LRESULT {
 		switch (uMsg) {
+		case WM_NCLBUTTONDOWN:
 		case WM_LBUTTONDOWN:
-			reinterpret_cast<CSplitter*>(uIDSubclass)->WMLButtonDown(LOWORD(lParam), HIWORD(lParam));
+			if (reinterpret_cast<CSplitter*>(dwRefData)->WMLButtonDown()) {
+				return 0;
+			}
 			break;
+		case WM_CAPTURECHANGED: //If Alt+Tab fires during splitting, we run WMLButtonUp().
 		case WM_LBUTTONUP:
-			reinterpret_cast<CSplitter*>(uIDSubclass)->WMLButtonUp();
+			reinterpret_cast<CSplitter*>(dwRefData)->WMLButtonUp();
 			break;
 		case WM_MOUSEMOVE:
-			reinterpret_cast<CSplitter*>(uIDSubclass)->WMMouseMove(ut::GetXLPARAM(lParam), ut::GetYLPARAM(lParam));
+			reinterpret_cast<CSplitter*>(dwRefData)->WMMouseMove(ut::GetXLPARAM(lParam), ut::GetYLPARAM(lParam));
 			break;
 		case WM_NCDESTROY:
-			reinterpret_cast<CSplitter*>(uIDSubclass)->Uninitialize();
+			reinterpret_cast<CSplitter*>(dwRefData)->Uninitialize();
+			break;
+		case WM_SETCURSOR:
+			if (reinterpret_cast<CSplitter*>(dwRefData)->WMSetCursor(wParam, lParam)) {
+				return TRUE;
+			}
+			break;
+		default:
+			break;
+		}
+
+		return ::DefSubclassProc(hWnd, uMsg, wParam, lParam);
+	}
+
+	auto CSplitter::SubclassProcChild(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
+		UINT_PTR uIDSubclass, DWORD_PTR dwRefData) -> LRESULT {
+		switch (uMsg) {
+		case WM_NCLBUTTONDOWN:
+		case WM_LBUTTONDOWN:
+			if (reinterpret_cast<CSplitter*>(dwRefData)->WMLButtonDown()) {
+				return 0;
+			}
+			break;
+		case WM_NCDESTROY:
+			::RemoveWindowSubclass(hWnd, SubclassProcChild, uIDSubclass);
 			break;
 		default:
 			break;

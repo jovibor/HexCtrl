@@ -1099,8 +1099,6 @@ namespace HEXCTRL::INTERNAL {
 		auto WMDrawItem(const MSG& msg) -> INT_PTR;
 		auto WMGetDPIScaledSize(const MSG& msg) -> INT_PTR;
 		auto WMInitDialog(const MSG& msg) -> INT_PTR;
-		auto WMLButtonDown(const MSG& msg) -> INT_PTR;
-		auto WMLButtonUp(const MSG& msg) -> INT_PTR;
 		auto WMMeasureItem(const MSG& msg) -> INT_PTR;
 		auto WMMouseActivate(const MSG& msg) -> INT_PTR;
 		auto WMNotify(const MSG& msg) -> INT_PTR;
@@ -1114,6 +1112,7 @@ namespace HEXCTRL::INTERNAL {
 		void WMNotifyListLinkClick(NMHDR* pNMHDR);
 		void WMNotifyListRClick(NMHDR* pNMHDR);
 		void WMNotifyListSetData(NMHDR* pNMHDR);
+		void WMNotifySplitter(NMHDR* pNMHDR);
 		void WMNotifyTreeGetDispInfo(NMHDR* pNMHDR);
 		void WMNotifyTreeItemChanged(NMHDR* pNMHDR);
 		void WMNotifyTreeLClick(NMHDR* pNMHDR);
@@ -1322,8 +1321,6 @@ auto CHexDlgTemplMgr::ProcessMsg(const MSG& msg)->INT_PTR {
 	case WM_DRAWITEM: return WMDrawItem(msg);
 	case WM_GETDPISCALEDSIZE: return WMGetDPIScaledSize(msg);
 	case WM_INITDIALOG: return WMInitDialog(msg);
-	case WM_LBUTTONDOWN: return WMLButtonDown(msg);
-	case WM_LBUTTONUP: return WMLButtonUp(msg);
 	case WM_MEASUREITEM: return WMMeasureItem(msg);
 	case WM_MOUSEACTIVATE: return WMMouseActivate(msg);
 	case WM_NOTIFY: return WMNotify(msg);
@@ -2187,6 +2184,7 @@ auto CHexDlgTemplMgr::WMDestroy()->INT_PTR {
 
 auto CHexDlgTemplMgr::WMDPIChanged([[maybe_unused]] const MSG& msg)->INT_PTR {
 	CreateArrows();
+	m_SplitVert.SetEdges(100, m_Wnd.GetClientRect().Width() - 10);
 	m_DynLayout.Enable(true);
 
 	return 0;
@@ -2267,7 +2265,7 @@ auto CHexDlgTemplMgr::WMInitDialog(const MSG& msg)->INT_PTR {
 	m_WndBtnHighl.SetCheck(IsHighlight());
 	m_WndBtnHex.SetCheck(IsShowAsHex());
 
-	m_SplitVert.Initialize(m_Wnd, m_ListEx, GDIUT::CSplitter::EAnchorSide::SIDE_LEFT);
+	m_SplitVert.Initialize(m_Wnd, m_ListEx, GDIUT::CSplitter::EAnchorSide::SIDE_LEFT, 10, IDC_HEXCTRL_TEMPLMGR_SPLITTER);
 	m_SplitVert.AddItem(m_WndTree, true);
 	m_SplitVert.SetEdges(100, m_Wnd.GetClientRect().Width() - 10);
 
@@ -2288,20 +2286,6 @@ auto CHexDlgTemplMgr::WMInitDialog(const MSG& msg)->INT_PTR {
 	CreateArrows();
 	UpdateDateTimeFormat();
 	UpdateEditBoxOffsetToCurrHexCaret();
-
-	return TRUE;
-}
-
-auto CHexDlgTemplMgr::WMLButtonDown([[maybe_unused]] const MSG& msg)->INT_PTR {
-	if (m_SplitVert.IsSplitting()) {
-		m_DynLayout.Enable(false);
-	}
-
-	return TRUE;
-}
-
-auto CHexDlgTemplMgr::WMLButtonUp([[maybe_unused]] const MSG& msg)->INT_PTR {
-	m_DynLayout.Enable(true);
 
 	return TRUE;
 }
@@ -2327,6 +2311,9 @@ auto CHexDlgTemplMgr::WMMouseActivate([[maybe_unused]] const MSG& msg)->INT_PTR 
 auto CHexDlgTemplMgr::WMNotify(const MSG& msg)->INT_PTR {
 	const auto pNMHDR = reinterpret_cast<NMHDR*>(msg.lParam);
 	switch (pNMHDR->idFrom) {
+	case IDC_HEXCTRL_TEMPLMGR_SPLITTER:
+		WMNotifySplitter(pNMHDR);
+		break;
 	case IDC_HEXCTRL_TEMPLMGR_LIST:
 		switch (pNMHDR->code) {
 		case LVN_GETDISPINFOW: WMNotifyListGetDispInfo(pNMHDR); break;
@@ -2899,6 +2886,12 @@ void CHexDlgTemplMgr::WMNotifyListSetData(NMHDR* pNMHDR) {
 	}
 
 	RedrawHexCtrl();
+}
+
+void CHexDlgTemplMgr::WMNotifySplitter(NMHDR* pNMHDR) {
+	if (pNMHDR->code == GDIUT::CSplitter::SPLITTER_MSG_RESIZEEND) {
+		m_DynLayout.Enable(true);
+	}
 }
 
 void CHexDlgTemplMgr::WMNotifyTreeGetDispInfo(NMHDR* pNMHDR) {
