@@ -298,23 +298,29 @@ bool CHexTemplates::HasApplied()const {
 }
 
 auto CHexTemplates::HitTest(std::uint64_t u64Offset)const->PCHEXTEMPLFIELD {
-	const auto rit = std::find_if(m_vecTemplates.rbegin(), m_vecTemplates.rend(),
+	const auto rit = std::find_if(m_vecTemplates.crbegin(), m_vecTemplates.crend(),
 		[u64Offset](const std::unique_ptr<HEXTEMPLATE>& uptr) {
 			return u64Offset >= uptr->u64Offset && u64Offset < uptr->u64Offset + uptr->iSizeTotal; });
-	if (rit == m_vecTemplates.rend()) {
+	if (rit == m_vecTemplates.crend()) {
 		return nullptr;
 	}
 
 	const auto pTemplate = rit->get();
-	const auto ullOffsetApplied = pTemplate->u64Offset;
+	const auto u64OffsetApplied = pTemplate->u64Offset;
 	const auto& vecFields = pTemplate->vecFields;
-	const auto lmbFind = [u64Offset, ullOffsetApplied](const auto& lmbSelf, const VecHexTemplFields& vecFields)->PCHEXTEMPLFIELD {
+	const auto lmbFind = [u64Offset, u64OffsetApplied](const auto& lmbSelf, const VecHexTemplFields& vecFields)->PCHEXTEMPLFIELD {
 		for (const auto& pField : vecFields) {
+			//If a template contains a large array, lmbFind recurses into pField->vecNested 
+			//and loops linearly through all nested array elements even when u64Offset isn't inside that array.
+			//Adding a bounds check at the top of the for loop skips entire structs/arrays in O(1).
+			const auto u64FieldStart = u64OffsetApplied + pField->iOffset;
+			const auto u64FieldEnd = u64FieldStart + pField->iSize;
+			if (u64Offset < u64FieldStart || u64Offset >= u64FieldEnd) {
+				continue;
+			}
+
 			if (pField->vecNested.empty()) {
-				const auto ullOffsetCurr = ullOffsetApplied + pField->iOffset;
-				if (u64Offset < (ullOffsetCurr + pField->iSize)) {
-					return pField.get();
-				}
+				return pField.get();
 			}
 			else {
 				if (const auto pFieldInner = lmbSelf(lmbSelf, pField->vecNested); pFieldInner != nullptr) {
@@ -451,9 +457,12 @@ auto CHexTemplates::JSONIsBigEndianness(const rapidjson::Value* pValue)->std::op
 
 auto CHexTemplates::JSONParseFields(const PARSEFIELDS& pf)->std::optional<VecHexTemplFields> {
 	//This function parses array of fields in JSON, and returns VecHexTemplFields of these fields, or std::nullopt.
+	if (pf.pValue == nullptr || !pf.pValue->IsArray()) {
+		ut::DBG_REPORT(L"JSONParseFields error.");
+		return std::nullopt;
+	}
 
 	using enum EHexTemplFieldType;
-
 	int iFirstFieldOffset { 0 }; //Default starting field offset.
 
 	//This is the top level vector of fields.
@@ -475,8 +484,7 @@ auto CHexTemplates::JSONParseFields(const PARSEFIELDS& pf)->std::optional<VecHex
 				}
 
 				const auto wstrNameName = ut::StrToWstr(*optName); //The 'name' field name.
-
-				const auto& pNewField = vecFields.emplace_back(std::make_unique<HEXTEMPLFIELD>());
+				auto pNewField = std::make_unique<HEXTEMPLFIELD>();
 				pNewField->wstrName = wstrNameName;
 				pNewField->iOffset = iFieldOffset;
 				pNewField->stClr.clrBk = JSONColors(pField, "clrBk").value_or(pf.clrDefault.clrBk);
@@ -506,7 +514,6 @@ auto CHexTemplates::JSONParseFields(const PARSEFIELDS& pf)->std::optional<VecHex
 					pNewField->iSize = TMPLGetFieldsTotalSize(pNewField->vecNested); //Total size of all nested fields.
 				}
 				else {
-
 					std::uint32_t uArraySize { 0 };
 					const auto optArray = JSONProcess_array(pField, pf, vecFieldsTopLevel);
 					if (optArray) {
@@ -514,6 +521,7 @@ auto CHexTemplates::JSONParseFields(const PARSEFIELDS& pf)->std::optional<VecHex
 							return false;
 						}
 
+						//When uArraySize==0 or 1, it's treated as if there is no array, but a single field.
 						uArraySize = **optArray;
 					}
 
@@ -572,6 +580,7 @@ auto CHexTemplates::JSONParseFields(const PARSEFIELDS& pf)->std::optional<VecHex
 					pNewField->iSize = iFieldSize;
 					iFieldOffset += iFieldSize;
 				}
+				vecFields.emplace_back(std::move(pNewField));
 			}
 
 			return true;
@@ -584,6 +593,7 @@ auto CHexTemplates::JSONParseFields(const PARSEFIELDS& pf)->std::optional<VecHex
 	}
 	catch (...) {
 		vecFieldsTopLevel.clear();
+		ut::DBG_REPORT(L"Exception from lmbRecursive.");
 		return std::nullopt;
 	}
 
@@ -596,8 +606,9 @@ auto CHexTemplates::JSONProcess_array(const rapidjson::Value* pValue, const PARS
 	//The second (inner) std::nullopt means the field was found, but with parsing errors.
 
 	const auto optArray = JSONFindMember(pValue, "array");
-	if (!optArray)
+	if (!optArray) {
 		return std::nullopt;
+	}
 
 	//The "array" field can be a uint or an Object.
 	if ((*optArray)->IsUint()) { //Array is a plain uint.
@@ -643,7 +654,8 @@ auto CHexTemplates::JSONProcess_array(const rapidjson::Value* pValue, const PARS
 		return static_cast<std::uint32_t>(*optData); //If no "limit" object found we just return back the actual data.
 	}
 
-	return std::nullopt;
+	ut::DBG_REPORT(L"The 'array' property must be an unsigned integer or an Object {}.");
+	return std::optional<std::uint32_t>{ std::nullopt };
 }
 
 auto CHexTemplates::JSONProcess_description(const rapidjson::Value* pValue)->std::optional<const char*> {
@@ -677,14 +689,27 @@ auto CHexTemplates::JSONProcess_jump(const rapidjson::Value* pValue)->std::optio
 	else if (ut::IsEqualNoCase(*optAnchor, "fieldfirst") || ut::IsEqualNoCase(*optAnchor, "structstart")) {
 		htj.eAnchor = FIELD_FIRST;
 	}
-	else {
+	else if (const auto optOffset = stn::StrToUInt64(*optAnchor); optOffset) {
 		htj.eAnchor = OFFSET_CUSTOM;
-		htj.u64Anchor = stn::StrToUInt64(*optAnchor).value_or(0ULL);
+		htj.u64Anchor = *optOffset;
+	}
+	else {
+		ut::DBG_REPORT(L"Unknown 'anchor' specifier in 'jump'.");
+		return std::nullopt;
 	}
 
 	if (const auto optDirection = JSONFindMemberAsString(*optJump, "direction"); optDirection) {
 		using enum EHexTemplJumpDirection;
-		htj.eDirection = ut::IsEqualNoCase(*optDirection, "backward") ? JUMP_BACKWARD : JUMP_FORWARD;
+		if (ut::IsEqualNoCase(*optDirection, "backward")) {
+			htj.eDirection = JUMP_BACKWARD;
+		}
+		else if (ut::IsEqualNoCase(*optDirection, "forward")) {
+			htj.eDirection = JUMP_FORWARD;
+		}
+		else {
+			ut::DBG_REPORT(L"Unknown 'direction' specifier in 'jump'.");
+			return std::nullopt;
+		}
 	}
 
 	if (const auto optUnits = JSONFindMemberAsString(*optJump, "units"); optUnits) {
@@ -700,8 +725,12 @@ auto CHexTemplates::JSONProcess_jump(const rapidjson::Value* pValue)->std::optio
 		else if (ut::IsEqualNoCase(*optUnits, "qword")) {
 			htj.u32Units = 8;
 		}
+		else if (const auto optValue = stn::StrToUInt32(*optUnits); optValue && *optValue > 0) {
+			htj.u32Units = *optValue;
+		}
 		else {
-			htj.u32Units = stn::StrToUInt32(*optUnits).value_or(1UL);
+			ut::DBG_REPORT(L"Incorrect 'units' specifier in 'jump'.");
+			return std::nullopt;
 		}
 	}
 
@@ -741,13 +770,17 @@ auto CHexTemplates::JSONProcess_limit(const rapidjson::Value* pValue, std::uint6
 		else if (svOnBeyond == "uselimit") {
 			eBeyond = USE_LIMIT;
 		}
+		else {
+			ut::DBG_REPORT(L"Unknown 'onbeyond' specifier.");
+			return std::optional<std::uint64_t>{ std::nullopt };
+		}
 	}
 
 	//If actual data is beyound limits.
 	if ((u64ActualData < u64LimitMin) || (u64ActualData > u64LimitMax)) {
 		switch (eBeyond) {
 		case DO_STOP:
-			ut::DBG_REPORT(std::format(L"Actual data is beyound the limit in '{}' field.",
+			ut::DBG_REPORT(std::format(L"Actual data is beyound the limit in the '{}' field.",
 				ut::StrToWstr(*JSONFindMemberAsString(pValue, "sizefield"))).data());
 			return std::optional<std::uint64_t>{ std::nullopt };
 		case DO_ASK:
@@ -822,7 +855,7 @@ auto CHexTemplates::JSONProcess_type(const rapidjson::Value* pValue, const PARSE
 	const auto pszType = (*optType)->GetString();
 	std::string strTypeLowerCase = pszType; //Lowering the case of the 'type' string.
 	std::ranges::transform(strTypeLowerCase, strTypeLowerCase.begin(), [](char ch) {
-		return static_cast<char>(std::tolower(ch)); });
+		return static_cast<char>(std::tolower(static_cast<unsigned char>(ch))); });
 
 	//If it's any standard type.
 	if (const auto itMapType = umapStrToEType.find(strTypeLowerCase); itMapType != umapStrToEType.end()) {
@@ -833,7 +866,7 @@ auto CHexTemplates::JSONProcess_type(const rapidjson::Value* pValue, const PARSE
 	//If it's not any standard type, we try to find custom type with the given name.
 	const auto wstrTypeName = ut::StrToWstr(pszType);
 	const auto& vecCTypes = pf.pTemplate->vecCustomType;
-	const auto itVecCT = std::find_if(vecCTypes.begin(), vecCTypes.end(), [&wstrTypeName](const HEXTEMPLCT& ct) {
+	const auto itVecCT = std::ranges::find_if(vecCTypes, [&wstrTypeName](const HEXTEMPLCT& ct) {
 		return ct.wstrTypeName == wstrTypeName; });
 	if (itVecCT == vecCTypes.end()) {
 		ut::DBG_REPORT(std::format(L"Unknown type '{}' of the field '{}'.", wstrTypeName, wsvNameName).data());
@@ -856,7 +889,8 @@ auto CHexTemplates::JSONProcess_type(const rapidjson::Value* pValue, const PARSE
 				pNewField->stClr.clrBk = CFClr.clrBk == -1 ? pField->stClr.clrBk : CFClr.clrBk;
 				pNewField->stClr.clrText = CFClr.clrText == -1 ? pField->stClr.clrText : CFClr.clrText;
 				pNewField->pFieldParent = pField.get();
-				pNewField->pJump = pField->pJump != nullptr ? std::make_unique<HEXTEMPLJUMP>(*pField->pJump) : nullptr;
+				pNewField->pJump = pCustomField->pJump != nullptr ? std::make_unique<HEXTEMPLJUMP>(*pCustomField->pJump) :
+					(pField->pJump != nullptr ? std::make_unique<HEXTEMPLJUMP>(*pField->pJump) : nullptr);
 				pNewField->eType = pCustomField->eType;
 				pNewField->iCustomTypeID = pCustomField->iCustomTypeID;
 				pNewField->fBigEndian = pCustomField->fBigEndian;
@@ -899,7 +933,8 @@ auto CHexTemplates::JSONProcess_type(const rapidjson::Value* pValue, const PARSE
 auto CHexTemplates::TMPLGetDataFromField(const HEXTEMPLFIELD* pField, PCHEXTEMPLATE pTemplate, IHexCtrl* pHexCtrl)
 ->std::optional<std::uint64_t> {
 	//Retrieves data from HexCtrl by template+pField offset and field size.
-
+	assert(pField != nullptr);
+	assert(pTemplate != nullptr);
 	assert(pHexCtrl != nullptr);
 	const auto u64HexDataSize = pHexCtrl->GetDataSize();
 	const auto u64FieldOffset = pTemplate->u64Offset + pField->iOffset;
@@ -933,7 +968,7 @@ auto CHexTemplates::TMPLGetDataFromField(const HEXTEMPLFIELD* pField, PCHEXTEMPL
 			return std::nullopt;
 		}
 
-		auto u32 = ut::GetIHexTData<std::uint16_t>(*pHexCtrl, u64FieldOffset);
+		auto u32 = ut::GetIHexTData<std::uint32_t>(*pHexCtrl, u64FieldOffset);
 		if (pField->fBigEndian) {
 			u32 = ut::ByteSwap(u32);
 		}
@@ -946,7 +981,7 @@ auto CHexTemplates::TMPLGetDataFromField(const HEXTEMPLFIELD* pField, PCHEXTEMPL
 			return std::nullopt;
 		}
 
-		auto u64 = ut::GetIHexTData<std::uint16_t>(*pHexCtrl, u64FieldOffset);
+		auto u64 = ut::GetIHexTData<std::uint64_t>(*pHexCtrl, u64FieldOffset);
 		if (pField->fBigEndian) {
 			u64 = ut::ByteSwap(u64);
 		}
@@ -960,39 +995,26 @@ auto CHexTemplates::TMPLGetDataFromField(const HEXTEMPLFIELD* pField, PCHEXTEMPL
 
 auto CHexTemplates::TMPLFindFieldName(const VecHexTemplFields& vecFields, std::wstring_view wsvFieldName)->PCHEXTEMPLFIELD {
 	//Recursively searches for the field name wsvFieldName in all template fields (HEXTEMPLFIELD::wstrName).
-	const auto lmbFindFieldName = [](const auto& lmbSelf, const VecHexTemplFields& vecFields, std::wstring_view wsvFieldName)
-		->PCHEXTEMPLFIELD {
-		if (const auto it = std::ranges::find_if(vecFields, [wsvFieldName](const PtrHexTemplField& uptr) {
-			return uptr->wstrName == wsvFieldName; });
-			it != vecFields.end()) { //We found "sizefield"'s string as a field name.
-			return it->get();
+	if (const auto it = std::ranges::find(vecFields, wsvFieldName, &HEXTEMPLFIELD::wstrName); it != vecFields.end()) {
+		return it->get(); //We found the "wsvFieldName" as a template field name.
+	}
+
+	for (const auto& uptr : vecFields) {
+		if (const auto pField = TMPLFindFieldName(uptr->vecNested, wsvFieldName); pField != nullptr) {
+			return pField;
 		}
+	}
 
-		for (const auto& uptr : vecFields) {
-			if (const auto pField = lmbSelf(lmbSelf, uptr->vecNested, wsvFieldName); pField != nullptr) {
-				return pField;
-			}
-		}
-
-		return nullptr;
-
-		};
-	return lmbFindFieldName(lmbFindFieldName, vecFields, wsvFieldName);
+	return nullptr;
 }
 
 auto CHexTemplates::TMPLGetFieldsTotalSize(const VecHexTemplFields& vecFields)->int {
 	//This method counts total size of all fields in the vecFields recursively.
-
-	const auto lmbTotalSize = [](const auto& lmbSelf, const VecHexTemplFields& vecFields)->int {
-		return std::reduce(vecFields.begin(), vecFields.end(), 0,
-			[&lmbSelf](auto ullTotal, const std::unique_ptr<HEXTEMPLFIELD>& pField) {
-				if (!pField->vecNested.empty()) {
-					return ullTotal + lmbSelf(lmbSelf, pField->vecNested);
-				}
-				return ullTotal + pField->iSize; });
-		};
-
-	return lmbTotalSize(lmbTotalSize, vecFields);
+	return std::reduce(vecFields.begin(), vecFields.end(), 0, [](auto ullTotal, const std::unique_ptr<HEXTEMPLFIELD>& pField) {
+		if (!pField->vecNested.empty()) {
+			return ullTotal + TMPLGetFieldsTotalSize(pField->vecNested);
+		}
+		return ullTotal + pField->iSize; });
 }
 
 
@@ -1110,7 +1132,6 @@ namespace HEXCTRL::INTERNAL {
 		void WMNotifyListHdrRClick(NMHDR* pNMHDR);
 		void WMNotifyListItemChanged(NMHDR* pNMHDR);
 		void WMNotifyListLinkClick(NMHDR* pNMHDR);
-		void WMNotifyListRClick(NMHDR* pNMHDR);
 		void WMNotifyListSetData(NMHDR* pNMHDR);
 		void WMNotifySplitter(NMHDR* pNMHDR);
 		void WMNotifyTreeGetDispInfo(NMHDR* pNMHDR);
@@ -2319,7 +2340,6 @@ auto CHexDlgTemplMgr::WMNotify(const MSG& msg)->INT_PTR {
 		case LVN_GETDISPINFOW: WMNotifyListGetDispInfo(pNMHDR); break;
 		case LVN_ITEMCHANGED: WMNotifyListItemChanged(pNMHDR); break;
 		case NM_DBLCLK: WMNotifyListDblClick(pNMHDR); break;
-		case NM_RCLICK: WMNotifyListRClick(pNMHDR); break;
 		case NM_RETURN: WMNotifyListEnterPressed(pNMHDR); break;
 		case LISTEX::LISTEX_MSG_EDITBEGIN: WMNotifyListEditBegin(pNMHDR); break;
 		case LISTEX::LISTEX_MSG_GETCOLOR: WMNotifyListGetColor(pNMHDR); break;
@@ -2777,8 +2797,6 @@ void CHexDlgTemplMgr::WMNotifyListLinkClick(NMHDR* pNMHDR) {
 		UpdateEditBoxOffsetToCurrHexCaret();
 	}
 }
-
-void CHexDlgTemplMgr::WMNotifyListRClick([[maybe_unused]] NMHDR* pNMHDR) { }
 
 void CHexDlgTemplMgr::WMNotifyListSetData(NMHDR* pNMHDR) {
 	const auto pLDI = reinterpret_cast<LISTEX::PLISTEXDATAINFO>(pNMHDR);
