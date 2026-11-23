@@ -21,35 +21,35 @@ import :HexUtility;
 namespace HEXCTRL::INTERNAL {
 	class CHexDlgBkmMgr final : public IHexBookmarks {
 	public:
-		auto AddBkm(const HEXBKM& bkm) -> ULONGLONG override;
+		auto AddBkm(const HEXBKM& bkm) -> std::uint64_t override;
 		void CreateDlg()const;
 		void DestroyDlg();
-		[[nodiscard]] auto GetAllBkms() -> SpanHexBkm override;
-		[[nodiscard]] auto GetByID(ULONGLONG ullID) -> PHEXBKM override;
-		[[nodiscard]] auto GetByIndex(ULONGLONG ullIndex) -> PHEXBKM override;
-		[[nodiscard]] auto GetCount() -> ULONGLONG override;
-		[[nodiscard]] auto GetCurrent()const -> ULONGLONG;
+		[[nodiscard]] auto GetAllBkms()const -> SpanHexBkm override;
+		[[nodiscard]] auto GetByID(std::uint64_t ullID) -> PHEXBKM override;
+		[[nodiscard]] auto GetByIndex(std::uint64_t ullIndex) -> PHEXBKM override;
+		[[nodiscard]] auto GetCount()const -> std::uint64_t override;
+		[[nodiscard]] auto GetCurrent()const -> std::uint64_t;
 		[[nodiscard]] auto GetDlgItemHandle(EHexDlgItem eItem)const -> HWND;
 		[[nodiscard]] auto GetHWND()const -> HWND;
-		void GoBookmark(ULONGLONG ullIndex);
+		void GoBookmark(std::uint64_t ullIndex);
 		void GoNext();
 		void GoPrev();
-		[[nodiscard]] bool HasBkmAtOffset(ULONGLONG ullOffset)const;
+		[[nodiscard]] bool HasBkmAtOffset(std::uint64_t ullOffset)const;
 		[[nodiscard]] bool HasBookmarks()const;
-		[[nodiscard]] auto HitTest(ULONGLONG ullOffset) -> PHEXBKM override;
-		[[nodiscard]] auto HitTest(ULONGLONG ullOffset)const -> PHEXBKM;
+		[[nodiscard]] auto HitTest(std::uint64_t ullOffset) -> PHEXBKM override;
+		[[nodiscard]] auto HitTest(std::uint64_t ullOffset)const -> PCHEXBKM;
 		void Initialize(IHexCtrl &HexCtrl, HINSTANCE hInstRes);
 		[[nodiscard]] bool IsShowTooltips()const;
 		[[nodiscard]] bool IsVirtual()const;
 		[[nodiscard]] bool PreTranslateMsg(MSG* pMsg);
 		[[nodiscard]] auto ProcessMsg(const MSG& msg) -> INT_PTR;
 		void RemoveAll()override;
-		void RemoveByOffset(ULONGLONG ullOffset);
-		void RemoveByID(ULONGLONG ullID)override;
+		void RemoveByOffset(std::uint64_t ullOffset);
+		void RemoveByID(std::uint64_t ullID)override;
 		void SetDlgProperties(std::uint64_t u64Flags);
 		void SetVirtualBkm(IHexVirtBookmarks* pVirtBkm)override;
 		void ShowWindow(int iCmdShow);
-		void Update(ULONGLONG ullID, const HEXBKM& bkm);
+		void Update(std::uint64_t ullID, const HEXBKM& bkm);
 	private:
 		enum class EMenuID : std::uint16_t;
 		[[nodiscard]] auto GetHexCtrl()const -> IHexCtrl*;
@@ -99,8 +99,8 @@ enum class CHexDlgBkmMgr::EMenuID : std::uint16_t {
 	IDM_BKMMGR_REMOVE = 0x8001, IDM_BKMMGR_REMOVEALL
 };
 
-auto CHexDlgBkmMgr::AddBkm(const HEXBKM& bkm)->ULONGLONG {
-	ULONGLONG ullID;
+auto CHexDlgBkmMgr::AddBkm(const HEXBKM& bkm)->std::uint64_t {
+	std::uint64_t ullID;
 	if (IsVirtual()) {
 		ullID = m_pVirtBkm->OnHexBkmAdd(bkm);
 	}
@@ -134,7 +134,7 @@ void CHexDlgBkmMgr::DestroyDlg() {
 	}
 }
 
-auto CHexDlgBkmMgr::GetAllBkms()->SpanHexBkm {
+auto CHexDlgBkmMgr::GetAllBkms()const->SpanHexBkm {
 	if (IsVirtual()) {
 		return { };
 	}
@@ -142,7 +142,7 @@ auto CHexDlgBkmMgr::GetAllBkms()->SpanHexBkm {
 	return m_vecBookmarks;
 }
 
-auto CHexDlgBkmMgr::GetByID(ULONGLONG ullID)->PHEXBKM {
+auto CHexDlgBkmMgr::GetByID(std::uint64_t ullID)->PHEXBKM {
 	if (IsVirtual()) {
 		return m_pVirtBkm->OnHexBkmGetByID(ullID);
 	}
@@ -155,7 +155,7 @@ auto CHexDlgBkmMgr::GetByID(ULONGLONG ullID)->PHEXBKM {
 	return { };
 }
 
-auto CHexDlgBkmMgr::GetByIndex(ULONGLONG ullIndex)->PHEXBKM {
+auto CHexDlgBkmMgr::GetByIndex(std::uint64_t ullIndex)->PHEXBKM {
 	if (IsVirtual()) {
 		return m_pVirtBkm->OnHexBkmGetByIndex(ullIndex);
 	}
@@ -167,11 +167,11 @@ auto CHexDlgBkmMgr::GetByIndex(ULONGLONG ullIndex)->PHEXBKM {
 	return { };
 }
 
-auto CHexDlgBkmMgr::GetCount()->ULONGLONG {
+auto CHexDlgBkmMgr::GetCount()const->std::uint64_t {
 	return IsVirtual() ? m_pVirtBkm->OnHexBkmGetCount() : m_vecBookmarks.size();
 }
 
-auto CHexDlgBkmMgr::GetCurrent()const->ULONGLONG {
+auto CHexDlgBkmMgr::GetCurrent()const->std::uint64_t {
 	return m_u64IndexCurr;
 }
 
@@ -195,7 +195,7 @@ auto CHexDlgBkmMgr::GetHWND()const->HWND {
 	return m_Wnd;
 }
 
-void CHexDlgBkmMgr::GoBookmark(ULONGLONG ullIndex) {
+void CHexDlgBkmMgr::GoBookmark(std::uint64_t ullIndex) {
 	if (m_pHexCtrl == nullptr || !m_pHexCtrl->IsDataSet())
 		return;
 
@@ -246,7 +246,7 @@ void CHexDlgBkmMgr::GoPrev() {
 	}
 }
 
-bool CHexDlgBkmMgr::HasBkmAtOffset(ULONGLONG ullOffset)const {
+bool CHexDlgBkmMgr::HasBkmAtOffset(std::uint64_t ullOffset)const {
 	return HitTest(ullOffset) != nullptr;
 }
 
@@ -254,24 +254,24 @@ bool CHexDlgBkmMgr::HasBookmarks()const {
 	return IsVirtual() ? m_pVirtBkm->OnHexBkmGetCount() > 0 : !m_vecBookmarks.empty();
 }
 
-auto CHexDlgBkmMgr::HitTest(ULONGLONG ullOffset)->PHEXBKM {
+auto CHexDlgBkmMgr::HitTest(std::uint64_t ullOffset)->PHEXBKM {
+	return const_cast<PHEXBKM>(std::as_const(*this).HitTest(ullOffset));
+}
+
+auto CHexDlgBkmMgr::HitTest(std::uint64_t ullOffset)const->PCHEXBKM {
 	if (IsVirtual()) {
 		return m_pVirtBkm->OnHexBkmHitTest(ullOffset);
 	}
 
-	if (const auto rit = std::find_if(m_vecBookmarks.rbegin(), m_vecBookmarks.rend(),
-		[ullOffset](const HEXBKM& bkm) { return std::any_of(bkm.vecSpan.begin(), bkm.vecSpan.end(),
+	if (const auto rit = std::find_if(m_vecBookmarks.crbegin(), m_vecBookmarks.crend(),
+		[ullOffset](const HEXBKM& bkm) { return std::any_of(bkm.vecSpan.cbegin(), bkm.vecSpan.cend(),
 			[ullOffset](const HEXSPAN& hs) {
 				return ullOffset >= hs.ullOffset && ullOffset < (hs.ullOffset + hs.ullSize); }); });
-					rit != m_vecBookmarks.rend()) {
+					rit != m_vecBookmarks.crend()) {
 		return &*rit;
 	}
 
 	return { };
-}
-
-auto CHexDlgBkmMgr::HitTest(ULONGLONG ullOffset)const->PHEXBKM {
-	return const_cast<CHexDlgBkmMgr*>(this)->HitTest(ullOffset);
 }
 
 void CHexDlgBkmMgr::Initialize(IHexCtrl &HexCtrl, HINSTANCE hInstRes) {
@@ -312,7 +312,7 @@ void CHexDlgBkmMgr::RemoveAll() {
 	UpdateListCount();
 }
 
-void CHexDlgBkmMgr::RemoveByOffset(ULONGLONG ullOffset) {
+void CHexDlgBkmMgr::RemoveByOffset(std::uint64_t ullOffset) {
 	if (IsVirtual()) {
 		if (const auto* const pBkm = m_pVirtBkm->OnHexBkmHitTest(ullOffset); pBkm != nullptr) {
 			m_pVirtBkm->OnHexBkmRemoveByID(pBkm->ullID);
@@ -335,7 +335,7 @@ void CHexDlgBkmMgr::RemoveByOffset(ULONGLONG ullOffset) {
 	UpdateListCount();
 }
 
-void CHexDlgBkmMgr::RemoveByID(ULONGLONG ullID) {
+void CHexDlgBkmMgr::RemoveByID(std::uint64_t ullID) {
 	if (IsVirtual()) {
 		m_pVirtBkm->OnHexBkmRemoveByID(ullID);
 	}
@@ -365,7 +365,7 @@ void CHexDlgBkmMgr::ShowWindow(int iCmdShow) {
 	m_Wnd.ShowWindow(iCmdShow);
 }
 
-void CHexDlgBkmMgr::Update(ULONGLONG ullID, const HEXBKM& bkm) {
+void CHexDlgBkmMgr::Update(std::uint64_t ullID, const HEXBKM& bkm) {
 	if (IsVirtual())
 		return;
 
@@ -693,12 +693,12 @@ void CHexDlgBkmMgr::WMNotifyListGetDispInfo(NMHDR* pNMHDR) {
 		return;
 
 	const auto iItem = pItem->iItem;
-	const auto pBkm = GetByIndex(static_cast<ULONGLONG>(iItem));
+	const auto pBkm = GetByIndex(static_cast<std::uint64_t>(iItem));
 	if (pBkm == nullptr)
 		return;
 
-	ULONGLONG ullOffset { 0 };
-	ULONGLONG ullSize { 0 };
+	std::uint64_t ullOffset { 0 };
+	std::uint64_t ullSize { 0 };
 	switch (pItem->iSubItem) {
 	case 0: //Index number.
 		*std::format_to(pItem->pszText, L"{}", iItem + 1) = L'\0';
@@ -733,7 +733,7 @@ void CHexDlgBkmMgr::WMNotifyListItemChanged(NMHDR* pNMHDR) {
 	//Do nothing, if list item is changed by the SetItemState method (!m_fListProtectFlag).
 	if (const auto pLV = reinterpret_cast<LPNMLISTVIEW>(pNMHDR);
 		pLV->iItem >= 0 && pLV->iSubItem >= 0 && (pLV->uNewState & LVIS_SELECTED) && !m_fListProtectFlag) {
-		GoBookmark(static_cast<ULONGLONG>(pLV->iItem));
+		GoBookmark(static_cast<std::uint64_t>(pLV->iItem));
 	}
 }
 

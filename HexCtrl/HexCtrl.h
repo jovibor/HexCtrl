@@ -143,6 +143,7 @@ namespace HEXCTRL {
 		HEXCOLOR     stClr;       //Bookmark bk/text color.
 	};
 	using PHEXBKM = HEXBKM*;
+	using PCHEXBKM = const HEXBKM*;
 	using SpanHexBkm = std::span<const HEXBKM>;
 
 	/********************************************************************************************
@@ -164,14 +165,14 @@ namespace HEXCTRL {
 	********************************************************************************************/
 	class IHexBookmarks {
 	public:
-		virtual auto AddBkm(const HEXBKM& bkm) -> ULONGLONG = 0;                  //Creates a new bookmark and returns its ID.
-		[[nodiscard]] virtual auto GetAllBkms() -> SpanHexBkm = 0;                //Returns array of all bookmarks.
-		[[nodiscard]] virtual auto GetByID(ULONGLONG ullID) -> PHEXBKM = 0;       //Get bookmark by ID.
-		[[nodiscard]] virtual auto GetByIndex(ULONGLONG ullIndex) -> PHEXBKM = 0; //Get bookmark by index.
-		[[nodiscard]] virtual auto GetCount() -> ULONGLONG = 0;                   //Get bookmarks count.
-		[[nodiscard]] virtual auto HitTest(ULONGLONG ullOffset) -> PHEXBKM = 0;   //HitTest for the given offset.
+		virtual auto AddBkm(const HEXBKM& bkm) -> std::uint64_t = 0;              //Creates new bookmark and returns its ID.
+		[[nodiscard]] virtual auto GetAllBkms()const -> SpanHexBkm = 0;           //Returns array of all bookmarks.
+		[[nodiscard]] virtual auto GetByID(std::uint64_t u64ID) -> PHEXBKM = 0;   //Get bookmark by ID.
+		[[nodiscard]] virtual auto GetByIndex(std::uint64_t u64Index) -> PHEXBKM = 0; //Get bookmark by index.
+		[[nodiscard]] virtual auto GetCount()const -> std::uint64_t = 0;          //Get bookmarks count.
+		[[nodiscard]] virtual auto HitTest(std::uint64_t u64Offset) -> PHEXBKM = 0; //HitTest for the given offset.
 		virtual void RemoveAll() = 0;                                             //Remove all bookmarks.
-		virtual void RemoveByID(ULONGLONG ullID) = 0;                             //Remove by the given ID.
+		virtual void RemoveByID(std::uint64_t u64ID) = 0;                         //Remove by the given ID.
 		virtual void SetVirtualBkm(IHexVirtBookmarks* pVirtBkm) = 0;              //Sets the Virtual Bookmarks pointer.
 	};
 

@@ -344,29 +344,21 @@ auto CMFCDialogDlg::OnGetDPIScaledSize(WPARAM /*wParam*/, LPARAM /*lParam*/)->LR
 }
 
 bool CMFCDialogDlg::OnHexGetColor(HEXCOLORINFO& hci) {
-	//Sample code for custom colors:
-	if (hci.ullOffset < 18) {
-		static std::vector<HEXCOLOR> vec {
-			{ RGB(50, 0, 0), RGB(255, 255, 255) },
-			{ RGB(0, 150, 0), RGB(255, 255, 255) },
-			{ RGB(255, 255, 0), RGB(0, 0, 0) },
-			{ RGB(0, 0, 50), RGB(255, 255, 255) },
-			{ RGB(50, 50, 110), RGB(255, 255, 255) },
-			{ RGB(50, 250, 50), RGB(255, 255, 255) },
-			{ RGB(110, 0, 0), RGB(255, 255, 255) },
-			{ RGB(0, 110, 0), RGB(255, 255, 255) },
-			{ RGB(0, 0, 110), RGB(255, 255, 255) },
-			{ RGB(110, 110, 0), RGB(255, 255, 255) },
-			{ RGB(0, 110, 110), RGB(255, 255, 255) },
-			{ RGB(110, 110, 110), RGB(255, 255, 255) },
-			{ RGB(220, 0, 0), RGB(255, 255, 255) },
-			{ RGB(0, 220, 0), RGB(255, 255, 255) },
-			{ RGB(0, 0, 220), RGB(255, 255, 255) },
-			{ RGB(220, 220, 0), RGB(255, 255, 255) },
-			{ RGB(0, 220, 220), RGB(255, 255, 255) },
-			{ RGB(0, 250, 0), RGB(255, 255, 255) }
-		};
+	static const std::vector<HEXCOLOR> vec {
+		{ RGB(50, 0, 0), RGB(255, 255, 255) }, { RGB(0, 150, 0), RGB(255, 255, 255) },
+		{ RGB(0, 150, 0), RGB(255, 255, 255) }, { RGB(0, 150, 0), RGB(255, 255, 255) },
+		{ RGB(255, 255, 0), RGB(0, 0, 0) }, { RGB(0, 0, 50), RGB(255, 255, 255) },
+		{ RGB(50, 50, 110), RGB(255, 255, 255) }, { RGB(50, 250, 50), RGB(255, 255, 255) },
+		{ RGB(110, 0, 0), RGB(255, 255, 255) }, { RGB(0, 110, 0), RGB(255, 255, 255) },
+		{ RGB(0, 0, 110), RGB(255, 255, 255) }, { RGB(110, 110, 0), RGB(255, 255, 255) },
+		{ RGB(0, 110, 110), RGB(255, 255, 255) }, { RGB(110, 110, 110), RGB(255, 255, 255) },
+		{ RGB(220, 0, 0), RGB(255, 255, 255) }, { RGB(0, 220, 0), RGB(255, 255, 255) },
+		{ RGB(0, 0, 220), RGB(255, 255, 255) }, { RGB(220, 220, 0), RGB(255, 255, 255) },
+		{ RGB(0, 220, 220), RGB(255, 255, 255) }, { RGB(0, 250, 0), RGB(255, 255, 255) },
+		{ RGB(0, 250, 0), RGB(255, 255, 255) }, { RGB(0, 250, 0), RGB(255, 255, 255) } };
 
+	//Sample code for custom colors:
+	if (hci.ullOffset < vec.size()) {
 		hci.stClr = vec[static_cast<std::size_t>(hci.ullOffset)];
 		return true;
 	}
