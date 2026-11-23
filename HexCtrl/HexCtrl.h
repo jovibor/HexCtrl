@@ -106,8 +106,8 @@ namespace HEXCTRL {
 	* HEXCOLOR: Background and Text color struct.                                               *
 	********************************************************************************************/
 	struct HEXCOLOR {
-		COLORREF clrBk { };   //Bk color.
-		COLORREF clrText { }; //Text color.
+		COLORREF clrBk { CLR_INVALID };   //Bk color.
+		COLORREF clrText { CLR_INVALID }; //Text color.
 		auto operator<=>(const HEXCOLOR&)const = default;
 	};
 	using PHEXCOLOR = HEXCOLOR*;

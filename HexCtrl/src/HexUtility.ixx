@@ -365,7 +365,7 @@ namespace HEXCTRL::INTERNAL::ut { //Utility methods and stuff.
 		return { pBegin, pEnd };
 	}
 
-	[[nodiscard]] auto GetLocale() -> std::locale {
+	[[nodiscard]] auto GetLocale() -> const std::locale& {
 		static const auto loc { std::locale("en_US.UTF-8") };
 		return loc;
 	}

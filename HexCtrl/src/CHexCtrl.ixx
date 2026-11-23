@@ -794,10 +794,10 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd) {
 		FontSizeIncDec(false);
 		break;
 	case CMD_APPEAR_CAPACINC:
-		SetCapacityImpl(GetCapacity() + 1);
+		SetCapacityImpl(GetCapacityImpl() + 1);
 		break;
 	case CMD_APPEAR_CAPACDEC:
-		SetCapacityImpl(GetCapacity() - 1);
+		SetCapacityImpl(GetCapacityImpl() - 1);
 		break;
 	case CMD_PRINT_DLG:
 		Print();
@@ -1082,7 +1082,7 @@ void CHexCtrl::GoToOffset(ULONGLONG ullOffset, int iPosAt) {
 	if (!IsDataSetImpl()) { ut::DBG_REPORT_NO_DATA_SET(); return; }
 	if (ullOffset >= GetDataSizeImpl()) return;
 
-	const auto dwCapacity = GetCapacity() > 0 ? GetCapacity() : 0xFFFFFFFFUL; //To suppress warning C4724.
+	const auto dwCapacity = GetCapacityImpl() > 0 ? GetCapacityImpl() : 0xFFFFFFFFUL; //To suppress warning C4724.
 	const auto ullNewStartV = ullOffset / dwCapacity * m_sizeFontMain.cy;
 	auto ullNewScrollV { 0ULL };
 
@@ -1262,7 +1262,7 @@ auto CHexCtrl::IsOffsetVisible(ULONGLONG ullOffset)const->HEXVISION {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return { .i8Vert { -1 }, .i8Horz { -1 } }; }
 	if (!IsDataSetImpl()) { ut::DBG_REPORT_NO_DATA_SET(); return { .i8Vert { -1 }, .i8Horz { -1 } }; }
 
-	const auto dwCapacity = GetCapacity();
+	const auto dwCapacity = GetCapacityImpl();
 	const auto ullFirst = GetTopLine() * dwCapacity;
 	const auto ullLast = (GetBottomLine() * dwCapacity) + dwCapacity;
 
@@ -1885,9 +1885,9 @@ auto CHexCtrl::BuildDataToDraw(ULONGLONG ullStartLine, int iLines)const->std::tu
 	if (!IsDataSetImpl())
 		return { };
 
-	const auto ullOffsetStart = ullStartLine * GetCapacity(); //Offset of the visible data to print.
+	const auto ullOffsetStart = ullStartLine * GetCapacityImpl(); //Offset of the visible data to print.
 	const auto ullDataSize = GetDataSizeImpl();
-	auto uzSizeDataToPrint = static_cast<std::size_t>(iLines) * GetCapacity(); //Size of the visible data to print.
+	auto uzSizeDataToPrint = static_cast<std::size_t>(iLines) * GetCapacityImpl(); //Size of the visible data to print.
 	if (ullOffsetStart + uzSizeDataToPrint > ullDataSize) {
 		uzSizeDataToPrint = static_cast<std::size_t>(ullDataSize - ullOffsetStart);
 	}
@@ -1933,13 +1933,13 @@ auto CHexCtrl::BuildDataToDraw(ULONGLONG ullStartLine, int iLines)const->std::tu
 auto CHexCtrl::CalcClientAreaPosY(std::uint64_t u64Offset)const->std::int64_t {
 	//Computes y position in client coordinates for the given offset in the client area, hex and text are the same.
 	const auto ullScrollV = m_ScrollV.GetScrollPos();
-	return static_cast<std::int64_t>((m_iStartWorkAreaYPx + (u64Offset / GetCapacity()) * m_sizeFontMain.cy) -
+	return static_cast<std::int64_t>((m_iStartWorkAreaYPx + (u64Offset / GetCapacityImpl()) * m_sizeFontMain.cy) -
 		(ullScrollV - (ullScrollV % m_sizeFontMain.cy)));
 }
 
 auto CHexCtrl::CalcHexAreaPosX(std::uint64_t u64Offset)const->int {
 	//Computes x position in client coordinates for the given offset in the hex-area.
-	const DWORD dwMod = u64Offset % GetCapacity();
+	const DWORD dwMod = u64Offset % GetCapacityImpl();
 	const auto iBetweenBlocks { dwMod >= m_dwCapacityBlockSize ? m_iSpaceBetweenBlocksPx : 0 };
 	return static_cast<int>(((m_iIndentFirstHexChunkXPx + iBetweenBlocks + dwMod * m_iSizeHexBytePx)
 		+ (dwMod / GetGroupSize()) * GetCharWidthExtras()) - m_ScrollH.GetScrollPos());
@@ -1947,13 +1947,13 @@ auto CHexCtrl::CalcHexAreaPosX(std::uint64_t u64Offset)const->int {
 
 auto CHexCtrl::CalcTextAreaPosX(std::uint64_t u64Offset)const->int {
 	//Computes x position in client coordinates for the given offset in the text-area.
-	const DWORD dwMod = u64Offset % GetCapacity();
+	const DWORD dwMod = u64Offset % GetCapacityImpl();
 	return static_cast<int>((m_iIndentTextXPx + dwMod * GetCharWidthExtras()) - m_ScrollH.GetScrollPos());
 }
 
 void CHexCtrl::CaretMoveDown() {
 	const auto ullOldPos = m_ullCaretPos;
-	const auto ullNewPos = ullOldPos + GetCapacity() >= GetDataSizeImpl() ? ullOldPos : ullOldPos + GetCapacity();
+	const auto ullNewPos = ullOldPos + GetCapacityImpl() >= GetDataSizeImpl() ? ullOldPos : ullOldPos + GetCapacityImpl();
 	SetCaretPos(ullNewPos, m_fCaretHigh, false);
 
 	const auto stOld = IsOffsetVisible(ullOldPos);
@@ -2042,7 +2042,7 @@ void CHexCtrl::CaretMoveRight() {
 
 void CHexCtrl::CaretMoveUp() {
 	const auto ullOldPos = m_ullCaretPos;
-	const auto ullNewPos = ullOldPos >= GetCapacity() ? ullOldPos - GetCapacity() : ullOldPos;
+	const auto ullNewPos = ullOldPos >= GetCapacityImpl() ? ullOldPos - GetCapacityImpl() : ullOldPos;
 	SetCaretPos(ullNewPos, m_fCaretHigh, false);
 
 	const auto stOld = IsOffsetVisible(ullOldPos);
@@ -2066,7 +2066,7 @@ void CHexCtrl::CaretToDataEnd() {
 }
 
 void CHexCtrl::CaretToLineBeg() {
-	const auto dwCapacity = GetCapacity() > 0 ? GetCapacity() : 0xFFFFFFFFUL; //To suppress warning C4724.
+	const auto dwCapacity = GetCapacityImpl() > 0 ? GetCapacityImpl() : 0xFFFFFFFFUL; //To suppress warning C4724.
 	const auto ullPos = GetCaretPosImpl() - (GetCaretPosImpl() % dwCapacity);
 	SetCaretPos(ullPos);
 	if (!IsOffsetVisible(ullPos)) {
@@ -2075,7 +2075,7 @@ void CHexCtrl::CaretToLineBeg() {
 }
 
 void CHexCtrl::CaretToLineEnd() {
-	auto ullPos = GetCaretPosImpl() + (GetCapacity() - (GetCaretPosImpl() % GetCapacity())) - 1;
+	auto ullPos = GetCaretPosImpl() + (GetCapacityImpl() - (GetCaretPosImpl() % GetCapacityImpl())) - 1;
 	if (ullPos >= GetDataSizeImpl()) {
 		ullPos = GetDataSizeImpl() - 1;
 	}
@@ -2366,7 +2366,7 @@ auto CHexCtrl::CopyHexFmt()const->std::wstring {
 	const auto ullSelStart = m_Selection.GetSelStart();
 	const auto ullSelSize = m_Selection.GetSelSize();
 	const auto dwGroupSize = GetGroupSize();
-	const auto dwCapacity = GetCapacity();
+	const auto dwCapacity = GetCapacityImpl();
 	const auto pwszHexChars = GetHexChars();
 
 	wstrData.reserve(static_cast<std::size_t>(ullSelSize) * 3);
@@ -2452,7 +2452,7 @@ auto CHexCtrl::CopyPrintScreen()const->std::wstring {
 
 	const auto ullSelStart = m_Selection.GetSelStart();
 	const auto ullSelSize = m_Selection.GetSelSize();
-	const auto dwCapacity = GetCapacity();
+	const auto dwCapacity = GetCapacityImpl();
 
 	std::wstring wstrRet;
 	wstrRet.reserve(static_cast<std::size_t>(ullSelSize) * 4);
@@ -2694,57 +2694,56 @@ auto CHexCtrl::CreateTextAreaString()const->std::wstring {
 
 void CHexCtrl::DrawWindow(HDC hDC)const {
 	const auto iScrollH = static_cast<int>(m_ScrollH.GetScrollPos());
-	GDIUT::CRect rcClient(m_iFirstVertLinePx, m_iFirstHorzLinePx,
-		m_iFirstVertLinePx + m_iWidthClientAreaPx, m_iFirstHorzLinePx + m_iHeightClientAreaPx);
-	GDIUT::CRect rcOffset(m_iFirstVertLinePx - iScrollH, m_iFirstHorzLinePx,
-		m_iSecondVertLinePx - iScrollH, m_iThirdHorzLinePx);
-	GDIUT::CRect rcHex(m_iSecondVertLinePx - iScrollH, m_iFirstHorzLinePx,
-			m_iThirdVertLinePx - iScrollH, m_iThirdHorzLinePx);
-	GDIUT::CRect rcText(m_iThirdVertLinePx - iScrollH, m_iFirstHorzLinePx,
-		m_iFourthVertLinePx - iScrollH, m_iThirdHorzLinePx);
-
+	const auto iFirstVertX = m_iFirstVertLinePx - iScrollH;
+	const auto iSecondVertX = m_iSecondVertLinePx - iScrollH;
+	const auto iThirdVertX = m_iThirdVertLinePx - iScrollH;
+	const auto iFourthVertX = m_iFourthVertLinePx - iScrollH;
+	GDIUT::CRect rcClient(m_iFirstVertLinePx, m_iFirstHorzLinePx, m_iFirstVertLinePx + m_iWidthClientAreaPx,
+		m_iFirstHorzLinePx + m_iHeightClientAreaPx);
+	GDIUT::CRect rcOffset(iFirstVertX, m_iFirstHorzLinePx, iSecondVertX, m_iThirdHorzLinePx);
+	GDIUT::CRect rcHex(iSecondVertX, m_iFirstHorzLinePx, iThirdVertX, m_iThirdHorzLinePx);
+	GDIUT::CRect rcText(iThirdVertX, m_iFirstHorzLinePx, iFourthVertX, m_iThirdHorzLinePx);
 	GDIUT::CDC dc(hDC);
 	dc.FillSolidRect(rcClient, m_stColors.clrBk);       //Client area bk.
 	dc.FillSolidRect(rcOffset, m_stColors.clrBkOffset); //Offset area bk.
 	dc.FillSolidRect(rcHex, m_stColors.clrBkHex);       //Hex area bk.
 	dc.FillSolidRect(rcText, m_stColors.clrBkText);     //Text area bk.
-
 	dc.SelectObject(m_hPenLinesMain);
 
 	//First horizontal line.
-	dc.MoveTo(m_iFirstVertLinePx - iScrollH, m_iFirstHorzLinePx);
-	dc.LineTo(m_iFourthVertLinePx - iScrollH, m_iFirstHorzLinePx);
+	dc.MoveTo(iFirstVertX, m_iFirstHorzLinePx);
+	dc.LineTo(iFourthVertX, m_iFirstHorzLinePx);
 
 	//Second horizontal line.
-	dc.MoveTo(m_iFirstVertLinePx - iScrollH, m_iSecondHorzLinePx);
-	dc.LineTo(m_iFourthVertLinePx - iScrollH, m_iSecondHorzLinePx);
+	dc.MoveTo(iFirstVertX, m_iSecondHorzLinePx);
+	dc.LineTo(iFourthVertX, m_iSecondHorzLinePx);
 
 	//Third horizontal line.
-	dc.MoveTo(m_iFirstVertLinePx - iScrollH, m_iThirdHorzLinePx);
-	dc.LineTo(m_iFourthVertLinePx - iScrollH, m_iThirdHorzLinePx);
+	dc.MoveTo(iFirstVertX, m_iThirdHorzLinePx);
+	dc.LineTo(iFourthVertX, m_iThirdHorzLinePx);
 
 	//Fourth horizontal line.
-	dc.MoveTo(m_iFirstVertLinePx - iScrollH, m_iFourthHorzLinePx);
-	dc.LineTo(m_iFourthVertLinePx - iScrollH, m_iFourthHorzLinePx);
+	dc.MoveTo(iFirstVertX, m_iFourthHorzLinePx);
+	dc.LineTo(iFourthVertX, m_iFourthHorzLinePx);
 
 	//First Vertical line.
-	dc.MoveTo(m_iFirstVertLinePx - iScrollH, m_iFirstHorzLinePx);
-	dc.LineTo(m_iFirstVertLinePx - iScrollH, m_iFourthHorzLinePx);
+	dc.MoveTo(iFirstVertX, m_iFirstHorzLinePx);
+	dc.LineTo(iFirstVertX, m_iFourthHorzLinePx);
 
 	//Second Vertical line.
-	dc.MoveTo(m_iSecondVertLinePx - iScrollH, m_iFirstHorzLinePx);
-	dc.LineTo(m_iSecondVertLinePx - iScrollH, m_iThirdHorzLinePx);
+	dc.MoveTo(iSecondVertX, m_iFirstHorzLinePx);
+	dc.LineTo(iSecondVertX, m_iThirdHorzLinePx);
 
 	//Third Vertical line.
-	dc.MoveTo(m_iThirdVertLinePx - iScrollH, m_iFirstHorzLinePx);
-	dc.LineTo(m_iThirdVertLinePx - iScrollH, m_iThirdHorzLinePx);
+	dc.MoveTo(iThirdVertX, m_iFirstHorzLinePx);
+	dc.LineTo(iThirdVertX, m_iThirdHorzLinePx);
 
 	//Fourth Vertical line.
-	dc.MoveTo(m_iFourthVertLinePx - iScrollH, m_iFirstHorzLinePx);
-	dc.LineTo(m_iFourthVertLinePx - iScrollH, m_iFourthHorzLinePx);
+	dc.MoveTo(iFourthVertX, m_iFirstHorzLinePx);
+	dc.LineTo(iFourthVertX, m_iFourthHorzLinePx);
 
 	//«Offset» text.
-	GDIUT::CRect rcCaptionOffset(m_iFirstVertLinePx - iScrollH, m_iFirstHorzLinePx, m_iSecondVertLinePx - iScrollH,
+	GDIUT::CRect rcCaptionOffset(iFirstVertX, m_iFirstHorzLinePx, iSecondVertX,
 		m_iSecondHorzLinePx);
 	dc.SelectObject(m_hFntMain);
 	dc.SetTextColor(m_stColors.clrFontCaption);
@@ -2767,93 +2766,14 @@ void CHexCtrl::DrawInfoBar(HDC hDC)const {
 	if (!IsDataSetImpl() || !HasInfoBar())
 		return;
 
-	const auto ullCaretPos = GetVirtualOffset(GetCaretPosImpl());
-
-	//^ (caret) - encloses a data name, ` (tilda) - encloses the data itself.
-	std::wstring wstrInfoBar;
-
-	if (m_hib.fCaret) {
-		wstrInfoBar += std::vformat(ut::GetLocale(), IsOffsetAsHexImpl() ? L"^Caret: ^`0x{:X}`|" : L"^Caret: ^`{:L}`|",
-		std::make_wformat_args(ullCaretPos));
-	}
-
-	if (m_hib.fPage && IsPageVisible()) { //Page/Sector.
-		const auto ullPagePos = GetPagePosImpl();
-		const auto ullPagesCount = GetPagesCountImpl();
-		wstrInfoBar += std::vformat(ut::GetLocale(), IsOffsetAsHexImpl() ? L"^{}: ^`0x{:X}/0x{:X}`|" : L"^{}: ^`{:L}/{:L}`|",
-			std::make_wformat_args(m_wstrPageName, ullPagePos, ullPagesCount));
-	}
-
-	if (m_hib.fSelection && HasSelection()) {
-		const auto ullSelStart = GetVirtualOffset(m_Selection.GetSelStart());
-		const auto ullSelSize = m_Selection.GetSelSize();
-		if (ullSelSize == 1) { //In case of just one byte selected.
-			wstrInfoBar += std::vformat(ut::GetLocale(), IsOffsetAsHexImpl() ? L"^Selected: ^`0x{:X} [0x{:X}]`|" :
-				L"^Selected: ^`{} [{:L}]`|", std::make_wformat_args(ullSelSize, ullSelStart));
-		}
-		else {
-			const auto ullSelEnd = GetVirtualOffset(m_Selection.GetSelEnd());
-			wstrInfoBar += std::vformat(ut::GetLocale(), IsOffsetAsHexImpl() ? L"^Selected: ^`0x{:X} [0x{:X}-0x{:X}]`|" :
-				L"^Selected: ^`{:L} [{:L}-{:L}]`|", std::make_wformat_args(ullSelSize, ullSelStart, ullSelEnd));
-		}
-	}
-
-	if (m_hib.fMutable) {
-		wstrInfoBar += IsMutableImpl() ? L"^RW^|" : L"^RO^|"; //RW/RO mode.
-	}
-
-	struct INFOBARDATA { //InfoBar text, colors, and vertical lines.
-		std::wstring_view wsvText;
-		RECT              rc { };
-		COLORREF          clrText { };
-		int               iVertLineX { };
-	};
-	std::vector<INFOBARDATA> vecInfoData;
-	vecInfoData.reserve(8);
-
 	const auto iScrollH = static_cast<int>(m_ScrollH.GetScrollPos());
+	const auto fHex = IsOffsetAsHexImpl();
 	GDIUT::CRect rcInfoBar(m_iFirstVertLinePx + 1 - iScrollH, m_iThirdHorzLinePx + 1,
-		m_iFourthVertLinePx - iScrollH, m_iFourthHorzLinePx); //Info bar rc until m_iFourthHorzLinePx.
+			m_iFourthVertLinePx - iScrollH, m_iFourthHorzLinePx); //Info bar rc until m_iFourthHorzLinePx.
 	auto rcInfoBarText = rcInfoBar;
 	rcInfoBarText.left = m_iFirstVertLinePx + 5; //Draw the text beginning with a little indent.
 	//Draw text to the end of the client area, even if it passes over the m_iFourthVertLinePx.
 	rcInfoBarText.right = m_iFirstVertLinePx + m_iWidthClientAreaPx;
-
-	for (const auto subrWstr : std::views::split(wstrInfoBar, L'|')) {
-		if (subrWstr.empty()) {
-			continue;
-		}
-
-		auto wsvSub = std::wstring_view(subrWstr.data(), subrWstr.size());
-		std::size_t uzPosCurr { };
-		while (true) {
-			const auto uzParamPosBegin = wsvSub.find(L'^', uzPosCurr);
-			const auto uzDataPosBegin = wsvSub.find(L'`', uzPosCurr);
-			if (uzParamPosBegin == std::wstring_view::npos && uzDataPosBegin == std::wstring_view::npos) {
-				break; //Found nothing.
-			}
-
-			const bool fIsParam = uzParamPosBegin < uzDataPosBegin;
-			const auto uzPosBegin = fIsParam ? uzParamPosBegin : uzDataPosBegin;
-			const auto uzPosEnd = wsvSub.find(fIsParam ? L'^' : L'`', uzPosBegin + 1);
-			if (uzPosEnd == std::wstring_view::npos) {
-				ut::DBG_REPORT(L"Wrong formatting.");
-				break;
-			}
-
-			const auto wsvToken = wsvSub.substr(uzPosBegin + 1, uzPosEnd - uzPosBegin - 1);
-			vecInfoData.emplace_back(INFOBARDATA { .wsvText { wsvToken }, .rc { rcInfoBarText },
-				.clrText { fIsParam ? m_stColors.clrFontInfoParam : m_stColors.clrFontInfoData } });
-
-			rcInfoBarText.left += static_cast<LONG>(wsvToken.size()) * m_sizeFontInfo.cx; //Increase rect left offset by string size.
-			uzPosCurr = uzPosEnd + 1;
-		}
-		rcInfoBarText.left += m_sizeFontInfo.cx; //Additional space to the next rect's left side.
-
-		if (!vecInfoData.empty()) {
-			vecInfoData.back().iVertLineX = rcInfoBarText.left - (m_sizeFontInfo.cx / 2); //Vertical line after current rect.
-		}
-	}
 
 	GDIUT::CDC dc(hDC);
 	dc.FillSolidRect(rcInfoBar, m_stColors.clrBkInfoBar); //Info bar rect.
@@ -2862,14 +2782,55 @@ void CHexCtrl::DrawInfoBar(HDC hDC)const {
 	const auto penOld = dc.SelectObject(m_hPenLinesMain);
 	dc.SetBkColor(m_stColors.clrBkInfoBar);
 
-	for (auto& pid : vecInfoData) {
-		dc.SetTextColor(pid.clrText);
-		dc.DrawTextW(pid.wsvText, &pid.rc, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
-
-		if (pid.iVertLineX > 0) {
-			dc.MoveTo(pid.iVertLineX, pid.rc.top);
-			dc.LineTo(pid.iVertLineX, pid.rc.bottom);
+	const auto lmbDraw = [&](std::wstring_view wsvParam, std::wstring_view wsvData = { }) {
+		if (!wsvParam.empty()) {
+			dc.SetTextColor(m_stColors.clrFontInfoParam);
+			dc.DrawTextW(wsvParam, &rcInfoBarText, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
+			rcInfoBarText.left += static_cast<LONG>(wsvParam.size()) * m_sizeFontInfo.cx;
 		}
+		if (!wsvData.empty()) {
+			dc.SetTextColor(m_stColors.clrFontInfoData);
+			dc.DrawTextW(wsvData, &rcInfoBarText, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
+			rcInfoBarText.left += static_cast<LONG>(wsvData.size()) * m_sizeFontInfo.cx;
+		}
+		rcInfoBarText.left += m_sizeFontInfo.cx; //Additional space to the next segment's left side.
+
+		const auto iVertLineX = rcInfoBarText.left - (m_sizeFontInfo.cx / 2); //Vertical line after current segment.
+		if (iVertLineX > 0) {
+			dc.MoveTo(iVertLineX, rcInfoBarText.top);
+			dc.LineTo(iVertLineX, rcInfoBarText.bottom);
+		}
+		};
+
+	if (m_hib.fCaret) {
+		const auto ullCaretPos = GetVirtualOffset(GetCaretPosImpl());
+		lmbDraw(L"Caret: ", std::vformat(ut::GetLocale(), fHex ? L"0x{:X}" : L"{:L}",
+			std::make_wformat_args(ullCaretPos)));
+	}
+
+	if (m_hib.fPage && IsPageVisible()) { //Page/Sector.
+		const auto ullPagePos = GetPagePosImpl();
+		const auto ullPagesCount = GetPagesCountImpl();
+		lmbDraw(std::format(L"{}: ", m_wstrPageName), std::vformat(ut::GetLocale(), fHex ? L"0x{:X}/0x{:X}" : L"{:L}/{:L}",
+			std::make_wformat_args(ullPagePos, ullPagesCount)));
+	}
+
+	if (m_hib.fSelection && HasSelection()) {
+		const auto ullSelStart = GetVirtualOffset(m_Selection.GetSelStart());
+		const auto u64SelSize = m_Selection.GetSelSize();
+		if (u64SelSize == 1) { //In case of just one byte selected.
+			lmbDraw(L"Selected: ", std::vformat(ut::GetLocale(), fHex ? L"0x{:X} [0x{:X}]" : L"{} [{:L}]",
+				std::make_wformat_args(u64SelSize, ullSelStart)));
+		}
+		else {
+			const auto u64SelEnd = GetVirtualOffset(m_Selection.GetSelEnd());
+			lmbDraw(L"Selected: ", std::vformat(ut::GetLocale(), fHex ? L"0x{:X} [0x{:X}-0x{:X}]" : L"{:L} [{:L}-{:L}]",
+				std::make_wformat_args(u64SelSize, ullSelStart, u64SelEnd)));
+		}
+	}
+
+	if (m_hib.fMutable) {
+		lmbDraw(IsMutableImpl() ? L"RW" : L"RO"); //RW/RO mode.
 	}
 
 	if (m_hib.fDataSize) { //Data size is drawn right side aligned.
@@ -2905,7 +2866,7 @@ void CHexCtrl::DrawInfoBar(HDC hDC)const {
 }
 
 void CHexCtrl::DrawOffsets(HDC hDC, ULONGLONG ullStartLine, int iLines)const {
-	const auto dwCapacity = GetCapacity();
+	const auto dwCapacity = GetCapacityImpl();
 	const auto iScrollH = static_cast<int>(m_ScrollH.GetScrollPos());
 	GDIUT::CDC dc(hDC);
 	dc.SelectObject(m_hFntMain);
@@ -2939,53 +2900,62 @@ void CHexCtrl::DrawOffsets(HDC hDC, ULONGLONG ullStartLine, int iLines)const {
 }
 
 void CHexCtrl::DrawHexText(HDC hDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wsvHex, std::wstring_view wsvText)const {
-	struct POLYTEXTCLR {
-		POLYTEXTW stPoly { };
-		HEXCOLOR  stClr;
-	};
+	if (wsvText.empty())
+		return;
 
-	std::vector<POLYTEXTCLR> vecPolyHex;
-	std::vector<POLYTEXTCLR> vecPolyText;
-	std::vector<std::unique_ptr<std::wstring>> vecWstrHex; //unique_ptr to avoid wstring.data() invalidation.
-	std::vector<std::unique_ptr<std::wstring>> vecWstrText;
-	vecWstrHex.reserve(static_cast<std::size_t>(iLines));
-	vecWstrText.reserve(static_cast<std::size_t>(iLines));
-	const auto ullStartOffset = ullStartLine * GetCapacity();
+	const auto dwCapacity = GetCapacityImpl();
+	const auto pCharsWidth = GetCharsWidthArray();
+	const auto ullStartOffset = ullStartLine * dwCapacity;
 	std::size_t uzIndexToPrint { 0 };
 	HEXCOLORINFO hci { .hdr { m_Wnd, static_cast<UINT>(m_Wnd.GetDlgCtrlID()) },
 		.stClr { .clrBk { m_stColors.clrBkHex }, .clrText { m_stColors.clrFontHex } } };
+	GDIUT::CDC dc(hDC);
+	dc.SelectObject(m_hFntMain);
+	COLORREF clrBkLast { CLR_INVALID };
+	COLORREF clrTextLast { CLR_INVALID };
+	std::wstring wstrHex;
+	std::wstring wstrText;
+	wstrHex.reserve(dwCapacity * 3);
+	wstrText.reserve(dwCapacity);
+
+	const auto lmbSetColors = [&](const HEXCOLOR& stClr) {
+		if (stClr.clrText != clrTextLast) {
+			dc.SetTextColor(stClr.clrText);
+			clrTextLast = stClr.clrText;
+		}
+		if (stClr.clrBk != clrBkLast) {
+			dc.SetBkColor(stClr.clrBk);
+			clrBkLast = stClr.clrBk;
+		}
+		};
 
 	for (auto itLine = 0; itLine < iLines; ++itLine) {
-		std::wstring wstrHex;
-		std::wstring wstrText;
+		wstrHex.clear();
+		wstrText.clear();
 		int iHexPosToPrintX { };
 		int iTextPosToPrintX { };
 		bool fRecalcPosition { true };
-		const auto iPosToPrintY = m_iStartWorkAreaYPx + (m_sizeFontMain.cy * itLine); //Hex and Text are the same.
+		const auto iPosToPrintY = m_iStartWorkAreaYPx + (m_sizeFontMain.cy * itLine);
 		HEXCOLOR clrHexPrev; //Previous hex chunk color.
 		HEXCOLOR clrTextPrev { .clrBk { m_stColors.clrBkText }, .clrText { m_stColors.clrFontText } }; //Previous text area color.
 		HEXCOLOR clrTextCurr { clrTextPrev };
-		const auto lmbPoly = [&]() {
+
+		const auto lmbDraw = [&]() {
 			if (wstrHex.empty())
 				return;
 
-			//Hex colors Poly.
-			vecWstrHex.emplace_back(std::make_unique<std::wstring>(std::move(wstrHex)));
-			vecPolyHex.emplace_back(POLYTEXTW { .x { iHexPosToPrintX }, .y { iPosToPrintY },
-				.n { static_cast<UINT>(vecWstrHex.back()->size()) }, .lpstr { vecWstrHex.back()->data() },
-				.pdx { GetCharsWidthArray() } }, clrHexPrev);
+			lmbSetColors(clrHexPrev);
+			::ExtTextOutW(dc, iHexPosToPrintX, iPosToPrintY, 0, nullptr,
+				wstrHex.data(), static_cast<UINT>(wstrHex.size()), pCharsWidth);
+			lmbSetColors(clrTextPrev);
+			::ExtTextOutW(dc, iTextPosToPrintX, iPosToPrintY, 0, nullptr,
+				wstrText.data(), static_cast<UINT>(wstrText.size()), pCharsWidth);
 			wstrHex.clear();
-
-			//Text colors Poly.
-			vecWstrText.emplace_back(std::make_unique<std::wstring>(std::move(wstrText)));
-			vecPolyText.emplace_back(POLYTEXTW { .x { iTextPosToPrintX }, .y { iPosToPrintY },
-				.n { static_cast<UINT>(vecWstrText.back()->size()) }, .lpstr { vecWstrText.back()->data() },
-				.pdx { GetCharsWidthArray() } }, clrTextPrev);
 			wstrText.clear();
 			};
 
 		//Main loop for printing Hex chunks and Text chars.
-		for (auto itChunk { 0U }; itChunk < GetCapacity() && uzIndexToPrint < wsvText.size(); ++itChunk, ++uzIndexToPrint) {
+		for (auto itChunk { 0U }; itChunk < dwCapacity && uzIndexToPrint < wsvText.size(); ++itChunk, ++uzIndexToPrint) {
 			if (m_stData.pHexVirtColors != nullptr) {
 				hci.ullOffset = ullStartOffset + uzIndexToPrint;
 				if (m_stData.pHexVirtColors->OnHexGetColor(hci)) {
@@ -2999,8 +2969,8 @@ void CHexCtrl::DrawHexText(HDC hDC, ULONGLONG ullStartLine, int iLines, std::wst
 				}
 			}
 
-			if (clrHexPrev != hci.stClr) { //If it's a different color.
-				lmbPoly();
+			if (clrHexPrev != hci.stClr || clrTextPrev != clrTextCurr) { //If it's a different color.
+				lmbDraw();
 				fRecalcPosition = true;
 				clrHexPrev = hci.stClr;
 				clrTextPrev = clrTextCurr;
@@ -3018,26 +2988,7 @@ void CHexCtrl::DrawHexText(HDC hDC, ULONGLONG ullStartLine, int iLines, std::wst
 			wstrText += wsvText[uzIndexToPrint];
 		}
 
-		lmbPoly();
-	}
-
-	if (vecPolyHex.empty()) {
-		return;
-	}
-
-	GDIUT::CDC dc(hDC);
-	dc.SelectObject(m_hFntMain);
-	std::size_t index { 0 }; //Index for the vecPolyText, which size is always equal to the vecPolyHex.
-	for (const auto& ptcH : vecPolyHex) { //Loop is needed because of different colors.
-		dc.SetTextColor(ptcH.stClr.clrText); //Text color for the Hex area.
-		dc.SetBkColor(ptcH.stClr.clrBk);     //Bk color for the Hex area.
-		const auto& polyH = ptcH.stPoly;
-		::ExtTextOutW(dc, polyH.x, polyH.y, polyH.uiFlags, &polyH.rcl, polyH.lpstr, polyH.n, polyH.pdx); //Hex printing.
-		const auto& ptcT = vecPolyText[index++];
-		dc.SetTextColor(ptcT.stClr.clrText); //Text color for the Text area.
-		dc.SetBkColor(ptcT.stClr.clrBk);     //Bk color for the Text area.
-		const auto& polyT = ptcT.stPoly;
-		::ExtTextOutW(dc, polyT.x, polyT.y, polyT.uiFlags, &polyT.rcl, polyT.lpstr, polyT.n, polyT.pdx); //Text printing.
+		lmbDraw();
 	}
 }
 
@@ -3045,60 +2996,108 @@ void CHexCtrl::DrawTemplates(HDC hDC, ULONGLONG ullStartLine, int iLines, std::w
 	if (!m_DlgTemplMgr.HasApplied())
 		return;
 
-	struct POLYFIELDSCLR { //Struct for fields.
-		POLYTEXTW stPoly { };
-		HEXCOLOR  stClr;
-		bool      fPrintLeftVertLine { true };
-		bool      fPrintRightVertLine { true };
-	};
-	std::vector<POLYFIELDSCLR> vecHex;
-	std::vector<POLYFIELDSCLR> vecText;
-	std::vector<std::unique_ptr<std::wstring>> vecWstrHex; //unique_ptr to avoid wstring ptr invalidation.
-	std::vector<std::unique_ptr<std::wstring>> vecWstrText;
-	const auto ullStartOffset = ullStartLine * GetCapacity();
+	const auto dwCapacity = GetCapacityImpl();
+	const auto pCharsWidth = GetCharsWidthArray();
+	const auto iCharWidthExtras = GetCharWidthExtras();
+	const auto ullStartOffset = ullStartLine * dwCapacity;
 	std::size_t uzIndexToPrint { };
 	PCHEXTEMPLFIELD pFieldPrev { };
+	COLORREF clrBkLast { CLR_INVALID };
+	COLORREF clrTextLast { CLR_INVALID };
+	std::wstring wstrHex;
+	std::wstring wstrText;
+	wstrHex.reserve(dwCapacity * 3);
+	wstrText.reserve(dwCapacity);
+	GDIUT::CDC dc(hDC);
+	dc.SelectObject(m_hFntMain);
+	const auto penOld = dc.SelectObject(m_hPenLinesTempl);
 
 	for (auto itLine = 0; itLine < iLines; ++itLine) {
-		std::wstring wstrHex;
-		std::wstring wstrText;
+		wstrHex.clear();
+		wstrText.clear();
+
 		int iFieldHexPosToPrintX { };
 		int iFieldTextPosToPrintX { };
 		bool fRecalcPosition { true };
-		bool fHasData { false }; //True while accumulating bytes for a template field in the current row.
 		bool fPrintLeftVertLine { true };
-		const auto iPosToPrintY = m_iStartWorkAreaYPx + (m_sizeFontMain.cy * itLine); //Hex and Text are the same.
-		const auto lmbPoly = [&](bool fPrintRightVertLine = true) {
+		const auto iPosToPrintY = m_iStartWorkAreaYPx + (m_sizeFontMain.cy * itLine);
+
+		const auto lmbDraw = [&](bool fPrintRightVertLine = true) {
 			if (wstrHex.empty())
 				return;
 
-			//Hex Fields Poly.
-			vecWstrHex.emplace_back(std::make_unique<std::wstring>(std::move(wstrHex)));
-			vecHex.emplace_back(POLYTEXTW { .x { iFieldHexPosToPrintX }, .y { iPosToPrintY },
-				.n { static_cast<UINT>(vecWstrHex.back()->size()) }, .lpstr { vecWstrHex.back()->data() },
-				.pdx { GetCharsWidthArray() } }, pFieldPrev->stClr, fPrintLeftVertLine, fPrintRightVertLine);
+			assert(pFieldPrev != nullptr);
+			if (pFieldPrev->stClr.clrText != clrTextLast) {
+				dc.SetTextColor(pFieldPrev->stClr.clrText);
+				clrTextLast = pFieldPrev->stClr.clrText;
+			}
+			if (pFieldPrev->stClr.clrBk != clrBkLast) {
+				dc.SetBkColor(pFieldPrev->stClr.clrBk);
+				clrBkLast = pFieldPrev->stClr.clrBk;
+			}
+
+			const auto uHexLen = static_cast<UINT>(wstrHex.size());
+			const auto uTextLen = static_cast<UINT>(wstrText.size());
+			::ExtTextOutW(dc, iFieldHexPosToPrintX, iPosToPrintY, 0, nullptr, wstrHex.data(), uHexLen, pCharsWidth);
+			::ExtTextOutW(dc, iFieldTextPosToPrintX, iPosToPrintY, 0, nullptr, wstrText.data(), uTextLen, pCharsWidth);
+
+			//Hex area lines.
+			constexpr auto iIndentBefore = 2; //Little indent before hex line start.
+			constexpr auto iIndentAfter = 1;  //Little indent after hex line end.
+			const auto iLeftCoordHexLine = iFieldHexPosToPrintX - iIndentBefore;
+			const auto iTopCoordHexLine = iPosToPrintY;
+			const auto iRightCoordHexLine = iFieldHexPosToPrintX + (static_cast<int>(uHexLen) * iCharWidthExtras) + iIndentAfter;
+			const auto iBottomCoordHexLine = iPosToPrintY + m_sizeFontMain.cy;
+			dc.MoveTo(iLeftCoordHexLine, iTopCoordHexLine);
+			dc.LineTo(iRightCoordHexLine, iTopCoordHexLine);    //Top horizontal hex line.
+			dc.MoveTo(iLeftCoordHexLine, iBottomCoordHexLine);
+			dc.LineTo(iRightCoordHexLine, iBottomCoordHexLine); //Bottom horizontal hex line.
+
+			//Text area lines.
+			const auto iLeftCoordTextLine = iFieldTextPosToPrintX;
+			const auto iTopCoordTextLine = iPosToPrintY;
+			const auto iRightCoordTextLine = iFieldTextPosToPrintX + (static_cast<int>(uTextLen) * iCharWidthExtras);
+			const auto iBottomCoordTextLine = iPosToPrintY + m_sizeFontMain.cy;
+			dc.MoveTo(iLeftCoordTextLine, iTopCoordTextLine);
+			dc.LineTo(iRightCoordTextLine, iTopCoordTextLine);    //Top horizontal text line.
+			dc.MoveTo(iLeftCoordTextLine, iBottomCoordTextLine);
+			dc.LineTo(iRightCoordTextLine, iBottomCoordTextLine); //Bottom horizontal text line.
+
+			if (fPrintLeftVertLine) {
+				dc.MoveTo(iLeftCoordHexLine, iTopCoordHexLine);
+				dc.LineTo(iLeftCoordHexLine, iBottomCoordHexLine);
+				dc.MoveTo(iLeftCoordTextLine, iTopCoordTextLine);
+				dc.LineTo(iLeftCoordTextLine, iBottomCoordTextLine);
+			}
+
+			if (fPrintRightVertLine) { //Right vertical field's line.
+				dc.MoveTo(iRightCoordHexLine, iTopCoordHexLine);
+				dc.LineTo(iRightCoordHexLine, iBottomCoordHexLine);
+				dc.MoveTo(iRightCoordTextLine, iTopCoordTextLine);
+				dc.LineTo(iRightCoordTextLine, iBottomCoordTextLine);
+			}
+
 			wstrHex.clear();
-
-			//Text Fields Poly.
-			vecWstrText.emplace_back(std::make_unique<std::wstring>(std::move(wstrText)));
-			vecText.emplace_back(POLYTEXTW { .x { iFieldTextPosToPrintX }, .y { iPosToPrintY },
-				.n { static_cast<UINT>(vecWstrText.back()->size()) }, .lpstr { vecWstrText.back()->data() },
-				.pdx { GetCharsWidthArray() } }, pFieldPrev->stClr, fPrintLeftVertLine, fPrintRightVertLine);
 			wstrText.clear();
-
 			fPrintLeftVertLine = true;
 			};
 
 		//Main loop for printing Hex chunks and Text chars.
-		for (auto itChunk { 0U }; itChunk < GetCapacity() && uzIndexToPrint < wsvText.size(); ++itChunk, ++uzIndexToPrint) {
-			if (auto pFieldCurr = m_DlgTemplMgr.HitTest(ullStartOffset + uzIndexToPrint); pFieldCurr != nullptr) {
-				if (itChunk == 0 && pFieldCurr == pFieldPrev) {
-					fPrintLeftVertLine = false;
+		for (auto itChunk { 0U }; itChunk < dwCapacity && uzIndexToPrint < wsvText.size(); ++itChunk, ++uzIndexToPrint) {
+			if (const auto pFieldCurr = m_DlgTemplMgr.HitTest(ullStartOffset + uzIndexToPrint); pFieldCurr != nullptr) {
+				if (itChunk == 0) {
+					//This additional HitTest is needed for a case when the template field actually 
+					//started on an earlier row above the view. Otherwise, a left vertical line will 
+					//always be drawn at zero row, even if that field is a continuation of a previous row field.
+					if (pFieldCurr == pFieldPrev || (itLine == 0 && (ullStartOffset > 0)
+						&& m_DlgTemplMgr.HitTest(ullStartOffset - 1) == pFieldCurr)) {
+						fPrintLeftVertLine = false;
+					}
 				}
 
 				//If it's a nested field.
 				if (pFieldPrev != nullptr && pFieldPrev != pFieldCurr) {
-					lmbPoly();
+					lmbDraw();
 					fRecalcPosition = true;
 				}
 
@@ -3114,84 +3113,22 @@ void CHexCtrl::DrawTemplates(HDC hDC, ULONGLONG ullStartLine, int iLines, std::w
 				wstrHex += wsvHex[uzIndexToPrint * 2];
 				wstrHex += wsvHex[(uzIndexToPrint * 2) + 1];
 				wstrText += wsvText[uzIndexToPrint];
-				fHasData = true;
 			}
-			else if (fHasData) {
-				//There can be multiple fields in one row. 
-				//If there already were field's bytes in the current row (wstrHexFieldToPrint), we poly them.
-				//Same poly mechanism presents at the end of the current loop (itLine),
-				//to poly the fields that end at the row's end.
-
-				lmbPoly();
+			else if (pFieldPrev != nullptr) {
+				lmbDraw();
 				fRecalcPosition = true;
-				fHasData = false;
-				pFieldPrev = nullptr;
-			}
-			else {
 				pFieldPrev = nullptr;
 			}
 		}
 
-		const auto fContinuesNextRow = (pFieldPrev != nullptr) && (m_DlgTemplMgr.HitTest(ullStartOffset + uzIndexToPrint) == pFieldPrev);
-		lmbPoly(!fContinuesNextRow);
+		const auto fContinuesNextRow = (pFieldPrev != nullptr) && (ullStartOffset + uzIndexToPrint < GetDataSizeImpl())
+			&& (m_DlgTemplMgr.HitTest(ullStartOffset + uzIndexToPrint) == pFieldPrev);
+		lmbDraw(!fContinuesNextRow);
 		if (!fContinuesNextRow) {
 			pFieldPrev = nullptr;
 		}
 	}
 
-	if (vecHex.empty()) {
-		return;
-	}
-
-	//Fields printing.
-	GDIUT::CDC dc(hDC);
-	dc.SelectObject(m_hFntMain);
-	std::size_t index { 0 }; //Index for vecFieldsText, its size is always equal to vecFieldsHex.
-	const auto penOld = dc.SelectObject(m_hPenLinesTempl);
-	for (const auto& pfc : vecHex) { //Loop is needed because different Fields can have different colors.
-		dc.SetTextColor(pfc.stClr.clrText);
-		dc.SetBkColor(pfc.stClr.clrBk);
-		const auto& polyH = pfc.stPoly;
-		::ExtTextOutW(dc, polyH.x, polyH.y, polyH.uiFlags, &polyH.rcl, polyH.lpstr, polyH.n, polyH.pdx); //Hex Field printing.
-		const auto& polyT = vecText[index++].stPoly;
-		::ExtTextOutW(dc, polyT.x, polyT.y, polyT.uiFlags, &polyT.rcl, polyT.lpstr, polyT.n, polyT.pdx); //Text Field printing.
-
-		//Hex area lines.
-		constexpr auto iIndentBefore = 2; //Little indent before hex line start.
-		constexpr auto iIndentAfter = 1;  //Little indent after hex line end.
-		const auto iLeftCoordHexLine = polyH.x - iIndentBefore;
-		const auto iTopCoordHexLine = polyH.y;
-		const auto iRightCoordHexLine = polyH.x + (polyH.n * GetCharWidthExtras()) + iIndentAfter;
-		const auto iBottomCoordHexLine = polyH.y + m_sizeFontMain.cy;
-		dc.MoveTo(iLeftCoordHexLine, iTopCoordHexLine);
-		dc.LineTo(iRightCoordHexLine, iTopCoordHexLine);    //Top horizontal hex line.
-		dc.MoveTo(iLeftCoordHexLine, iBottomCoordHexLine);
-		dc.LineTo(iRightCoordHexLine, iBottomCoordHexLine); //Bottom horizontal hex line.
-
-		//Text area lines.
-		const auto iLeftCoordTextLine = polyT.x;
-		const auto iTopCoordTextLine = polyT.y;
-		const auto iRightCoordTextLine = polyT.x + (polyT.n * GetCharWidthExtras());
-		const auto iBottomCoordTextLine = polyT.y + m_sizeFontMain.cy;
-		dc.MoveTo(iLeftCoordTextLine, iTopCoordTextLine);
-		dc.LineTo(iRightCoordTextLine, iTopCoordTextLine);    //Top horizontal text line.
-		dc.MoveTo(iLeftCoordTextLine, iBottomCoordTextLine);
-		dc.LineTo(iRightCoordTextLine, iBottomCoordTextLine); //Bottom horizontal text line.
-
-		if (pfc.fPrintLeftVertLine) {
-			dc.MoveTo(iLeftCoordHexLine, iTopCoordHexLine);
-			dc.LineTo(iLeftCoordHexLine, iBottomCoordHexLine);
-			dc.MoveTo(iLeftCoordTextLine, iTopCoordTextLine);
-			dc.LineTo(iLeftCoordTextLine, iBottomCoordHexLine);
-		}
-
-		if (pfc.fPrintRightVertLine) { //Right vertical field's line.
-			dc.MoveTo(iRightCoordHexLine, iTopCoordHexLine);
-			dc.LineTo(iRightCoordHexLine, iBottomCoordHexLine);
-			dc.MoveTo(iRightCoordTextLine, iTopCoordTextLine);
-			dc.LineTo(iRightCoordTextLine, iBottomCoordTextLine);
-		}
-	}
 	dc.SelectObject(penOld);
 }
 
@@ -3199,20 +3136,19 @@ void CHexCtrl::DrawBookmarks(HDC hDC, ULONGLONG ullStartLine, int iLines, std::w
 	if (!m_DlgBkmMgr.HasBookmarks())
 		return;
 
-	const auto dwCapacity = GetCapacity();
+	const auto dwCapacity = GetCapacityImpl();
 	const auto pCharsWidth = GetCharsWidthArray();
 	const auto ullStartOffset = ullStartLine * dwCapacity;
 	std::size_t uzIndexToPrint { };
+	std::wstring wstrHex;
+	std::wstring wstrText;
+	wstrHex.reserve(dwCapacity * 3);
+	wstrText.reserve(dwCapacity);
 
 	GDIUT::CDC dc(hDC);
 	dc.SelectObject(m_hFntMain);
 	COLORREF clrBkLast { CLR_INVALID };
 	COLORREF clrTextLast { CLR_INVALID };
-
-	std::wstring wstrHex;
-	std::wstring wstrText;
-	wstrHex.reserve(dwCapacity * 3);
-	wstrText.reserve(dwCapacity);
 
 	for (auto itLine = 0; itLine < iLines; ++itLine) {
 		wstrHex.clear();
@@ -3277,43 +3213,48 @@ void CHexCtrl::DrawBookmarks(HDC hDC, ULONGLONG ullStartLine, int iLines, std::w
 }
 
 void CHexCtrl::DrawSelection(HDC hDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wsvHex, std::wstring_view wsvText)const {
-	if (!HasSelection())
+	if (!HasSelection() || wsvText.empty())
 		return;
 
-	std::vector<POLYTEXTW> vecPolyHex;
-	std::vector<POLYTEXTW> vecPolyText;
-	std::vector<std::unique_ptr<std::wstring>> vecWstr; //unique_ptr to avoid wstring ptr invalidation.
-	const auto ullStartOffset = ullStartLine * GetCapacity();
+	const auto dwCapacity = GetCapacityImpl();
+	const auto ullStartOffset = ullStartLine * dwCapacity;
+	if (!m_Selection.HitTestRange({ ullStartOffset, wsvText.size() }))
+		return;
+
+	const auto pCharsWidth = GetCharsWidthArray();
 	std::size_t uzIndexToPrint { };
+	std::wstring wstrHex; //Selected Hex and Text strings to print.
+	std::wstring wstrText;
+	wstrHex.reserve(dwCapacity * 3);
+	wstrText.reserve(dwCapacity);
+
+	GDIUT::CDC dc(hDC);
+	dc.SelectObject(m_hFntMain);
+	dc.SetTextColor(m_stColors.clrFontSel);
+	dc.SetBkColor(m_stColors.clrBkSel);
 
 	for (auto itLine = 0; itLine < iLines; ++itLine) {
-		std::wstring wstrHex; //Selected Hex and Text strings to print.
-		std::wstring wstrText;
+		wstrHex.clear();
+		wstrText.clear();
 		int iSelHexPosToPrintX { };
 		int iSelTextPosToPrintX { };
 		bool fRecalcPosition { true };
-		bool fHasData { false }; //True while accumulating bytes for a selection in the current row.
-		const auto iPosToPrintY = m_iStartWorkAreaYPx + (m_sizeFontMain.cy * itLine); //Hex and Text are the same.
-		const auto lmbPoly = [&]() {
+		const auto iPosToPrintY = m_iStartWorkAreaYPx + (m_sizeFontMain.cy * itLine);
+
+		const auto lmbDraw = [&]() {
 			if (wstrHex.empty())
 				return;
 
-			//Hex selection Poly.
-			vecWstr.emplace_back(std::make_unique<std::wstring>(std::move(wstrHex)));
-			vecPolyHex.emplace_back(iSelHexPosToPrintX, iPosToPrintY,
-				static_cast<UINT>(vecWstr.back()->size()), vecWstr.back()->data(), 0, RECT { }, GetCharsWidthArray());
+			::ExtTextOutW(dc, iSelHexPosToPrintX, iPosToPrintY, 0, nullptr,
+				wstrHex.data(), static_cast<UINT>(wstrHex.size()), pCharsWidth); //Hex selection printing.
+			::ExtTextOutW(dc, iSelTextPosToPrintX, iPosToPrintY, 0, nullptr,
+				wstrText.data(), static_cast<UINT>(wstrText.size()), pCharsWidth); //Text selection printing.
 			wstrHex.clear();
-
-			//Text selection Poly.
-			vecWstr.emplace_back(std::make_unique<std::wstring>(std::move(wstrText)));
-			vecPolyText.emplace_back(iSelTextPosToPrintX, iPosToPrintY,
-				static_cast<UINT>(vecWstr.back()->size()), vecWstr.back()->data(), 0, RECT { }, GetCharsWidthArray());
 			wstrText.clear();
 			};
 
 		//Main loop for printing Hex chunks and Text chars.
-		for (auto itChunk { 0U }; itChunk < GetCapacity() && uzIndexToPrint < wsvText.size(); ++itChunk, ++uzIndexToPrint) {
-			//Selection.
+		for (auto itChunk { 0U }; itChunk < dwCapacity && uzIndexToPrint < wsvText.size(); ++itChunk, ++uzIndexToPrint) {
 			if (m_Selection.HitTest(ullStartOffset + uzIndexToPrint)) {
 				if (fRecalcPosition) {
 					iSelHexPosToPrintX = CalcHexAreaPosX(uzIndexToPrint);
@@ -3325,74 +3266,59 @@ void CHexCtrl::DrawSelection(HDC hDC, ULONGLONG ullStartLine, int iLines, std::w
 				wstrHex += wsvHex[uzIndexToPrint * 2];
 				wstrHex += wsvHex[(uzIndexToPrint * 2) + 1];
 				wstrText += wsvText[uzIndexToPrint];
-				fHasData = true;
 			}
-			else if (fHasData) {
-				//There can be multiple selections in one line. 
-				//All the same as for bookmarks.
-
-				lmbPoly();
+			else if (!wstrHex.empty()) {
+				//There can be multiple selections in one line.
+				lmbDraw();
 				fRecalcPosition = true;
-				fHasData = false;
 			}
 		}
 
-		lmbPoly(); //Selection Poly.
-	}
-
-	if (vecPolyHex.empty()) {
-		return;
-	}
-
-	//Selection printing.
-	GDIUT::CDC dc(hDC);
-	dc.SelectObject(m_hFntMain);
-	dc.SetTextColor(m_stColors.clrFontSel);
-	dc.SetBkColor(m_stColors.clrBkSel);
-	::PolyTextOutW(dc, vecPolyHex.data(), static_cast<UINT>(vecPolyHex.size())); //Hex selection printing.
-	for (const auto& pol : vecPolyText) {
-		::ExtTextOutW(dc, pol.x, pol.y, pol.uiFlags, &pol.rcl, pol.lpstr, pol.n, pol.pdx); //Text selection printing.
+		lmbDraw();
 	}
 }
 
 void CHexCtrl::DrawSelHighlight(HDC hDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wsvHex, std::wstring_view wsvText)const {
-	if (!m_Selection.HasSelHighlight())
+	if (!m_Selection.HasSelHighlight() || wsvText.empty())
 		return;
 
-	std::vector<POLYTEXTW> vecPolyHex;
-	std::vector<POLYTEXTW> vecPolyText;
-	std::vector<std::unique_ptr<std::wstring>> vecWstr; //unique_ptr to avoid wstring ptr invalidation.
-	const auto ullStartOffset = ullStartLine * GetCapacity();
+	const auto dwCapacity = GetCapacityImpl();
+	const auto pCharsWidth = GetCharsWidthArray();
+	const auto ullStartOffset = ullStartLine * dwCapacity;
 	std::size_t uzIndexToPrint { };
+	std::wstring wstrHex; //Selected Hex and Text strings to print.
+	std::wstring wstrText;
+	wstrHex.reserve(dwCapacity * 3);
+	wstrText.reserve(dwCapacity);
+
+	//Colors are the inverted selection colors.
+	GDIUT::CDC dc(hDC);
+	dc.SelectObject(m_hFntMain);
+	dc.SetTextColor(m_stColors.clrBkSel);
+	dc.SetBkColor(m_stColors.clrFontSel);
 
 	for (auto itLine = 0; itLine < iLines; ++itLine) {
-		std::wstring wstrHex; //Selected Hex and Text strings to print.
-		std::wstring wstrText;
+		wstrHex.clear();
+		wstrText.clear();
 		int iSelHexPosToPrintX { };
 		int iSelTextPosToPrintX { };
 		bool fRecalcPosition { true };
-		bool fHasData { false };
-		const auto iPosToPrintY = m_iStartWorkAreaYPx + (m_sizeFontMain.cy * itLine); //Hex and Text are the same.
-		const auto lmbPoly = [&]() {
+		const auto iPosToPrintY = m_iStartWorkAreaYPx + (m_sizeFontMain.cy * itLine);
+
+		const auto lmbDraw = [&]() {
 			if (wstrHex.empty())
 				return;
 
-			//Hex selection highlight Poly.
-			vecWstr.emplace_back(std::make_unique<std::wstring>(std::move(wstrHex)));
-			vecPolyHex.emplace_back(iSelHexPosToPrintX, iPosToPrintY,
-				static_cast<UINT>(vecWstr.back()->size()), vecWstr.back()->data(), 0, RECT { }, GetCharsWidthArray());
+			::ExtTextOutW(dc, iSelHexPosToPrintX, iPosToPrintY, 0, nullptr,
+				wstrHex.data(), static_cast<UINT>(wstrHex.size()), pCharsWidth); //Hex selection highlight printing.
+			::ExtTextOutW(dc, iSelTextPosToPrintX, iPosToPrintY, 0, nullptr,
+				wstrText.data(), static_cast<UINT>(wstrText.size()), pCharsWidth); //Text selection highlight printing.
 			wstrHex.clear();
-
-			//Text selection highlight Poly.
-			vecWstr.emplace_back(std::make_unique<std::wstring>(std::move(wstrText)));
-			vecPolyText.emplace_back(iSelTextPosToPrintX, iPosToPrintY,
-				static_cast<UINT>(vecWstr.back()->size()), vecWstr.back()->data(), 0, RECT { }, GetCharsWidthArray());
 			wstrText.clear();
 			};
 
 		//Main loop for printing Hex chunks and Text chars.
-		for (auto itChunk { 0U }; itChunk < GetCapacity() && uzIndexToPrint < wsvText.size(); ++itChunk, ++uzIndexToPrint) {
-			//Selection highlights.
+		for (auto itChunk { 0U }; itChunk < dwCapacity && uzIndexToPrint < wsvText.size(); ++itChunk, ++uzIndexToPrint) {
 			if (m_Selection.HitTestHighlight(ullStartOffset + uzIndexToPrint)) {
 				if (fRecalcPosition) {
 					iSelHexPosToPrintX = CalcHexAreaPosX(uzIndexToPrint);
@@ -3404,40 +3330,24 @@ void CHexCtrl::DrawSelHighlight(HDC hDC, ULONGLONG ullStartLine, int iLines, std
 				wstrHex += wsvHex[uzIndexToPrint * 2];
 				wstrHex += wsvHex[(uzIndexToPrint * 2) + 1];
 				wstrText += wsvText[uzIndexToPrint];
-				fHasData = true;
 			}
-			else if (fHasData) {
-				//There can be multiple selection highlights in one line. 
-				//All the same as for bookmarks.
-
-				lmbPoly();
+			else if (!wstrHex.empty()) {
+				//There can be multiple selection highlights in one line.
+				lmbDraw();
 				fRecalcPosition = true;
-				fHasData = false;
 			}
 		}
 
-		lmbPoly(); //Selection highlight Poly.
-	}
-
-	if (vecPolyHex.empty()) {
-		return;
-	}
-
-	//Selection highlight printing.
-	//Colors are the inverted selection colors.
-	GDIUT::CDC dc(hDC);
-	dc.SelectObject(m_hFntMain);
-	dc.SetTextColor(m_stColors.clrBkSel);
-	dc.SetBkColor(m_stColors.clrFontSel);
-	::PolyTextOutW(dc, vecPolyHex.data(), static_cast<UINT>(vecPolyHex.size())); //Hex selection highlight printing.
-	for (const auto& pol : vecPolyText) {
-		::ExtTextOutW(dc, pol.x, pol.y, pol.uiFlags, &pol.rcl, pol.lpstr, pol.n, pol.pdx); //Text selection highlight printing.
+		lmbDraw();
 	}
 }
 
 void CHexCtrl::DrawCaret(HDC hDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wsvHex, std::wstring_view wsvText)const {
+	if (wsvHex.empty())
+		return;
+
 	const auto u64CaretPos = GetCaretPosImpl();
-	const auto dwCapacity = GetCapacity();
+	const auto dwCapacity = GetCapacityImpl();
 	const auto u64FirstVisibleOffset = ullStartLine * dwCapacity;
 	const auto u64LastVisibleOffset = (std::min)((ullStartLine + iLines) * dwCapacity - 1, GetDataSizeImpl() - 1);
 
@@ -3449,58 +3359,67 @@ void CHexCtrl::DrawCaret(HDC hDC, ULONGLONG ullStartLine, int iLines, std::wstri
 	const auto uzIndexToPrint = static_cast<std::size_t>(u64CaretPos - u64FirstVisibleOffset);
 	auto iCaretHexPosX = CalcHexAreaPosX(u64CaretPos);
 	const auto iCaretClientPosY = static_cast<int>(CalcClientAreaPosY(u64CaretPos));
-	std::wstring wstrCaretHex;
+	wchar_t wchCaretHex { };
 	if (m_fCaretHigh) {
-		wstrCaretHex = wsvHex[uzIndexToPrint * 2];
+		wchCaretHex = wsvHex[uzIndexToPrint * 2];
 	}
 	else {
-		wstrCaretHex = wsvHex[(uzIndexToPrint * 2) + 1];
+		wchCaretHex = wsvHex[(uzIndexToPrint * 2) + 1];
 		iCaretHexPosX += GetCharWidthExtras();
 	}
 
-	const auto wstrCaretText = std::wstring { wsvText[uzIndexToPrint] };
-	const POLYTEXTW arrCaretPoly[] { { .x { iCaretHexPosX }, .y { iCaretClientPosY },
-		.n { static_cast<UINT>(wstrCaretHex.size()) }, .lpstr { wstrCaretHex.data() }, .pdx { GetCharsWidthArray() } },
-		{ .x { CalcTextAreaPosX(u64CaretPos) }, .y { iCaretClientPosY },
-		.n { static_cast<UINT>(wstrCaretText.size()) }, .lpstr { wstrCaretText.data() }, .pdx { GetCharsWidthArray() } }
-	};
-
 	const auto clrBkCaret = m_Selection.HitTest(u64CaretPos) ? m_stColors.clrBkCaretSel : m_stColors.clrBkCaret;
+	const auto pCharsWidth = GetCharsWidthArray();
 	GDIUT::CDC dc(hDC);
 	dc.SelectObject(m_hFntMain);
 	dc.SetTextColor(m_stColors.clrFontCaret);
 	dc.SetBkColor(clrBkCaret);
-	for (const auto& pol : arrCaretPoly) {
-		::ExtTextOutW(dc, pol.x, pol.y, pol.uiFlags, &pol.rcl, pol.lpstr, pol.n, pol.pdx); //Hex/Text caret printing.
-	}
+	::ExtTextOutW(dc, iCaretHexPosX, iCaretClientPosY, 0, nullptr, &wchCaretHex, 1, pCharsWidth); //Hex caret printing.
+	::ExtTextOutW(dc, CalcTextAreaPosX(u64CaretPos), iCaretClientPosY, 0, nullptr, &wsvText[uzIndexToPrint], 1, pCharsWidth); //Text caret printing.
 }
 
 void CHexCtrl::DrawDataInterp(HDC hDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wsvHex, std::wstring_view wsvText)const {
-	if (!m_DlgDataInterp.HasHighlight())
+	if (!m_DlgDataInterp.HasHighlight() || wsvText.empty())
 		return;
 
 	const auto dwHglSize = m_DlgDataInterp.GetHighlightSize();
 	const auto ullCaretPos = GetCaretPosImpl();
-	if ((ullCaretPos + dwHglSize) > GetDataSizeImpl())
+	const auto ullHglEnd = ullCaretPos + dwHglSize;
+	if (ullHglEnd > GetDataSizeImpl())
 		return;
 
-	std::vector<POLYTEXTW> vecPoly;
-	std::vector<std::unique_ptr<std::wstring>> vecWstr;
-	const auto ullStartOffset = ullStartLine * GetCapacity();
+	const auto dwCapacity = GetCapacityImpl();
+	const auto ullStartOffset = ullStartLine * dwCapacity;
+	const auto ullViewEnd = ullStartOffset + wsvText.size();
+
+	//Early out if the highlight range is completely outside the visible viewport.
+	if (ullHglEnd <= ullStartOffset || ullCaretPos >= ullViewEnd)
+		return;
+
+	const auto pCharsWidth = GetCharsWidthArray();
 	std::size_t uzIndexToPrint { };
+	std::wstring wstrHex; //Data Interpreter Hex and Text strings to print.
+	std::wstring wstrText;
+	wstrHex.reserve(dwCapacity * 3);
+	wstrText.reserve(dwCapacity);
+
+	GDIUT::CDC dc(hDC);
+	dc.SelectObject(m_hFntMain);
+	dc.SetTextColor(m_stColors.clrFontDataInterp);
+	dc.SetBkColor(m_stColors.clrBkDataInterp);
 
 	for (auto itLine = 0; itLine < iLines; ++itLine) {
-		std::wstring wstrHex; //Data Interpreter Hex and Text strings to print.
-		std::wstring wstrText;
+		wstrHex.clear();
+		wstrText.clear();
 		int iDataInterpHexPosToPrintX { }; //Data Interpreter X coords.
 		int iDataInterpTextPosToPrintX { };
 		bool fRecalcPosition { true };
-		const auto iPosToPrintY = m_iStartWorkAreaYPx + (m_sizeFontMain.cy * itLine); //Hex and Text are the same.
+		const auto iPosToPrintY = m_iStartWorkAreaYPx + (m_sizeFontMain.cy * itLine);
 
 		//Main loop for printing Hex chunks and Text chars.
-		for (auto itChunk { 0U }; itChunk < GetCapacity() && uzIndexToPrint < wsvText.size(); ++itChunk, ++uzIndexToPrint) {
+		for (auto itChunk { 0U }; itChunk < dwCapacity && uzIndexToPrint < wsvText.size(); ++itChunk, ++uzIndexToPrint) {
 			const auto ullOffsetCurr = ullStartOffset + uzIndexToPrint;
-			if (ullOffsetCurr >= ullCaretPos && ullOffsetCurr < (ullCaretPos + dwHglSize)) {
+			if (ullOffsetCurr >= ullCaretPos && ullOffsetCurr < ullHglEnd) {
 				if (fRecalcPosition) {
 					iDataInterpHexPosToPrintX = CalcHexAreaPosX(uzIndexToPrint);
 					iDataInterpTextPosToPrintX = CalcTextAreaPosX(uzIndexToPrint);
@@ -3514,31 +3433,15 @@ void CHexCtrl::DrawDataInterp(HDC hDC, ULONGLONG ullStartLine, int iLines, std::
 			}
 		}
 
-		//Data Interpreter Poly.
 		if (!wstrHex.empty()) {
-			//Hex Data Interpreter Poly.
-			vecWstr.emplace_back(std::make_unique<std::wstring>(std::move(wstrHex)));
-			vecPoly.emplace_back(iDataInterpHexPosToPrintX, iPosToPrintY,
-				static_cast<UINT>(vecWstr.back()->size()), vecWstr.back()->data(), 0, RECT { }, GetCharsWidthArray());
-
-			//Text Data Interpreter Poly.
-			vecWstr.emplace_back(std::make_unique<std::wstring>(std::move(wstrText)));
-			vecPoly.emplace_back(iDataInterpTextPosToPrintX, iPosToPrintY,
-				static_cast<UINT>(vecWstr.back()->size()), vecWstr.back()->data(), 0, RECT { }, GetCharsWidthArray());
+			::ExtTextOutW(dc, iDataInterpHexPosToPrintX, iPosToPrintY, 0, nullptr,
+				wstrHex.data(), static_cast<UINT>(wstrHex.size()), pCharsWidth); //Hex Data Interpreter printing.
+			::ExtTextOutW(dc, iDataInterpTextPosToPrintX, iPosToPrintY, 0, nullptr,
+				wstrText.data(), static_cast<UINT>(wstrText.size()), pCharsWidth); //Text Data Interpreter printing.
 		}
-	}
 
-	if (vecPoly.empty()) {
-		return;
-	}
-
-	//Data Interpreter printing.
-	GDIUT::CDC dc(hDC);
-	dc.SelectObject(m_hFntMain);
-	dc.SetTextColor(m_stColors.clrFontDataInterp);
-	dc.SetBkColor(m_stColors.clrBkDataInterp);
-	for (const auto& pol : vecPoly) {
-		::ExtTextOutW(dc, pol.x, pol.y, pol.uiFlags, &pol.rcl, pol.lpstr, pol.n, pol.pdx); //Hex/Text Data Interpreter printing.
+		if ((ullStartOffset + uzIndexToPrint) >= ullHglEnd)
+			break; //Finished drawing the entire contiguous highlight.
 	}
 }
 
@@ -3546,34 +3449,24 @@ void CHexCtrl::DrawPageLines(HDC hDC, ULONGLONG ullStartLine, int iLines)const {
 	if (!IsPageVisible())
 		return;
 
-	struct PAGELINES { //Struct for pages lines.
-		POINT ptStart;
-		POINT ptEnd;
-	};
-	std::vector<PAGELINES> vecPageLines;
+	GDIUT::CDC dc(hDC);
+	HPEN penOld { nullptr };
 
-	//Loop for printing Hex chunks and Text chars line by line.
-	for (auto itLine = 1; itLine < iLines; ++itLine) { //Explicitly skips zero line (itLine==0).
-		//Page's lines vector to print.
-		if ((((ullStartLine + itLine) * GetCapacity()) % GetPageSizeImpl() == 0)) {
+	//Loop for printing page lines.
+	for (auto itLine = 1; itLine < iLines; ++itLine) { //Explicitly skip zero line (itLine==0).
+		if (((ullStartLine + itLine) * GetCapacityImpl()) % GetPageSizeImpl() == 0) {
+			if (penOld == nullptr) {
+				penOld = static_cast<HPEN>(dc.SelectObject(m_hPenLinesMain));
+			}
 			const auto iPosToPrintY = m_iStartWorkAreaYPx + (m_sizeFontMain.cy * itLine);
-			vecPageLines.emplace_back(POINT { .x { m_iFirstVertLinePx }, .y { iPosToPrintY } },
-				POINT { .x { m_iFourthVertLinePx }, .y { iPosToPrintY } });
+			dc.MoveTo(m_iFirstVertLinePx, iPosToPrintY);
+			dc.LineTo(m_iFourthVertLinePx, iPosToPrintY);
 		}
 	}
 
-	if (vecPageLines.empty()) {
-		return;
+	if (penOld != nullptr) {
+		dc.SelectObject(penOld);
 	}
-
-	//Page lines printing.
-	GDIUT::CDC dc(hDC);
-	const auto penOld = dc.SelectObject(m_hPenLinesMain);
-	for (const auto& pl : vecPageLines) {
-		dc.MoveTo(pl.ptStart.x, pl.ptStart.y);
-		dc.LineTo(pl.ptEnd.x, pl.ptEnd.y);
-	}
-	dc.SelectObject(penOld);
 }
 
 void CHexCtrl::FillWithZeros() {
@@ -3609,11 +3502,11 @@ auto CHexCtrl::GetBottomLine()const->ULONGLONG {
 	}
 
 	const auto ullDataSize = GetDataSizeImpl();
-	const auto ullTotalLines = ullDataSize / GetCapacity();
+	const auto ullTotalLines = ullDataSize / GetCapacityImpl();
 
 	//If ullDataSize is really small, or we at the scroll end, adjust ullEndLine to be not bigger than maximum possible.
 	if (ullEndLine >= ullTotalLines) {
-		ullEndLine = ullTotalLines - ((ullDataSize % GetCapacity()) == 0 ? 1 : 0);
+		ullEndLine = ullTotalLines - ((ullDataSize % GetCapacityImpl()) == 0 ? 1 : 0);
 	}
 
 	return ullEndLine;
@@ -3715,7 +3608,7 @@ auto CHexCtrl::GetSelectedLines()const->ULONGLONG {
 	if (!m_Selection.HasContiguousSel())
 		return 0ULL;
 
-	const auto dwCapacity = GetCapacity();
+	const auto dwCapacity = GetCapacityImpl();
 	const auto ullSelStart = m_Selection.GetSelStart();
 	const auto ullSelEnd = m_Selection.GetSelEnd();
 	const auto ullSelSize = m_Selection.GetSelSize();
@@ -3744,7 +3637,7 @@ auto CHexCtrl::HitTest(POINT pt)const->std::optional<HEXHITTEST> {
 	const auto iX = pt.x + static_cast<int>(m_ScrollH.GetScrollPos()); //To compensate horizontal scroll.
 	const auto ullCurLine = GetTopLine();
 	const auto dwGroupSize = GetGroupSize();
-	const auto dwCapacity = GetCapacity();
+	const auto dwCapacity = GetCapacityImpl();
 
 	bool fHit { false };
 	//Checking if iX is within Hex chunks area.
@@ -3816,7 +3709,7 @@ bool CHexCtrl::IsOffsetAsHexImpl()const {
 
 bool CHexCtrl::IsPageVisible()const {
 	const auto dwPageSize = GetPageSizeImpl();
-	const auto dwCapacity = GetCapacity();
+	const auto dwCapacity = GetCapacityImpl();
 	return dwPageSize > 0 && dwCapacity > 0 && (dwPageSize % dwCapacity == 0);
 }
 
@@ -4035,7 +3928,7 @@ void CHexCtrl::Print() {
 		::GetDeviceCaps(dcPrint, VERTRES) - (iMarginY * 2)));
 	const SIZE sizePrintDpi { ::GetDeviceCaps(dcPrint, LOGPIXELSX), ::GetDeviceCaps(dcPrint, LOGPIXELSY) };
 	const auto iFontSizeRatio { sizePrintDpi.cy / ::GetDpiForWindow(m_Wnd) };
-	const auto dwCapacity = GetCapacity();
+	const auto dwCapacity = GetCapacityImpl();
 
 	//Setting scaled fonts for printing, and temporarily disabling redraw.
 	SetRedraw(false);
@@ -4305,7 +4198,7 @@ void CHexCtrl::SelAddDown() {
 	const auto fHasSel = HasSelection();
 	const auto ullSelStart = fHasSel ? m_Selection.GetSelStart() : m_ullCaretPos;
 	const auto ullSelSize = fHasSel ? m_Selection.GetSelSize() : 1;
-	const auto dwCapacity = GetCapacity();
+	const auto dwCapacity = GetCapacityImpl();
 	ULONGLONG ullClick { };
 	ULONGLONG ullStart { };
 	ULONGLONG ullSize { 0ULL };
@@ -4483,7 +4376,7 @@ void CHexCtrl::SelAddUp() {
 	const auto fHasSel = HasSelection();
 	const auto ullSelStart = fHasSel ? m_Selection.GetSelStart() : m_ullCaretPos;
 	const auto ullSelSize = fHasSel ? m_Selection.GetSelSize() : 1;
-	const auto dwCapacity = GetCapacity();
+	const auto dwCapacity = GetCapacityImpl();
 	ULONGLONG ullClick { };
 	ULONGLONG ullStart { };
 	ULONGLONG ullSize { 0ULL };
@@ -5377,7 +5270,7 @@ auto CHexCtrl::WMLButtonDblClk(const MSG& msg)->LRESULT {
 
 		HEXSPAN hs;
 		if (msg.wParam & MK_SHIFT) {
-			const auto dwCapacity = GetCapacity();
+			const auto dwCapacity = GetCapacityImpl();
 			hs.ullOffset = m_ullCursorPrev = m_ullCursorNow = m_ullCaretPos - (m_ullCaretPos % dwCapacity);
 			hs.ullSize = dwCapacity;
 		}
@@ -5503,7 +5396,7 @@ auto CHexCtrl::WMMouseMove(const MSG& msg)->LRESULT {
 
 		m_ullCursorNow = optHit->ullOffset;
 		const auto ullOffsetHit = optHit->ullOffset;
-		const auto dwCapacity = GetCapacity();
+		const auto dwCapacity = GetCapacityImpl();
 		ULONGLONG ullClick;
 		ULONGLONG ullStart;
 		ULONGLONG ullSize;
@@ -5784,7 +5677,7 @@ auto CHexCtrl::WMVScroll([[maybe_unused]] const MSG& msg)->LRESULT {
 	if (m_stData.fHighLatency) {
 		fRedraw = m_ScrollV.IsThumbReleased();
 		if (!fRedraw) {
-			const auto wstrOffset = (IsOffsetAsHexImpl() ? L"Offset: 0x" : L"Offset: ") + OffsetToWstr(GetTopLine() * GetCapacity());
+			const auto wstrOffset = (IsOffsetAsHexImpl() ? L"Offset: 0x" : L"Offset: ") + OffsetToWstr(GetTopLine() * GetCapacityImpl());
 			TTTrackShow(true, false, wstrOffset.data());
 		}
 		else {
