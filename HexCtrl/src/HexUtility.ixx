@@ -387,6 +387,12 @@ namespace HEXCTRL::INTERNAL::ut { //Utility methods and stuff.
 	[[nodiscard]] constexpr int GetYLPARAM(LPARAM lParam) {
 		return GetXLPARAM(static_cast<DWORD_PTR>(lParam) >> 16);
 	}
+
+	struct SafeSetRedraw {
+		SafeSetRedraw(IHexCtrl* pHexCtrl) : m_pHexCtrl(pHexCtrl) { m_pHexCtrl->SetRedraw(false); }
+		~SafeSetRedraw() { m_pHexCtrl->SetRedraw(true); }
+		IHexCtrl* m_pHexCtrl;
+	};
 }
 
 namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.

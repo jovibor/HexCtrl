@@ -14,11 +14,13 @@ module;
 #include <algorithm>
 #include <bit>
 #include <cassert>
+#include <cmath>
 #include <chrono>
 #include <cwctype>
 #include <format>
 #include <fstream>
 #include <limits>
+#include <memory>
 #include <numeric>
 #include <optional>
 #include <random>
@@ -252,11 +254,11 @@ namespace HEXCTRL::INTERNAL {
 		void FillWithZeros(); //Fill selection with zeros.
 		[[nodiscard]] auto FontPointsFromScaledPixels(long iSizePixels)const -> float;  //Get font size in points from size in scaled pixels.
 		[[nodiscard]] auto FontScaledPixelsFromPoints(float flSizePoints)const -> long; //Get font size in scaled pixels from size in points.
-		void FontSizeIncDec(bool fInc = true); //Increase os decrease font size by minimum amount.
+		void FontSizeIncDec(bool fInc = true); //Increase or decrease font size by minimum amount.
 		[[nodiscard]] auto GetBottomLine()const -> ULONGLONG; //Returns current bottom line number in view.
 		[[nodiscard]] auto GetCapacityImpl()const -> DWORD;
 		[[nodiscard]] auto GetCaretPosImpl()const -> std::uint64_t;
-		[[nodiscard]] auto GetCharsWidthArray()const -> int*;
+		[[nodiscard]] auto GetCharsWidthArray()const -> const int*;
 		[[nodiscard]] auto GetCharWidthExtras()const -> int;  //Width of the one char with extra space, in px.
 		[[nodiscard]] auto GetCharWidthNative()const -> int;  //Width of the one char, in px.
 		[[nodiscard]] auto GetCommandFromKey(UINT uKey, bool fCtrl, bool fShift, bool fAlt)const -> std::optional<EHexCmd>; //Get command from keybinding.
@@ -284,7 +286,7 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] bool IsPageVisible()const;
 		[[nodiscard]] bool IsScrollCursor()const;
 		[[nodiscard]] bool IsVirtualImpl()const;
-		void ModifyWorker(const HEXCTRL::HEXMODIFY& hms, const auto& FuncWorker, HEXCTRL::SpanCByte spnOper)const; //Main "Modify" method with different workers.
+		void ModifyWorker(const HEXMODIFY& hms, const auto& FuncWorker, SpanCByte spnOper)const; //Main "Modify" method with different workers.
 		[[nodiscard]] auto OffsetToWstr(ULONGLONG ullOffset)const -> std::wstring; //Format offset as std::wstring.
 		void OnCaretPosChange(ULONGLONG ullOffset); //On changing caret position.
 		void OnModifyData();                        //When data has been modified.
@@ -351,7 +353,7 @@ namespace HEXCTRL::INTERNAL {
 	private:
 		static constexpr auto m_pwszClassName { L"HexCtrl_MainWnd" }; //HexCtrl unique Window Class name.
 		static constexpr auto m_uIDTTooltip { 0x01UL };               //Timer ID for the tooltip.
-		static constexpr auto m_uIDTScrolCursor { 0x02UL };           //Timer ID for the scroll cursor.
+		static constexpr auto m_uIDTScrollCursor { 0x02UL };          //Timer ID for the scroll cursor.
 		static constexpr auto m_iFirstHorzLinePx { 0 };               //First horizontal line indent.
 		static constexpr auto m_iFirstVertLinePx { 0 };               //First vertical line indent.
 		static constexpr auto m_dwVKMouseWheelUp { 0x0100UL };        //Artificial Virtual Key for a Mouse-Wheel Up event.
@@ -404,7 +406,7 @@ namespace HEXCTRL::INTERNAL {
 		int m_iIndentTextXPx { };             //Indent in px of the text beginning.
 		int m_iIndentFirstHexChunkXPx { };    //First hex chunk indent in px.
 		int m_iIndentCapTextYPx { };          //Caption text (0 1 2... D E F...) vertical offset.
-		int m_iDistanceGroupedHexChunkPx { }; //Distance between begining of the two hex grouped chunks, in px.
+		int m_iDistanceGroupedHexChunkPx { }; //Distance between beginning of the two hex grouped chunks, in px.
 		int m_iDistanceBetweenCharsPx { };    //Distance between beginning of the two text chars in px.
 		int m_iSpaceBetweenBlocksPx { };      //Additional space between hex chunks after half of capacity, in px.
 		int m_iWidthClientAreaPx { };         //Width of the HexCtrl window client area.
@@ -421,13 +423,14 @@ namespace HEXCTRL::INTERNAL {
 		int m_iSecondVertLinePx { };          //Second vert line indent.
 		int m_iThirdVertLinePx { };           //Third vert line indent.
 		int m_iFourthVertLinePx { };          //Fourth vert line indent.
-		int m_iCodePage { };                  //Current code-page for Text area. -1 for default.
+		int m_iCodePage { -1 };               //Current code-page for Text area. -1 for default.
 		float m_flScrollRatio { };            //Ratio for how much to scroll with mouse-wheel.
 		float m_flDPIScale { 1.F };           //DPI scale factor for window.
 		wchar_t m_wchUnprintable { };         //Replacement char for unprintable characters.
 		wchar_t m_wchDateSepar { };           //Date separator.
 		HEXINFOBAR m_hib;                     //InfoBar data to show.
 		bool m_fCreated { false };            //Is control created or not.
+		bool m_fCustom { false };             //For custom control in a dialog.
 		bool m_fDataSet { false };            //Is data set or not.
 		bool m_fInfoBar { true };             //Show bottom Info window or not.
 		bool m_fCaretHigh { true };           //Caret's High or Low bits position (first or last digit in hex chunk).
@@ -529,6 +532,8 @@ bool CHexCtrl::Create(const HEXCREATE& hcs) {
 			ut::DBG_REPORT(L"SubclassDlgItem failed, check HEXCREATE parameters.");
 			return false;
 		}
+
+		m_fCustom = true;
 	}
 	else {
 		const GDIUT::CRect rc = hcs.rect;
@@ -907,7 +912,8 @@ auto CHexCtrl::GetData(HEXSPAN hss)const->SpanByte {
 
 	SpanByte spnData;
 	if (!IsVirtualImpl()) {
-		if (hss.ullOffset + hss.ullSize <= GetDataSizeImpl()) {
+		const auto ullDataSize = GetDataSizeImpl();
+		if ((hss.ullOffset < ullDataSize) && (hss.ullSize <= ullDataSize - hss.ullOffset)) {
 			spnData = { m_stData.spnData.data() + hss.ullOffset, static_cast<std::size_t>(hss.ullSize) };
 		}
 	}
@@ -1286,36 +1292,48 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms) {
 	if (!IsMutableImpl()) return;
 	if (hms.vecSpan.empty()) { ut::DBG_REPORT(L"Data to modify is empty."); return; }
 
-	m_vecRedo.clear(); //No Redo unless we make Undo.
-	SnapshotUndo(hms.vecSpan);
+	const auto ullDataSize = GetDataSizeImpl();
+	for (const auto& hs : hms.vecSpan) {
+		if (hs.ullSize == 0 || hs.ullOffset >= ullDataSize || hs.ullSize > (ullDataSize - hs.ullOffset)) {
+			ut::DBG_REPORT(L"Invalid or out-of-bounds span.");
+			return;
+		}
+	}
 
-	SetRedraw(false);
+	const auto lmbMakeUndo = [&] {
+		m_vecRedo.clear(); //No Redo unless we make Undo.
+		SnapshotUndo(hms.vecSpan);
+		};
+	const ut::SafeSetRedraw srguard(this);
+
 	using enum EHexModifyMode;
 	switch (hms.eModifyMode) {
-	case MODIFY_ONCE:
-	{
+	case MODIFY_ONCE: {
 		const auto stHexSpan = hms.vecSpan.back();
 		const auto ullOffsetToModify = stHexSpan.ullOffset;
 		const auto ullSizeToModify = (std::min)(stHexSpan.ullSize, static_cast<ULONGLONG>(hms.spnData.size()));
 
 		assert((ullOffsetToModify + ullSizeToModify) <= GetDataSizeImpl());
-		if ((ullOffsetToModify + ullSizeToModify) > GetDataSizeImpl())
+		if ((ullOffsetToModify + ullSizeToModify) > GetDataSizeImpl()) {
 			return;
+		}
+
+		lmbMakeUndo();
 
 		if (IsVirtualImpl() && ullSizeToModify > GetCacheSize()) {
-			const auto ullSizeCache = GetCacheSize();
-			const auto ullRem = ullSizeToModify % ullSizeCache;
-			auto ullChunks = ullSizeToModify / ullSizeCache + (ullRem > 0 ? 1 : 0);
-			auto ullOffsetCurr = ullOffsetToModify;
-			auto ullOffsetSpanCurr = 0ULL;
-			while (ullChunks-- > 0) {
-				const auto ullSizeToModifyCurr = (ullChunks == 1 && ullRem > 0) ? ullRem : ullSizeCache;
-				const auto spnData = GetData({ ullOffsetCurr, ullSizeToModifyCurr });
+			const auto dwSizeCache = GetCacheSize();
+			const auto u64Rem = ullSizeToModify % dwSizeCache;
+			auto u64Chunks = ullSizeToModify / dwSizeCache + (u64Rem > 0 ? 1 : 0);
+			std::uint64_t u64OffsetLocal { 0 };
+			while (u64Chunks > 0) {
+				const auto u64SizeToModifyCurr = (u64Chunks == 1 && u64Rem > 0) ? u64Rem : dwSizeCache;
+				const auto u64DataOffset = ullOffsetToModify + u64OffsetLocal;
+				const auto spnData = GetData({ u64DataOffset, u64SizeToModifyCurr });
 				assert(!spnData.empty());
-				std::copy_n(hms.spnData.data() + ullOffsetSpanCurr, ullSizeToModifyCurr, spnData.data());
-				SetDataVirtual(spnData, { ullOffsetCurr, ullSizeToModifyCurr });
-				ullOffsetCurr += ullSizeToModifyCurr;
-				ullOffsetSpanCurr += ullSizeToModifyCurr;
+				std::copy_n(hms.spnData.data() + u64OffsetLocal, u64SizeToModifyCurr, spnData.data());
+				SetDataVirtual(spnData, { u64DataOffset, u64SizeToModifyCurr });
+				u64OffsetLocal += u64SizeToModifyCurr;
+				--u64Chunks;
 			}
 		}
 		else {
@@ -1324,11 +1342,11 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms) {
 			std::copy_n(hms.spnData.data(), static_cast<std::size_t>(ullSizeToModify), spnData.data());
 			SetDataVirtual(spnData, { ullOffsetToModify, ullSizeToModify });
 		}
+		break;
 	}
-	break;
 	case MODIFY_RAND_MT19937:
-	case MODIFY_RAND_FAST:
-	{
+	case MODIFY_RAND_FAST: {
+		lmbMakeUndo();
 		std::mt19937 gen(std::random_device { }());
 		std::uniform_int_distribution<std::uint64_t> distUInt64(0, (std::numeric_limits<std::uint64_t>::max)());
 		const auto lmbRandUInt64 = [&](std::byte* pData, const HEXMODIFY&, SpanCByte) {
@@ -1349,12 +1367,12 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms) {
 			ModifyWorker(hms, lmbRandUInt64, { static_cast<std::byte*>(nullptr), sizeof(std::uint64_t) });
 
 			if (const auto dwRem = hs.ullSize % sizeof(std::uint64_t); dwRem > 0) { //Remainder.
-				const auto ullOffset = hs.ullOffset + hs.ullSize - dwRem;
-				const auto spnData = GetData({ .ullOffset { ullOffset }, .ullSize { dwRem } });
+				const auto u64Offset = hs.ullOffset + hs.ullSize - dwRem;
+				const auto spnData = GetData({ .ullOffset { u64Offset }, .ullSize { dwRem } });
 				for (std::size_t itRem = 0; itRem < dwRem; ++itRem) {
 					spnData.data()[itRem] = static_cast<std::byte>(distUInt64(gen));
 				}
-				SetDataVirtual(spnData, { .ullOffset { ullOffset }, .ullSize { dwRem } });
+				SetDataVirtual(spnData, { .ullOffset { u64Offset }, .ullSize { dwRem } });
 			}
 		}
 		else if (hms.eModifyMode == MODIFY_RAND_FAST && hms.vecSpan.size() == 1 && hs.ullSize >= GetCacheSize()) {
@@ -1373,26 +1391,26 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms) {
 			//Filling the remainder data.
 			if (const auto ullRem = hs.ullSize % ulSizeRandBuff; ullRem > 0) { //Remainder.
 				if (ullRem <= GetCacheSize()) {
-					const auto ullOffsetCurr = hs.ullOffset + hs.ullSize - ullRem;
-					const auto spnData = GetData({ .ullOffset { ullOffsetCurr }, .ullSize { ullRem } });
+					const auto u64OffsetCurr = hs.ullOffset + hs.ullSize - ullRem;
+					const auto spnData = GetData({ .ullOffset { u64OffsetCurr }, .ullSize { ullRem } });
 					assert(!spnData.empty());
 					std::copy_n(uptrRandData.get(), ullRem, spnData.data());
-					SetDataVirtual(spnData, { .ullOffset { ullOffsetCurr }, .ullSize { ullRem } });
+					SetDataVirtual(spnData, { .ullOffset { u64OffsetCurr }, .ullSize { ullRem } });
 				}
 				else {
-					const auto ullSizeCache = GetCacheSize();
-					const auto dwModCache = ullRem % ullSizeCache;
-					auto ullChunks = (ullRem / ullSizeCache) + (dwModCache > 0 ? 1 : 0);
-					auto ullOffsetCurr = hs.ullOffset + hs.ullSize - ullRem;
-					auto ullOffsetRandCurr = 0ULL;
-					while (ullChunks-- > 0) {
-						const auto ullSizeToModify = (ullChunks == 1 && dwModCache > 0) ? dwModCache : ullSizeCache;
-						const auto spnData = GetData({ .ullOffset { ullOffsetCurr }, .ullSize { ullSizeToModify } });
+					const auto dwSizeCache = GetCacheSize();
+					const auto dwModCache = ullRem % dwSizeCache;
+					auto u64Chunks = (ullRem / dwSizeCache) + (dwModCache > 0 ? 1 : 0);
+					std::uint64_t u64OffsetLocal { 0 };
+					while (u64Chunks > 0) {
+						const auto u64SizeToModifyCurr = (u64Chunks == 1 && dwModCache > 0) ? dwModCache : dwSizeCache;
+						const auto u64DataOffset = hs.ullOffset + hs.ullSize - ullRem + u64OffsetLocal;
+						const auto spnData = GetData({ .ullOffset { u64DataOffset }, .ullSize { u64SizeToModifyCurr } });
 						assert(!spnData.empty());
-						std::copy_n(uptrRandData.get() + ullOffsetRandCurr, ullSizeToModify, spnData.data());
-						SetDataVirtual(spnData, { .ullOffset { ullOffsetCurr }, .ullSize { ullSizeToModify } });
-						ullOffsetCurr += ullSizeToModify;
-						ullOffsetRandCurr += ullSizeToModify;
+						std::copy_n(uptrRandData.get() + u64OffsetLocal, u64SizeToModifyCurr, spnData.data());
+						SetDataVirtual(spnData, { .ullOffset { u64DataOffset }, .ullSize { u64SizeToModifyCurr } });
+						u64OffsetLocal += u64SizeToModifyCurr;
+						--u64Chunks;
 					}
 				}
 			}
@@ -1400,10 +1418,10 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms) {
 		else {
 			ModifyWorker(hms, lmbRandByte, { static_cast<std::byte*>(nullptr), sizeof(std::byte) });
 		}
+		break;
 	}
-	break;
-	case MODIFY_REPEAT:
-	{
+	case MODIFY_REPEAT: {
+		lmbMakeUndo();
 		constexpr auto lmbRepeat = [](std::byte* pData, const HEXMODIFY& /**/, SpanCByte spnDataFrom) {
 			assert(pData != nullptr);
 			std::copy_n(spnDataFrom.data(), spnDataFrom.size(), pData);
@@ -1438,10 +1456,9 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms) {
 		else {
 			ModifyWorker(hms, lmbRepeat, hms.spnData);
 		}
+		break;
 	}
-	break;
-	case MODIFY_OPERATION:
-	{
+	case MODIFY_OPERATION: {
 		using enum EHexDataType;
 		using enum EHexOperMode;
 		//Special case for the OPER_ASSIGN operation. This operation can easily be replaced 
@@ -1453,6 +1470,10 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms) {
 			std::uint64_t u64Data { };
 
 			switch (hms.eDataType) {
+			case DATA_INT8:
+			case DATA_UINT8:
+				hmsRepeat.spnData = { hms.spnData.data(), sizeof(std::uint8_t) };
+				break;
 			case DATA_INT16:
 			case DATA_UINT16:
 			{
@@ -1490,6 +1511,7 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms) {
 			return;
 		}
 
+		lmbMakeUndo();
 		//In cases where the only one affected data region (hms.vecSpan.size()==1) is used,
 		//and ullSizeToModify > ulSizeOfVec, we use SIMD.
 		//At the end we simply fill up the remainder (ullSizeToModify % ulSizeOfVec).
@@ -1525,12 +1547,11 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms) {
 		else {
 			ModifyWorker(hms, ModifyOperScalar, hms.spnData);
 		}
+		break;
 	}
-	break;
 	default:
 		break;
 	}
-	SetRedraw(true);
 
 	OnModifyData();
 }
@@ -1653,6 +1674,11 @@ void CHexCtrl::SetData(const HEXDATA& hd, bool fAdjust) {
 			ut::DBG_REPORT(L"Data size must be equal to the prior data size.");
 			return;
 		}
+
+		//In the fAdjust mode the bytes in Undo/Redo vectors are from previous data.
+		//So we clear them.
+		m_vecUndo.clear();
+		m_vecRedo.clear();
 	}
 	else { //Clear any previously set data before setting the new data.
 		ClearData();
@@ -2190,8 +2216,10 @@ void CHexCtrl::ClipboardPaste(EClipboard eType) {
 		return;
 
 	const auto hClpbrd = ::GetClipboardData(CF_UNICODETEXT);
-	if (!hClpbrd)
+	if (!hClpbrd) {
+		::CloseClipboard();
 		return;
+	}
 
 	const auto uzSizeClpbrd = ::GlobalSize(hClpbrd);
 	if (uzSizeClpbrd == 0) {
@@ -2208,11 +2236,13 @@ void CHexCtrl::ClipboardPaste(EClipboard eType) {
 	const auto ullDataSize = GetDataSizeImpl();
 	const auto ullCaretPos = GetCaretPosImpl();
 	HEXMODIFY hmd;
-	std::uint64_t u64SizeToPaste;
+	std::uint64_t u64SizeToPaste { };
 	std::vector<std::byte> vecDataToPaste; //Actual data to paste, must outlive the hmd.
+	const auto uzMaxChars = uzSizeClpbrd / sizeof(wchar_t);
+	const auto wsvWstringClpbrd = std::wstring_view(pDataClpbrd, ::wcsnlen(pDataClpbrd, uzMaxChars));
 	const auto lmbPasteUTF16 = [&]() {
-		u64SizeToPaste = uzSizeClpbrd;
-		if (ullCaretPos + uzSizeClpbrd > ullDataSize) {
+		u64SizeToPaste = wsvWstringClpbrd.size() * sizeof(wchar_t);
+		if (ullCaretPos + u64SizeToPaste > ullDataSize) {
 			u64SizeToPaste = ullDataSize - ullCaretPos;
 		}
 		hmd.spnData = { reinterpret_cast<std::byte*>(pDataClpbrd), static_cast<std::size_t>(u64SizeToPaste) };
@@ -2234,7 +2264,7 @@ void CHexCtrl::ClipboardPaste(EClipboard eType) {
 			iCodepage = 1252;  //ANSI-Latin codepage for default ASCII.
 		}
 
-		vecDataToPaste = ut::RangeToVecBytes(ut::WstrToStr(pDataClpbrd, iCodepage));
+		vecDataToPaste = ut::RangeToVecBytes(ut::WstrToStr(wsvWstringClpbrd, iCodepage));
 		u64SizeToPaste = vecDataToPaste.size();
 		if (ullCaretPos + u64SizeToPaste > ullDataSize) {
 			u64SizeToPaste = ullDataSize - ullCaretPos;
@@ -2245,7 +2275,7 @@ void CHexCtrl::ClipboardPaste(EClipboard eType) {
 	break;
 	case EClipboard::PASTE_HEX:
 	{
-		auto optData = ut::WstrToHexBytes(pDataClpbrd);
+		auto optData = ut::WstrToHexBytes(wsvWstringClpbrd);
 		if (!optData) {
 			::GlobalUnlock(hClpbrd);
 			::CloseClipboard();
@@ -2265,11 +2295,14 @@ void CHexCtrl::ClipboardPaste(EClipboard eType) {
 		break;
 	}
 
-	hmd.vecSpan.emplace_back(ullCaretPos, u64SizeToPaste);
-	ModifyData(hmd);
+	if (u64SizeToPaste > 0) {
+		hmd.vecSpan.emplace_back(ullCaretPos, u64SizeToPaste);
+		ModifyData(hmd);
+		RedrawImpl();
+	}
+
 	::GlobalUnlock(hClpbrd);
 	::CloseClipboard();
-	RedrawImpl();
 }
 
 auto CHexCtrl::CopyBase64()const->std::wstring {
@@ -2549,7 +2582,7 @@ auto CHexCtrl::CreateCapacityString()const->std::wstring {
 	std::wstring wstrCapacity;
 	wstrCapacity.reserve(static_cast<std::size_t>(dwCapacity) * 3);
 	for (auto i { 0U }; i < dwCapacity; ++i) {
-		wstrCapacity += std::vformat(m_fOffsetHex ? L"{: >2X}" : L"{: >2d}", std::make_wformat_args(i));
+		wstrCapacity += m_fOffsetHex ? std::format(L"{: >2X}", i) : std::format(L"{: >2d}", i);
 
 		//Additional space between hex chunk's blocks.
 		if ((((i + 1) % m_dwGroupSize) == 0) && (i < (dwCapacity - 1))) {
@@ -2675,21 +2708,14 @@ void CHexCtrl::CreatePens() {
 }
 
 auto CHexCtrl::CreateTextAreaString()const->std::wstring {
-	const auto iCP = GetCodepage();
-	std::wstring_view wsvFmt;
-	switch (iCP) {
+	switch (const auto iCP = GetCodepage(); iCP) {
 	case -1:
-		wsvFmt = L"ASCII";
-		break;
+		return L"ASCII";
 	case 0:
-		wsvFmt = L"UTF-16";
-		break;
+		return L"UTF-16";
 	default:
-		wsvFmt = L"Codepage {}";
-		break;
+		return std::format(L"Codepage {}", iCP);
 	}
-
-	return std::vformat(wsvFmt, std::make_wformat_args(iCP));
 }
 
 void CHexCtrl::DrawWindow(HDC hDC)const {
@@ -3520,8 +3546,8 @@ auto CHexCtrl::GetCaretPosImpl()const->std::uint64_t {
 	return m_ullCaretPos;
 }
 
-auto CHexCtrl::GetCharsWidthArray()const->int* {
-	return const_cast<int*>(m_vecCharsWidth.data());
+auto CHexCtrl::GetCharsWidthArray()const->const int* {
+	return m_vecCharsWidth.data();
 }
 
 auto CHexCtrl::GetCharWidthExtras()const->int {
@@ -3721,7 +3747,7 @@ bool CHexCtrl::IsVirtualImpl()const {
 	return m_stData.pHexVirtData != nullptr;
 }
 
-void CHexCtrl::ModifyWorker(const HEXCTRL::HEXMODIFY& hms, const auto& FuncWorker, const HEXCTRL::SpanCByte spnOper)const {
+void CHexCtrl::ModifyWorker(const HEXMODIFY& hms, const auto& FuncWorker, const SpanCByte spnOper)const {
 	if (spnOper.empty()) { ut::DBG_REPORT(L"Operation span is empty."); return; }
 
 	const auto& vecSpan = hms.vecSpan;
@@ -3931,7 +3957,7 @@ void CHexCtrl::Print() {
 	const auto dwCapacity = GetCapacityImpl();
 
 	//Setting scaled fonts for printing, and temporarily disabling redraw.
-	SetRedraw(false);
+	const ut::SafeSetRedraw srguard(this);
 	const auto lfOrigMain = GetFont(true);
 	const auto lfOrigInfo = GetFont(false);
 	LOGFONTW lfPrintMain { lfOrigMain };
@@ -3941,7 +3967,7 @@ void CHexCtrl::Print() {
 	SetFont(lfPrintMain, true);
 	SetFont(lfPrintInfo, false);
 	RecalcAll(true, dcPrint, &rcPrint); //Recalc for printer dc, to get correct printing sizes.
-	const auto iLinesInPage = m_iHeightWorkAreaPx / m_sizeFontMain.cy;
+	const auto iLinesInPage = (std::max)(1L, m_iHeightWorkAreaPx / m_sizeFontMain.cy); //To prevent zero amount of lines.
 	dcPrint.SetMapMode(MM_TEXT);
 
 	if (fPrintSelection) {
@@ -4039,7 +4065,6 @@ void CHexCtrl::Print() {
 	//Restore original fonts.
 	SetFont(lfOrigMain, true);
 	SetFont(lfOrigInfo, false);
-	SetRedraw(true);
 	RecalcAll();
 	RedrawImpl();
 }
@@ -4123,15 +4148,18 @@ void CHexCtrl::Redo() {
 		if (IsVirtualImpl() && vecRedoData.size() > GetCacheSize()) { //In VirtualData mode processing data chunk by chunk.
 			const auto dwSizeChunk = GetCacheSize();
 			const auto uzMod = vecRedoData.size() % dwSizeChunk;
-			auto ullChunks = vecRedoData.size() / dwSizeChunk + (uzMod > 0 ? 1 : 0);
-			std::size_t uzOffset = 0;
-			while (ullChunks-- > 0) {
-				const auto ullSize = (ullChunks == 1 && uzMod > 0) ? uzMod : dwSizeChunk;
-				if (const auto spnData = GetData({ uzOffset, ullSize }); !spnData.empty()) {
-					std::copy_n(vecRedoData.begin() + uzOffset, ullSize, spnData.data());
-					SetDataVirtual(spnData, { uzOffset, ullSize });
+			auto u64Chunks = vecRedoData.size() / dwSizeChunk + (uzMod > 0 ? 1 : 0);
+			std::uint64_t u64OffsetLocal { 0 };
+			while (u64Chunks > 0) {
+				const auto u64Size = (u64Chunks == 1 && uzMod > 0) ? uzMod : dwSizeChunk;
+				const auto u64DataOffset = redo.ullOffset + u64OffsetLocal;
+				if (const auto spnData = GetData({ u64DataOffset, u64Size }); !spnData.empty()) {
+					std::copy_n(vecRedoData.begin() + u64OffsetLocal, u64Size, spnData.data());
+					SetDataVirtual(spnData, { u64DataOffset, u64Size });
 				}
-				uzOffset += ullSize;
+
+				u64OffsetLocal += u64Size;
+				--u64Chunks;
 			}
 		}
 		else {
@@ -4862,10 +4890,10 @@ void CHexCtrl::SetScrollCursor(bool fSet) {
 
 	if (fSet) {
 		::GetCursorPos(m_ptScrollCursorClick);
-		m_Wnd.SetTimer(m_uIDTScrolCursor, 20, nullptr);
+		m_Wnd.SetTimer(m_uIDTScrollCursor, 20, nullptr);
 	}
 	else {
-		m_Wnd.KillTimer(m_uIDTScrolCursor);
+		m_Wnd.KillTimer(m_uIDTScrollCursor);
 	}
 }
 
@@ -4903,14 +4931,18 @@ void CHexCtrl::SnapshotUndo(SpanHexSpan spnHexSpan) {
 			if (IsVirtualImpl() && hs.ullSize > GetCacheSize()) {
 				const auto dwSizeChunk = GetCacheSize();
 				const auto ullMod = hs.ullSize % dwSizeChunk;
-				auto ullChunks = hs.ullSize / dwSizeChunk + (ullMod > 0 ? 1 : 0);
-				ULONGLONG ullOffset { 0 };
-				while (ullChunks-- > 0) {
-					const auto ullSize = (ullChunks == 1 && ullMod > 0) ? ullMod : dwSizeChunk;
-					if (const auto spnData = GetData({ ullOffset, ullSize }); !spnData.empty()) {
-						std::copy_n(spnData.data(), ullSize, undo.vecData.data() + static_cast<std::size_t>(ullOffset));
+				auto u64Chunks = hs.ullSize / dwSizeChunk + (ullMod > 0 ? 1 : 0);
+				std::uint64_t u64OffsetLocal { 0 };
+				while (u64Chunks > 0) {
+					const auto u64Size = (u64Chunks == 1 && ullMod > 0) ? ullMod : dwSizeChunk;
+					const auto u64DataOffset = hs.ullOffset + u64OffsetLocal;
+					if (const auto spnData = GetData({ u64DataOffset, u64Size }); !spnData.empty()) {
+						assert(spnData.size() >= u64Size);
+						std::copy_n(spnData.data(), u64Size, undo.vecData.data() + static_cast<std::size_t>(u64OffsetLocal));
 					}
-					ullOffset += ullSize;
+
+					u64OffsetLocal += u64Size;
+					--u64Chunks;
 				}
 			}
 			else {
@@ -4939,7 +4971,7 @@ void CHexCtrl::TTTrackShow(bool fShow, bool fTimer, const wchar_t* pwszText) {
 		m_WndTT.SendMsg(TTM_TRACKPOSITION, 0, MAKELPARAM(ptCur.x - 5, ptCur.y - 25));
 
 		if (fTimer) { //To track tooltip showing time.
-			m_tmTT = std::chrono::high_resolution_clock::now();
+			m_tmTT = std::chrono::steady_clock::now();
 			m_Wnd.SetTimer(m_uIDTTooltip, 300, nullptr);
 		}
 	}
@@ -4970,16 +5002,19 @@ void CHexCtrl::Undo() {
 			if (IsVirtualImpl() && vecUndoData.size() > GetCacheSize()) { //In VirtualData mode processing data chunk by chunk.
 				const auto dwSizeChunk = GetCacheSize();
 				const auto uzMod = vecUndoData.size() % dwSizeChunk;
-				auto ullChunks = vecUndoData.size() / dwSizeChunk + (uzMod > 0 ? 1 : 0);
-				std::size_t ullOffset = 0;
-				while (ullChunks-- > 0) {
-					const auto ullSize = (ullChunks == 1 && uzMod > 0) ? uzMod : dwSizeChunk;
-					if (const auto spnData = GetData({ ullOffset, ullSize }); !spnData.empty()) {
-						std::copy_n(spnData.data(), ullSize, redo.vecData.begin() + ullOffset); //Fill Redo with the data.
-						std::copy_n(vecUndoData.begin() + ullOffset, ullSize, spnData.data()); //Undo the data.
-						SetDataVirtual(spnData, { ullOffset, ullSize });
+				auto u64Chunks = vecUndoData.size() / dwSizeChunk + (uzMod > 0 ? 1 : 0);
+				std::uint64_t u64OffsetLocal { 0 };
+				while (u64Chunks > 0) {
+					const auto u64Size = (u64Chunks == 1 && uzMod > 0) ? uzMod : dwSizeChunk;
+					const auto u64DataOffset = undo.ullOffset + u64OffsetLocal;
+					if (const auto spnData = GetData({ u64DataOffset, u64Size }); !spnData.empty()) {
+						std::copy_n(spnData.data(), u64Size, redo.vecData.begin() + u64OffsetLocal); //Fill Redo with the data.
+						std::copy_n(vecUndoData.begin() + u64OffsetLocal, u64Size, spnData.data()); //Undo the data.
+						SetDataVirtual(spnData, { u64DataOffset, u64Size });
 					}
-					ullOffset += ullSize;
+
+					u64OffsetLocal += u64Size;
+					--u64Chunks;
 				}
 			}
 			else {
@@ -5094,6 +5129,15 @@ auto CHexCtrl::WMDestroy()->LRESULT {
 	m_ScrollV.DestroyWindow(); //Not a child of the IHexCtrl.
 	m_ScrollH.DestroyWindow(); //Not a child of the IHexCtrl.
 	ParentNotify(HEXCTRL_MSG_DESTROY);
+
+	//If Delete() is called while the parent dialog is still alive (destroying the CHexCtrl C++ object 
+	//before the control HWND receives WM_NCDESTROY), SubclassProc later will fire on WM_NCDESTROY
+	//with a dangling 'this' pointer (uIDSubclass). 
+	//Calling RemoveWindowSubclass here in WMDestroy prevents a use-after-free.
+	if (m_fCustom) {
+		::RemoveWindowSubclass(m_Wnd, SubclassProc, reinterpret_cast<UINT_PTR>(this));
+	}
+
 	m_fCreated = false;
 
 	return 0;
@@ -5632,7 +5676,7 @@ auto CHexCtrl::WMTimer(const MSG& msg)->LRESULT {
 	const auto uIDTimer = msg.wParam;
 
 	if (uIDTimer == m_uIDTTooltip) {
-		constexpr auto dSecToShow { 5000.0 }; //How many ms to show tooltips.
+		constexpr auto dMSToShow { 5000.0 }; //How many ms to show tooltips.
 		auto rcClient = m_Wnd.GetClientRect();
 		m_Wnd.ClientToScreen(rcClient);
 		GDIUT::CPoint ptCur;
@@ -5642,15 +5686,15 @@ auto CHexCtrl::WMTimer(const MSG& msg)->LRESULT {
 			TTTrackShow(false, false);
 		}
 		else if (const auto msElapsed = std::chrono::duration<double, std::milli>
-			(std::chrono::high_resolution_clock::now() - m_tmTT).count();
-			msElapsed >= dSecToShow) { //Check if more than dSecToShow ms have passed since toolip is shown.
+			(std::chrono::steady_clock::now() - m_tmTT).count();
+			msElapsed >= dMSToShow) { //Check if more than dMSToShow ms have passed since toolip is shown.
 			TTTrackShow(false, true);
 		}
 
 		return 0;
 	}
 
-	if (uIDTimer == m_uIDTScrolCursor) {
+	if (uIDTimer == m_uIDTScrollCursor) {
 		GDIUT::CPoint ptCur;
 		::GetCursorPos(ptCur);
 		constexpr auto flSlowFactor = 4.F; //For scrolling slowly, for every segment.
@@ -5698,9 +5742,14 @@ void CHexCtrl::ModifyOperScalar(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 	using enum EHexOperMode;
 
 	constexpr auto lmbOperScalarT = []<typename T>(T * pData, const HEXMODIFY & hms) {
-		assert(!hms.spnData.empty());
-		T tData = hms.fBigEndian ? ut::ByteSwap(*pData) : *pData;
-		const T tOperData = *reinterpret_cast<const T*>(hms.spnData.data());
+		assert(!hms.spnData.empty() && hms.spnData.size() >= sizeof(T));
+		T tData { };
+		T tOperData { };
+		std::memcpy(&tData, pData, sizeof(T));
+		std::memcpy(&tOperData, hms.spnData.data(), sizeof(T));
+		if (hms.fBigEndian) {
+			tData = ut::ByteSwap(tData);
+		}
 
 		if constexpr (std::is_integral_v<T>) { //Operations only for integral types.
 			switch (hms.eOperMode) {
@@ -5781,7 +5830,7 @@ void CHexCtrl::ModifyOperScalar(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 			tData = ut::ByteSwap(tData);
 		}
 
-		*pData = tData;
+		std::memcpy(pData, &tData, sizeof(T));
 	};
 
 	switch (hms.eDataType) {

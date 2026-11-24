@@ -1619,7 +1619,7 @@ void CHexDlgSearch::Search() {
 	const auto pHexCtrl = GetHexCtrl();
 	m_fFound = false;
 
-	pHexCtrl->SetRedraw(false);
+	const ut::SafeSetRedraw srguard(pHexCtrl);
 	if (m_fReplace) {
 		if (m_fAll) { //Replace All
 			ReplaceAll();
@@ -1649,7 +1649,6 @@ void CHexDlgSearch::Search() {
 			}
 		}
 	}
-	pHexCtrl->SetRedraw(true);
 
 	std::wstring wstrInfo;
 	if (m_fFound) {
