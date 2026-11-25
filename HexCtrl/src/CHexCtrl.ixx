@@ -226,20 +226,21 @@ namespace HEXCTRL::INTERNAL {
 		void CaretToPageEnd(); //Set caret to a current page end.
 		void ChooseFontDlg();  //The "ChooseFont" dialog.
 		void ClipboardCopy(EClipboard eType)const;
+		[[nodiscard]] auto ClipboardCopyBase64()const -> std::wstring;
+		[[nodiscard]] auto ClipboardCopyCArr()const -> std::wstring;
+		[[nodiscard]] auto ClipboardCopyGrepHex()const -> std::wstring;
+		[[nodiscard]] auto ClipboardCopyHex()const -> std::wstring;
+		[[nodiscard]] auto ClipboardCopyHexFmt()const -> std::wstring;
+		[[nodiscard]] auto ClipboardCopyHexLE()const -> std::wstring;
+		[[nodiscard]] auto ClipboardCopyOffset()const -> std::wstring;
+		[[nodiscard]] auto ClipboardCopyPrintScreen()const -> std::wstring;
+		[[nodiscard]] auto ClipboardCopyTextCP()const -> std::wstring;
 		void ClipboardPaste(EClipboard eType);
-		[[nodiscard]] auto CopyBase64()const -> std::wstring;
-		[[nodiscard]] auto CopyCArr()const -> std::wstring;
-		[[nodiscard]] auto CopyGrepHex()const -> std::wstring;
-		[[nodiscard]] auto CopyHex()const -> std::wstring;
-		[[nodiscard]] auto CopyHexFmt()const -> std::wstring;
-		[[nodiscard]] auto CopyHexLE()const -> std::wstring;
-		[[nodiscard]] auto CopyOffset()const -> std::wstring;
-		[[nodiscard]] auto CopyPrintScreen()const -> std::wstring;
-		[[nodiscard]] auto CopyTextCP()const -> std::wstring;
 		[[nodiscard]] auto CreateCapacityString()const -> std::wstring;
 		void CreateMenu();
 		void CreatePens();
 		[[nodiscard]] auto CreateTextAreaString()const -> std::wstring;
+		void DeleteGDIObjects();
 		void DrawWindow(HDC hDC)const;
 		void DrawInfoBar(HDC hDC)const;
 		void DrawOffsets(HDC hDC, ULONGLONG ullStartLine, int iLines)const;
@@ -502,6 +503,7 @@ CHexCtrl::CHexCtrl() {
 }
 
 CHexCtrl::~CHexCtrl() {
+	DeleteGDIObjects();
 	::UnregisterClassW(m_pwszClassName, nullptr);
 }
 
@@ -1172,8 +1174,10 @@ bool CHexCtrl::IsCmdAvail(EHexCmd eCmd)const {
 	case CMD_CLPBRD_COPY_BASE64:
 	case CMD_CLPBRD_COPY_CARR:
 	case CMD_CLPBRD_COPY_GREPHEX:
-	case CMD_CLPBRD_COPY_PRNTSCRN:
 		fAvail = fSelection;
+		break;
+	case CMD_CLPBRD_COPY_PRNTSCRN:
+		fAvail = m_Selection.HasContiguousSel();
 		break;
 	case CMD_CLPBRD_PASTE_HEX:
 	case CMD_CLPBRD_PASTE_TEXTUTF16:
@@ -1360,6 +1364,7 @@ auto CHexCtrl::ProcessMsg(const MSG& msg)->LRESULT {
 	case WM_KEYUP: return WMKeyUp(msg);
 	case WM_LBUTTONDBLCLK: return WMLButtonDblClk(msg);
 	case WM_LBUTTONDOWN: return WMLButtonDown(msg);
+	case WM_CAPTURECHANGED:
 	case WM_LBUTTONUP: return WMLButtonUp(msg);
 	case WM_MBUTTONDOWN: return WMMButtonDown(msg);
 	case WM_MOUSEMOVE: return WMMouseMove(msg);
@@ -1715,10 +1720,9 @@ auto CHexCtrl::BuildDataToDraw(ULONGLONG ullStartLine, int iLines)const->std::tu
 		wstrText.assign(pDataBegin, pDataEnd);
 	}
 	else if (iCodepage == 0) { //UTF-16.
-		const auto pDataUTF16Beg = reinterpret_cast<wchar_t*>(pDataBegin);
-		const auto pDataUTF16End = reinterpret_cast<wchar_t*>((uzSizeDataToPrint % 2) == 0 ? pDataEnd : pDataEnd - 1);
-		wstrText.assign(pDataUTF16Beg, pDataUTF16End);
-		wstrText.resize(uzSizeDataToPrint);
+		const auto uzWchars = uzSizeDataToPrint / sizeof(wchar_t);
+		wstrText.resize(uzSizeDataToPrint); //Null-padded to uzSizeDataToPrint so indexing by byte offset stays valid.
+		std::memcpy(wstrText.data(), pDataBegin, uzWchars * sizeof(wchar_t));
 	}
 	else {
 		wstrText.resize(uzSizeDataToPrint);
@@ -1926,7 +1930,12 @@ void CHexCtrl::ChooseFontDlg() {
 }
 
 void CHexCtrl::ClipboardCopy(EClipboard eType)const {
-	if (m_Selection.GetSelSize() > 1024 * 1024 * 8) { //8MB
+	const auto u64SelSize = m_Selection.GetSelSize();
+	if (eType != EClipboard::COPY_OFFSET && u64SelSize == 0) {
+		return;
+	}
+
+	if (eType != EClipboard::COPY_OFFSET && u64SelSize > (1024ULL * 1024ULL * 8ULL)) { //8MB
 		::MessageBoxW(m_Wnd, L"Selection size is too big to copy.\r\nTry selecting less.", L"Error", MB_ICONERROR);
 		return;
 	}
@@ -1934,31 +1943,31 @@ void CHexCtrl::ClipboardCopy(EClipboard eType)const {
 	std::wstring wstrData;
 	switch (eType) {
 	case EClipboard::COPY_HEX:
-		wstrData = CopyHex();
+		wstrData = ClipboardCopyHex();
 		break;
 	case EClipboard::COPY_HEXLE:
-		wstrData = CopyHexLE();
+		wstrData = ClipboardCopyHexLE();
 		break;
 	case EClipboard::COPY_HEXFMT:
-		wstrData = CopyHexFmt();
+		wstrData = ClipboardCopyHexFmt();
 		break;
 	case EClipboard::COPY_TEXT_CP:
-		wstrData = CopyTextCP();
+		wstrData = ClipboardCopyTextCP();
 		break;
 	case EClipboard::COPY_BASE64:
-		wstrData = CopyBase64();
+		wstrData = ClipboardCopyBase64();
 		break;
 	case EClipboard::COPY_CARR:
-		wstrData = CopyCArr();
+		wstrData = ClipboardCopyCArr();
 		break;
 	case EClipboard::COPY_GREPHEX:
-		wstrData = CopyGrepHex();
+		wstrData = ClipboardCopyGrepHex();
 		break;
 	case EClipboard::COPY_PRNTSCRN:
-		wstrData = CopyPrintScreen();
+		wstrData = ClipboardCopyPrintScreen();
 		break;
 	case EClipboard::COPY_OFFSET:
-		wstrData = CopyOffset();
+		wstrData = ClipboardCopyOffset();
 		break;
 	default:
 		break;
@@ -1975,120 +1984,33 @@ void CHexCtrl::ClipboardCopy(EClipboard eType)const {
 	const auto lpMemLock = ::GlobalLock(hMem);
 	if (!lpMemLock) {
 		ut::DBG_REPORT(L"GlobalLock error.");
+		::GlobalFree(hMem);
 		return;
 	}
 
 	std::memcpy(lpMemLock, wstrData.data(), uzMemSize);
 	::GlobalUnlock(hMem);
-	::OpenClipboard(m_Wnd);
-	::EmptyClipboard();
-	::SetClipboardData(CF_UNICODETEXT, hMem);
-	::CloseClipboard();
+	if (::OpenClipboard(m_Wnd)) {
+		::EmptyClipboard();
+		if (::SetClipboardData(CF_UNICODETEXT, hMem) == nullptr) {
+			::GlobalFree(hMem);
+		}
+		::CloseClipboard();
+	}
+	else {
+		::GlobalFree(hMem);
+	}
 }
 
-void CHexCtrl::ClipboardPaste(EClipboard eType) {
-	if (!IsMutableImpl() || !::OpenClipboard(m_Wnd))
-		return;
-
-	const auto hClpbrd = ::GetClipboardData(CF_UNICODETEXT);
-	if (!hClpbrd) {
-		::CloseClipboard();
-		return;
-	}
-
-	const auto uzSizeClpbrd = ::GlobalSize(hClpbrd);
-	if (uzSizeClpbrd == 0) {
-		::CloseClipboard();
-		return;
-	}
-
-	const auto pDataClpbrd = static_cast<wchar_t*>(::GlobalLock(hClpbrd));
-	if (pDataClpbrd == nullptr) {
-		::CloseClipboard();
-		return;
-	}
-
-	const auto ullDataSize = GetDataSizeImpl();
-	const auto ullCaretPos = GetCaretPosImpl();
-	HEXMODIFY hmd;
-	std::uint64_t u64SizeToPaste { };
-	std::vector<std::byte> vecDataToPaste; //Actual data to paste, must outlive the hmd.
-	const auto uzMaxChars = uzSizeClpbrd / sizeof(wchar_t);
-	const auto wsvWstringClpbrd = std::wstring_view(pDataClpbrd, ::wcsnlen(pDataClpbrd, uzMaxChars));
-	const auto lmbPasteUTF16 = [&]() {
-		u64SizeToPaste = wsvWstringClpbrd.size() * sizeof(wchar_t);
-		if (ullCaretPos + u64SizeToPaste > ullDataSize) {
-			u64SizeToPaste = ullDataSize - ullCaretPos;
-		}
-		hmd.spnData = { reinterpret_cast<std::byte*>(pDataClpbrd), static_cast<std::size_t>(u64SizeToPaste) };
-		};
-
-	switch (eType) {
-	case EClipboard::PASTE_TEXT_UTF16:
-		lmbPasteUTF16();
-		break;
-	case EClipboard::PASTE_TEXT_CP:
-	{
-		auto iCodepage = GetCodepage();
-		if (iCodepage == 0) { //UTF-16.
-			lmbPasteUTF16();
-			break;
-		}
-
-		if (iCodepage == -1) { //ASCII.
-			iCodepage = 1252;  //ANSI-Latin codepage for default ASCII.
-		}
-
-		vecDataToPaste = ut::RangeToVecBytes(ut::WstrToStr(wsvWstringClpbrd, iCodepage));
-		u64SizeToPaste = vecDataToPaste.size();
-		if (ullCaretPos + u64SizeToPaste > ullDataSize) {
-			u64SizeToPaste = ullDataSize - ullCaretPos;
-		}
-
-		hmd.spnData = { vecDataToPaste.data(), static_cast<std::size_t>(u64SizeToPaste) };
-	}
-	break;
-	case EClipboard::PASTE_HEX:
-	{
-		auto optData = ut::WstrToHexBytes(wsvWstringClpbrd);
-		if (!optData) {
-			::GlobalUnlock(hClpbrd);
-			::CloseClipboard();
-			return;
-		}
-
-		vecDataToPaste = std::move(*optData);
-		u64SizeToPaste = vecDataToPaste.size();
-		if (ullCaretPos + u64SizeToPaste > ullDataSize) {
-			u64SizeToPaste = ullDataSize - ullCaretPos;
-		}
-
-		hmd.spnData = { vecDataToPaste.data(), static_cast<std::size_t>(u64SizeToPaste) };
-	}
-	break;
-	default:
-		break;
-	}
-
-	if (u64SizeToPaste > 0) {
-		hmd.vecSpan.emplace_back(ullCaretPos, u64SizeToPaste);
-		ModifyData(hmd);
-		RedrawImpl();
-	}
-
-	::GlobalUnlock(hClpbrd);
-	::CloseClipboard();
-}
-
-auto CHexCtrl::CopyBase64()const->std::wstring {
+auto CHexCtrl::ClipboardCopyBase64()const->std::wstring {
 	static constexpr auto pwszBase64Map { L"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/" };
 	const auto ullSelSize = m_Selection.GetSelSize();
 	std::wstring wstrData;
 	wstrData.reserve(static_cast<std::size_t>(((ullSelSize + 2) / 3) * 4)); //Exact Base64 capacity formula.
 	auto uValA = 0U;
 	auto iValB = -6;
-	for (auto i { 0U }; i < ullSelSize; ++i) {
-		uValA = (uValA << 8) + ut::GetIHexTData<BYTE>(*this, m_Selection.GetOffsetByIndex(i));
+	for (std::size_t i { 0 }; i < ullSelSize; ++i) {
+		uValA = (uValA << 8) | ut::GetIHexTData<BYTE>(*this, m_Selection.GetOffsetByIndex(i));
 		iValB += 8;
 		while (iValB >= 0) {
 			wstrData += pwszBase64Map[(uValA >> iValB) & 0x3F];
@@ -2107,14 +2029,14 @@ auto CHexCtrl::CopyBase64()const->std::wstring {
 	return wstrData;
 }
 
-auto CHexCtrl::CopyCArr()const->std::wstring {
+auto CHexCtrl::ClipboardCopyCArr()const->std::wstring {
 	std::wstring wstrData;
 	const auto ullSelSize = m_Selection.GetSelSize();
 	const auto pwszHexChars = GetHexChars();
 	wstrData.reserve((static_cast<std::size_t>(ullSelSize) * 3) + 64);
 	wstrData = std::format(L"unsigned char data[{}] = {{\r\n", ullSelSize);
 
-	for (auto i { 0U }; i < ullSelSize; ++i) {
+	for (std::size_t i { 0 }; i < ullSelSize; ++i) {
 		wstrData += L"0x";
 		const auto chByte = ut::GetIHexTData<BYTE>(*this, m_Selection.GetOffsetByIndex(i));
 		wstrData += pwszHexChars[(chByte & 0xF0) >> 4];
@@ -2138,13 +2060,13 @@ auto CHexCtrl::CopyCArr()const->std::wstring {
 	return wstrData;
 }
 
-auto CHexCtrl::CopyGrepHex()const->std::wstring {
+auto CHexCtrl::ClipboardCopyGrepHex()const->std::wstring {
 	std::wstring wstrData;
 	const auto ullSelSize = m_Selection.GetSelSize();
 	const auto pwszHexChars = GetHexChars();
 
-	wstrData.reserve(static_cast<std::size_t>(ullSelSize) * 2);
-	for (auto i { 0U }; i < ullSelSize; ++i) {
+	wstrData.reserve(static_cast<std::size_t>(ullSelSize) * 4);
+	for (std::size_t i { 0 }; i < ullSelSize; ++i) {
 		wstrData += L"\\x";
 		const auto chByte = ut::GetIHexTData<BYTE>(*this, m_Selection.GetOffsetByIndex(i));
 		wstrData += pwszHexChars[(chByte & 0xF0) >> 4];
@@ -2154,13 +2076,13 @@ auto CHexCtrl::CopyGrepHex()const->std::wstring {
 	return wstrData;
 }
 
-auto CHexCtrl::CopyHex()const->std::wstring {
+auto CHexCtrl::ClipboardCopyHex()const->std::wstring {
 	std::wstring wstrData;
 	const auto ullSelSize = m_Selection.GetSelSize();
 	const auto pwszHexChars = GetHexChars();
 
 	wstrData.reserve(static_cast<std::size_t>(ullSelSize) * 2);
-	for (auto i { 0U }; i < ullSelSize; ++i) {
+	for (std::size_t i { 0 }; i < ullSelSize; ++i) {
 		const auto chByte = ut::GetIHexTData<BYTE>(*this, m_Selection.GetOffsetByIndex(i));
 		wstrData += pwszHexChars[(chByte & 0xF0) >> 4];
 		wstrData += pwszHexChars[(chByte & 0x0F)];
@@ -2169,7 +2091,7 @@ auto CHexCtrl::CopyHex()const->std::wstring {
 	return wstrData;
 }
 
-auto CHexCtrl::CopyHexFmt()const->std::wstring {
+auto CHexCtrl::ClipboardCopyHexFmt()const->std::wstring {
 	std::wstring wstrData;
 	const auto ullSelStart = m_Selection.GetSelStart();
 	const auto ullSelSize = m_Selection.GetSelSize();
@@ -2180,7 +2102,7 @@ auto CHexCtrl::CopyHexFmt()const->std::wstring {
 	wstrData.reserve(static_cast<std::size_t>(ullSelSize) * 3);
 	if (m_Selection.HasContiguousSel()) {
 		auto dwTail = m_Selection.GetLineLength();
-		for (auto i { 0U }; i < ullSelSize; ++i) {
+		for (std::size_t i { 0 }; i < ullSelSize; ++i) {
 			const auto chByte = ut::GetIHexTData<BYTE>(*this, m_Selection.GetOffsetByIndex(i));
 			wstrData += pwszHexChars[(chByte & 0xF0) >> 4];
 			wstrData += pwszHexChars[(chByte & 0x0F)];
@@ -2212,7 +2134,7 @@ auto CHexCtrl::CopyHexFmt()const->std::wstring {
 			wstrData.insert(0, static_cast<std::size_t>(dwCount), ' ');
 		}
 
-		for (auto i { 0U }; i < ullSelSize; ++i) {
+		for (std::size_t i { 0 }; i < ullSelSize; ++i) {
 			const auto chByte = ut::GetIHexTData<BYTE>(*this, m_Selection.GetOffsetByIndex(i));
 			wstrData += pwszHexChars[(chByte & 0xF0) >> 4];
 			wstrData += pwszHexChars[(chByte & 0x0F)];
@@ -2235,7 +2157,7 @@ auto CHexCtrl::CopyHexFmt()const->std::wstring {
 	return wstrData;
 }
 
-auto CHexCtrl::CopyHexLE()const->std::wstring {
+auto CHexCtrl::ClipboardCopyHexLE()const->std::wstring {
 	std::wstring wstrData;
 	const auto ullSelSize = m_Selection.GetSelSize();
 	const auto pwszHexChars = GetHexChars();
@@ -2250,72 +2172,81 @@ auto CHexCtrl::CopyHexLE()const->std::wstring {
 	return wstrData;
 }
 
-auto CHexCtrl::CopyOffset()const->std::wstring {
+auto CHexCtrl::ClipboardCopyOffset()const->std::wstring {
 	return (IsOffsetAsHexImpl() ? L"0x" : L"") + OffsetToWstr(GetCaretPosImpl());
 }
 
-auto CHexCtrl::CopyPrintScreen()const->std::wstring {
+auto CHexCtrl::ClipboardCopyPrintScreen()const->std::wstring {
 	if (!m_Selection.HasContiguousSel()) //Only works with contiguous selection.
 		return { };
 
 	const auto ullSelStart = m_Selection.GetSelStart();
 	const auto ullSelSize = m_Selection.GetSelSize();
 	const auto dwCapacity = GetCapacityImpl();
+	const auto dwGroupSize = GetGroupSize();
 
-	std::wstring wstrRet;
-	wstrRet.reserve(static_cast<std::size_t>(ullSelSize) * 4);
-	wstrRet = L"Offset";
-	wstrRet.insert(0, (static_cast<std::size_t>(GetDigitsOffset()) - wstrRet.size()) / 2, ' ');
-	wstrRet.insert(wstrRet.size(), static_cast<std::size_t>(GetDigitsOffset()) - wstrRet.size(), ' ');
+	std::wstring wstrRet = L"Offset";
+	if (const auto uzDigits = static_cast<std::size_t>(GetDigitsOffset()); uzDigits > wstrRet.size()) {
+		const auto uzPad = uzDigits - wstrRet.size();
+		wstrRet.insert(0, uzPad / 2, L' ');
+		wstrRet.append(uzPad - (uzPad / 2), L' ');
+	}
 	wstrRet += L"   "; //Spaces to Capacity.
 	wstrRet += CreateCapacityString();
 	wstrRet += L"   "; //Spaces to Text.
+
 	const auto wstrTextTitle = CreateTextAreaString();
 	if (const auto iSize = static_cast<int>(dwCapacity) - static_cast<int>(wstrTextTitle.size()); iSize > 0) {
-		wstrRet.insert(wstrRet.size(), static_cast<std::size_t>(iSize / 2), ' ');
+		wstrRet.append(static_cast<std::size_t>(iSize / 2), L' ');
 	}
 	wstrRet += wstrTextTitle;
 	wstrRet += L"\r\n";
 
-	//How many spaces to insert at the beginning.
-	DWORD dwModStart = ullSelStart % dwCapacity;
+	DWORD dwModStart = static_cast<DWORD>(ullSelStart % dwCapacity);
 	const auto ullLines = GetSelectedLines();
 	const auto ullStartLine = ullSelStart / dwCapacity;
-	const auto dwStartOffset = dwModStart; //Offset from the line start in the wstrHex.
-	const auto& [wstrHex, wstrText] = BuildDataToDraw(ullStartLine, static_cast<int>(ullLines));
 	std::wstring wstrDataText;
-	std::size_t uzIndexToPrint { 0 };
+	wstrDataText.reserve(dwCapacity);
+	std::uint64_t u64BytesPrinted { 0 };
 
-	for (auto itLine { 0U }; itLine < ullLines; ++itLine) {
-		wstrRet += OffsetToWstr(ullStartLine * dwCapacity + dwCapacity * itLine);
-		wstrRet.insert(wstrRet.size(), 3, ' ');
+	for (std::uint64_t u64Line { 0 }; u64Line < ullLines; ++u64Line) {
+		const auto ullLineCurr = ullStartLine + u64Line;
+		const auto [wstrHex, wstrText] = BuildDataToDraw(ullLineCurr, 1);
 
-		for (auto itChunk { 0U }; itChunk < dwCapacity; ++itChunk) {
-			if (dwModStart == 0 && uzIndexToPrint < ullSelSize) {
-				wstrRet += wstrHex[(uzIndexToPrint + dwStartOffset) * 2];
-				wstrRet += wstrHex[(uzIndexToPrint + dwStartOffset) * 2 + 1];
-				wstrDataText += wstrText[uzIndexToPrint + dwStartOffset];
-				++uzIndexToPrint;
+		wstrRet += OffsetToWstr(ullLineCurr * dwCapacity);
+		wstrRet.append(3, L' ');
+
+		for (DWORD itChunk { 0 }; itChunk < dwCapacity; ++itChunk) {
+			if (dwModStart > 0) {
+				wstrRet += L"  ";
+				wstrDataText += L' ';
+				--dwModStart;
+			}
+			else if (u64BytesPrinted < ullSelSize) {
+				wstrRet += wstrHex[itChunk * 2];
+				wstrRet += wstrHex[itChunk * 2 + 1];
+				wstrDataText += wstrText[itChunk];
+				++u64BytesPrinted;
 			}
 			else {
 				wstrRet += L"  ";
-				wstrDataText += L" ";
-				--dwModStart;
+				wstrDataText += L' ';
 			}
 
 			//Additional space between grouped Hex chunks.
-			if (((itChunk + 1) % GetGroupSize()) == 0 && itChunk < (dwCapacity - 1)) {
-				wstrRet += L" ";
+			if (((itChunk + 1) % dwGroupSize) == 0 && itChunk < (dwCapacity - 1)) {
+				wstrRet += L' ';
 			}
 
 			//Additional space between capacity halves, only in 1 byte grouping size.
-			if (GetGroupSize() == 1 && itChunk == (m_dwCapacityBlockSize - 1)) {
+			if (dwGroupSize == 1 && itChunk == (m_dwCapacityBlockSize - 1)) {
 				wstrRet += L"  ";
 			}
 		}
+
 		wstrRet += L"   "; //Text beginning.
 		wstrRet += wstrDataText;
-		if (itLine < ullLines - 1) {
+		if (u64Line < ullLines - 1) {
 			wstrRet += L"\r\n";
 		}
 		wstrDataText.clear();
@@ -2324,12 +2255,12 @@ auto CHexCtrl::CopyPrintScreen()const->std::wstring {
 	return wstrRet;
 }
 
-auto CHexCtrl::CopyTextCP()const->std::wstring {
+auto CHexCtrl::ClipboardCopyTextCP()const->std::wstring {
 	const auto ullSelSize = m_Selection.GetSelSize();
 	std::string strData;
 	strData.reserve(static_cast<std::size_t>(ullSelSize));
 
-	for (auto i = 0; i < ullSelSize; ++i) {
+	for (std::size_t i { 0 }; i < ullSelSize; ++i) {
 		strData.push_back(ut::GetIHexTData<BYTE>(*this, m_Selection.GetOffsetByIndex(i)));
 	}
 
@@ -2339,10 +2270,9 @@ auto CHexCtrl::CopyTextCP()const->std::wstring {
 		wstrText.assign(strData.begin(), strData.end());
 	}
 	else if (iCodepage == 0) { //UTF-16.
-		const auto uzSizeWstr = (strData.size() - (strData.size() % 2)) / sizeof(wchar_t);
-		const auto pDataUTF16Beg = reinterpret_cast<const wchar_t*>(strData.data());
-		const auto pDataUTF16End = pDataUTF16Beg + uzSizeWstr;
-		wstrText.assign(pDataUTF16Beg, pDataUTF16End);
+		const auto uzSizeWstr = strData.size() / sizeof(wchar_t);
+		wstrText.resize(uzSizeWstr);
+		std::memcpy(wstrText.data(), strData.data(), uzSizeWstr * sizeof(wchar_t));
 	}
 	else {
 		wstrText = ut::StrToWstr(strData, iCodepage);
@@ -2350,6 +2280,98 @@ auto CHexCtrl::CopyTextCP()const->std::wstring {
 	ReplaceUnprintable(wstrText, iCodepage == -1, false);
 
 	return wstrText;
+}
+
+void CHexCtrl::ClipboardPaste(EClipboard eType) {
+	if (!IsMutableImpl() || !::OpenClipboard(m_Wnd))
+		return;
+
+	const auto hClpbrd = ::GetClipboardData(CF_UNICODETEXT);
+	if (!hClpbrd) {
+		::CloseClipboard();
+		return;
+	}
+
+	const auto uzSizeClpbrd = ::GlobalSize(hClpbrd);
+	if (uzSizeClpbrd == 0) {
+		::CloseClipboard();
+		return;
+	}
+
+	const auto pDataClpbrd = static_cast<wchar_t*>(::GlobalLock(hClpbrd));
+	if (pDataClpbrd == nullptr) {
+		::CloseClipboard();
+		return;
+	}
+
+	const auto ullDataSize = GetDataSizeImpl();
+	const auto ullCaretPos = GetCaretPosImpl();
+	HEXMODIFY hmd { .eModifyMode { EHexModifyMode::MODIFY_ONCE } };
+	std::uint64_t u64SizeToPaste { };
+	std::vector<std::byte> vecDataToPaste; //Actual data to paste, must outlive the hmd.
+	const auto uzMaxChars = uzSizeClpbrd / sizeof(wchar_t);
+	const auto wsvWstringClpbrd = std::wstring_view(pDataClpbrd, ::wcsnlen(pDataClpbrd, uzMaxChars));
+	const auto lmbPasteUTF16 = [&]() {
+		u64SizeToPaste = wsvWstringClpbrd.size() * sizeof(wchar_t);
+		if (ullCaretPos + u64SizeToPaste > ullDataSize) {
+			u64SizeToPaste = ullDataSize - ullCaretPos;
+		}
+		hmd.spnData = { reinterpret_cast<const std::byte*>(pDataClpbrd), static_cast<std::size_t>(u64SizeToPaste) };
+		};
+
+	switch (eType) {
+	case EClipboard::PASTE_TEXT_UTF16:
+		lmbPasteUTF16();
+		break;
+	case EClipboard::PASTE_TEXT_CP: {
+		auto iCodepage = GetCodepage();
+		if (iCodepage == 0) { //UTF-16.
+			lmbPasteUTF16();
+			break;
+		}
+
+		if (iCodepage == -1) { //ASCII.
+			iCodepage = 1252;  //ANSI-Latin codepage for default ASCII.
+		}
+
+		vecDataToPaste = ut::RangeToVecBytes(ut::WstrToStr(wsvWstringClpbrd, iCodepage));
+		u64SizeToPaste = vecDataToPaste.size();
+		if (ullCaretPos + u64SizeToPaste > ullDataSize) {
+			u64SizeToPaste = ullDataSize - ullCaretPos;
+		}
+
+		hmd.spnData = { vecDataToPaste.data(), static_cast<std::size_t>(u64SizeToPaste) };
+		break;
+	}
+	case EClipboard::PASTE_HEX: {
+		auto optData = ut::WstrToHexBytes(wsvWstringClpbrd);
+		if (!optData) {
+			::GlobalUnlock(hClpbrd);
+			::CloseClipboard();
+			return;
+		}
+
+		vecDataToPaste = std::move(*optData);
+		u64SizeToPaste = vecDataToPaste.size();
+		if (ullCaretPos + u64SizeToPaste > ullDataSize) {
+			u64SizeToPaste = ullDataSize - ullCaretPos;
+		}
+
+		hmd.spnData = { vecDataToPaste.data(), static_cast<std::size_t>(u64SizeToPaste) };
+		break;
+	}
+	default:
+		break;
+	}
+
+	if (u64SizeToPaste > 0) {
+		hmd.vecSpan.emplace_back(ullCaretPos, u64SizeToPaste);
+		ModifyData(hmd);
+		RedrawImpl();
+	}
+
+	::GlobalUnlock(hClpbrd);
+	::CloseClipboard();
 }
 
 auto CHexCtrl::CreateCapacityString()const->std::wstring {
@@ -2491,6 +2513,17 @@ auto CHexCtrl::CreateTextAreaString()const->std::wstring {
 	default:
 		return std::format(L"Codepage {}", iCP);
 	}
+}
+
+void CHexCtrl::DeleteGDIObjects() {
+	::DeleteObject(m_hFntMain);
+	m_hFntMain = nullptr;
+	::DeleteObject(m_hFntInfoBar);
+	m_hFntInfoBar = nullptr;
+	::DeleteObject(m_hPenLinesMain);
+	m_hPenLinesMain = nullptr;
+	::DeleteObject(m_hPenLinesTempl);
+	m_hPenLinesTempl = nullptr;
 }
 
 void CHexCtrl::DrawWindow(HDC hDC)const {
@@ -4786,6 +4819,10 @@ bool CHexCtrl::SetConfigImpl(std::wstring_view wsvPath) {
 			return false;
 		}
 	}
+	else {
+		ut::DBG_REPORT(L"Failed to open config file.");
+		return false;
+	}
 
 	const auto lmbParseStr = [&](std::string_view sv)->std::optional<KEYBIND> {
 		if (sv.empty())
@@ -5198,10 +5235,7 @@ auto CHexCtrl::WMDestroy()->LRESULT {
 	m_vecCharsWidth.clear();
 	m_umapMenuItems.clear();
 	m_MenuMain.DestroyMenu();
-	::DeleteObject(m_hFntMain);
-	::DeleteObject(m_hFntInfoBar);
-	::DeleteObject(m_hPenLinesMain);
-	::DeleteObject(m_hPenLinesTempl);
+	DeleteGDIObjects();
 	m_ScrollV.DestroyWindow(); //Not a child of the IHexCtrl.
 	m_ScrollH.DestroyWindow(); //Not a child of the IHexCtrl.
 	ParentNotify(HEXCTRL_MSG_DESTROY);
@@ -5463,9 +5497,12 @@ auto CHexCtrl::WMLButtonDown(const MSG& msg)->LRESULT {
 
 auto CHexCtrl::WMLButtonUp([[maybe_unused]] const MSG& msg)->LRESULT {
 	m_fLMousePressed = false;
-	::ReleaseCapture();
 	m_ScrollV.WMLButtonUp();
 	m_ScrollH.WMLButtonUp();
+
+	if (::GetCapture() == m_Wnd) {
+		::ReleaseCapture();
+	}
 
 	return 0;
 }
