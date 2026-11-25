@@ -3699,8 +3699,7 @@ void CHexCtrl::ModifyDataRand(const HEXMODIFY& hms) {
 		std::copy_n(spnDataFrom.data(), spnDataFrom.size(), pData);
 		};
 
-	const auto uzSizeRandBuff = IsVirtualImpl() ?
-		(std::min)(static_cast<std::size_t>(GetCacheSize()), 1024ULL * 1024ULL) : (1024ULL * 1024ULL);
+	const auto uzSizeRandBuff = IsVirtualImpl() ? (std::min)(GetCacheSize(), 1024UL * 1024UL) : (1024UL * 1024UL);
 
 	if (hms.eModifyMode == EHexModifyMode::MODIFY_RAND_FAST) {
 		const bool fAnyLargeSpan = std::any_of(hms.vecSpan.begin(), hms.vecSpan.end(),
@@ -5820,13 +5819,18 @@ void CHexCtrl::ModifyOperScalar(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 
 	constexpr auto lmbOperScalarT = []<typename T>(T * pData, const HEXMODIFY & hms) {
 		assert(!hms.spnData.empty() && hms.spnData.size() >= sizeof(T));
-		T tData { };
+		using UIntT = std::conditional_t<sizeof(T) == 1, std::uint8_t,
+			std::conditional_t<sizeof(T) == 2, std::uint16_t,
+			std::conditional_t<sizeof(T) == 4, std::uint32_t, std::uint64_t>>>;
+
+		UIntT uRaw { };
 		T tOperData { };
-		std::memcpy(&tData, pData, sizeof(T));
+		std::memcpy(&uRaw, pData, sizeof(T));
 		std::memcpy(&tOperData, hms.spnData.data(), sizeof(T));
 		if (hms.fBigEndian) {
-			tData = ut::ByteSwap(tData);
+			uRaw = ut::ByteSwap(uRaw);
 		}
+		auto tData = std::bit_cast<T>(uRaw);
 
 		if constexpr (std::is_integral_v<T>) { //Operations only for integral types.
 			switch (hms.eOperMode) {
@@ -5897,17 +5901,18 @@ void CHexCtrl::ModifyOperScalar(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 			}
 			break;
 		case OPER_SWAP:
-			tData = ut::ByteSwap(tData);
+			tData = std::bit_cast<T>(ut::ByteSwap(std::bit_cast<UIntT>(tData)));
 			break;
 		default:
 			break;
 		}
 
+		auto uOut = std::bit_cast<UIntT>(tData);
 		if (hms.fBigEndian) { //Swap bytes back.
-			tData = ut::ByteSwap(tData);
+			uOut = ut::ByteSwap(uOut);
 		}
 
-		std::memcpy(pData, &tData, sizeof(T));
+		std::memcpy(pData, &uOut, sizeof(T));
 	};
 
 	switch (hms.eDataType) {

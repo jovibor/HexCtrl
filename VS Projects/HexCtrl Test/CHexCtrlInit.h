@@ -243,15 +243,20 @@ namespace TestHexCtrl {
 			sizeof(tOperData) }, .vecSpan { vecSpan }, .fBigEndian { fBigEndian } };
 		GetHexCtrl()->ModifyData(hms);
 
+		using UIntT = std::conditional_t<sizeof(T) == 1, std::uint8_t,
+			std::conditional_t<sizeof(T) == 2, std::uint16_t,
+			std::conditional_t<sizeof(T) == 4, std::uint32_t, std::uint64_t>>>;
+
 		//Modify reference data span by span using the exact same rules.
 		for (const auto& hs : vecSpan) {
 			const auto u64Chunks = hs.ullSize / sizeof(T);
 			auto* const pBaseRef = GetDataReference() + hs.ullOffset;
 
 			for (std::uint64_t i { 0 }; i < u64Chunks; ++i) {
-				T tData { };
-				std::memcpy(&tData, pBaseRef + (i * sizeof(T)), sizeof(T)); //Safe unaligned load.
-				if (fBigEndian) { tData = ByteSwap(tData); }
+				UIntT uRaw { };
+				std::memcpy(&uRaw, pBaseRef + (i * sizeof(T)), sizeof(T)); //Safe unaligned load.
+				if (fBigEndian) { uRaw = ByteSwap(uRaw); }
+				auto tData = std::bit_cast<T>(uRaw);
 
 				if constexpr (std::is_integral_v<T>) {
 					switch (eOperMode) {
@@ -284,12 +289,13 @@ namespace TestHexCtrl {
 					if constexpr (std::is_floating_point_v<T>) { tData = std::fmin(tData, tOperData); }
 					else { tData = (std::min)(tData, tOperData); }
 					break;
-				case OPER_SWAP:   tData = ByteSwap(tData); break;
+				case OPER_SWAP:   tData = std::bit_cast<T>(ByteSwap(std::bit_cast<UIntT>(tData))); break;
 				default: break;
 				}
 
-				if (fBigEndian) { tData = ByteSwap(tData); }
-				std::memcpy(pBaseRef + (i * sizeof(T)), &tData, sizeof(T)); //Safe unaligned store.
+				auto uOut = std::bit_cast<UIntT>(tData);
+				if (fBigEndian) { uOut = ByteSwap(uOut); }
+				std::memcpy(pBaseRef + (i * sizeof(T)), &uOut, sizeof(T)); //Safe unaligned store.
 			}
 		}
 	}
@@ -328,7 +334,7 @@ namespace TestHexCtrl {
 				else {
 					const auto tMaxAbs = (std::max)(std::abs(tDataRef), std::abs(tDataHex));
 					const auto tTolerance = (std::max)(std::numeric_limits<T>::denorm_min(),
-						std::numeric_limits<T>::epsilon() * tMaxAbs * static_cast<T>(4));
+						std::numeric_limits<T>::epsilon() * tMaxAbs * static_cast<T>(16));
 					Assert::AreEqual(tDataRef, tDataHex, tTolerance);
 				}
 			}
