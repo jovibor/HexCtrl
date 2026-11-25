@@ -286,14 +286,20 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] bool IsPageVisible()const;
 		[[nodiscard]] bool IsScrollCursor()const;
 		[[nodiscard]] bool IsVirtualImpl()const;
-		void ModifyWorker(const HEXMODIFY& hms, const auto& FuncWorker, SpanCByte spnOper)const; //Main "Modify" method with different workers.
+		void MakeUndo(SpanHexSpan spnHexSpan);
+		void ModifyDataOnce(const HEXMODIFY& hms);
+		void ModifyDataOperation(const HEXMODIFY& hms);
+		void ModifyDataRand(const HEXMODIFY& hms);
+		void ModifyDataRepeat(const HEXMODIFY& hms);
+		bool ModifyWorker(const HEXMODIFY& hms, const auto& FuncWorker, SpanCByte spnOper)const; //Main "Modify" method with different workers.
 		[[nodiscard]] auto OffsetToWstr(ULONGLONG ullOffset)const -> std::wstring; //Format offset as std::wstring.
 		void OnCaretPosChange(ULONGLONG ullOffset); //On changing caret position.
 		void OnModifyData();                        //When data has been modified.
 		template<typename T> requires std::is_class_v<T>
 		void ParentNotify(const T& tData)const; //Notify parent with a struct/class object.
 		void ParentNotify(UINT uCode)const;     //Same as above, but only for notification codes.
-		void Print();                                          //Printing routine.
+		void Print();        //Printing routine.
+		bool ReadDataChunked(HEXSPAN hs, SpanByte spnDst)const;
 		void RecalcAll(bool fPrinter = false, HDC hDCPrinter = nullptr, LPCRECT pRCPrinter = nullptr); //Recalculates all sizes for window/printer DC.
 		void RecalcClientArea(int iWidth, int iHeight);
 		void Redo();
@@ -315,7 +321,7 @@ namespace HEXCTRL::INTERNAL {
 		void SetGroupSizeImpl(DWORD dwSize, bool fRedraw = true, bool fNotify = true);
 		void SetScrollCursor(bool fSet);
 		void SetUnprintableCharImpl(wchar_t wch, bool fRedraw = true);
-		void SnapshotUndo(SpanHexSpan spnHexSpan); //Takes currently modifiable data snapshot.
+		void SnapshotDataForUndo(SpanHexSpan spnHexSpan); //Takes currently modifiable data snapshot.
 		void TTTrackShow(bool fShow, bool fTimer, const wchar_t* pwszText = nullptr);
 		void Undo();
 		void UpdateDPIScale(); //Set new DPI scale factor according to current DPI.
@@ -347,6 +353,7 @@ namespace HEXCTRL::INTERNAL {
 		auto WMSize(const MSG& msg) -> LRESULT;
 		auto WMTimer(const MSG& msg) -> LRESULT;
 		auto WMVScroll(const MSG& msg) -> LRESULT;
+		bool WriteDataChunked(HEXSPAN hs, SpanCByte spnSrc)const;
 		static void ModifyOperScalar(std::byte* pData, const HEXMODIFY& hms, SpanCByte); //Modify operation scalar.
 		static auto CALLBACK SubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
 			UINT_PTR uIDSubclass, DWORD_PTR dwRefData)->LRESULT;
@@ -1289,7 +1296,7 @@ bool CHexCtrl::IsVirtual()const {
 
 void CHexCtrl::ModifyData(const HEXMODIFY& hms) {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return; }
-	if (!IsMutableImpl()) return;
+	if (!IsDataSetImpl() || !IsMutableImpl()) return;
 	if (hms.vecSpan.empty()) { ut::DBG_REPORT(L"Data to modify is empty."); return; }
 
 	const auto ullDataSize = GetDataSizeImpl();
@@ -1300,257 +1307,25 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms) {
 		}
 	}
 
-	const auto lmbMakeUndo = [&] {
-		m_vecRedo.clear(); //No Redo unless we make Undo.
-		SnapshotUndo(hms.vecSpan);
-		};
+	using enum EHexModifyMode;
 	const ut::SafeSetRedraw srguard(this);
 
-	using enum EHexModifyMode;
 	switch (hms.eModifyMode) {
-	case MODIFY_ONCE: {
-		const auto stHexSpan = hms.vecSpan.back();
-		const auto ullOffsetToModify = stHexSpan.ullOffset;
-		const auto ullSizeToModify = (std::min)(stHexSpan.ullSize, static_cast<ULONGLONG>(hms.spnData.size()));
-
-		assert((ullOffsetToModify + ullSizeToModify) <= GetDataSizeImpl());
-		if ((ullOffsetToModify + ullSizeToModify) > GetDataSizeImpl()) {
-			return;
-		}
-
-		lmbMakeUndo();
-
-		if (IsVirtualImpl() && ullSizeToModify > GetCacheSize()) {
-			const auto dwSizeCache = GetCacheSize();
-			const auto u64Rem = ullSizeToModify % dwSizeCache;
-			auto u64Chunks = ullSizeToModify / dwSizeCache + (u64Rem > 0 ? 1 : 0);
-			std::uint64_t u64OffsetLocal { 0 };
-			while (u64Chunks > 0) {
-				const auto u64SizeToModifyCurr = (u64Chunks == 1 && u64Rem > 0) ? u64Rem : dwSizeCache;
-				const auto u64DataOffset = ullOffsetToModify + u64OffsetLocal;
-				const auto spnData = GetData({ u64DataOffset, u64SizeToModifyCurr });
-				assert(!spnData.empty());
-				std::copy_n(hms.spnData.data() + u64OffsetLocal, u64SizeToModifyCurr, spnData.data());
-				SetDataVirtual(spnData, { u64DataOffset, u64SizeToModifyCurr });
-				u64OffsetLocal += u64SizeToModifyCurr;
-				--u64Chunks;
-			}
-		}
-		else {
-			const auto spnData = GetData({ ullOffsetToModify, ullSizeToModify });
-			assert(!spnData.empty());
-			std::copy_n(hms.spnData.data(), static_cast<std::size_t>(ullSizeToModify), spnData.data());
-			SetDataVirtual(spnData, { ullOffsetToModify, ullSizeToModify });
-		}
+	case MODIFY_ONCE:
+		ModifyDataOnce(hms);
 		break;
-	}
+	case MODIFY_OPERATION:
+		ModifyDataOperation(hms);
+		break;
 	case MODIFY_RAND_MT19937:
-	case MODIFY_RAND_FAST: {
-		lmbMakeUndo();
-		std::mt19937 gen(std::random_device { }());
-		std::uniform_int_distribution<std::uint64_t> distUInt64(0, (std::numeric_limits<std::uint64_t>::max)());
-		const auto lmbRandUInt64 = [&](std::byte* pData, const HEXMODIFY&, SpanCByte) {
-			assert(pData != nullptr);
-			*reinterpret_cast<std::uint64_t*>(pData) = distUInt64(gen);
-			};
-		const auto lmbRandByte = [&](std::byte* pData, const HEXMODIFY&, SpanCByte) {
-			assert(pData != nullptr);
-			*pData = static_cast<std::byte>(distUInt64(gen));
-			};
-		const auto lmbRandFast = [](std::byte* pData, const HEXMODIFY&, SpanCByte spnDataFrom) {
-			assert(pData != nullptr);
-			std::copy_n(spnDataFrom.data(), spnDataFrom.size(), pData);
-			};
-
-		const auto& hs = hms.vecSpan.back();
-		if (hms.eModifyMode == MODIFY_RAND_MT19937 && hms.vecSpan.size() == 1 && hs.ullSize >= sizeof(std::uint64_t)) {
-			ModifyWorker(hms, lmbRandUInt64, { static_cast<std::byte*>(nullptr), sizeof(std::uint64_t) });
-
-			if (const auto dwRem = hs.ullSize % sizeof(std::uint64_t); dwRem > 0) { //Remainder.
-				const auto u64Offset = hs.ullOffset + hs.ullSize - dwRem;
-				const auto spnData = GetData({ .ullOffset { u64Offset }, .ullSize { dwRem } });
-				for (std::size_t itRem = 0; itRem < dwRem; ++itRem) {
-					spnData.data()[itRem] = static_cast<std::byte>(distUInt64(gen));
-				}
-				SetDataVirtual(spnData, { .ullOffset { u64Offset }, .ullSize { dwRem } });
-			}
-		}
-		else if (hms.eModifyMode == MODIFY_RAND_FAST && hms.vecSpan.size() == 1 && hs.ullSize >= GetCacheSize()) {
-			//Fill the uptrRandData buffer with true random data of ulSizeRandBuff size.
-			//Then clone this buffer to the destination data.
-			//Buffer is allocated with alignment for maximum performance.
-			constexpr auto ulSizeRandBuff { 1024U * 1024U }; //1MB.
-			const std::unique_ptr < std::byte[], decltype([](std::byte* pData) { ::_aligned_free(pData); }) >
-				uptrRandData(static_cast<std::byte*>(::_aligned_malloc(ulSizeRandBuff, 32)));
-			for (auto it = 0UL; it < ulSizeRandBuff; it += sizeof(std::uint64_t)) {
-				*reinterpret_cast<std::uint64_t*>(&uptrRandData[it]) = distUInt64(gen);
-			};
-
-			ModifyWorker(hms, lmbRandFast, { uptrRandData.get(), ulSizeRandBuff });
-
-			//Filling the remainder data.
-			if (const auto ullRem = hs.ullSize % ulSizeRandBuff; ullRem > 0) { //Remainder.
-				if (ullRem <= GetCacheSize()) {
-					const auto u64OffsetCurr = hs.ullOffset + hs.ullSize - ullRem;
-					const auto spnData = GetData({ .ullOffset { u64OffsetCurr }, .ullSize { ullRem } });
-					assert(!spnData.empty());
-					std::copy_n(uptrRandData.get(), ullRem, spnData.data());
-					SetDataVirtual(spnData, { .ullOffset { u64OffsetCurr }, .ullSize { ullRem } });
-				}
-				else {
-					const auto dwSizeCache = GetCacheSize();
-					const auto dwModCache = ullRem % dwSizeCache;
-					auto u64Chunks = (ullRem / dwSizeCache) + (dwModCache > 0 ? 1 : 0);
-					std::uint64_t u64OffsetLocal { 0 };
-					while (u64Chunks > 0) {
-						const auto u64SizeToModifyCurr = (u64Chunks == 1 && dwModCache > 0) ? dwModCache : dwSizeCache;
-						const auto u64DataOffset = hs.ullOffset + hs.ullSize - ullRem + u64OffsetLocal;
-						const auto spnData = GetData({ .ullOffset { u64DataOffset }, .ullSize { u64SizeToModifyCurr } });
-						assert(!spnData.empty());
-						std::copy_n(uptrRandData.get() + u64OffsetLocal, u64SizeToModifyCurr, spnData.data());
-						SetDataVirtual(spnData, { .ullOffset { u64DataOffset }, .ullSize { u64SizeToModifyCurr } });
-						u64OffsetLocal += u64SizeToModifyCurr;
-						--u64Chunks;
-					}
-				}
-			}
-		}
-		else {
-			ModifyWorker(hms, lmbRandByte, { static_cast<std::byte*>(nullptr), sizeof(std::byte) });
-		}
+	case MODIFY_RAND_FAST:
+		ModifyDataRand(hms);
 		break;
-	}
-	case MODIFY_REPEAT: {
-		lmbMakeUndo();
-		constexpr auto lmbRepeat = [](std::byte* pData, const HEXMODIFY& /**/, SpanCByte spnDataFrom) {
-			assert(pData != nullptr);
-			std::copy_n(spnDataFrom.data(), spnDataFrom.size(), pData);
-			};
-
-		//In cases where only one affected data region (hms.vecSpan.size()==1) is used,
-		//and the size of the repeated data is equal to the extent of 2, we extend that 
-		//repeated data to the ulSizeBuffFastFill size, to speed up the whole process of repeating.
-		//At the end we simply fill up the remainder (ullSizeToModify % ulSizeBuffFastFill).
-		constexpr auto ulSizeBuffFastFill { 256U };
-		const auto ullOffsetToModify = hms.vecSpan.back().ullOffset;
-		const auto ullSizeToModify = hms.vecSpan.back().ullSize;
-		const auto ullSizeToFillWith = hms.spnData.size();
-
-		if (hms.vecSpan.size() == 1 && ullSizeToModify > ulSizeBuffFastFill
-			&& ullSizeToFillWith < ulSizeBuffFastFill && (ulSizeBuffFastFill % ullSizeToFillWith) == 0) {
-			alignas(32) std::byte buffFillData[ulSizeBuffFastFill]; //Buffer for fast data fill.
-			for (auto it = 0ULL; it < ulSizeBuffFastFill; it += ullSizeToFillWith) { //Fill the buffer.
-				std::copy_n(hms.spnData.data(), ullSizeToFillWith, buffFillData + it);
-			}
-			ModifyWorker(hms, lmbRepeat, { buffFillData, ulSizeBuffFastFill }); //Worker with the big fast buffer.
-
-			if (const auto ullRem = ullSizeToModify % ulSizeBuffFastFill; ullRem >= ullSizeToFillWith) { //Remainder.
-				const auto ullOffset = ullOffsetToModify + ullSizeToModify - ullRem;
-				const auto spnData = GetData({ .ullOffset { ullOffset }, .ullSize { ullRem } });
-				for (std::size_t itRem = 0; itRem < (ullRem / ullSizeToFillWith); ++itRem) { //Works only if ullRem >= ullSizeToFillWith.
-					std::copy_n(hms.spnData.data(), ullSizeToFillWith, spnData.data() + (itRem * ullSizeToFillWith));
-				}
-				SetDataVirtual(spnData, { .ullOffset { ullOffset }, .ullSize { ullRem - (ullRem % ullSizeToFillWith) } });
-			}
-		}
-		else {
-			ModifyWorker(hms, lmbRepeat, hms.spnData);
-		}
+	case MODIFY_REPEAT:
+		ModifyDataRepeat(hms);
 		break;
-	}
-	case MODIFY_OPERATION: {
-		using enum EHexDataType;
-		using enum EHexOperMode;
-		//Special case for the OPER_ASSIGN operation. This operation can easily be replaced 
-		//with the MODIFY_REPEAT mode, which is significantly faster.
-
-		if (hms.eOperMode == OPER_ASSIGN) {
-			HEXMODIFY hmsRepeat = hms;
-			hmsRepeat.eModifyMode = MODIFY_REPEAT;
-			std::uint64_t u64Data { };
-
-			switch (hms.eDataType) {
-			case DATA_INT8:
-			case DATA_UINT8:
-				hmsRepeat.spnData = { hms.spnData.data(), sizeof(std::uint8_t) };
-				break;
-			case DATA_INT16:
-			case DATA_UINT16:
-			{
-				auto u16 = *reinterpret_cast<const std::uint16_t*>(hms.spnData.data());
-				if (hms.fBigEndian) { u16 = ut::ByteSwap(u16); }
-				u64Data = u16;
-				hmsRepeat.spnData = { reinterpret_cast<const std::byte*>(&u64Data), sizeof(std::uint16_t) };
-			}
-			break;
-			case DATA_INT32:
-			case DATA_UINT32:
-			case DATA_FLOAT:
-			{
-				auto u32 = *reinterpret_cast<const std::uint32_t*>(hms.spnData.data());
-				if (hms.fBigEndian) { u32 = ut::ByteSwap(u32); }
-				u64Data = u32;
-				hmsRepeat.spnData = { reinterpret_cast<const std::byte*>(&u64Data), sizeof(std::uint32_t) };
-			}
-			break;
-			case DATA_INT64:
-			case DATA_UINT64:
-			case DATA_DOUBLE:
-			{
-				auto u64 = *reinterpret_cast<const std::uint64_t*>(hms.spnData.data());
-				if (hms.fBigEndian) { u64 = ut::ByteSwap(u64); }
-				u64Data = u64;
-				hmsRepeat.spnData = { reinterpret_cast<const std::byte*>(&u64Data), sizeof(std::uint64_t) };
-			}
-			break;
-			default:
-				break;
-			};
-
-			ModifyData(hmsRepeat);
-			return;
-		}
-
-		lmbMakeUndo();
-		//In cases where the only one affected data region (hms.vecSpan.size()==1) is used,
-		//and ullSizeToModify > ulSizeOfVec, we use SIMD.
-		//At the end we simply fill up the remainder (ullSizeToModify % ulSizeOfVec).
-		const auto ulSizeOfVec { simd::VecTypeToSize(simd::GetVectorType()) };
-		const auto ullOffsetToModify = hms.vecSpan.back().ullOffset;
-		const auto ullSizeToModify = hms.vecSpan.back().ullSize;
-		const auto ullSizeToFillWith = hms.spnData.size();
-
-		if (hms.vecSpan.size() == 1 && ((ullSizeToModify / ulSizeOfVec) > 0)) {
-			using PFuncWorker = void(*)(std::byte* pData, const HEXCTRL::HEXMODIFY& hms, HEXCTRL::SpanCByte);
-			PFuncWorker pFuncWorker;
-			switch (simd::GetVectorType()) {
-			case simd::EVecType::VECTOR_128:
-				pFuncWorker = simd::ModifyOperVec<simd::EVecType::VECTOR_128>;
-				break;
-			case simd::EVecType::VECTOR_256:
-				pFuncWorker = simd::ModifyOperVec<simd::EVecType::VECTOR_256>;
-				break;
-			default: return;
-			}
-
-			ModifyWorker(hms, pFuncWorker, { static_cast<std::byte*>(nullptr), ulSizeOfVec }); //Vector worker.
-
-			if (const auto ullRem = ullSizeToModify % ulSizeOfVec; ullRem >= ullSizeToFillWith) { //Remainder of the vector data.
-				const auto ullOffset = ullOffsetToModify + ullSizeToModify - ullRem;
-				const auto spnData = GetData({ .ullOffset { ullOffset }, .ullSize { ullRem } });
-				for (std::size_t itRem = 0; itRem < (ullRem / ullSizeToFillWith); ++itRem) { //Works only if ullRem >= ullSizeToFillWith.
-					ModifyOperScalar(spnData.data() + (itRem * ullSizeToFillWith), hms, { });
-				}
-				SetDataVirtual(spnData, { .ullOffset { ullOffset }, .ullSize { ullRem - (ullRem % ullSizeToFillWith) } });
-			}
-		}
-		else {
-			ModifyWorker(hms, ModifyOperScalar, hms.spnData);
-		}
-		break;
-	}
 	default:
-		break;
+		return;
 	}
 
 	OnModifyData();
@@ -3747,128 +3522,445 @@ bool CHexCtrl::IsVirtualImpl()const {
 	return m_stData.pHexVirtData != nullptr;
 }
 
-void CHexCtrl::ModifyWorker(const HEXMODIFY& hms, const auto& FuncWorker, const SpanCByte spnOper)const {
-	if (spnOper.empty()) { ut::DBG_REPORT(L"Operation span is empty."); return; }
+void CHexCtrl::MakeUndo(SpanHexSpan spnHexSpan) {
+	m_vecRedo.clear(); //No Redo unless we make Undo.
+	SnapshotDataForUndo(spnHexSpan);
+}
+
+void CHexCtrl::ModifyDataOnce(const HEXMODIFY& hms) {
+	if (hms.spnData.empty()) {
+		ut::DBG_REPORT(L"Operation data is empty.");
+		return;
+	}
+
+	MakeUndo(hms.vecSpan);
+
+	for (const auto& hs : hms.vecSpan) {
+		const auto u64SizeToModify = (std::min)(hs.ullSize, static_cast<std::uint64_t>(hms.spnData.size()));
+		if (u64SizeToModify == 0) {
+			continue;
+		}
+
+		if (!WriteDataChunked({ hs.ullOffset, u64SizeToModify }, hms.spnData)) {
+			break;
+		}
+	}
+}
+
+void CHexCtrl::ModifyDataOperation(const HEXMODIFY& hms) {
+	if (hms.spnData.empty()) {
+		ut::DBG_REPORT(L"Operation data is empty.");
+		return;
+	}
+
+	using enum EHexDataType;
+	using enum EHexOperMode;
+
+	std::size_t uzTypeSize { 0 };
+	switch (hms.eDataType) {
+	case DATA_INT8:
+	case DATA_UINT8:
+		uzTypeSize = sizeof(std::uint8_t);
+		break;
+	case DATA_INT16:
+	case DATA_UINT16:
+		uzTypeSize = sizeof(std::uint16_t);
+		break;
+	case DATA_INT32:
+	case DATA_UINT32:
+	case DATA_FLOAT:
+		uzTypeSize = sizeof(std::uint32_t);
+		break;
+	case DATA_INT64:
+	case DATA_UINT64:
+	case DATA_DOUBLE:
+		uzTypeSize = sizeof(std::uint64_t);
+		break;
+	default:
+		return;
+	}
+
+	if (hms.spnData.size() < uzTypeSize) {
+		ut::DBG_REPORT(L"Operation data size is smaller than data type size.");
+		return;
+	}
+
+	//Special case for the OPER_ASSIGN operation. This operation can easily be replaced 
+	//with ModifyDataRepeat, which is significantly faster.
+	//ModifyDataRepeat handles MakeUndo for this path.
+	if (hms.eOperMode == OPER_ASSIGN) {
+		HEXMODIFY hmsRepeat { .eModifyMode { EHexModifyMode::MODIFY_REPEAT }, .vecSpan { hms.vecSpan } };
+		std::uint64_t u64Data { };
+
+		switch (hms.eDataType) {
+		case DATA_INT8:
+		case DATA_UINT8:
+			hmsRepeat.spnData = { hms.spnData.data(), sizeof(std::uint8_t) };
+			break;
+		case DATA_INT16:
+		case DATA_UINT16: {
+			std::uint16_t u16 { };
+			std::memcpy(&u16, hms.spnData.data(), sizeof(u16));
+			if (hms.fBigEndian) { u16 = ut::ByteSwap(u16); }
+			u64Data = u16;
+			hmsRepeat.spnData = { reinterpret_cast<const std::byte*>(&u64Data), sizeof(u16) };
+			break;
+		}
+		case DATA_INT32:
+		case DATA_UINT32:
+		case DATA_FLOAT: {
+			std::uint32_t u32 { };
+			std::memcpy(&u32, hms.spnData.data(), sizeof(u32));
+			if (hms.fBigEndian) { u32 = ut::ByteSwap(u32); }
+			u64Data = u32;
+			hmsRepeat.spnData = { reinterpret_cast<const std::byte*>(&u64Data), sizeof(u32) };
+			break;
+		}
+		case DATA_INT64:
+		case DATA_UINT64:
+		case DATA_DOUBLE: {
+			std::uint64_t u64 { };
+			std::memcpy(&u64, hms.spnData.data(), sizeof(u64));
+			if (hms.fBigEndian) { u64 = ut::ByteSwap(u64); }
+			u64Data = u64;
+			hmsRepeat.spnData = { reinterpret_cast<const std::byte*>(&u64Data), sizeof(u64) };
+			break;
+		}
+		default:
+			return;
+		}
+
+		ModifyDataRepeat(hmsRepeat);
+		return;
+	}
+
+	//When at least one affected data region is >= ulSizeOfVec, we process full vector chunks
+	//across all qualifying spans via SIMD, then handle trailing remainders (and smaller spans)
+	//with ModifyOperScalar.
+	const auto ulSizeOfVec { simd::VecTypeToSize(simd::GetVectorType()) };
+	const bool fAnyVecSpan = std::any_of(hms.vecSpan.begin(), hms.vecSpan.end(),
+		[&](const HEXSPAN& hs) { return hs.ullSize >= ulSizeOfVec; });
+
+	if (fAnyVecSpan) {
+		using PFuncWorker = void(*)(std::byte* pData, const HEXCTRL::HEXMODIFY& hms, HEXCTRL::SpanCByte);
+		PFuncWorker pFuncWorker;
+		switch (simd::GetVectorType()) {
+		case simd::EVecType::VECTOR_128:
+			pFuncWorker = simd::ModifyOperVec<simd::EVecType::VECTOR_128>;
+			break;
+		case simd::EVecType::VECTOR_256:
+			pFuncWorker = simd::ModifyOperVec<simd::EVecType::VECTOR_256>;
+			break;
+		default:
+			return;
+		}
+
+		MakeUndo(hms.vecSpan);
+
+		if (!ModifyWorker(hms, pFuncWorker, { static_cast<std::byte*>(nullptr), ulSizeOfVec })) { //Vector worker.
+			return;
+		}
+
+		//Process remainders for spans >= ulSizeOfVec, and full data for spans < ulSizeOfVec.
+		for (const auto& hs : hms.vecSpan) {
+			const auto u64Rem = hs.ullSize % ulSizeOfVec;
+			if (u64Rem < uzTypeSize) continue;
+
+			const auto u64BytesToProcess = u64Rem - (u64Rem % uzTypeSize);
+			const auto u64Offset = hs.ullOffset + hs.ullSize - u64Rem;
+			const auto spnData = GetData({ .ullOffset { u64Offset }, .ullSize { u64BytesToProcess } });
+			assert(!spnData.empty());
+			for (std::size_t itRem = 0; itRem < (u64BytesToProcess / uzTypeSize); ++itRem) {
+				ModifyOperScalar(spnData.data() + (itRem * uzTypeSize), hms, { });
+			}
+			SetDataVirtual(spnData, { .ullOffset { u64Offset }, .ullSize { u64BytesToProcess } });
+		}
+	}
+	else {
+		MakeUndo(hms.vecSpan);
+		ModifyWorker(hms, ModifyOperScalar, { hms.spnData.data(), uzTypeSize });
+	}
+}
+
+void CHexCtrl::ModifyDataRand(const HEXMODIFY& hms) {
+	MakeUndo(hms.vecSpan);
+	std::mt19937_64 gen(std::random_device { }());
+	const auto lmbRandUInt64 = [&](std::byte* pData, const HEXMODIFY&, SpanCByte) {
+		assert(pData != nullptr);
+		const auto u64Val = gen();
+		std::memcpy(pData, &u64Val, sizeof(u64Val));
+		};
+	const auto lmbRandByte = [&](std::byte* pData, const HEXMODIFY&, SpanCByte) {
+		assert(pData != nullptr);
+		*pData = static_cast<std::byte>(gen());
+		};
+	constexpr auto lmbRandFast = [](std::byte* pData, const HEXMODIFY&, SpanCByte spnDataFrom) {
+		assert(pData != nullptr);
+		std::copy_n(spnDataFrom.data(), spnDataFrom.size(), pData);
+		};
+
+	const auto uzSizeRandBuff = IsVirtualImpl() ?
+		(std::min)(static_cast<std::size_t>(GetCacheSize()), 1024ULL * 1024ULL) : (1024ULL * 1024ULL);
+
+	if (hms.eModifyMode == EHexModifyMode::MODIFY_RAND_FAST) {
+		const bool fAnyLargeSpan = std::any_of(hms.vecSpan.begin(), hms.vecSpan.end(),
+			[&](const HEXSPAN& hs) { return hs.ullSize >= uzSizeRandBuff; });
+
+		if (fAnyLargeSpan) {
+			//Fill the uptrRandData buffer with random data of uzSizeRandBuff size.
+			//Then clone this buffer to the destination data.
+			//Buffer is allocated with an alignment for maximum performance.
+			const std::unique_ptr < std::byte[], decltype([](std::byte* pData) { ::_aligned_free(pData); }) >
+				uptrRandData(static_cast<std::byte*>(::_aligned_malloc(uzSizeRandBuff, 32)));
+
+			if (uptrRandData != nullptr) {
+				for (std::size_t it = 0; it + sizeof(std::uint64_t) <= uzSizeRandBuff; it += sizeof(std::uint64_t)) {
+					const auto u64Val = gen();
+					std::memcpy(&uptrRandData[it], &u64Val, sizeof(u64Val));
+				}
+
+				//Process full uzSizeRandBuff blocks across all spans that are >= uzSizeRandBuff.
+				if (!ModifyWorker(hms, lmbRandFast, { uptrRandData.get(), uzSizeRandBuff })) {
+					return;
+				}
+
+				//Fill remainders for spans >= uzSizeRandBuff, and full data for smaller spans.
+				for (const auto& hs : hms.vecSpan) {
+					const auto u64Rem = hs.ullSize % uzSizeRandBuff;
+					if (u64Rem == 0) continue;
+
+					const auto u64OffsetCurr = hs.ullOffset + hs.ullSize - u64Rem;
+					const auto spnData = GetData({ .ullOffset { u64OffsetCurr }, .ullSize { u64Rem } });
+					assert(!spnData.empty());
+					std::copy_n(uptrRandData.get(), static_cast<std::size_t>(u64Rem), spnData.data());
+					SetDataVirtual(spnData, { .ullOffset { u64OffsetCurr }, .ullSize { u64Rem } });
+				}
+				return;
+			}
+		}
+	}
+
+	//Fallback / MODIFY_RAND_MT19937: 64-bit chunks across all spans >= 8 bytes, plus trailing byte remainders.
+	const bool fAnyUInt64Span = std::any_of(hms.vecSpan.begin(), hms.vecSpan.end(),
+		[](const HEXSPAN& hs) { return hs.ullSize >= sizeof(std::uint64_t); });
+
+	if (fAnyUInt64Span) {
+		if (!ModifyWorker(hms, lmbRandUInt64, { static_cast<std::byte*>(nullptr), sizeof(std::uint64_t) })) {
+			return;
+		}
+
+		for (const auto& hs : hms.vecSpan) {
+			const auto u64Rem = hs.ullSize % sizeof(std::uint64_t);
+			if (u64Rem == 0) continue;
+
+			const auto u64Offset = hs.ullOffset + hs.ullSize - u64Rem;
+			const auto spnData = GetData({ .ullOffset { u64Offset }, .ullSize { u64Rem } });
+			assert(!spnData.empty());
+			for (std::size_t itRem = 0; itRem < u64Rem; ++itRem) {
+				spnData.data()[itRem] = static_cast<std::byte>(gen());
+			}
+			SetDataVirtual(spnData, { .ullOffset { u64Offset }, .ullSize { u64Rem } });
+		}
+	}
+	else {
+		ModifyWorker(hms, lmbRandByte, { static_cast<std::byte*>(nullptr), sizeof(std::byte) });
+	}
+}
+
+void CHexCtrl::ModifyDataRepeat(const HEXMODIFY& hms) {
+	if (hms.spnData.empty()) {
+		ut::DBG_REPORT(L"Operation data is empty.");
+		return;
+	}
+
+	const auto u64SizeToFillWith = hms.spnData.size();
+	const bool fAnyFit = std::any_of(hms.vecSpan.begin(), hms.vecSpan.end(),
+		[&](const HEXSPAN& hs) { return hs.ullSize >= u64SizeToFillWith; });
+	if (!fAnyFit) {
+		return;
+	}
+
+	MakeUndo(hms.vecSpan);
+	constexpr auto lmbRepeat = [](std::byte* pData, const HEXMODIFY&, SpanCByte spnDataFrom) {
+		assert(pData != nullptr);
+		std::copy_n(spnDataFrom.data(), spnDataFrom.size(), pData);
+		};
+
+	//When the repeated pattern size is a divisor of ulSizeBuffFastFill (256 bytes)
+	//and at least one span is >= ulSizeBuffFastFill, we tile the pattern into an aligned
+	//256-byte buffer to amortize call overhead across all qualifying spans, then fill
+	//any trailing remainders (and spans < 256 bytes) directly.
+	constexpr auto ulSizeBuffFastFill { 256U };
+	const bool fAnyLargeSpan = std::any_of(hms.vecSpan.begin(), hms.vecSpan.end(),
+		[&](const HEXSPAN& hs) { return hs.ullSize >= ulSizeBuffFastFill; });
+
+	//Keeping u64SizeToFillWith < ulSizeBuffFastFill ensures the stack tiling buffer is only created
+	//when it actually expands a smaller pattern (1, 2, 4, 8, 16, 32, 64, or 128 bytes) into a larger 256-byte block.
+	if (fAnyLargeSpan && u64SizeToFillWith < ulSizeBuffFastFill && (ulSizeBuffFastFill % u64SizeToFillWith) == 0) {
+		alignas(32) std::byte buffFillData[ulSizeBuffFastFill]; //Buffer for fast data fill.
+		for (std::size_t it = 0; it < ulSizeBuffFastFill; it += u64SizeToFillWith) { //Fill the buffer.
+			std::copy_n(hms.spnData.data(), u64SizeToFillWith, buffFillData + it);
+		}
+
+		//Process all full 256-byte chunks across every span >= 256 bytes.
+		if (!ModifyWorker(hms, lmbRepeat, { buffFillData, ulSizeBuffFastFill })) {
+			return;
+		}
+
+		//Fill remainders for spans >= 256 bytes, and full data for spans < 256 bytes.
+		for (const auto& hs : hms.vecSpan) {
+			const auto u64Rem = hs.ullSize % ulSizeBuffFastFill;
+			if (u64Rem < u64SizeToFillWith) continue;
+
+			const auto u64BytesToWrite = u64Rem - (u64Rem % u64SizeToFillWith);
+			const auto u64Offset = hs.ullOffset + hs.ullSize - u64Rem;
+			const auto spnData = GetData({ .ullOffset { u64Offset }, .ullSize { u64BytesToWrite } });
+			assert(!spnData.empty());
+			for (std::size_t itRem = 0; itRem < (u64BytesToWrite / u64SizeToFillWith); ++itRem) {
+				std::copy_n(hms.spnData.data(), u64SizeToFillWith, spnData.data() + (itRem * u64SizeToFillWith));
+			}
+			SetDataVirtual(spnData, { .ullOffset { u64Offset }, .ullSize { u64BytesToWrite } });
+		}
+	}
+	else {
+		ModifyWorker(hms, lmbRepeat, hms.spnData);
+	}
+}
+
+bool CHexCtrl::ModifyWorker(const HEXMODIFY& hms, const auto& FuncWorker, const SpanCByte spnOper)const {
+	if (spnOper.empty()) {
+		ut::DBG_REPORT(L"Operation span is empty.");
+		return false;
+	}
 
 	const auto& vecSpan = hms.vecSpan;
-	const auto ullTotalSize = std::reduce(vecSpan.begin(), vecSpan.end(), 0ULL,
-		[](ULONGLONG ullSumm, const HEXSPAN& hs) { return ullSumm + hs.ullSize; });
-	assert(ullTotalSize <= GetDataSizeImpl());
+	if (vecSpan.empty()) { return false; }
 
-	CHexDlgProgress dlgProg(L"Modifying...", L"", vecSpan.back().ullOffset, vecSpan.back().ullOffset + ullTotalSize);
+	const auto u64TotalSize = std::reduce(vecSpan.begin(), vecSpan.end(), std::uint64_t { 0 },
+		[](std::uint64_t u64Summ, const HEXSPAN& hs) { return u64Summ + hs.ullSize; });
+	const auto u64DataSize = GetDataSizeImpl();
+	assert(u64TotalSize <= u64DataSize);
+
+	bool fCompleted { true };
+	CHexDlgProgress dlgProg(L"Modifying...", L"", 0ULL, u64TotalSize);
 	const auto lmbModify = [&]() {
-		for (const auto& hs : vecSpan) { //Span-vector's size times.
-			const auto ullOffsetToModify { hs.ullOffset };
-			const auto ullSizeToModify { hs.ullSize };
-			const auto ullSizeDataOper { spnOper.size() };
+		constexpr std::uint64_t u64SubBlockTarget { 1024ULL * 64ULL }; //Check cancel/progress every 64 KB.
+		std::uint64_t u64ProcessedTotal { 0 };
+		const std::uint64_t u64SizeDataOper { spnOper.size() };
 
-			//If the size of the data to_modify_from is bigger than
-			//the data to modify, we do nothing.
-			if (ullSizeDataOper > ullSizeToModify)
-				break;
+		for (const auto& hs : vecSpan) {
+			const std::uint64_t u64OffsetToModify { hs.ullOffset };
+			const std::uint64_t u64SizeToModify { hs.ullSize };
+			const std::uint64_t u64SpanStartProcessed { u64ProcessedTotal };
 
-			ULONGLONG ullSizeCache { };
-			ULONGLONG ullChunks { };
-			bool fCacheIsLargeEnough { true }; //Cache is larger than ullSizeDataOper.
-
-			if (IsVirtualImpl()) {
-				ullSizeCache = GetCacheSize(); //Size of Virtual memory for acquiring, to work with.
-				if (ullSizeCache >= ullSizeDataOper) {
-					ullSizeCache -= ullSizeCache % ullSizeDataOper; //Aligning chunk size to ullSizeDataOper.
-
-					if (ullSizeToModify < ullSizeCache) {
-						ullSizeCache = ullSizeToModify;
-					}
-					ullChunks = ullSizeToModify / ullSizeCache + ((ullSizeToModify % ullSizeCache) ? 1 : 0);
-				}
-				else {
-					fCacheIsLargeEnough = false;
-					const auto iSmallMod = ullSizeDataOper % ullSizeCache;
-					const auto ullSmallChunks = ullSizeDataOper / ullSizeCache + (iSmallMod > 0 ? 1 : 0);
-					ullChunks = (ullSizeToModify / ullSizeDataOper) * ullSmallChunks;
-				}
-			}
-			else {
-				ullSizeCache = ullSizeToModify;
-				ullChunks = 1;
+			if (u64OffsetToModify >= u64DataSize) {
+				u64ProcessedTotal = u64SpanStartProcessed + u64SizeToModify;
+				dlgProg.SetCurrent(u64ProcessedTotal);
+				continue;
 			}
 
-			if (fCacheIsLargeEnough) {
-				for (auto itChunk { 0ULL }; itChunk < ullChunks; ++itChunk) {
-					const auto ullOffsetCurr = ullOffsetToModify + (itChunk * ullSizeCache);
-					if (ullOffsetCurr + ullSizeCache > GetDataSizeImpl()) { //Overflow check.
-						ullSizeCache = GetDataSizeImpl() - ullOffsetCurr;
-						if (ullSizeCache < ullSizeDataOper) //ullSizeChunk is too small for ullSizeDataOper.
-							break;
+			//Clamp span size to actual available data size safely without overflow.
+			const std::uint64_t u64MaxAvailable = u64DataSize - u64OffsetToModify;
+			const std::uint64_t u64EffectiveSize = (std::min)(u64SizeToModify, u64MaxAvailable);
+
+			//If the size of the data to modify-from is bigger than the effective span, skip to the next span.
+			if (u64SizeDataOper > u64EffectiveSize) {
+				u64ProcessedTotal = u64SpanStartProcessed + u64SizeToModify;
+				dlgProg.SetCurrent(u64ProcessedTotal);
+				continue;
+			}
+
+			if (!IsVirtualImpl() || GetCacheSize() >= u64SizeDataOper) {
+				std::uint64_t u64SizeCache = IsVirtualImpl() ? GetCacheSize() : u64EffectiveSize;
+				assert(u64SizeCache > 0);
+
+				if (IsVirtualImpl()) {
+					u64SizeCache -= u64SizeCache % u64SizeDataOper; //Aligning chunk size to u64SizeDataOper.
+					if (u64EffectiveSize < u64SizeCache) {
+						u64SizeCache = u64EffectiveSize;
+					}
+				}
+
+				//Align sub-block stride to a multiple of u64SizeDataOper (at least u64SizeDataOper).
+				const std::uint64_t u64SubBlockStep = (u64SubBlockTarget >= u64SizeDataOper)
+					? (u64SubBlockTarget - (u64SubBlockTarget % u64SizeDataOper)) : u64SizeDataOper;
+
+				const auto u64Chunks = u64EffectiveSize / u64SizeCache + ((u64EffectiveSize % u64SizeCache) ? 1 : 0);
+				for (std::uint64_t itChunk { 0 }; itChunk < u64Chunks; ++itChunk) {
+					const auto u64OffsetCurr = u64OffsetToModify + (itChunk * u64SizeCache);
+					const auto u64RemainingInSpan = (u64OffsetToModify + u64EffectiveSize) - u64OffsetCurr;
+					const auto u64SizeCacheCurr = (std::min)(u64SizeCache, u64RemainingInSpan);
+
+					if (u64SizeCacheCurr < u64SizeDataOper) { //Trailing bytes smaller than u64SizeDataOper.
+						break;
 					}
 
-					if ((ullOffsetCurr + ullSizeCache) > (ullOffsetToModify + ullSizeToModify)) {
-						ullSizeCache = (ullOffsetToModify + ullSizeToModify) - ullOffsetCurr;
-						if (ullSizeCache < ullSizeDataOper) //ullSizeChunk is too small for ullSizeDataOper.
-							break;
-					}
-
-					const auto spnData = GetData({ ullOffsetCurr, ullSizeCache });
+					const auto spnData = GetData({ u64OffsetCurr, u64SizeCacheCurr });
 					assert(!spnData.empty());
-					for (auto ullIndex { 0ULL }; ullIndex <= (ullSizeCache - ullSizeDataOper); ullIndex += ullSizeDataOper) {
-						FuncWorker(spnData.data() + ullIndex, hms, spnOper);
+					auto* const pDataBase = spnData.data();
+					const std::uint64_t u64ValidLimit = u64SizeCacheCurr - u64SizeDataOper;
+
+					//Outer loop advances by 64 KB sub-blocks; inner loop runs unthrottled without branches or atomics.
+					for (std::uint64_t u64BlockStart { 0 }; u64BlockStart <= u64ValidLimit; u64BlockStart += u64SubBlockStep) {
+						const auto u64BlockEnd = (std::min)(u64BlockStart + u64SubBlockStep - u64SizeDataOper, u64ValidLimit);
+						for (std::uint64_t u64Index { u64BlockStart }; u64Index <= u64BlockEnd; u64Index += u64SizeDataOper) {
+							FuncWorker(pDataBase + u64Index, hms, spnOper);
+						}
+
 						if (dlgProg.IsCanceled()) {
-							SetDataVirtual(spnData, { ullOffsetCurr, ullSizeCache });
+							SetDataVirtual(spnData, { u64OffsetCurr, u64SizeCacheCurr });
+							fCompleted = false;
 							goto exit;
 						}
-						dlgProg.SetCurrent(ullOffsetCurr + ullIndex);
+						dlgProg.SetCurrent(u64ProcessedTotal + u64BlockEnd + u64SizeDataOper);
 					}
-					SetDataVirtual(spnData, { ullOffsetCurr, ullSizeCache });
+
+					SetDataVirtual(spnData, { u64OffsetCurr, u64SizeCacheCurr });
+					u64ProcessedTotal += u64SizeCacheCurr;
 				}
 			}
 			else {
-				//It's a special case for when the ullSizeDataOper is larger than
-				//the current cache size (only in VirtualData mode).
+				//Special case for when u64SizeDataOper is larger than GetCacheSize() (only in VirtualData mode).
+				const std::uint64_t u64SizeCache = GetCacheSize();
+				assert(u64SizeCache > 0);
+				const auto u64Repeats = u64EffectiveSize / u64SizeDataOper;
 
-				const auto ullSmallMod = ullSizeDataOper % ullSizeCache;
-				const auto ullSmallChunks = ullSizeDataOper / ullSizeCache + (ullSmallMod > 0 ? 1 : 0);
-				auto ullSmallChunkCur = 0ULL; //Current small chunk index.
-				auto ullOffsetCurr = 0ULL;
-				auto ullOffsetSubSpan = 0ULL; //Current offset for spnOper.subspan().
-				auto ullSizeCacheCurr = 0ULL; //Current cache size.
-				for (auto itChunk { 0ULL }; itChunk < ullChunks; ++itChunk) {
-					if (ullSmallChunkCur == (ullSmallChunks - 1) && ullSmallMod > 0) {
-						ullOffsetCurr += ullSmallMod;
-						ullSizeCacheCurr = ullSmallMod;
-						ullOffsetSubSpan += ullSmallMod;
-					}
-					else {
-						ullOffsetCurr = ullOffsetToModify + (itChunk * ullSizeCache);
-						ullSizeCacheCurr = ullSizeCache;
-						ullOffsetSubSpan = ullSmallChunkCur * ullSizeCache;
-					}
+				for (std::uint64_t itRepeat { 0 }; itRepeat < u64Repeats; ++itRepeat) {
+					const auto u64RepeatBaseOffset = u64OffsetToModify + (itRepeat * u64SizeDataOper);
+					std::uint64_t u64OffsetSubSpan { 0 };
 
-					const auto spnData = GetData({ ullOffsetCurr, ullSizeCacheCurr });
-					assert(!spnData.empty());
-					FuncWorker(spnData.data(), hms, spnOper.subspan(static_cast<std::size_t>(ullOffsetSubSpan),
-						static_cast<std::size_t>(ullSizeCacheCurr)));
+					while (u64OffsetSubSpan < u64SizeDataOper) {
+						const auto u64SizeCacheCurr = (std::min)(u64SizeCache, u64SizeDataOper - u64OffsetSubSpan);
+						const auto u64OffsetCurr = u64RepeatBaseOffset + u64OffsetSubSpan;
 
-					if (dlgProg.IsCanceled()) {
-						SetDataVirtual(spnData, { ullOffsetCurr, ullSizeCacheCurr });
-						goto exit;
-					}
+						const auto spnData = GetData({ u64OffsetCurr, u64SizeCacheCurr });
+						assert(!spnData.empty());
+						FuncWorker(spnData.data(), hms, spnOper.subspan(static_cast<std::size_t>(u64OffsetSubSpan),
+							static_cast<std::size_t>(u64SizeCacheCurr)));
 
-					dlgProg.SetCurrent(ullOffsetCurr + ullSizeCacheCurr);
-					SetDataVirtual(spnData, { ullOffsetCurr, ullSizeCacheCurr });
+						SetDataVirtual(spnData, { u64OffsetCurr, u64SizeCacheCurr });
+						u64OffsetSubSpan += u64SizeCacheCurr;
+						u64ProcessedTotal += u64SizeCacheCurr;
+						dlgProg.SetCurrent(u64ProcessedTotal);
 
-					if (++ullSmallChunkCur == ullSmallChunks) {
-						ullSmallChunkCur = 0ULL;
-						ullOffsetSubSpan = 0ULL;
+						if (dlgProg.IsCanceled()) {
+							fCompleted = false;
+							goto exit;
+						}
 					}
 				}
 			}
+
+			//Account for any unaligned trailing bytes in this span so total progress stays exact.
+			u64ProcessedTotal = u64SpanStartProcessed + u64SizeToModify;
+			dlgProg.SetCurrent(u64ProcessedTotal);
 		}
 	exit:
 		dlgProg.OnCancel();
 		};
 
 	constexpr auto uSizeToRunThread { 1024U * 1024U * 50U }; //50MB.
-	if (ullTotalSize > uSizeToRunThread) { //Spawning new thread only if data size is big enough.
+	if (u64TotalSize > uSizeToRunThread) { //Spawning new thread only if data size is big enough.
 		std::thread thrd(lmbModify);
 		dlgProg.DoModal(m_Wnd, m_hInstRes);
 		thrd.join();
@@ -3876,6 +3968,8 @@ void CHexCtrl::ModifyWorker(const HEXMODIFY& hms, const auto& FuncWorker, const 
 	else {
 		lmbModify();
 	}
+
+	return fCompleted;
 }
 
 auto CHexCtrl::OffsetToWstr(ULONGLONG ullOffset)const->std::wstring {
@@ -4069,6 +4163,48 @@ void CHexCtrl::Print() {
 	RedrawImpl();
 }
 
+bool CHexCtrl::ReadDataChunked(HEXSPAN hs, SpanByte spnDst)const {
+	assert(spnDst.size() >= hs.ullSize);
+	const auto u64ChunkMax = IsVirtualImpl() ? static_cast<std::uint64_t>(GetCacheSize()) : hs.ullSize;
+	std::uint64_t u64OffsetLocal { 0 };
+
+	while (u64OffsetLocal < hs.ullSize) {
+		const auto u64Size = (std::min)(u64ChunkMax, hs.ullSize - u64OffsetLocal);
+		const auto spnData = GetData({ hs.ullOffset + u64OffsetLocal, u64Size });
+		if (spnData.size() < u64Size) {
+			return false;
+		}
+
+		std::copy_n(spnData.data(), static_cast<std::size_t>(u64Size),
+			spnDst.data() + static_cast<std::size_t>(u64OffsetLocal));
+		u64OffsetLocal += u64Size;
+	}
+
+	return true;
+}
+
+bool CHexCtrl::WriteDataChunked(HEXSPAN hs, SpanCByte spnSrc)const {
+	assert(spnSrc.size() >= hs.ullSize);
+	const auto u64ChunkMax = IsVirtualImpl() ? static_cast<std::uint64_t>(GetCacheSize()) : hs.ullSize;
+	std::uint64_t u64OffsetLocal { 0 };
+
+	while (u64OffsetLocal < hs.ullSize) {
+		const auto u64Size = (std::min)(u64ChunkMax, hs.ullSize - u64OffsetLocal);
+		const HEXSPAN hsChunk { .ullOffset { hs.ullOffset + u64OffsetLocal }, .ullSize { u64Size } };
+		const auto spnData = GetData(hsChunk);
+		if (spnData.size() < u64Size) {
+			return false;
+		}
+
+		std::copy_n(spnSrc.data() + static_cast<std::size_t>(u64OffsetLocal),
+			static_cast<std::size_t>(u64Size), spnData.data());
+		SetDataVirtual(spnData, hsChunk);
+		u64OffsetLocal += u64Size;
+	}
+
+	return true;
+}
+
 void CHexCtrl::RecalcAll(bool fPrinter, HDC hDCPrinter, LPCRECT pRCPrinter) {
 	const GDIUT::CDC dcCurr = fPrinter ? hDCPrinter : m_Wnd.GetDC();
 	const auto ullCurLineV = GetTopLine();
@@ -4132,41 +4268,20 @@ void CHexCtrl::RecalcClientArea(int iWidth, int iHeight) {
 }
 
 void CHexCtrl::Redo() {
-	if (m_vecRedo.empty())
+	if (m_vecRedo.empty()) {
 		return;
+	}
 
 	const auto& vecRedo = m_vecRedo.back();
 	VecHexSpan vecSpan;
 	vecSpan.reserve(vecRedo.size());
 	std::transform(vecRedo.begin(), vecRedo.end(), std::back_inserter(vecSpan), [](const UNDO& undo) {
 		return HEXSPAN { undo.ullOffset, undo.vecData.size() }; });
-	SnapshotUndo(vecSpan); //Creating new Undo data snapshot.
+	SnapshotDataForUndo(vecSpan);
 
 	for (const auto& redo : vecRedo) {
-		const auto& vecRedoData = redo.vecData;
-
-		if (IsVirtualImpl() && vecRedoData.size() > GetCacheSize()) { //In VirtualData mode processing data chunk by chunk.
-			const auto dwSizeChunk = GetCacheSize();
-			const auto uzMod = vecRedoData.size() % dwSizeChunk;
-			auto u64Chunks = vecRedoData.size() / dwSizeChunk + (uzMod > 0 ? 1 : 0);
-			std::uint64_t u64OffsetLocal { 0 };
-			while (u64Chunks > 0) {
-				const auto u64Size = (u64Chunks == 1 && uzMod > 0) ? uzMod : dwSizeChunk;
-				const auto u64DataOffset = redo.ullOffset + u64OffsetLocal;
-				if (const auto spnData = GetData({ u64DataOffset, u64Size }); !spnData.empty()) {
-					std::copy_n(vecRedoData.begin() + u64OffsetLocal, u64Size, spnData.data());
-					SetDataVirtual(spnData, { u64DataOffset, u64Size });
-				}
-
-				u64OffsetLocal += u64Size;
-				--u64Chunks;
-			}
-		}
-		else {
-			if (const auto spnData = GetData({ redo.ullOffset, vecRedoData.size() }); !spnData.empty()) {
-				std::copy_n(vecRedoData.begin(), vecRedoData.size(), spnData.data());
-				SetDataVirtual(spnData, { redo.ullOffset, vecRedoData.size() });
-			}
+		if (!WriteDataChunked({ redo.ullOffset, redo.vecData.size() }, redo.vecData)) {
+			break;
 		}
 	}
 
@@ -4902,14 +5017,16 @@ void CHexCtrl::SetUnprintableCharImpl(wchar_t wch, bool fRedraw) {
 	if (fRedraw) { RedrawImpl(); }
 }
 
-void CHexCtrl::SnapshotUndo(SpanHexSpan spnHexSpan) {
+void CHexCtrl::SnapshotDataForUndo(SpanHexSpan spnHexSpan) {
 	constexpr auto dwUndoMax { 512U }; //Undo's max limit.
-	const auto ullTotalSize = std::reduce(spnHexSpan.begin(), spnHexSpan.end(), 0ULL,
-		[](ULONGLONG ullSumm, const HEXSPAN& hs) { return ullSumm + hs.ullSize; });
+	const auto u64TotalSize = std::reduce(spnHexSpan.begin(), spnHexSpan.end(), std::uint64_t { 0 },
+		[](std::uint64_t u64Summ, const HEXSPAN& hs) { return u64Summ + hs.ullSize; });
 
-	//Check for very big undo size.
-	if (ullTotalSize > 1024 * 1024 * 10)
+	//If modification exceeds max undo size (10MB), clear undo stack to keep history consistent.
+	if (u64TotalSize > 1024ULL * 1024ULL * 10ULL) {
+		m_vecUndo.clear();
 		return;
+	}
 
 	//If Undo vec's size is exceeding Undo's max limit, remove first 64 snapshots (the oldest ones).
 	if (m_vecUndo.size() >= static_cast<std::size_t>(dwUndoMax)) {
@@ -4921,34 +5038,14 @@ void CHexCtrl::SnapshotUndo(SpanHexSpan spnHexSpan) {
 	//Making new Undo data snapshot.
 	auto& vecUndo = m_vecUndo.emplace_back();
 
-	//Bad alloc may happen here!!!
 	try {
-		for (const auto& hs : spnHexSpan) { //spnHexSpan.size() is the amount of continuous areas to preserve.
+		vecUndo.reserve(spnHexSpan.size());
+		for (const auto& hs : spnHexSpan) {
 			auto& undo = vecUndo.emplace_back(UNDO { hs.ullOffset, { } });
 			undo.vecData.resize(static_cast<std::size_t>(hs.ullSize));
-
-			//In VirtualData mode processing data chunk by chunk.
-			if (IsVirtualImpl() && hs.ullSize > GetCacheSize()) {
-				const auto dwSizeChunk = GetCacheSize();
-				const auto ullMod = hs.ullSize % dwSizeChunk;
-				auto u64Chunks = hs.ullSize / dwSizeChunk + (ullMod > 0 ? 1 : 0);
-				std::uint64_t u64OffsetLocal { 0 };
-				while (u64Chunks > 0) {
-					const auto u64Size = (u64Chunks == 1 && ullMod > 0) ? ullMod : dwSizeChunk;
-					const auto u64DataOffset = hs.ullOffset + u64OffsetLocal;
-					if (const auto spnData = GetData({ u64DataOffset, u64Size }); !spnData.empty()) {
-						assert(spnData.size() >= u64Size);
-						std::copy_n(spnData.data(), u64Size, undo.vecData.data() + static_cast<std::size_t>(u64OffsetLocal));
-					}
-
-					u64OffsetLocal += u64Size;
-					--u64Chunks;
-				}
-			}
-			else {
-				if (const auto spnData = GetData(hs); !spnData.empty()) {
-					std::copy_n(spnData.data(), hs.ullSize, undo.vecData.data());
-				}
+			if (!ReadDataChunked(hs, undo.vecData)) {
+				m_vecUndo.clear();
+				return;
 			}
 		}
 	}
@@ -4987,42 +5084,22 @@ void CHexCtrl::TTTrackShow(bool fShow, bool fTimer, const wchar_t* pwszText) {
 }
 
 void CHexCtrl::Undo() {
-	if (m_vecUndo.empty())
+	if (m_vecUndo.empty()) {
 		return;
+	}
 
-	//Bad alloc may happen here! If there is no more free memory, just clear the vec and return.
 	try {
-		//Creating new Redo data snapshot.
 		auto& vecRedo = m_vecRedo.emplace_back();
+		vecRedo.reserve(m_vecUndo.back().size());
+
 		for (const auto& undo : m_vecUndo.back()) {
 			auto& redo = vecRedo.emplace_back(UNDO { undo.ullOffset, { } });
 			redo.vecData.resize(undo.vecData.size());
-			const auto& vecUndoData = undo.vecData;
 
-			if (IsVirtualImpl() && vecUndoData.size() > GetCacheSize()) { //In VirtualData mode processing data chunk by chunk.
-				const auto dwSizeChunk = GetCacheSize();
-				const auto uzMod = vecUndoData.size() % dwSizeChunk;
-				auto u64Chunks = vecUndoData.size() / dwSizeChunk + (uzMod > 0 ? 1 : 0);
-				std::uint64_t u64OffsetLocal { 0 };
-				while (u64Chunks > 0) {
-					const auto u64Size = (u64Chunks == 1 && uzMod > 0) ? uzMod : dwSizeChunk;
-					const auto u64DataOffset = undo.ullOffset + u64OffsetLocal;
-					if (const auto spnData = GetData({ u64DataOffset, u64Size }); !spnData.empty()) {
-						std::copy_n(spnData.data(), u64Size, redo.vecData.begin() + u64OffsetLocal); //Fill Redo with the data.
-						std::copy_n(vecUndoData.begin() + u64OffsetLocal, u64Size, spnData.data()); //Undo the data.
-						SetDataVirtual(spnData, { u64DataOffset, u64Size });
-					}
-
-					u64OffsetLocal += u64Size;
-					--u64Chunks;
-				}
-			}
-			else {
-				if (const auto spnData = GetData({ undo.ullOffset, vecUndoData.size() }); !spnData.empty()) {
-					std::copy_n(spnData.data(), vecUndoData.size(), redo.vecData.begin()); //Fill Redo with the data.
-					std::copy_n(vecUndoData.begin(), vecUndoData.size(), spnData.data()); //Undo the data.
-					SetDataVirtual(spnData, { undo.ullOffset, vecUndoData.size() });
-				}
+			const HEXSPAN hs { .ullOffset { undo.ullOffset }, .ullSize { undo.vecData.size() } };
+			if (!ReadDataChunked(hs, redo.vecData) || !WriteDataChunked(hs, undo.vecData)) {
+				m_vecRedo.clear();
+				return;
 			}
 		}
 	}

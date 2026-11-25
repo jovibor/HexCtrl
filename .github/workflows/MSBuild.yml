@@ -22,7 +22,7 @@ jobs:
     runs-on: windows-latest
     strategy:
       matrix:
-        build_type: [Debug]
+        build_type: [Debug, Release]
         arch: [Win32, x64]
 
     steps:
@@ -49,7 +49,7 @@ jobs:
     runs-on: windows-latest
     strategy:
       matrix:
-        build_type: [Debug]
+        build_type: [Debug, Release]
         arch: [Win32, x64]
 
     steps:
@@ -76,7 +76,7 @@ jobs:
     runs-on: windows-11-arm
     strategy:
       matrix:
-        build_type: [Debug]
+        build_type: [Debug, Release]
         arch: [ARM64]
 
     steps:

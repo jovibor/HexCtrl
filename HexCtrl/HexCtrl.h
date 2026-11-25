@@ -381,7 +381,7 @@ namespace HEXCTRL {
 		EHexModifyMode eModifyMode { };      //Modify mode.
 		EHexOperMode   eOperMode { };        //Operation mode, used if eModifyMode == MODIFY_OPERATION.
 		EHexDataType   eDataType { };        //Data type of the underlying data, used if eModifyMode == MODIFY_OPERATION.
-		SpanCByte      spnData;              //Span of the data to modify with.
+		SpanCByte      spnData;              //Span of the data to modify with, operation data.
 		VecHexSpan     vecSpan;              //Vector of data offsets and sizes to modify.
 		bool           fBigEndian { false }; //Treat data as the big endian, used if eModifyMode == MODIFY_OPERATION.
 	};
