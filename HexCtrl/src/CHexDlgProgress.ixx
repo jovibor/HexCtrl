@@ -8,6 +8,7 @@ module;
 #include <SDKDDKVer.h>
 #include "res/HexCtrlRes.h"
 #include <Windows.h>
+#include <atomic>
 #include <cassert>
 #include <format>
 #include <string>
@@ -20,13 +21,13 @@ namespace HEXCTRL::INTERNAL {
 	class CHexDlgProgress final {
 	public:
 		explicit CHexDlgProgress(std::wstring_view wsvOperName, std::wstring_view wsvCountName,
-			ULONGLONG ullMin, ULONGLONG ullMax);
+			std::uint64_t ullMin, std::uint64_t ullMax);
 		auto DoModal(HWND hWndParent, HINSTANCE hInstRes) -> INT_PTR;
 		[[nodiscard]] bool IsCanceled()const;
 		void OnCancel();
 		[[nodiscard]] auto ProcessMsg(const MSG& msg) -> INT_PTR;
-		void SetCount(ULONGLONG ullCount);
-		void SetCurrent(ULONGLONG ullCurr); //Set current data in the whole data diapason.
+		void SetCount(std::uint64_t u64Count);
+		void SetCurrent(std::uint64_t u64Count); //Set current data in the whole data diapason.
 	private:
 		auto WMClose() -> INT_PTR;
 		auto WMCommand(const MSG& msg) -> INT_PTR;
@@ -34,6 +35,7 @@ namespace HEXCTRL::INTERNAL {
 		auto WMInitDialog(const MSG& msg) -> INT_PTR;
 		auto WMTimer(const MSG& msg) -> INT_PTR;
 	private:
+		static constexpr auto m_iRange1000 { 1000 };
 		static constexpr UINT_PTR m_uIDTCancelCheck { 0x1 };
 		static constexpr auto m_uElapse { 100U }; //Milliseconds for the timer.
 		GDIUT::CWnd m_Wnd;
@@ -41,20 +43,20 @@ namespace HEXCTRL::INTERNAL {
 		GDIUT::CWnd m_WndCount;         //Static Count.
 		GDIUT::CWndProgBar m_stProgBar; //Progress bar.
 		std::wstring m_wstrOperName;
-		std::wstring m_wstrCountName; //Count name (e.g. Found, Replaced, etc...).
-		ULONGLONG m_ullMin { };       //Minimum data amount. 
-		ULONGLONG m_ullPrev { };      //Previous data in bytes.
-		ULONGLONG m_ullCurr { };      //Current data amount processed.
-		ULONGLONG m_ullMax { };       //Max data amount.
-		ULONGLONG m_ullThousands { }; //How many thousands in the whole data diapason.
-		ULONGLONG m_ullCount { };     //Count of found/replaced items.
-		bool m_fCancel { false };     //"Cancel" button pressed.
+		std::wstring m_wstrCountName;     //Count name (e.g. Found, Replaced, etc...).
+		std::uint64_t m_ullMin { };       //Minimum data amount. 
+		std::uint64_t m_ullPrev { };      //Previous data in bytes.
+		std::uint64_t m_ullMax { };       //Max data amount.
+		std::uint64_t m_ullThousands { }; //How many thousands in the whole data diapason.
+		std::atomic<std::uint64_t> m_atomCurr { };  //Current data amount processed.
+		std::atomic<std::uint64_t> m_atomCount { }; //Count of found/replaced items.
+		std::atomic<bool> m_fatomCancel { false };  //"Cancel" button pressed.
 	};
 }
 
 CHexDlgProgress::CHexDlgProgress(std::wstring_view wsvOperName, std::wstring_view wsvCountName,
-	ULONGLONG ullMin, ULONGLONG ullMax) : m_wstrOperName(wsvOperName), m_wstrCountName(wsvCountName),
-	m_ullMin(ullMin), m_ullPrev(ullMin), m_ullCurr(ullMin), m_ullMax(ullMax) {
+	std::uint64_t ullMin, std::uint64_t ullMax) : m_wstrOperName(wsvOperName), m_wstrCountName(wsvCountName),
+	m_ullMin(ullMin), m_ullPrev(ullMin), m_atomCurr(ullMin), m_ullMax(ullMax) {
 	assert(ullMin <= ullMax);
 }
 
@@ -64,11 +66,11 @@ auto CHexDlgProgress::DoModal(HWND hWndParent, HINSTANCE hInstRes)->INT_PTR {
 }
 
 bool CHexDlgProgress::IsCanceled()const {
-	return m_fCancel;
+	return m_fatomCancel.load(std::memory_order_relaxed);
 }
 
 void CHexDlgProgress::OnCancel() {
-	m_fCancel = true;
+	m_fatomCancel.store(true, std::memory_order_relaxed);
 }
 
 auto CHexDlgProgress::ProcessMsg(const MSG& msg)->INT_PTR {
@@ -83,12 +85,12 @@ auto CHexDlgProgress::ProcessMsg(const MSG& msg)->INT_PTR {
 	}
 }
 
-void CHexDlgProgress::SetCount(ULONGLONG ullCount) {
-	m_ullCount = ullCount;
+void CHexDlgProgress::SetCount(std::uint64_t u64Count) {
+	m_atomCount.store(u64Count, std::memory_order_relaxed);
 }
 
-void CHexDlgProgress::SetCurrent(ULONGLONG ullCurr) {
-	m_ullCurr = ullCurr;
+void CHexDlgProgress::SetCurrent(std::uint64_t u64Curr) {
+	m_atomCurr.store(u64Curr, std::memory_order_relaxed);
 }
 
 
@@ -125,6 +127,15 @@ auto CHexDlgProgress::WMCtlColorStatic(const MSG& msg)->INT_PTR {
 
 auto CHexDlgProgress::WMInitDialog(const MSG& msg)->INT_PTR {
 	m_Wnd.Attach(msg.hwnd);
+
+	//If m_fatomCancel is already true when the dialog initializes (meaning the worker thread
+	//finished before DoModal created the window), calling EndDialog(IDCANCEL) immediately
+	//avoids SetTimer and waiting up to 100 ms for the first WM_TIMER tick.
+	if (IsCanceled()) {
+		m_Wnd.EndDialog(IDCANCEL);
+		return TRUE;
+	}
+
 	m_stProgBar.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_CALLBACK_PROGBAR));
 	m_Wnd.SetWndText(m_wstrOperName.data());
 	m_WndOper.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_CALLBACK_STAT_OPER));
@@ -133,13 +144,12 @@ auto CHexDlgProgress::WMInitDialog(const MSG& msg)->INT_PTR {
 	m_WndCount.SetWndText(L"");
 	m_Wnd.SetTimer(m_uIDTCancelCheck, m_uElapse, nullptr);
 
-	constexpr auto iRange1000 { 1000 };
-	m_stProgBar.SetRange(0, iRange1000);
+	m_stProgBar.SetRange(0, m_iRange1000);
 	m_stProgBar.SetPos(0);
 
 	//How many thousands in the whole diapason.
 	const auto ullDiapason = m_ullMax - m_ullMin;
-	m_ullThousands = ullDiapason >= iRange1000 ? ullDiapason / iRange1000 : 1;
+	m_ullThousands = ullDiapason >= m_iRange1000 ? ullDiapason / m_iRange1000 : 1;
 
 	return TRUE;
 }
@@ -148,22 +158,24 @@ auto CHexDlgProgress::WMTimer(const MSG& msg)->INT_PTR {
 	if (msg.wParam != m_uIDTCancelCheck)
 		return FALSE;
 
-	if (m_fCancel) {
+	if (IsCanceled()) {
 		m_Wnd.KillTimer(m_uIDTCancelCheck);
 		m_Wnd.EndDialog(IDCANCEL);
 		return TRUE;
 	}
 
-	const auto ullCurr = m_ullCurr - m_ullMin;
-	const auto iPos = static_cast<int>(ullCurr / m_ullThousands); //How many thousandth parts have already been passed.
+	const auto u64CurrRaw = m_atomCurr.load(std::memory_order_relaxed);
+	const auto u64Curr = u64CurrRaw - m_ullMin;
+	//How many thousandth parts have already been passed.
+	const auto iPos = static_cast<int>((std::min)(u64Curr / m_ullThousands, static_cast<std::uint64_t>(m_iRange1000)));
 	m_stProgBar.SetPos(iPos);
 
 	constexpr auto uBInKB { 1024U };          //Bytes in KB.
 	constexpr auto uBInMB { uBInKB * 1024U }; //Bytes in MB.
 	constexpr auto uBInGB { uBInMB * 1024U }; //Bytes in GB.
 	constexpr auto uTicksInSec = 1000U / m_uElapse;
-	const auto ullSpeedBS = (m_ullCurr - m_ullPrev) * uTicksInSec; //Speed in Bytes/s.
-	m_ullPrev = m_ullCurr;
+	const auto ullSpeedBS = (u64CurrRaw - m_ullPrev) * uTicksInSec; //Speed in Bytes/s.
+	m_ullPrev = u64CurrRaw;
 
 	std::wstring wstrDisplay;
 	if (ullSpeedBS < uBInMB) { //Less than 1 MB/s.
@@ -173,12 +185,12 @@ auto CHexDlgProgress::WMTimer(const MSG& msg)->INT_PTR {
 		wstrDisplay = std::format(L"{} {} MB/s", m_wstrOperName, ullSpeedBS / uBInMB);
 	}
 	else { //More than or equal to 1 GB/s.
-		wstrDisplay = std::format(L"{} {:.2f} GB/s", m_wstrOperName, ullSpeedBS / static_cast<float>(uBInGB));
+		wstrDisplay = std::format(L"{} {:.2f} GB/s", m_wstrOperName, ullSpeedBS / static_cast<double>(uBInGB));
 	}
 	m_WndOper.SetWndText(wstrDisplay);
 
-	if (m_ullCount > 0) {
-		m_WndCount.SetWndText(std::format(ut::GetLocale(), L"{} {:L}", m_wstrCountName, m_ullCount));
+	if (const auto u64Count = m_atomCount.load(std::memory_order_relaxed); u64Count > 0) {
+		m_WndCount.SetWndText(std::format(ut::GetLocale(), L"{} {:L}", m_wstrCountName, u64Count));
 	}
 
 	return TRUE;
