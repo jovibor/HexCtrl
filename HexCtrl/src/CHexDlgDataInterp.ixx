@@ -241,7 +241,7 @@ bool CHexDlgDataInterp::HasHighlight()const {
 }
 
 bool CHexDlgDataInterp::PreTranslateMsg(MSG* pMsg) {
-	return m_Wnd.IsDlgMessage(pMsg);
+	return !m_Wnd.IsNull() && m_Wnd.IsDlgMessage(pMsg);
 }
 
 auto CHexDlgDataInterp::ProcessMsg(const MSG& msg)->INT_PTR {

@@ -1328,7 +1328,7 @@ bool CHexDlgTemplMgr::IsShowTooltips()const {
 
 bool CHexDlgTemplMgr::PreTranslateMsg(MSG* pMsg) {
 	PreTranslateComboTempl(pMsg);
-	return m_Wnd.IsDlgMessage(pMsg);
+	return !m_Wnd.IsNull() && m_Wnd.IsDlgMessage(pMsg);
 }
 
 auto CHexDlgTemplMgr::ProcessMsg(const MSG& msg)->INT_PTR {

@@ -377,7 +377,7 @@ bool CHexDlgSearch::IsSearchAvail()const {
 }
 
 bool CHexDlgSearch::PreTranslateMsg(MSG* pMsg) {
-	return m_Wnd.IsDlgMessage(pMsg);
+	return !m_Wnd.IsNull() && m_Wnd.IsDlgMessage(pMsg);
 }
 
 auto CHexDlgSearch::ProcessMsg(const MSG& msg)->INT_PTR {
@@ -738,15 +738,15 @@ auto CHexDlgSearch::GetSearchDataSize()const->DWORD {
 
 auto CHexDlgSearch::GetSearchFunc(bool fFwd, bool fDlgProg)const->PtrSearchFunc {
 	using enum simd::EVecType;
-	switch (simd::GetVectorType()) {
-	case VECTOR_128:
-		return fFwd ? (fDlgProg ? GetSearchFuncFwd<true, VECTOR_128>() : GetSearchFuncFwd<false, VECTOR_128>()) :
-			(fDlgProg ? GetSearchFuncBack<true, VECTOR_128>() : GetSearchFuncBack<false, VECTOR_128>());
-	case VECTOR_256:
-		return fFwd ? (fDlgProg ? GetSearchFuncFwd<true, VECTOR_256>() : GetSearchFuncFwd<false, VECTOR_256>()) :
-			(fDlgProg ? GetSearchFuncBack<true, VECTOR_256>() : GetSearchFuncBack<false, VECTOR_256>());
-	default: return nullptr;
+	if constexpr (simd::HasVector256()) {
+		if (simd::GetVectorType() == VECTOR_256) {
+			return fFwd ? (fDlgProg ? GetSearchFuncFwd<true, VECTOR_256>() : GetSearchFuncFwd<false, VECTOR_256>()) :
+				(fDlgProg ? GetSearchFuncBack<true, VECTOR_256>() : GetSearchFuncBack<false, VECTOR_256>());
+		}
 	}
+
+	return fFwd ? (fDlgProg ? GetSearchFuncFwd<true, VECTOR_128>() : GetSearchFuncFwd<false, VECTOR_128>()) :
+		(fDlgProg ? GetSearchFuncBack<true, VECTOR_128>() : GetSearchFuncBack<false, VECTOR_128>());
 }
 
 template<bool fDlgProg, simd::EVecType eVecType>

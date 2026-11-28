@@ -1654,8 +1654,7 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 		[[nodiscard]] auto GetWndTextSize()const -> int { assert(IsWindow()); return ::GetWindowTextLengthW(m_hWnd); }
 		void Invalidate(bool fErase)const { assert(IsWindow()); ::InvalidateRect(m_hWnd, nullptr, fErase); }
 		[[nodiscard]] bool IsDlgMessage(MSG* pMsg)const {
-			assert(IsWindow() && pMsg != nullptr);
-			return ::IsDialogMessageW(m_hWnd, pMsg);
+			assert(IsWindow() && pMsg != nullptr); return ::IsDialogMessageW(m_hWnd, pMsg);
 		}
 		[[nodiscard]] bool IsNull()const { return m_hWnd == nullptr; }
 		[[nodiscard]] bool IsWindow()const { return ::IsWindow(m_hWnd); }
@@ -2040,6 +2039,16 @@ namespace HEXCTRL::INTERNAL::simd {
 		else { return mVecT; }
 	}
 #endif // ^^^ _M_IX86 || _M_X64
+	//This compile-time function is to prevent code bloat caused by instantiating
+	//templates for 256-bit vectors, which are never used on the ARM64 arch.
+	//And also it eliminates the need for "#if defined(...)" switch at a call site.
+	[[nodiscard]] consteval bool HasVector256() noexcept {
+	#if defined(_M_IX86) || defined(_M_X64)
+		return true;
+	#else
+		return false;
+	#endif
+	}
 
 	enum class EVecType : std::uint8_t {
 		VECTOR_128 = 16U, //SSE4.2, ARM64NEON.
@@ -2244,6 +2253,37 @@ namespace HEXCTRL::INTERNAL::simd {
 		return std::countr_zero(u32Mask);
 	}
 #elif defined(_M_ARM64) //^^^ _M_IX86 || _M_X64 / vvv _M_ARM64
+	//Helper to convert a 16-byte NEON comparison mask (0xFF or 0x00 per lane) into a 16-bit bitmask.
+	[[nodiscard]] __forceinline auto NeonMovemaskU8(uint8x16_t vMask)noexcept -> std::uint32_t {
+		alignas(16) static constexpr std::uint8_t arrWeights[16] {
+			1, 2, 4, 8, 16, 32, 64, 128,
+			1, 2, 4, 8, 16, 32, 64, 128
+		};
+		const auto vWeights = vld1q_u8(arrWeights);
+		const auto vBits = vandq_u8(vMask, vWeights);
+		const auto u32Lo = static_cast<std::uint32_t>(vaddv_u8(vget_low_u8(vBits)));
+		const auto u32Hi = static_cast<std::uint32_t>(vaddv_u8(vget_high_u8(vBits)));
+		return u32Lo | (u32Hi << 8);
+	}
+
+	template<EVecType eVecType> //Mask matching u8Val.
+	[[nodiscard]] __forceinline auto MemCmpMask1(const std::byte* pData, std::uint8_t u8Val)noexcept -> std::uint32_t {
+		static_assert(eVecType == EVecType::VECTOR_128, "ARM64 only supports 128-bit vectors.");
+		const auto vWhere = vld1q_u8(reinterpret_cast<const std::uint8_t*>(pData));
+		const auto vWhat = vdupq_n_u8(u8Val);
+		return NeonMovemaskU8(vceqq_u8(vWhere, vWhat));
+	}
+
+	template<EVecType eVecType> //Mask matching either u8Val1 or u8Val2.
+	[[nodiscard]] __forceinline auto MemCmpMask1(const std::byte* pData, std::uint8_t u8Val1, std::uint8_t u8Val2)noexcept
+		-> std::uint32_t {
+		static_assert(eVecType == EVecType::VECTOR_128, "ARM64 only supports 128-bit vectors.");
+		const auto vWhere = vld1q_u8(reinterpret_cast<const std::uint8_t*>(pData));
+		const auto vEq1 = vceqq_u8(vWhere, vdupq_n_u8(u8Val1));
+		const auto vEq2 = vceqq_u8(vWhere, vdupq_n_u8(u8Val2));
+		return NeonMovemaskU8(vorrq_u8(vEq1, vEq2));
+	}
+
 	//Convert __n128 mask of 16 8-bit values into 16 4-bit values.
 	[[nodiscard]] auto GetMaskU8(__n128 n128i)noexcept -> std::uint64_t {
 		const auto n64Res = vshrn_n_u16(vreinterpretq_u16_u8(n128i), 4);
@@ -2279,16 +2319,6 @@ namespace HEXCTRL::INTERNAL::simd {
 		}
 
 		return 0xFFFFFFFFU;
-
-	/*	const auto n128iWhere = vld1q_u8(pWhere);
-		const auto n128iWhat = vdupq_n_u8(u8What);
-		const auto n128iResult = vceqq_u8(n128iWhere, n128iWhat);
-		std::uint64_t u64Mask = GetMaskU8(n128iResult);
-
-		if constexpr (!fEqual) { u64Mask ^= 0xFFFFFFFFU; }
-		if (u64Mask == 0) { return 0xFFFFFFFFU; }
-
-		return _CountTrailingZeros64(u64Mask) >> 2;*/
 	}
 
 	template<EVecType eVecType, bool fEqual = true>

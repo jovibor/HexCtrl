@@ -90,7 +90,7 @@ auto CHexDlgOpers::GetHWND()const->HWND {
 }
 
 bool CHexDlgOpers::PreTranslateMsg(MSG* pMsg) {
-	return m_Wnd.IsDlgMessage(pMsg);
+	return !m_Wnd.IsNull() && m_Wnd.IsDlgMessage(pMsg);
 }
 
 auto CHexDlgOpers::ProcessMsg(const MSG& msg)->INT_PTR {
@@ -622,7 +622,7 @@ auto CHexDlgFillData::GetHWND()const->HWND {
 }
 
 bool CHexDlgFillData::PreTranslateMsg(MSG* pMsg) {
-	return m_Wnd.IsDlgMessage(pMsg);
+	return !m_Wnd.IsNull() && m_Wnd.IsDlgMessage(pMsg);
 }
 
 auto CHexDlgFillData::ProcessMsg(const MSG& msg)->INT_PTR {

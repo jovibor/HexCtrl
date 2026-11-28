@@ -89,7 +89,7 @@ bool CHexDlgGoTo::IsRepeatAvail()const {
 }
 
 bool CHexDlgGoTo::PreTranslateMsg(MSG* pMsg) {
-	return m_Wnd.IsDlgMessage(pMsg);
+	return !m_Wnd.IsNull() && m_Wnd.IsDlgMessage(pMsg);
 }
 
 auto CHexDlgGoTo::ProcessMsg(const MSG& msg)->INT_PTR {

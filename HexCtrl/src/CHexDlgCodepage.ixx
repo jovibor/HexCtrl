@@ -102,7 +102,7 @@ void CHexDlgCodepage::Initialize(IHexCtrl &HexCtrl, HINSTANCE hInstRes) {
 }
 
 bool CHexDlgCodepage::PreTranslateMsg(MSG* pMsg) {
-	return m_Wnd.IsDlgMessage(pMsg);
+	return !m_Wnd.IsNull() && m_Wnd.IsDlgMessage(pMsg);
 }
 
 auto CHexDlgCodepage::ProcessMsg(const MSG& msg)->INT_PTR {
