@@ -16,6 +16,7 @@ module;
 #include <cassert>
 #include <cmath>
 #include <cwctype>
+#include <cstring>
 #include <format>
 #include <locale>
 #include <optional>
@@ -82,12 +83,19 @@ namespace HEXCTRL::INTERNAL::ut { //Utility methods and stuff.
 	void DBG_REPORT_NO_DATA_SET() { }
 #endif
 
+	template<typename T>
+	[[nodiscard]] __forceinline T LoadUnaligned(const std::byte* p)noexcept {
+		T val;
+		std::memcpy(&val, p, sizeof(T));
+		return val;
+	}
+
 	//Get data from IHexCtrl's given offset converted to a necessary type.
 	template<typename T>
 	[[nodiscard]] T GetIHexTData(const IHexCtrl& HexCtrl, ULONGLONG ullOffset) {
 		const auto spnData = HexCtrl.GetData({ .ullOffset { ullOffset }, .ullSize { sizeof(T) } });
 		assert(!spnData.empty());
-		return *reinterpret_cast<T*>(spnData.data());
+		return LoadUnaligned<T>(spnData.data());
 	}
 
 	//Set data of a necessary type to IHexCtrl's given offset.
@@ -1579,10 +1587,11 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 	class CWnd {
 	public:
 		CWnd() = default;
-		CWnd(HWND hWnd) { Attach(hWnd); }
+		CWnd(HWND hWnd) noexcept : m_hWnd(hWnd) { }
+		CWnd(const CWnd&) = default;
 		~CWnd() = default;
-		CWnd& operator=(HWND rhs) { Attach(rhs); return *this; };
-		CWnd& operator=(CWnd rhs) { Attach(rhs); return *this; };
+		CWnd& operator=(const CWnd&) = default;
+		CWnd& operator=(HWND rhs) noexcept { Attach(rhs); return *this; }
 		operator HWND()const { return m_hWnd; }
 		[[nodiscard]] bool operator==(CWnd rhs)const { return m_hWnd == rhs.m_hWnd; }
 		[[nodiscard]] bool operator==(HWND rhs)const { return m_hWnd == rhs; }
@@ -1593,16 +1602,14 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 		[[nodiscard]] auto ChildWindowFromPoint(POINT pt)const -> CWnd {
 			assert(IsWindow()); return ::ChildWindowFromPoint(m_hWnd, pt);
 		}
-		void ClientToScreen(LPPOINT pPT)const { assert(IsWindow()); ::ClientToScreen(m_hWnd, pPT); }
-		void ClientToScreen(LPRECT pRC)const {
-			ClientToScreen(reinterpret_cast<LPPOINT>(pRC)); ClientToScreen((reinterpret_cast<LPPOINT>(pRC)) + 1);
-		}
+		void ClientToScreen(LPPOINT pPT)const { assert(IsWindow() && pPT != nullptr); ::ClientToScreen(m_hWnd, pPT); }
+		void ClientToScreen(LPRECT pRC)const { MapWindowPoints(nullptr, pRC); }
 		void DestroyWindow() { assert(IsWindow()); ::DestroyWindow(m_hWnd); m_hWnd = nullptr; }
 		void Detach() { m_hWnd = nullptr; }
 		[[nodiscard]] auto GetClientRect()const -> CRect {
-			assert(IsWindow()); RECT rc; ::GetClientRect(m_hWnd, &rc); return rc;
+			assert(IsWindow()); CRect rc; ::GetClientRect(m_hWnd, rc); return rc;
 		}
-		bool EnableWindow(bool fEnable)const { assert(IsWindow()); return ::EnableWindow(m_hWnd, fEnable); }
+		bool EnableWindow(bool fEnable)const { assert(IsWindow()); return ::EnableWindow(m_hWnd, fEnable) != FALSE; }
 		void EndDialog(INT_PTR iResult)const { assert(IsWindow()); ::EndDialog(m_hWnd, iResult); }
 		[[nodiscard]] int GetCheckedRadioButton(int iIDFirst, int iIDLast)const {
 			assert(IsWindow()); for (int iID = iIDFirst; iID <= iIDLast; ++iID) {
@@ -1616,9 +1623,9 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 			assert(IsWindow()); return reinterpret_cast<HFONT>(SendMsg(WM_GETFONT, 0, 0));
 		}
 		[[nodiscard]] auto GetHWND()const -> HWND { return m_hWnd; }
-		[[nodiscard]] auto GetLogFont()const -> std::optional<LOGFONTW> {
+		[[nodiscard]] auto GetLogFont() const -> std::optional<LOGFONTW> {
 			if (const auto hFont = GetHFont(); hFont != nullptr) {
-				LOGFONTW lf { }; ::GetObjectW(hFont, sizeof(lf), &lf); return lf;
+				LOGFONTW lf { }; if (::GetObjectW(hFont, sizeof(lf), &lf) == sizeof(lf)) { return lf; }
 			}
 			return std::nullopt;
 		}
@@ -1633,16 +1640,23 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 			assert(IsWindow()); return ::GetWindowLongPtrW(m_hWnd, iIndex);
 		}
 		[[nodiscard]] auto GetWindowRect()const -> CRect {
-			assert(IsWindow()); RECT rc; ::GetWindowRect(m_hWnd, &rc); return rc;
+			assert(IsWindow()); CRect rc; ::GetWindowRect(m_hWnd, rc); return rc;
 		}
 		[[nodiscard]] auto GetWindowStyles()const { return static_cast<DWORD>(GetWindowLongPTR(GWL_STYLE)); }
 		[[nodiscard]] auto GetWindowStylesEx()const { return static_cast<DWORD>(GetWindowLongPTR(GWL_EXSTYLE)); }
-		[[nodiscard]] auto GetWndText()const -> std::wstring {
-			assert(IsWindow()); wchar_t buff[256]; ::GetWindowTextW(m_hWnd, buff, std::size(buff)); return buff;
+		[[nodiscard]] auto GetWndText() const -> std::wstring {
+			assert(IsWindow());	const auto iLen = GetWndTextSize(); if (iLen <= 0) return { };
+			std::wstring text(static_cast<size_t>(iLen) + 1, L'\0');
+			const auto iCopied = ::GetWindowTextW(m_hWnd, text.data(), iLen + 1);
+			text.resize(iCopied > 0 ? static_cast<size_t>(iCopied) : 0);
+			return text;
 		}
-		[[nodiscard]] auto GetWndTextSize()const -> DWORD { assert(IsWindow()); return ::GetWindowTextLengthW(m_hWnd); }
+		[[nodiscard]] auto GetWndTextSize()const -> int { assert(IsWindow()); return ::GetWindowTextLengthW(m_hWnd); }
 		void Invalidate(bool fErase)const { assert(IsWindow()); ::InvalidateRect(m_hWnd, nullptr, fErase); }
-		[[nodiscard]] bool IsDlgMessage(MSG* pMsg)const { return ::IsDialogMessageW(m_hWnd, pMsg); }
+		[[nodiscard]] bool IsDlgMessage(MSG* pMsg)const {
+			assert(IsWindow() && pMsg != nullptr);
+			return ::IsDialogMessageW(m_hWnd, pMsg);
+		}
 		[[nodiscard]] bool IsNull()const { return m_hWnd == nullptr; }
 		[[nodiscard]] bool IsWindow()const { return ::IsWindow(m_hWnd); }
 		[[nodiscard]] bool IsWindowEnabled()const { assert(IsWindow()); return ::IsWindowEnabled(m_hWnd); }
@@ -1652,16 +1666,16 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 			assert(IsWindow()); ::KillTimer(m_hWnd, uID);
 		}
 		int MapWindowPoints(HWND hWndTo, LPRECT pRC)const {
-			assert(IsWindow()); return ::MapWindowPoints(m_hWnd, hWndTo, reinterpret_cast<LPPOINT>(pRC), 2);
+			assert(IsWindow() && pRC != nullptr); return ::MapWindowPoints(m_hWnd, hWndTo, reinterpret_cast<LPPOINT>(pRC), 2);
 		}
 		bool RedrawWindow(LPCRECT pRC = nullptr, HRGN hrgn = nullptr, UINT uFlags = RDW_INVALIDATE | RDW_UPDATENOW | RDW_ERASE)const {
-			assert(IsWindow()); return static_cast<bool>(::RedrawWindow(m_hWnd, pRC, hrgn, uFlags));
+			assert(IsWindow()); return ::RedrawWindow(m_hWnd, pRC, hrgn, uFlags) != FALSE;
 		}
 		int ReleaseDC(HDC hDC)const { assert(IsWindow()); return ::ReleaseDC(m_hWnd, hDC); }
-		void ScreenToClient(LPPOINT pPT)const { assert(IsWindow()); ::ScreenToClient(m_hWnd, pPT); }
+		void ScreenToClient(LPPOINT pPT)const { assert(IsWindow() && pPT != nullptr); ::ScreenToClient(m_hWnd, pPT); }
 		void ScreenToClient(POINT& pt)const { ScreenToClient(&pt); }
 		void ScreenToClient(LPRECT pRC)const {
-			ScreenToClient(reinterpret_cast<LPPOINT>(pRC)); ScreenToClient(reinterpret_cast<LPPOINT>(pRC) + 1);
+			assert(pRC != nullptr);	assert(IsWindow()); ::MapWindowPoints(nullptr, m_hWnd, reinterpret_cast<LPPOINT>(pRC), 2);
 		}
 		auto SendMsg(UINT uMsg, WPARAM wParam = 0, LPARAM lParam = 0)const -> LRESULT {
 			assert(IsWindow()); return ::SendMessageW(m_hWnd, uMsg, wParam, lParam);
@@ -1686,13 +1700,10 @@ namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 		void SetWindowPos(HWND hWndAfter, int iX, int iY, int iWidth, int iHeight, UINT uFlags)const {
 			assert(IsWindow()); ::SetWindowPos(m_hWnd, hWndAfter, iX, iY, iWidth, iHeight, uFlags);
 		}
-		auto SetWndClassLong(int iIndex, LONG_PTR dwNewLong)const -> ULONG_PTR {
-			assert(IsWindow()); return ::SetClassLongPtrW(m_hWnd, iIndex, dwNewLong);
-		}
 		void SetWndText(LPCWSTR pwszStr)const { assert(IsWindow()); ::SetWindowTextW(m_hWnd, pwszStr); }
 		void SetWndText(const std::wstring& wstr)const { SetWndText(wstr.data()); }
 		void SetRedraw(bool fRedraw)const { assert(IsWindow()); SendMsg(WM_SETREDRAW, fRedraw, 0); }
-		bool ShowWindow(int iCmdShow)const { assert(IsWindow()); return ::ShowWindow(m_hWnd, iCmdShow); }
+		bool ShowWindow(int iCmdShow)const { assert(IsWindow()); return ::ShowWindow(m_hWnd, iCmdShow) != FALSE; }
 		[[nodiscard]] static auto GetFocus() -> CWnd { return ::GetFocus(); }
 	protected:
 		HWND m_hWnd { }; //Windows window handle.
@@ -2056,26 +2067,45 @@ namespace HEXCTRL::INTERNAL::simd {
 
 //MemCmp*.
 #if defined(_M_IX86) || defined(_M_X64)
-	template<EVecType eVecType, bool fEqual = true>
-	[[nodiscard]] __forceinline auto MemCmpEQ1(const std::byte* pWhere, std::uint8_t u8What)noexcept -> std::uint64_t {
-		std::uint32_t u32Mask;
+	template<EVecType eVecType> //Mask matching u8Val.
+	[[nodiscard]] __forceinline auto MemCmpMask1(const std::byte* pData, std::uint8_t u8Val) noexcept -> std::uint32_t {
 		if constexpr (eVecType == EVecType::VECTOR_128) {
-			const auto m128iWhere = _mm_loadu_si128(reinterpret_cast<const __m128i*>(pWhere));
-			const auto m128iWhat = _mm_set1_epi8(static_cast<char>(u8What));
-			const auto m128iResult = _mm_cmpeq_epi8(m128iWhere, m128iWhat);
-			u32Mask = _mm_movemask_epi8(m128iResult);
-
-			if constexpr (!fEqual) {
-				u32Mask ^= 0xFFFF;
-			}
+			const auto m128iWhere = _mm_loadu_si128(reinterpret_cast<const __m128i*>(pData));
+			const auto m128iWhat = _mm_set1_epi8(static_cast<char>(u8Val));
+			return static_cast<std::uint32_t>(_mm_movemask_epi8(_mm_cmpeq_epi8(m128iWhere, m128iWhat)));
 		}
 		else if constexpr (eVecType == EVecType::VECTOR_256) {
-			const auto m256iWhere = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(pWhere));
-			const auto m256iWhat = _mm256_set1_epi8(static_cast<char>(u8What));
-			const auto m256iResult = _mm256_cmpeq_epi8(m256iWhere, m256iWhat);
-			u32Mask = _mm256_movemask_epi8(m256iResult);
+			const auto m256iWhere = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(pData));
+			const auto m256iWhat = _mm256_set1_epi8(static_cast<char>(u8Val));
+			return static_cast<std::uint32_t>(_mm256_movemask_epi8(_mm256_cmpeq_epi8(m256iWhere, m256iWhat)));
+		}
+	}
 
-			if constexpr (!fEqual) {
+	template<EVecType eVecType> //Mask matching either u8Val1 or u8Val2.
+	[[nodiscard]] __forceinline auto MemCmpMask1(const std::byte* pData, std::uint8_t u8Val1, std::uint8_t u8Val2)noexcept
+		-> std::uint32_t {
+		if constexpr (eVecType == EVecType::VECTOR_128) {
+			const auto m128iWhere = _mm_loadu_si128(reinterpret_cast<const __m128i*>(pData));
+			const auto m128iEq1 = _mm_cmpeq_epi8(m128iWhere, _mm_set1_epi8(static_cast<char>(u8Val1)));
+			const auto m128iEq2 = _mm_cmpeq_epi8(m128iWhere, _mm_set1_epi8(static_cast<char>(u8Val2)));
+			return static_cast<std::uint32_t>(_mm_movemask_epi8(_mm_or_si128(m128iEq1, m128iEq2)));
+		}
+		else if constexpr (eVecType == EVecType::VECTOR_256) {
+			const auto m256iWhere = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(pData));
+			const auto m256iEq1 = _mm256_cmpeq_epi8(m256iWhere, _mm256_set1_epi8(static_cast<char>(u8Val1)));
+			const auto m256iEq2 = _mm256_cmpeq_epi8(m256iWhere, _mm256_set1_epi8(static_cast<char>(u8Val2)));
+			return static_cast<std::uint32_t>(_mm256_movemask_epi8(_mm256_or_si256(m256iEq1, m256iEq2)));
+		}
+	}
+
+	template<EVecType eVecType, bool fEqual>
+	[[nodiscard]] __forceinline auto MemCmpEQ1(const std::byte* pWhere, std::uint8_t u8What) noexcept -> std::uint64_t {
+		auto u32Mask = MemCmpMask1<eVecType>(pWhere, u8What);
+		if constexpr (!fEqual) {
+			if constexpr (eVecType == EVecType::VECTOR_128) {
+				u32Mask ^= 0xFFFFU;
+			}
+			else if constexpr (eVecType == EVecType::VECTOR_256) {
 				u32Mask ^= 0xFFFFFFFFU;
 			}
 		}
@@ -2087,7 +2117,7 @@ namespace HEXCTRL::INTERNAL::simd {
 		return std::countr_zero(u32Mask);
 	}
 
-	template<EVecType eVecType, bool fEqual = true>
+	template<EVecType eVecType, bool fEqual>
 	[[nodiscard]] __forceinline auto MemCmpEQ2(const std::byte* pWhere, std::uint16_t u16What)noexcept -> std::uint64_t {
 		std::uint32_t u32Mask0;
 		std::uint32_t u32Mask1;
@@ -2142,7 +2172,7 @@ namespace HEXCTRL::INTERNAL::simd {
 		return std::countr_zero(u32Mask); //Larger than "vector_size_in_bytes - 1" means not found, all in mask are zeros.
 	}
 
-	template<EVecType eVecType, bool fEqual = true>
+	template<EVecType eVecType, bool fEqual>
 	[[nodiscard]] __forceinline auto MemCmpEQ4(const std::byte* pWhere, std::uint32_t u32What)noexcept -> std::uint64_t {
 		std::uint32_t u32Mask0;
 		std::uint32_t u32Mask1;
@@ -3167,8 +3197,7 @@ namespace HEXCTRL::INTERNAL::simd {
 		}
 		auto m128Data = _mm_castsi128_ps(m128iData);
 
-		float flOper;
-		std::memcpy(&flOper, hms.spnData.data(), sizeof(flOper));
+		const auto flOper = ut::LoadUnaligned<float>(hms.spnData.data());
 		if (!std::isfinite(flOper)) { return; }
 
 		const auto m128Oper = _mm_set_ps1(flOper);
@@ -3223,8 +3252,7 @@ namespace HEXCTRL::INTERNAL::simd {
 		}
 		auto m128dData = _mm_castsi128_pd(m128iData);
 
-		double dblOper;
-		std::memcpy(&dblOper, hms.spnData.data(), sizeof(double));
+		const auto dblOper = ut::LoadUnaligned<double>(hms.spnData.data());
 		if (!std::isfinite(dblOper)) { return; }
 
 		const auto m128dOper = _mm_set1_pd(dblOper);
@@ -4164,8 +4192,7 @@ namespace HEXCTRL::INTERNAL::simd {
 		}
 		auto m256Data = _mm256_castsi256_ps(m256iData);
 
-		float flOper;
-		std::memcpy(&flOper, hms.spnData.data(), sizeof(float));
+		const auto flOper = ut::LoadUnaligned<float>(hms.spnData.data());
 		if (!std::isfinite(flOper)) { return; }
 
 		const auto m256Oper = _mm256_set1_ps(flOper);
@@ -4220,8 +4247,7 @@ namespace HEXCTRL::INTERNAL::simd {
 		}
 		auto m256dData = _mm256_castsi256_pd(m256iData);
 
-		double dblOper;
-		std::memcpy(&dblOper, hms.spnData.data(), sizeof(double));
+		const auto dblOper = ut::LoadUnaligned<double>(hms.spnData.data());
 		if (!std::isfinite(dblOper)) { return; }
 
 		const auto m256dOper = _mm256_set1_pd(dblOper);
